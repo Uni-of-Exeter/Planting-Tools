@@ -1,0 +1,294 @@
+
+normalize<-
+  function(x) {
+    return(scale(x, center=TRUE, scale=TRUE)[,1])
+  }
+
+Impl<-function(Target,EY,SDY,alpha,tol)
+{
+  Im<-(Target-EY)/sqrt(SDY^2+tol)
+  NROY<-(Im<=sqrt((1-alpha)/alpha))
+  return(list(Im=Im,NROY=NROY))
+}
+MultiImpl<-function(TargetsVec,EYMat,SDYMat,alpha,tolVec)
+{
+  IVEC<-matrix(0,dim(EYMat)[1],length(TargetsVec))
+  for(ii in 1:length(TargetsVec))
+  {
+    IVEC[,ii]<-Impl(TargetsVec[ii],EYMat[,ii],SDYMat[,ii],alpha,tolVec[ii])$Im
+  }
+  ItotalMax<-(apply(IVEC,1,max))
+  ItotalMin<-(apply(IVEC,1,min))
+  NROYTotal<-(ItotalMax<=sqrt((1-alpha)/alpha))
+  return(list(ImTotMax=ItotalMax,ImTotMin=ItotalMin,NROYTotal=NROYTotal,IVEC=IVEC))
+}
+
+BaseMap<-function(SelectedMap,layerId=NULL,shconv)
+{
+  
+  ListMaps<-shconv[shconv$extent==SelectedMap,]$shape[[1]]
+  max_x2<-(-Inf);min_x2<-(Inf);max_y2<-(-Inf);min_y2<-Inf;
+  for(ii in 1: length(ListMaps)){
+    for(jj in 1: length(ListMaps[[ii]])){
+      xvec<-ListMaps[[ii]][[jj]][,1]
+      yvec<-ListMaps[[ii]][[jj]][,2]
+      xvec<-xvec[!is.na(xvec)]
+      yvec<-yvec[!is.na(yvec)]
+      max_x2<-max(max_x2,xvec)
+      min_x2<-min(min_x2,xvec)
+      
+      max_y2<-max(max_y2,yvec)
+      min_y2<-min(min_y2,yvec)
+    }
+  }
+  
+  map<-leaflet() 
+  map<-  addTiles(map) 
+  map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
+                 lng2 = max_x2, lat2 =max_y2) #%>%
+  for(ii in 1: length(ListMaps)){
+    for(jj in 1: length(ListMaps[[ii]])){
+      map<-addPolygons(map,lng=ListMaps[[ii]][[jj]][,1],lat=ListMaps[[ii]][[jj]][,2],color="black",layerId==paste0(layerId,ii,"_",jj))}}
+  return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
+}
+
+map_sell_not_avail <- function(FullTableNotAvail,
+                               SelectedDropdown,
+                               listMaps = NULL,
+                               map = NULL) {
+  SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown
+  if(!is.null(SELLNOTAVAIL)){
+    sellngNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
+    sellatNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
+    for (iii in 1:dim(sellngNotAvail)[1]) {
+      if (is.null(map) && !is.null(listMaps)) {
+        listMaps[[1]] <- leaflet::addPolygons(listMaps[[1]],
+                                              lng = as.numeric(sellngNotAvail[iii, ]),
+                                              lat = as.numeric(sellatNotAvail[iii, ]),
+                                              layerId = paste0("SquareNotAvail", iii),
+                                              color = "yellow")
+        listMaps[[2]] <- leaflet::addPolygons(listMaps[[2]],
+                                              lng = as.numeric(sellngNotAvail[iii,]),
+                                              lat = as.numeric(sellatNotAvail[iii,]),
+                                              layerId = paste0("SquareNotAvail",iii),
+                                              color ="yellow")
+        
+        midlng <- (as.numeric(sellngNotAvail[iii, 1]) + as.numeric(sellngNotAvail[iii, 3])) / 2
+        midlat <- (as.numeric(sellatNotAvail[iii, 1]) + as.numeric(sellatNotAvail[iii, 2])) / 2
+        
+        listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
+                                               lat = c(midlat - 0.0025, midlat + 0.0025),
+                                               lng = c(midlng - 0.004, midlng + 0.004),
+                                               color = "orange",
+                                               weight = 5)
+        listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
+                                               lat = c(midlat - 0.0025, midlat + 0.0025),
+                                               lng = c(midlng + 0.004, midlng - 0.004),
+                                               color = "orange",
+                                               weight = 5)
+        listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
+                                               lat = c(midlat - 0.0025, midlat + 0.0025),
+                                               lng = c(midlng - 0.004, midlng + 0.004),
+                                               color = "orange",
+                                               weight = 5)
+        listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
+                                               lat = c(midlat - 0.0025, midlat + 0.0025),
+                                               lng = c(midlng + 0.004, midlng - 0.004),
+                                               color = "orange",
+                                               weight = 5)
+      } else if (!is.null(map) && is.null(listMaps)) {
+        map <- leaflet::addPolygons(map,
+                                    lng = as.numeric(sellngNotAvail[iii, ]),
+                                    lat = as.numeric(sellatNotAvail[iii, ]),
+                                    layerId = paste0("SquareNotAvail", iii),
+                                    color = "yellow")
+        
+        midlng <- (as.numeric(sellngNotAvail[iii, 1]) + as.numeric(sellngNotAvail[iii, 3])) / 2
+        midlat <- (as.numeric(sellatNotAvail[iii, 1]) + as.numeric(sellatNotAvail[iii, 2])) / 2
+        
+        map <- leaflet::addPolylines(map,
+                                     lat = c(midlat - 0.0025, midlat + 0.0025),
+                                     lng = c(midlng - 0.004, midlng + 0.004),
+                                     color = "orange",
+                                     weight = 5)
+        map <- leaflet::addPolylines(map,
+                                     lat = c(midlat - 0.0025, midlat + 0.0025),
+                                     lng = c(midlng + 0.004, midlng - 0.004),
+                                     color = "orange",
+                                     weight = 5)
+      }
+    }
+    if (is.null(map) && !is.null(listMaps)) {
+      return(listMaps)
+    } else if (!is.null(map) && is.null(listMaps)) {
+      return(map)
+    }
+  }
+}
+
+observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
+                                   input,
+                                   output,
+                                   session,
+                                   LinesToCompareReactive,
+                                   ClickedVector,
+                                   AreaSelected0,
+                                   CarbonSelected0,
+                                   RedSquirrelSelected0,
+                                   VisitsSelected0,
+                                   CarbonSelectedSD0,
+                                   RedSquirrelSelectedSD0,
+                                   VisitsSelectedSD0,
+                                   DatBinaryCode0,
+                                   NbRoundsMax,
+                                   CurrentRound,
+                                   FullTable,
+                                   FullTableNotAvail,
+                                   VecNbMet0,
+                                   shconv) {
+
+  SavedVec <- ClickedVector()
+  LinesToCompare <- as.matrix(LinesToCompareReactive())
+  SelectedDropdown <- input$inSelect
+
+  shinyjs::disable("choose1")
+  shinyjs::disable("choose2")
+  
+  ###########################################################
+  if((!is.null(SavedVec))&(CurrentRound()>0)){
+    calcBaseMap <- BaseMap(SelectedDropdown,layerId="main100",shconv=shconv)
+    
+    SelectedSimMat2 <- SelectedSimMatGlobal
+    if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
+    {
+      CR <- CurrentRound()
+      if (choose == 1) {
+        pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+      } else if (choose == 2) {
+        pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
+      }
+      
+      if(CR<dim(LinesToCompare)[1]){
+        LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
+      }
+      
+      LinesToCompareReactive(LinesToCompare)
+      
+      CR <- CR+1
+      CurrentRound(CR)
+      
+      listMaps <- list()
+      listMaps[[1]] <- calcBaseMap$map
+      listMaps[[2]] <- calcBaseMap$map
+      
+      
+      
+      
+      
+      SelectedLine <- list()
+      SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
+      SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
+      
+      for(aai in 1:2){
+        SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
+        SelectedTreeCarbon <- SelectedLine[[aai]]$carbon
+        SelectedBio <- SelectedLine[[aai]]$redsquirel
+        SelectedArea <- SelectedLine[[aai]]$Area
+        SelectedVisits <- SelectedLine[[aai]]$Visits
+        
+        SelectedTreeCarbonSD <- SelectedLine[[aai]]$carbonSD
+        SelectedBioSD <- SelectedLine[[aai]]$redsquirelSD
+        SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
+        
+        SELL <- (FullTable$extent==SelectedDropdown)
+        if(!is.null(SELL)){
+          sellng <- FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
+          sellat <- FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
+          for (iii in 1:length(SwitchedOnCells)){
+            if(SavedVec[iii]==1){listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
+            else{
+              if(SwitchedOnCells[iii]==1){
+                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
+            }
+          }
+        }
+        
+        
+        listMaps[[aai]] <- listMaps[[aai]]%>%  
+          addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
+                                 Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
+                                 Area Planted:",round(SelectedArea/1e6,2),"<br>
+                                 Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
+                                   "</p>"), position = "topright")
+      }
+      listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
+                                     SelectedDropdown = SelectedDropdown,
+                                     listMaps = listMaps)
+      
+      output$ClusterPage <- renderLeaflet({listMaps[[1]]})
+      output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})  
+      shinyjs::enable("choose1")
+      shinyjs::enable("choose2")
+      
+    } else {
+      CR <- CurrentRound()
+      pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+      
+      
+      shinyjs::disable("choose1")
+      shinyjs::disable("choose2")
+      infpref <<- pref$infer()
+      
+      
+      
+      infpref[is.na(infpref)] <- 1e-5
+      infpref[infpref<0] <- 1e-5
+      
+      ###########
+      SelectedSimMat2 <- SelectedSimMatGlobal
+      VecNbMet <- VecNbMet0()
+      
+      
+      ClusteringDat <- data.frame(sqrt(infpref)*SelectedSimMat2[,c("carbon","redsquirel","Area","Visits")],NbTargetsMet=VecNbMet)
+      ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
+      ClusteringDat <- unique(ClusteringDat)
+      set.seed(123)  
+      
+      
+      
+      FailedTsne <- TRUE
+      PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
+      IndexPerp <- 1
+      
+      while((FailedTsne)&(IndexPerp<=length(PerpVec))){
+        Perp <- PerpVec[IndexPerp]
+        tsRes <-try(Rtsne(ClusteringDat, perplexity = Perp))
+        IndexPerp <- IndexPerp+1       
+        if(class(tsRes)[1]!="try-error"){FailedTsne <- FALSE}
+      }
+      
+      if(FailedTsne){
+        
+        pp<<- ggplot() +theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
+                   size = 10, color = "black", hjust = 0.5, vjust = 0.5)
+        output$plotOP1 <- renderPlot({pp})
+        updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+        
+      }else{
+        
+        tsneclusters <- Mclust(tsRes$Y, 1:4)
+        ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
+          ggpairs(columns=1:4, aes(color=cluster),upper=list(continuous="points"))
+        output$plotOP1 <- renderPlot({ClusterPlot})
+        
+        
+        #pp< <- ggplot(data=data.frame(x=tsRes$Y[,1],y=tsRes$Y[,2]),aes(x,y))+
+        #  geom_point(aes(colour =factor(ClusteringDat$NbTargetsMet)))+
+        #  labs(x="dim1",y="dim2",color = "Number of Targets Met")+theme_minimal()
+        #output$plotOP1 <- renderPlot({pp})
+        updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+      }
+      
+    }  }
+}
