@@ -11,5 +11,5 @@
 ## Running the app
 1. (Optional but convenient) Open `Planting-Tools.Rproj` with RStudio
 2. Go in the folder `ShinyForestry`
-3 Execute the file named `NewShiny_v0.37b-gitlab.r`
+3. Execute the file named `NewShiny_v0.37b-gitlab.r`
 4. Wait a few seconds / a minute for the new window to popup, and enjoy!
