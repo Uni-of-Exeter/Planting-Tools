@@ -6,7 +6,6 @@ library(sf)
 library(ggplot2)
 library(geosphere)
 library(feather)
-###################
 library(readr)
 library(dplyr)
 library(tidyverse)
@@ -25,7 +24,6 @@ library(shinyWidgets)
 library(truncnorm)
 loadNamespace("prefeR")
 library(GGally)
-###############################
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
@@ -35,7 +33,7 @@ source("functions.R")
 
 FolderSource<-""
 
-############## load all shapes
+# load all shapes
 PROJdir<-system.file("proj/proj.db", package = "sf")
 PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
 sf_proj_search_paths(PROJdir)
@@ -51,8 +49,6 @@ alphaLVL<-0.9
 
 MaxRounds<-5
 
-
-#########################################
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
                                            column(9,
@@ -60,7 +56,6 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),"Ennerdale"),
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
                                            ),
-                                           #####################
                                            column(3,
                                                   verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
                                                                  textOutput("SoilCarbonNotIncluded"),
@@ -70,10 +65,8 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   )))
                                          )
                                          ), 
-                                         ##########################
                                          tabPanel("Exploration",
                                                   fluidPage(fluidRow(
-                                                    ################################
                                                     column(5,  
                                                            verticalLayout(verbatimTextOutput("FirstMapTxt"),jqui_resizable(leafletOutput("map2",height = 400,width="100%")))
                                                     ),
@@ -86,7 +79,6 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                     )
                                                   ),
                                                   fluidRow(
-                                                    ################################
                                                     column(5,  
                                                            verticalLayout(verbatimTextOutput("ThirdMapTxt"),jqui_resizable(leafletOutput("map4",height = 400,width="100%")))
                                                     ),
@@ -95,19 +87,15 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                     ),
                                                     column(2,"")
                                                   )
-                                                  
                                                   )
                                          ),
-                                         ########################
                                          tabPanel("Clustering",
                                                   fluidPage(
-                                                    
                                                     shinyjs::hidden(
                                                       fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))),
                                                     conditionalPanel(
                                                       condition="input.Trigger==true",
                                                       fluidRow(
-                                                        ##              #     ################################
                                                         column(6,verticalLayout(jqui_resizable(leafletOutput("ClusterPage")),actionButton("choose1", "choose"))
                                                         ),
                                                         column(6,verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")),actionButton("choose2", "choose"))
@@ -115,15 +103,10 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                       )),
                                                     conditionalPanel(
                                                       condition="input.Trigger==false", fluidRow(
-                                                        
                                                         column(12,jqui_resizable(plotOutput("plotOP1"))))
                                                     )
                                                   ))
-                                         
-                                         
 ))
-
-
 
 server <- function(input, output, session) {
   CarbonSliderVal<- reactive({input$SliderMain})
@@ -137,7 +120,7 @@ server <- function(input, output, session) {
   Text4<-reactiveVal("")
   
   
-  ######################
+
   output$TargetText<-renderText({paste0("Targets:\n", "Tree Carbon: ",as.numeric(CarbonSliderVal()),
                                         "\nRed Squirrel: ",as.numeric(bioSliderVal()),
                                         "\nArea Planted: ",as.numeric(AreaSliderVal()),
@@ -149,9 +132,9 @@ server <- function(input, output, session) {
   output$SecondMapTxt<-renderText({Text2()})
   output$ThirdMapTxt<-renderText({Text3()})
   output$FourthMapTxt<-renderText({Text4()})
-  ######################
+
   randomValue <- eventReactive({input$random
-    input$tabsetPanel == "Exploration"}, {runif(1)})
+  input$tabsetPanel == "Exploration"}, {runif(1)})
   ClickedVector<-reactiveVal(NULL)
   AreaSelected0<-reactiveVal(NULL)
   CarbonSelected0<-reactiveVal(NULL)
@@ -167,7 +150,7 @@ server <- function(input, output, session) {
   LinesToCompareReactive<-reactiveVal(0)
   
   VecNbMet0<-reactiveVal(NULL)
-  ######################
+
   output$Trigger<-reactiveVal(TRUE)
   #inputOptions(intput, 'Trigger', suspendWhenHidden = FALSE)
   
@@ -220,12 +203,6 @@ server <- function(input, output, session) {
     
   })
   
-  ##############
-  
-  
-  
-  
-  ##################################################
   observeEvent(input$tabs == "Clustering",{
     
     SavedVec<-ClickedVector()
@@ -242,7 +219,6 @@ server <- function(input, output, session) {
     listMaps[[1]]<-calcBaseMap$map
     listMaps[[2]]<-calcBaseMap$map
     
-    #               ##########################################################
     if(!is.null(SavedVec)){
       
       AreaSelected<-AreaSelected0()
@@ -270,7 +246,6 @@ server <- function(input, output, session) {
       
       
       SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      #  #######################################
       SelecTargetCarbon<-input$SliderMain
       SelecTargetBio<-input$BioSlider
       SelecTargetArea<-input$AreaSlider
@@ -444,8 +419,6 @@ server <- function(input, output, session) {
     
     
   })
-  ###################################################
-  ##################################################
 
   observeEvent(input$choose1, {
     observe_event_function(choose = 1, # 1 for input$choose1, 2 for input$choose2
@@ -469,7 +442,7 @@ server <- function(input, output, session) {
                            VecNbMet0,
                            shconv)
   })
-  #######################################################################  
+
   observeEvent(input$choose2, {
     observe_event_function(choose = 2, # 1 for input$choose1, 2 for input$choose2
                            input,
@@ -494,7 +467,7 @@ server <- function(input, output, session) {
   })
 
   
-  #################################
+
   observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
     if(!is.null(click)){SavedVec<-ClickedVector()
@@ -513,8 +486,6 @@ server <- function(input, output, session) {
     calcBaseMap<-BaseMap(SelectedDropdown,layerId="main",shconv)
     map<-calcBaseMap$map
     
-    
-    ##########################################################
     if(!is.null(SavedVec)){
       
       AreaSelected<-AreaSelected0()
@@ -542,7 +513,6 @@ server <- function(input, output, session) {
       
       
       SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      #  #######################################
       SelecTargetCarbon<-input$SliderMain
       SelecTargetBio<-input$BioSlider
       SelecTargetArea<-input$AreaSlider*1e6
@@ -644,585 +614,261 @@ server <- function(input, output, session) {
     
     map
   })
-  #############################################
+  
   output$map2 <- renderLeaflet({
     
-    ##########################
+    SavedVec <- ClickedVector()
+    SelectedDropdown <- input$inSelect
+    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main2", shconv)
+    map <- calcBaseMap$map
     
-    SavedVec<-ClickedVector()
-    SelectedDropdown<-input$inSelect
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main2",shconv)
-    map<-calcBaseMap$map
-    
-    
-    ##########################################################
-    if(!is.null(SavedVec)){
+    if (!is.null(SavedVec)) {
       
-      AreaSelected<-AreaSelected0()
-      CarbonSelected<-CarbonSelected0()
-      RedSquirrelSelected<-RedSquirrelSelected0()
-      VisitsSelected<-VisitsSelected0()
+      AreaSelected <- AreaSelected0()
+      CarbonSelected <- CarbonSelected0()
+      RedSquirrelSelected <- RedSquirrelSelected0()
+      VisitsSelected <- VisitsSelected0()
       
-      CarbonSelectedSD<-CarbonSelectedSD0()
-      RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
-      VisitsSelectedSD<-VisitsSelectedSD0()
+      CarbonSelectedSD <- CarbonSelectedSD0()
+      RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      VisitsSelectedSD <- VisitsSelectedSD0()
       
-      if(length(SavedVec)==1){
-        SelectedSimMat<-(as.matrix(simul636[,1:length(SavedVec)]))}else{ SelectedSimMat<-simul636[,1:length(SavedVec)]}
+      tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+      SelectedSimMat2 <- tmp$SelectedSimMat2
+      Icalc <- tmp$Icalc
+      LimitsMat <- tmp$LimitsMat
+      rm(tmp)
       
-      SVMAT<-t(matrix(SavedVec,length(SavedVec),dim(SelectedSimMat)[1]))
-      CarbonMAT<-t(matrix(CarbonSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelMAT<-t(matrix(as.numeric(RedSquirrelSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      AreaMAT<-t(matrix(AreaSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsMAT<-t(matrix(as.numeric(VisitsSelected),length(SavedVec),dim(SelectedSimMat)[1]))
+      # PROBAMAT<-1-pnorm(Icalc$IVEC)
+      PROBAMAT <- Icalc$IVEC
+      for (abc in 1:dim(Icalc$IVEC)[2]) {
+        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      }
       
+      CONDPROBA <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
       
-      CarbonSDMAT<-t(matrix(CarbonSelectedSD,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelSDMAT<-t(matrix(as.numeric(RedSquirrelSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsSDMAT<-t(matrix(as.numeric(VisitsSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
+      SubsetMeetTargets <- SelectedSimMat2[CONDPROBA, ]
+      SelIMAT <- Icalc$IVEC[CONDPROBA, ]
       
-      
-      SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      #  #######################################
-      SelecTargetCarbon<-input$SliderMain
-      SelecTargetBio<-input$BioSlider
-      SelecTargetArea<-input$AreaSlider*1e6
-      SelecTargetVisits<-input$VisitsSlider
-      
-      
-      SelectedSimMat2<-data.frame(SelectedSimMat,
-                                  carbon=rowSums(SelectedSimMat*CarbonMAT),
-                                  redsquirel=rowMeans(SelectedSimMat*RedSquirrelMAT),
-                                  Area=rowSums(SelectedSimMat*AreaMAT),
-                                  Visits=rowMeans(SelectedSimMat*(VisitsMAT)),
-                                  carbonSD=sqrt(rowSums(SelectedSimMat*(CarbonSDMAT^2))),
-                                  redsquirelSD=sqrt(rowSums(SelectedSimMat*(RedSquirrelSDMAT^2)))/length(SavedVec),
-                                  VisitsSD=sqrt(rowSums(SelectedSimMat*(VisitsSDMAT^2)))/length(SavedVec)
-      ) 
-      
-      Icalc<-MultiImpl(TargetsVec=c(SelecTargetCarbon,SelecTargetBio,SelecTargetArea,SelecTargetVisits),
-                       EYMat=data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits),
-                       SDYMat=data.frame(SelectedSimMat2$carbonSD,SelectedSimMat2$redsquirelSD,rep(0,length(SelectedSimMat2$Area)),SelectedSimMat2$VisitsSD),
-                       alpha=0.05,
-                       tolVec=c(4,2,100,2))
-      
-      
-      LimitsMat<-(-data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits))/
-        sqrt(data.frame(SelectedSimMat2$carbonSD^2+4^2,SelectedSimMat2$redsquirelSD^2+2^2,
-                        rep(0,length(SelectedSimMat2$Area))+100^2,SelectedSimMat2$VisitsSD+2^2))
-      
-      
-      #PROBAMAT<-1-pnorm(Icalc$IVEC)
-      PROBAMAT<-Icalc$IVEC
-      for(abc in 1:dim(Icalc$IVEC)[2]){
-        PROBAMAT[,abc]<-1-ptruncnorm(Icalc$IVEC[,abc],a=LimitsMat[,abc], b=Inf)}
-      
-      CONDPROBA<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      
-      
-      
-      SubsetMeetTargets<-SelectedSimMat2[CONDPROBA,]
-      SelIMAT<-Icalc$IVEC[CONDPROBA,]
-      
-      if(dim(SubsetMeetTargets)[1]>0){   
+      if (dim(SubsetMeetTargets)[1] > 0) {
+        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        SavedRVs <- mapresults$SavedRVs
+        LSMT <- mapresults$LSMT
+        map <- mapresults$map
         
-        SavedRVs<-randomValue()
-        LSMT<-dim(SubsetMeetTargets)[1]
-        SelectedLine<-SubsetMeetTargets[as.integer(trunc(SavedRVs*LSMT)+1),]
+        map <- with(mapresults, map %>%
+                      addControl(html = paste0("<p>Carbon:", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
+                                               Red Squirrel:", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
+                                               Area Planted:", round(SelectedArea/1e6, 2), "<br>
+                                               Visitors:", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                                               "</p>"), position = "topright"))
+        Text1(paste0("Estimated % strategies that meet 4 targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1)))
         
-        SwitchedOnCells<-SelectedLine[1:length(SavedVec)]
-        SelectedTreeCarbon<-SelectedLine$carbon
-        SelectedBio<-SelectedLine$redsquirel
-        SelectedArea<-SelectedLine$Area
-        SelectedVisits<-SelectedLine$Visits
-        
-        SelectedTreeCarbonSD<-SelectedLine$carbonSD
-        SelectedBioSD<-SelectedLine$redsquirelSD
-        SelectedVisitsSD<-SelectedLine$VisitsSD
-        
-        
-        
-        SELL<-(FullTable$extent==SelectedDropdown)
-        if(!is.null(SELL)){
-          sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-          for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
-            else{
-              if(SwitchedOnCells[iii]==1){
-                map<-addPolygons(map,lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
-            }
-          }
-        }
-        
-        
-        map<-map%>%  
-          addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
-                                 Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted:",round(SelectedArea/1e6,2),"<br>
-                                 Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
-                                   "</p>"), position = "topright")
-        Text1(
-          paste0("Estimated % strategies that meet 4 targets:",
-                 round(dim(SubsetMeetTargets)[1]/5000*100,2),"%\nDisplayed Strategy Nb:",
-                 as.integer(trunc(SavedRVs*LSMT)+1)))
-        
-        
-      }else{Text1("No strategy where the 4 targets are met found")}
-      
+      } else {
+        Text1("No strategy where the 4 targets are met found")
+      }
     }
     
-    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                                   SelectedDropdown = SelectedDropdown,
-                                   map = map)
-    
-    
+    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
     map
   })
-  #############################################
   output$map3 <- renderLeaflet({
     
-    SavedVec<-ClickedVector()
-    SelectedDropdown<-input$inSelect
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main3",shconv)
-    map<-calcBaseMap$map
+    SavedVec <- ClickedVector()
+    SelectedDropdown <- input$inSelect
+    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main3", shconv)
+    map <- calcBaseMap$map
     
-    #  SavedVec<-rep(0,47)
-    
-    ##########################################################
-    if(!is.null(SavedVec)){
+    if (!is.null(SavedVec)) {
       
-      AreaSelected<-AreaSelected0()
-      CarbonSelected<-CarbonSelected0()
-      RedSquirrelSelected<-RedSquirrelSelected0()
-      VisitsSelected<-VisitsSelected0()
+      AreaSelected <- AreaSelected0()
+      CarbonSelected <- CarbonSelected0()
+      RedSquirrelSelected <- RedSquirrelSelected0()
+      VisitsSelected <- VisitsSelected0()
       
-      CarbonSelectedSD<-CarbonSelectedSD0()
-      RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
-      VisitsSelectedSD<-VisitsSelectedSD0()
+      CarbonSelectedSD <- CarbonSelectedSD0()
+      RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      VisitsSelectedSD <- VisitsSelectedSD0()
       
-      if(length(SavedVec)==1){
-        SelectedSimMat<-(as.matrix(simul636[,1:length(SavedVec)]))}else{ SelectedSimMat<-simul636[,1:length(SavedVec)]}
+      tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+      SelectedSimMat2 <- tmp$SelectedSimMat2
+      Icalc <- tmp$Icalc
+      LimitsMat <- tmp$LimitsMat
+      rm(tmp)
       
-      SVMAT<-t(matrix(SavedVec,length(SavedVec),dim(SelectedSimMat)[1]))
-      CarbonMAT<-t(matrix(CarbonSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelMAT<-t(matrix(as.numeric(RedSquirrelSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      AreaMAT<-t(matrix(AreaSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsMAT<-t(matrix(as.numeric(VisitsSelected),length(SavedVec),dim(SelectedSimMat)[1]))
+      # PROBAMAT<-1-pnorm(Icalc$IVEC)
+      PROBAMAT <- Icalc$IVEC
+      for (abc in 1:dim(Icalc$IVEC)[2]) {
+        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      }
       
+      CONDPROBA3PositiveLIST <- list()
+      CONDPROBA3PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA3PositiveLIST[[2]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA3PositiveLIST[[3]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA3PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
       
-      CarbonSDMAT<-t(matrix(CarbonSelectedSD,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelSDMAT<-t(matrix(as.numeric(RedSquirrelSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsSDMAT<-t(matrix(as.numeric(VisitsSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
+      SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[1]], ], NotMet = rep("carbon", sum(CONDPROBA3PositiveLIST[[1]])))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[2]], ], NotMet = rep("redSquirrel", sum(CONDPROBA3PositiveLIST[[2]]))))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[3]], ], NotMet = rep("Area", sum(CONDPROBA3PositiveLIST[[3]]))))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[4]], ], NotMet = rep("NbVisits", sum(CONDPROBA3PositiveLIST[[4]]))))
       
-      
-      SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      #  #######################################
-      SelecTargetCarbon<-input$SliderMain
-      SelecTargetBio<-input$BioSlider
-      SelecTargetArea<-input$AreaSlider*1e6
-      SelecTargetVisits<-input$VisitsSlider
-      
-      
-      
-      SelectedSimMat2<-data.frame(SelectedSimMat,
-                                  carbon=rowSums(SelectedSimMat*CarbonMAT),
-                                  redsquirel=rowMeans(SelectedSimMat*RedSquirrelMAT),
-                                  Area=rowSums(SelectedSimMat*AreaMAT),
-                                  Visits=rowMeans(SelectedSimMat*(VisitsMAT)),
-                                  carbonSD=sqrt(rowSums(SelectedSimMat*(CarbonSDMAT^2))),
-                                  redsquirelSD=sqrt(rowSums(SelectedSimMat*(RedSquirrelSDMAT^2)))/length(SavedVec),
-                                  VisitsSD=sqrt(rowSums(SelectedSimMat*(VisitsSDMAT^2)))/length(SavedVec)
-      ) 
-      
-      Icalc<-MultiImpl(TargetsVec=c(SelecTargetCarbon,SelecTargetBio,SelecTargetArea,SelecTargetVisits),
-                       EYMat=data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits),
-                       SDYMat=data.frame(SelectedSimMat2$carbonSD,SelectedSimMat2$redsquirelSD,rep(0,length(SelectedSimMat2$Area)),SelectedSimMat2$VisitsSD),
-                       alpha=0.05,
-                       tolVec=c(4,2,100,2))
-      
-      
-      
-      
-      LimitsMat<-(-data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits))/
-        sqrt(data.frame(SelectedSimMat2$carbonSD^2+4^2,SelectedSimMat2$redsquirelSD^2+2^2,
-                        rep(0,length(SelectedSimMat2$Area))+100^2,SelectedSimMat2$VisitsSD+2^2))
-      
-      
-      #PROBAMAT<-1-pnorm(Icalc$IVEC)
-      PROBAMAT<-Icalc$IVEC
-      for(abc in 1:dim(Icalc$IVEC)[2]){
-        PROBAMAT[,abc]<-1-ptruncnorm(Icalc$IVEC[,abc],a=LimitsMat[,abc], b=Inf)}
-      
-      CONDPROBA3PositiveLIST<-list()
-      CONDPROBA3PositiveLIST[[1]]<-(PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      CONDPROBA3PositiveLIST[[2]]<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      CONDPROBA3PositiveLIST[[3]]<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      CONDPROBA3PositiveLIST[[4]]<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL)
-      
-      
-      
-      
-      SubsetMeetTargets<-data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[1]],],NotMet=rep("carbon",sum(CONDPROBA3PositiveLIST[[1]])))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[2]],],NotMet=rep("redSquirrel",sum(CONDPROBA3PositiveLIST[[2]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[3]],],NotMet=rep("Area",sum(CONDPROBA3PositiveLIST[[3]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[4]],],NotMet=rep("NbVisits",sum(CONDPROBA3PositiveLIST[[4]]))))
-      
-      
-      
-      
-      
-      if(dim(SubsetMeetTargets)[1]>0){
+      if (dim(SubsetMeetTargets)[1] > 0) {
+        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        SavedRVs <- mapresults$SavedRVs
+        LSMT <- mapresults$LSMT
+        map <- mapresults$map
         
-        SavedRVs<-randomValue()
-        LSMT<-dim(SubsetMeetTargets)[1]
-        SelectedLine<-SubsetMeetTargets[as.integer(trunc(SavedRVs[1]*LSMT)+1),]
+        map <- with(mapresults, map %>%
+                      addControl(html = paste0("<p>Carbon:", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
+                                               Red Squirrel:", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
+                                               Area Planted:", round(SelectedArea/1e6, 2), "<br>
+                                               Visitors:", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                                               "</p>"), position = "topright"))
+        Text2(paste0("Estimated % strategies that meet 3 targets exactly (excl.1, 2 or 4):", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", mapresults$SelectedLine$NotMet))
         
-        SwitchedOnCells<-SelectedLine[1:length(SavedVec)]
-        SelectedTreeCarbon<-SelectedLine$carbon
-        SelectedBio<-SelectedLine$redsquirel
-        SelectedArea<-SelectedLine$Area
-        SelectedVisits<-SelectedLine$Visits
-        
-        SelectedTreeCarbonSD<-SelectedLine$carbonSD
-        SelectedBioSD<-SelectedLine$redsquirelSD
-        SelectedVisitsSD<-SelectedLine$VisitsSD
-        
-        
-        
-        SELL<-(FullTable$extent==SelectedDropdown)
-        if(!is.null(SELL)){
-          sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-          for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
-            else{
-              if(SwitchedOnCells[iii]==1){
-                map<-addPolygons(map,lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
-            }
-          }
-        }
-        
-        
-        map<-map%>%  
-          addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
-                                 Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted:",round(SelectedArea/1e6,2),"<br>
-                                 Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
-                                   "</p>"), position = "topright")
-        Text2(
-          paste0("Estimated % strategies that meet 3 targets exactly (excl.1, 2 or 4):",
-                 round(dim(SubsetMeetTargets)[1]/5000*100,2),"%\nDisplayed Strategy Nb:",
-                 as.integer(trunc(SavedRVs*LSMT)+1),"; Target Not Met:",SelectedLine$NotMet))
-        
-      }else{Text2("No strategy where 3 targets are met found")}
+      } else {
+        Text2("No strategy where 3 targets are met found")
+      }
     }
-    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                                   SelectedDropdown = SelectedDropdown,
-                                   map = map)
+    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
     
     
     map
   })
-  
-  #############################################
   output$map4 <- renderLeaflet({
-    SavedVec<-ClickedVector()
-    SelectedDropdown<-input$inSelect
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main4",shconv)
-    map<-calcBaseMap$map
+    SavedVec <- ClickedVector()
+    SelectedDropdown <- input$inSelect
+    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main4", shconv)
+    map <- calcBaseMap$map
     
-    #  SavedVec<-rep(0,47)
-    
-    ##########################################################
-    if(!is.null(SavedVec)){
+    if (!is.null(SavedVec)) {
       
-      AreaSelected<-AreaSelected0()
-      CarbonSelected<-CarbonSelected0()
-      RedSquirrelSelected<-RedSquirrelSelected0()
-      VisitsSelected<-VisitsSelected0()
+      AreaSelected <- AreaSelected0()
+      CarbonSelected <- CarbonSelected0()
+      RedSquirrelSelected <- RedSquirrelSelected0()
+      VisitsSelected <- VisitsSelected0()
       
-      CarbonSelectedSD<-CarbonSelectedSD0()
-      RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
-      VisitsSelectedSD<-VisitsSelectedSD0()
+      CarbonSelectedSD <- CarbonSelectedSD0()
+      RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      VisitsSelectedSD <- VisitsSelectedSD0()
       
-      if(length(SavedVec)==1){
-        SelectedSimMat<-(as.matrix(simul636[,1:length(SavedVec)]))}else{ SelectedSimMat<-simul636[,1:length(SavedVec)]}
+      tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+      SelectedSimMat2 <- tmp$SelectedSimMat2
+      Icalc <- tmp$Icalc
+      LimitsMat <- tmp$LimitsMat
+      rm(tmp)
       
-      SVMAT<-t(matrix(SavedVec,length(SavedVec),dim(SelectedSimMat)[1]))
-      CarbonMAT<-t(matrix(CarbonSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelMAT<-t(matrix(as.numeric(RedSquirrelSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      AreaMAT<-t(matrix(AreaSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsMAT<-t(matrix(as.numeric(VisitsSelected),length(SavedVec),dim(SelectedSimMat)[1]))
+      # PROBAMAT<-1-pnorm(Icalc$IVEC)
+      PROBAMAT <- Icalc$IVEC
+      for (abc in 1:dim(Icalc$IVEC)[2]) {
+        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      }
       
+      CONDPROBA2PositiveLIST <- list()
+      CONDPROBA2PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA2PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA2PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      CONDPROBA2PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA2PositiveLIST[[5]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      CONDPROBA2PositiveLIST[[6]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
       
-      CarbonSDMAT<-t(matrix(CarbonSelectedSD,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelSDMAT<-t(matrix(as.numeric(RedSquirrelSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsSDMAT<-t(matrix(as.numeric(VisitsSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
+      SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]], ], NotMet = rep("carbon,redSquirred", sum(CONDPROBA2PositiveLIST[[1]])))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]], ], NotMet = rep("carbon,Area", sum(CONDPROBA2PositiveLIST[[2]]))))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[3]], ], NotMet = rep("carbon,NbVisits", sum(CONDPROBA2PositiveLIST[[3]]))))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[4]], ], NotMet = rep("redSquirred,Area", sum(CONDPROBA2PositiveLIST[[4]]))))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[5]], ], NotMet = rep("redSquirred,NbVisits", sum(CONDPROBA2PositiveLIST[[5]]))))
+      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]], ], NotMet = rep("Area,NbVisits", sum(CONDPROBA2PositiveLIST[[6]]))))
       
-      
-      SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      #  #######################################
-      SelecTargetCarbon<-input$SliderMain
-      SelecTargetBio<-input$BioSlider
-      SelecTargetArea<-input$AreaSlider*1e6
-      SelecTargetVisits<-input$VisitsSlider
-      
-      
-      SelectedSimMat2<-data.frame(SelectedSimMat,
-                                  carbon=rowSums(SelectedSimMat*CarbonMAT),
-                                  redsquirel=rowMeans(SelectedSimMat*RedSquirrelMAT),
-                                  Area=rowSums(SelectedSimMat*AreaMAT),
-                                  Visits=rowMeans(SelectedSimMat*(VisitsMAT)),
-                                  carbonSD=sqrt(rowSums(SelectedSimMat*(CarbonSDMAT^2))),
-                                  redsquirelSD=sqrt(rowSums(SelectedSimMat*(RedSquirrelSDMAT^2)))/length(SavedVec),
-                                  VisitsSD=sqrt(rowSums(SelectedSimMat*(VisitsSDMAT^2)))/length(SavedVec)
-      ) 
-      
-      Icalc<-MultiImpl(TargetsVec=c(SelecTargetCarbon,SelecTargetBio,SelecTargetArea,SelecTargetVisits),
-                       EYMat=data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits),
-                       SDYMat=data.frame(SelectedSimMat2$carbonSD,SelectedSimMat2$redsquirelSD,rep(0,length(SelectedSimMat2$Area)),SelectedSimMat2$VisitsSD),
-                       alpha=0.05,
-                       tolVec=c(4,2,100,2))
-      
-      
-      
-      LimitsMat<-(-data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits))/
-        sqrt(data.frame(SelectedSimMat2$carbonSD^2+4^2,SelectedSimMat2$redsquirelSD^2+2^2,
-                        rep(0,length(SelectedSimMat2$Area))+100^2,SelectedSimMat2$VisitsSD+2^2))
-      
-      
-      #PROBAMAT<-1-pnorm(Icalc$IVEC)
-      PROBAMAT<-Icalc$IVEC
-      for(abc in 1:dim(Icalc$IVEC)[2]){
-        PROBAMAT[,abc]<-1-ptruncnorm(Icalc$IVEC[,abc],a=LimitsMat[,abc], b=Inf)}
-      
-      CONDPROBA2PositiveLIST<-list()
-      CONDPROBA2PositiveLIST[[1]]<-(PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      CONDPROBA2PositiveLIST[[2]]<-(PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      CONDPROBA2PositiveLIST[[3]]<-(PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL)
-      CONDPROBA2PositiveLIST[[4]]<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      CONDPROBA2PositiveLIST[[5]]<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL)
-      CONDPROBA2PositiveLIST[[6]]<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL)
-      
-      
-      
-      
-      SubsetMeetTargets<-data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]],],NotMet=rep("carbon,redSquirred",sum(CONDPROBA2PositiveLIST[[1]])))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]],],NotMet=rep("carbon,Area",sum(CONDPROBA2PositiveLIST[[2]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[3]],],NotMet=rep("carbon,NbVisits",sum(CONDPROBA2PositiveLIST[[3]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[4]],],NotMet=rep("redSquirred,Area",sum(CONDPROBA2PositiveLIST[[4]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[5]],],NotMet=rep("redSquirred,NbVisits",sum(CONDPROBA2PositiveLIST[[5]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]],],NotMet=rep("Area,NbVisits",sum(CONDPROBA2PositiveLIST[[6]]))))
-      
-      
-      if(dim(SubsetMeetTargets)[1]>0){
-        SavedRVs<-randomValue()
-        LSMT<-dim(SubsetMeetTargets)[1]
-        SelectedLine<-SubsetMeetTargets[as.integer(trunc(SavedRVs[1]*LSMT)+1),]
+      if (dim(SubsetMeetTargets)[1] > 0) {
+        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        SavedRVs <- mapresults$SavedRVs
+        LSMT <- mapresults$LSMT
+        map <- mapresults$map
         
-        SwitchedOnCells<-SelectedLine[1:length(SavedVec)]
-        SelectedTreeCarbon<-SelectedLine$carbon
-        SelectedBio<-SelectedLine$redsquirel
-        SelectedArea<-SelectedLine$Area
-        SelectedVisits<-SelectedLine$Visits
+        map <- with(mapresults, map %>%
+                      addControl(html = paste0("<p>Carbon:", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
+                                               Red Squirrel:", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
+                                               Area Planted:", round(SelectedArea/1e6, 2), "<br>
+                                               Visitors:", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                                               "</p>"), position = "topright"))
         
-        SelectedTreeCarbonSD<-SelectedLine$carbonSD
-        SelectedBioSD<-SelectedLine$redsquirelSD
-        SelectedVisitsSD<-SelectedLine$VisitsSD
+        Text3(paste0("Estimated % strategies that meet 2 targets exactly (not 4, 3 or 1):", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", mapresults$SelectedLine$NotMet))
         
-        
-        
-        SELL<-(FullTable$extent==SelectedDropdown)
-        if(!is.null(SELL)){
-          sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-          for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
-            else{
-              if(SwitchedOnCells[iii]==1){
-                map<-addPolygons(map,lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
-            }
-          }
-        }
-        
-        
-        map<-map%>%  
-          addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
-                                 Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted:",round(SelectedArea/1e6,2),"<br>
-                                 Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
-                                   "</p>"), position = "topright")
-        
-        
-        Text3(
-          paste0("Estimated % strategies that meet 2 targets exactly (not 4, 3 or 1):",
-                 round(dim(SubsetMeetTargets)[1]/5000*100,2),"%\nDisplayed Strategy Nb:",
-                 as.integer(trunc(SavedRVs*LSMT)+1),"; Targets Not Met:",SelectedLine$NotMet))
-        
-      }else{Text3("No strategy where the 2 targets are met found")}
+      } else {
+        Text3("No strategy where the 2 targets are met found")
+      }
     }
-    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                                   SelectedDropdown = SelectedDropdown,
-                                   map = map)
+    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
     
     map
   })
-  #############################################
   output$map5 <- renderLeaflet({
-    SavedVec<-ClickedVector()
-    SelectedDropdown<-input$inSelect
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main5",shconv)
-    map<-calcBaseMap$map
-    
-    
-    ##########################################################
-    if(!is.null(SavedVec)){
-      
-      AreaSelected<-AreaSelected0()
-      CarbonSelected<-CarbonSelected0()
-      RedSquirrelSelected<-RedSquirrelSelected0()
-      VisitsSelected<-VisitsSelected0()
-      
-      CarbonSelectedSD<-CarbonSelectedSD0()
-      RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
-      VisitsSelectedSD<-VisitsSelectedSD0()
-      
-      if(length(SavedVec)==1){
-        SelectedSimMat<-(as.matrix(simul636[,1:length(SavedVec)]))}else{ SelectedSimMat<-simul636[,1:length(SavedVec)]}
-      
-      SVMAT<-t(matrix(SavedVec,length(SavedVec),dim(SelectedSimMat)[1]))
-      CarbonMAT<-t(matrix(CarbonSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelMAT<-t(matrix(as.numeric(RedSquirrelSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      AreaMAT<-t(matrix(AreaSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsMAT<-t(matrix(as.numeric(VisitsSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      
-      
-      CarbonSDMAT<-t(matrix(CarbonSelectedSD,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelSDMAT<-t(matrix(as.numeric(RedSquirrelSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsSDMAT<-t(matrix(as.numeric(VisitsSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      
-      
-      SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      #  #######################################
-      SelecTargetCarbon<-input$SliderMain
-      SelecTargetBio<-input$BioSlider
-      SelecTargetArea<-input$AreaSlider*1e6
-      SelecTargetVisits<-input$VisitsSlider
-      
-      
-      SelectedSimMat2<-data.frame(SelectedSimMat,
-                                  carbon=rowSums(SelectedSimMat*CarbonMAT),
-                                  redsquirel=rowMeans(SelectedSimMat*RedSquirrelMAT),
-                                  Area=rowSums(SelectedSimMat*AreaMAT),
-                                  Visits=rowMeans(SelectedSimMat*(VisitsMAT)),
-                                  carbonSD=sqrt(rowSums(SelectedSimMat*(CarbonSDMAT^2))),
-                                  redsquirelSD=sqrt(rowSums(SelectedSimMat*(RedSquirrelSDMAT^2)))/length(SavedVec),
-                                  VisitsSD=sqrt(rowSums(SelectedSimMat*(VisitsSDMAT^2)))/length(SavedVec)
-      ) 
-      
-      Icalc<-MultiImpl(TargetsVec=c(SelecTargetCarbon,SelecTargetBio,SelecTargetArea,SelecTargetVisits),
-                       EYMat=data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits),
-                       SDYMat=data.frame(SelectedSimMat2$carbonSD,SelectedSimMat2$redsquirelSD,rep(0,length(SelectedSimMat2$Area)),SelectedSimMat2$VisitsSD),
-                       alpha=0.05,
-                       tolVec=c(4,2,100,2))
-      
-      LimitsMat<-(-data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits))/
-        sqrt(data.frame(SelectedSimMat2$carbonSD^2+4^2,SelectedSimMat2$redsquirelSD^2+2^2,
-                        rep(0,length(SelectedSimMat2$Area))+100^2,SelectedSimMat2$VisitsSD+2^2))
-      
-      
-      #PROBAMAT<-1-pnorm(Icalc$IVEC)
-      PROBAMAT<-Icalc$IVEC
-      for(abc in 1:dim(Icalc$IVEC)[2]){
-        PROBAMAT[,abc]<-1-ptruncnorm(Icalc$IVEC[,abc],a=LimitsMat[,abc], b=Inf)}
-      
-      
-      CONDPROBA1PositiveLIST<-list()
-      CONDPROBA1PositiveLIST[[1]]<-(PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL)
-      CONDPROBA1PositiveLIST[[2]]<-(PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL)
-      CONDPROBA1PositiveLIST[[3]]<-(PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL)
-      CONDPROBA1PositiveLIST[[4]]<-(PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL)
-      
-      
-      
-      
-      SubsetMeetTargets<-data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]],],Met=rep("carbon",sum(CONDPROBA1PositiveLIST[[1]])))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[2]],],Met=rep("redSquirred",sum(CONDPROBA1PositiveLIST[[2]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[3]],],Met=rep("Area",sum(CONDPROBA1PositiveLIST[[3]]))))
-      SubsetMeetTargets<-rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]],],Met=rep("NbVisits",sum(CONDPROBA1PositiveLIST[[4]]))))
-      
-      
-      
-      
-      if(dim(SubsetMeetTargets)[1]>0){
-        
-        SavedRVs<-randomValue()
-        LSMT<-dim(SubsetMeetTargets)[1]
-        SelectedLine<-SubsetMeetTargets[as.integer(trunc(SavedRVs*LSMT)+1),]
-        
-        SwitchedOnCells<-SelectedLine[1:length(SavedVec)]
-        SelectedTreeCarbon<-SelectedLine$carbon
-        SelectedBio<-SelectedLine$redsquirel
-        SelectedArea<-SelectedLine$Area
-        SelectedVisits<-SelectedLine$Visits
-        
-        SelectedTreeCarbonSD<-SelectedLine$carbonSD
-        SelectedBioSD<-SelectedLine$redsquirelSD
-        SelectedVisitsSD<-SelectedLine$VisitsSD
-        
-        
-        
-        SELL<-(FullTable$extent==SelectedDropdown)
-        if(!is.null(SELL)){
-          sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-          for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
-            else{
-              if(SwitchedOnCells[iii]==1){
-                map<-addPolygons(map,lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
-            }
-          }
+    SavedVec <- ClickedVector()
+    SelectedDropdown <- input$inSelect
+    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main5", shconv)
+    map <- calcBaseMap$map
+
+    if (!is.null(SavedVec)) {
+
+        AreaSelected <- AreaSelected0()
+        CarbonSelected <- CarbonSelected0()
+        RedSquirrelSelected <- RedSquirrelSelected0()
+        VisitsSelected <- VisitsSelected0()
+
+        CarbonSelectedSD <- CarbonSelectedSD0()
+        RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+        VisitsSelectedSD <- VisitsSelectedSD0()
+
+        tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+        SelectedSimMat2 <- tmp$SelectedSimMat2
+        Icalc <- tmp$Icalc
+        LimitsMat <- tmp$LimitsMat
+        rm(tmp)
+
+
+        # PROBAMAT<-1-pnorm(Icalc$IVEC)
+        PROBAMAT <- Icalc$IVEC
+        for (abc in 1:dim(Icalc$IVEC)[2]) {
+            PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
         }
-        
-        
-        map<-map%>%  
-          addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
-                                 Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted:",round(SelectedArea/1e6,2),"<br>
-                                 Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
-                                   "</p>"), position = "topright")
-        Text4(
-          paste0("Estimated % strategies that meet 1 target exactly (not 4, 3 or 2):",
-                 round(dim(SubsetMeetTargets)[1]/5000*100,2),"%\nDisplayed Strategy Nb:",
-                 as.integer(trunc(SavedRVs*LSMT)+1),"; Target Met:",SelectedLine$Met))
-        
-      }else{Text4("No strategy where 1 target is met found")}
-      
+
+        CONDPROBA1PositiveLIST <- list()
+        CONDPROBA1PositiveLIST[[1]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+        CONDPROBA1PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+        CONDPROBA1PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+        CONDPROBA1PositiveLIST[[4]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+
+        SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]], ], Met = rep("carbon", sum(CONDPROBA1PositiveLIST[[1]])))
+        SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[2]], ], Met = rep("redSquirred", sum(CONDPROBA1PositiveLIST[[2]]))))
+        SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[3]], ], Met = rep("Area", sum(CONDPROBA1PositiveLIST[[3]]))))
+        SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]], ], Met = rep("NbVisits", sum(CONDPROBA1PositiveLIST[[4]]))))
+
+        if (dim(SubsetMeetTargets)[1] > 0) {
+        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        SavedRVs <- mapresults$SavedRVs
+        LSMT <- mapresults$LSMT
+        map <- mapresults$map
+
+        map <- with(mapresults, map %>%
+                      addControl(html = paste0("<p>Carbon:", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
+                                               Red Squirrel:", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
+                                               Area Planted:", round(SelectedArea/1e6, 2), "<br>
+                                               Visitors:", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                                               "</p>"), position = "topright"))
+            Text4(paste0("Estimated % strategies that meet 1 target exactly (not 4, 3 or 2):", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", mapresults$SelectedLine$Met))
+
+        } else {
+            Text4("No strategy where 1 target is met found")
+        }
+
     }
-    
-    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                                   SelectedDropdown = SelectedDropdown,
-                                   map = map)    
+
+    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
     map
-  })
-  
+})
   
   
 }
 
 shinyApp(ui, server)
-
-

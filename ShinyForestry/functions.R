@@ -146,11 +146,11 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    FullTableNotAvail,
                                    VecNbMet0,
                                    shconv) {
-
+  
   SavedVec <- ClickedVector()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
-
+  
   shinyjs::disable("choose1")
   shinyjs::disable("choose2")
   
@@ -291,4 +291,114 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       }
       
     }  }
+}
+
+outputmap_calculateMats <- function(input,
+                                    SavedVec,
+                                    simul636,
+                                    AreaSelected,
+                                    CarbonSelected,
+                                    RedSquirrelSelected,
+                                    VisitsSelected,
+                                    CarbonSelectedSD,
+                                    RedSquirrelSelectedSD,
+                                    VisitsSelectedSD) {
+  # If only one element in SavedVec, select corresponding column in simul636
+  if (length(SavedVec) == 1) {
+    SelectedSimMat <- as.matrix(simul636[, 1:length(SavedVec)])
+  } else {
+    SelectedSimMat <- simul636[, 1:length(SavedVec)]
+  }
+  
+  SVMAT <- t(matrix(SavedVec, length(SavedVec), dim(SelectedSimMat)[1]))
+  CarbonMAT <- t(matrix(CarbonSelected, length(SavedVec), dim(SelectedSimMat)[1]))
+  RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVec), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  
+  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVec), dim(SelectedSimMat)[1]))
+  RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  
+  # Create a data frame representing the selected similarity matrix
+  SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
+  
+  SelecTargetCarbon <- input$SliderMain
+  SelecTargetBio <- input$BioSlider
+  SelecTargetArea <- input$AreaSlider * 1e+06
+  SelecTargetVisits <- input$VisitsSlider
+  
+  SelectedSimMat2 <- data.frame(SelectedSimMat,
+                                carbon = rowSums(SelectedSimMat * CarbonMAT),
+                                redsquirel = rowMeans(SelectedSimMat * RedSquirrelMAT), Area = rowSums(SelectedSimMat * AreaMAT),
+                                Visits = rowMeans(SelectedSimMat * (VisitsMAT)),
+                                carbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+                                redsquirelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
+                                VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVec))
+  
+  Icalc <- MultiImpl(TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
+                     EYMat = data.frame(SelectedSimMat2$carbon, SelectedSimMat2$redsquirel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+                     SDYMat = data.frame(SelectedSimMat2$carbonSD, SelectedSimMat2$redsquirelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+                     alpha = 0.05, tolVec = c(4, 2, 100, 2))
+  
+  LimitsMat <- (-data.frame(SelectedSimMat2$carbon,
+                            SelectedSimMat2$redsquirel,
+                            SelectedSimMat2$Area,
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$carbonSD^2 + 4^2, SelectedSimMat2$redsquirelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+  
+  
+  return(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat))
+}
+
+
+outputmap_createResults <- function(map,
+                                    SubsetMeetTargets,
+                                    alphaLVL,
+                                    FullTable,
+                                    SavedVec,
+                                    SelectedDropdown,
+                                    randomValue) {
+  SavedRVs <- randomValue()
+  LSMT <- dim(SubsetMeetTargets)[1]
+  SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
+  
+  SwitchedOnCells <- SelectedLine[1:length(SavedVec)]
+  SelectedTreeCarbon <- SelectedLine$carbon
+  SelectedBio <- SelectedLine$redsquirel
+  SelectedArea <- SelectedLine$Area
+  SelectedVisits <- SelectedLine$Visits
+  
+  SelectedTreeCarbonSD <- SelectedLine$carbonSD
+  SelectedBioSD <- SelectedLine$redsquirelSD
+  SelectedVisitsSD <- SelectedLine$VisitsSD
+  
+  SELL <- (FullTable$extent == SelectedDropdown)
+  
+  if (!is.null(SELL)) {
+    sellng <- FullTable[SELL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
+    sellat <- FullTable[SELL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
+    
+    for (iii in 1:length(SwitchedOnCells)) {
+      if (SavedVec[iii] == 1) {
+        map <- addPolygons(map, lng = as.numeric(sellng[iii, ]), lat = as.numeric(sellat[iii, ]), layerId = paste0("Square", iii), color = "red")
+      } else {
+        if (SwitchedOnCells[iii] == 1) {
+          map <- addPolygons(map, lng = as.numeric(sellng[iii, ]), lat = as.numeric(sellat[iii, ]), layerId = paste0("Square", iii))
+        }
+      }
+    }
+  }
+  
+  return(list(map = map,
+              SelectedLine = SelectedLine,
+              SelectedTreeCarbon = SelectedTreeCarbon,
+              SelectedTreeCarbonSD = SelectedTreeCarbonSD,
+              SelectedBio = SelectedBio,
+              SelectedBioSD = SelectedBioSD,
+              SelectedArea = SelectedArea,
+              SelectedVisits = SelectedVisits,
+              SelectedVisitsSD = SelectedVisitsSD,
+              SubsetMeetTargets = SubsetMeetTargets,
+              SavedRVs = SavedRVs,
+              LSMT = LSMT))
 }
