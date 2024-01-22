@@ -29,6 +29,7 @@ library(GGally)
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
 #SelectedDropdown<-"Ennerdale"
 
+
 source("functions.R")
 
 FolderSource<-""
@@ -49,6 +50,8 @@ alphaLVL<-0.9
 
 MaxRounds<-5
 
+ConvertSample<-sample(1:5000,200)
+
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
                                            column(9,
@@ -64,26 +67,26 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                                  sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400)
                                                   )))
                                          )
-                                         ), 
+                                         ),
                                          tabPanel("Exploration",
                                                   fluidPage(fluidRow(
-                                                    column(5,  
+                                                    column(5,
                                                            verticalLayout(verbatimTextOutput("FirstMapTxt"),jqui_resizable(leafletOutput("map2",height = 400,width="100%")))
                                                     ),
                                                     column(5,
-                                                           verticalLayout(verbatimTextOutput("SecondMapTxt"),jqui_resizable(leafletOutput("map3",height = 400,width="100%")))     
+                                                           verticalLayout(verbatimTextOutput("SecondMapTxt"),jqui_resizable(leafletOutput("map3",height = 400,width="100%")))
                                                     ),
                                                     column(2, verticalLayout(verbatimTextOutput("TargetText"),
                                                                              #  selectInput("chooseGrouping", "Grouping Type:",c("carbon level"),"carbon level"),
-                                                                             actionButton("random", "Randomize!"))                
+                                                                             actionButton("random", "Randomize!"))
                                                     )
                                                   ),
                                                   fluidRow(
-                                                    column(5,  
+                                                    column(5,
                                                            verticalLayout(verbatimTextOutput("ThirdMapTxt"),jqui_resizable(leafletOutput("map4",height = 400,width="100%")))
                                                     ),
                                                     column(5,
-                                                           verticalLayout(verbatimTextOutput("FourthMapTxt"),jqui_resizable(leafletOutput("map5",height = 400,width="100%")))      
+                                                           verticalLayout(verbatimTextOutput("FourthMapTxt"),jqui_resizable(leafletOutput("map5",height = 400,width="100%")))
                                                     ),
                                                     column(2,"")
                                                   )
@@ -133,8 +136,12 @@ server <- function(input, output, session) {
   output$ThirdMapTxt<-renderText({Text3()})
   output$FourthMapTxt<-renderText({Text4()})
 
-  randomValue <- eventReactive({input$random
-  input$tabsetPanel == "Exploration"}, {runif(1)})
+  randomValue <- eventReactive({
+    input$random
+    input$tabsetPanel == "Exploration"
+    }, {
+      runif(1)
+    })
   ClickedVector<-reactiveVal(NULL)
   AreaSelected0<-reactiveVal(NULL)
   CarbonSelected0<-reactiveVal(NULL)
@@ -165,7 +172,7 @@ server <- function(input, output, session) {
     
     CarbonSelectedSD0(NULL)
     RedSquirrelSelectedSD0(NULL)
-    VisitsSelectedSD0(NULL)  
+    VisitsSelectedSD0(NULL)
     
     SelectedSquares<-cbind(extent=FullTable[FullTable$extent==SelectedDropdown,c("extent")],FullTable[FullTable$extent==SelectedDropdown,c("lgn.1","lat.1")])
     
@@ -230,47 +237,23 @@ server <- function(input, output, session) {
       RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
       VisitsSelectedSD<-VisitsSelectedSD0()
       
-      if(length(SavedVec)==1){
-        SelectedSimMat<-(as.matrix(simul636[,1:length(SavedVec)]))}else{ SelectedSimMat<-simul636[,1:length(SavedVec)]}
+      tmp <- outputmap_calculateMats(input = input,
+                                     SavedVec = SavedVec,
+                                     simul636 = simul636,
+                                     AreaSelected = AreaSelected,
+                                     CarbonSelected = CarbonSelected,
+                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     VisitsSelected = VisitsSelected,
+                                     CarbonSelectedSD = CarbonSelectedSD,
+                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     input_areaSlider_multiplicative_coefficient = FALSE)
+      SelectedSimMat2 <- tmp$SelectedSimMat2
+      Icalc <- tmp$Icalc
+      LimitsMat <- tmp$LimitsMat
+      rm(tmp)
       
-      SVMAT<-t(matrix(SavedVec,length(SavedVec),dim(SelectedSimMat)[1]))
-      CarbonMAT<-t(matrix(CarbonSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelMAT<-t(matrix(as.numeric(RedSquirrelSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      AreaMAT<-t(matrix(AreaSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsMAT<-t(matrix(as.numeric(VisitsSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      
-      
-      CarbonSDMAT<-t(matrix(CarbonSelectedSD,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelSDMAT<-t(matrix(as.numeric(RedSquirrelSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsSDMAT<-t(matrix(as.numeric(VisitsSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      
-      
-      SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      SelecTargetCarbon<-input$SliderMain
-      SelecTargetBio<-input$BioSlider
-      SelecTargetArea<-input$AreaSlider
-      SelecTargetVisits<-input$VisitsSlider
-      
-      SelectedSimMat2<-data.frame(SelectedSimMat,
-                                  carbon=rowSums(SelectedSimMat*CarbonMAT),
-                                  redsquirel=rowMeans(SelectedSimMat*RedSquirrelMAT),
-                                  Area=rowSums(SelectedSimMat*AreaMAT),
-                                  Visits=rowMeans(SelectedSimMat*(VisitsMAT)),
-                                  carbonSD=sqrt(rowSums(SelectedSimMat*(CarbonSDMAT^2))),
-                                  redsquirelSD=sqrt(rowSums(SelectedSimMat*(RedSquirrelSDMAT^2)))/length(SavedVec),
-                                  VisitsSD=sqrt(rowSums(SelectedSimMat*(VisitsSDMAT^2)))/length(SavedVec)
-      ) 
-      SelectedSimMatGlobal<<-SelectedSimMat2
-      Icalc<-MultiImpl(TargetsVec=c(SelecTargetCarbon,SelecTargetBio,SelecTargetArea,SelecTargetVisits),
-                       EYMat=data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits),
-                       SDYMat=data.frame(SelectedSimMat2$carbonSD,SelectedSimMat2$redsquirelSD,rep(0,length(SelectedSimMat2$Area)),SelectedSimMat2$VisitsSD),
-                       alpha=0.05,
-                       tolVec=c(4,2,100,2))
-      
-      LimitsMat<-(-data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits))/
-        sqrt(data.frame(SelectedSimMat2$carbonSD^2+4^2,SelectedSimMat2$redsquirelSD^2+2^2,
-                        rep(0,length(SelectedSimMat2$Area))+100^2,SelectedSimMat2$VisitsSD+2^2))
-      
+      SelectedSimMatGlobal <<- SelectedSimMat2
       
       PROBAMAT<-Icalc$IVEC
       for(abc in 1:dim(Icalc$IVEC)[2]){
@@ -286,9 +269,8 @@ server <- function(input, output, session) {
       
       datAll=as.matrix(data.frame(carbon=SelectedSimMat2$carbon,
                                   redsquirel=SelectedSimMat2$redsquirel,
-                                  Area=SelectedSimMat2$Area,        
+                                  Area=SelectedSimMat2$Area,
                                   Visits=SelectedSimMat2$Visits))
-      ConvertSample<<-sample(1:5000,200)
       datAll2<-datAll[ConvertSample,]
       
       DatBinaryCode<-paste0(1*(PROBAMAT[,1]>=alphaLVL),1*(PROBAMAT[,2]>=alphaLVL),1*(PROBAMAT[,3]>=alphaLVL),Visits=1*(PROBAMAT[,4]>=alphaLVL))
@@ -303,7 +285,7 @@ server <- function(input, output, session) {
                   ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
                   ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
                   ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|                             
+                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
                   ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))
       )]<-2
       VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
@@ -316,18 +298,15 @@ server <- function(input, output, session) {
       
       VecNbMet0(VecNbMet)
       
-      priors <- c(prefeR::Normal(125,60), 
-                  prefeR::Normal(5,3), 
-                  prefeR::Normal(10,20), 
-                  prefeR::Normal(8,5) 
-      ) 
-      pref <<- prefeR::prefEl(data=datAll2, 
+      priors <- c(prefeR::Normal(125,60),
+                  prefeR::Normal(5,3),
+                  prefeR::Normal(10,20),
+                  prefeR::Normal(8,5)
+      )
+      pref <<- prefeR::prefEl(data=datAll2,
                               priors = priors)
       
-      
       UniqueBinCodes<-unique(DatBinaryCode)
-      
-      
       
       if (dim(AtleastOneDat)[1]>=250)
       {
@@ -345,6 +324,7 @@ server <- function(input, output, session) {
         
         LinesToCompare[1,]<-sample(1:dim(datAll2)[1],2,replace=F)
         CurrentRound(1)
+        
         LinesToCompareReactive(LinesToCompare)
         SelectedLine<-list()
         SelectedLine[[1]]<-SelectedSimMat2[ConvertSample[LinesToCompare[1,1]],]
@@ -374,96 +354,89 @@ server <- function(input, output, session) {
             }
           }
           
-          
-          listMaps[[aai]]<-listMaps[[aai]]%>%  
+          listMaps[[aai]]<-listMaps[[aai]]%>%
             addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
                                  Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
                                  Area Planted:",round(SelectedArea/1e6,2),"<br>
                                  Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
           
-          
-          
-          
         }
         
         shinyjs::enable("choose1")
         shinyjs::enable("choose2")
         
-        
-        
-      }else{
-        
-        listMaps[[1]]<-listMaps[[1]]%>%  
-          addControl(html = paste0("<p> Elicitation Not Possible as there are not enough samples that meet some of the targets 
+      } else {
+        listMaps[[1]]<-listMaps[[1]]%>%
+          addControl(html = paste0("<p> Elicitation Not Possible as there are not enough samples that meet some of the targets
                                               </p>"), position = "topright")
-        listMaps[[2]]<-listMaps[[2]]%>%  
+        listMaps[[2]]<-listMaps[[2]]%>%
           addControl(html = paste0("<p> Elicitation Not Possible as there are not enough samples that meet some of the targets
                                               </p>"), position = "topright")
         shinyjs::disable("choose1")
         shinyjs::disable("choose2")
-        
-        
-        
       }
       
     }
     
-    
-    listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                                   SelectedDropdown = SelectedDropdown,
-                                   listMaps = listMaps)    
+    listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, listMaps = listMaps)
     
     output$ClusterPage<-renderLeaflet({listMaps[[1]]})
-    output$ClusterPage2<-renderLeaflet({listMaps[[2]]})  
+    output$ClusterPage2<-renderLeaflet({listMaps[[2]]})
     
     
   })
 
   observeEvent(input$choose1, {
     observe_event_function(choose = 1, # 1 for input$choose1, 2 for input$choose2
-                           input,
-                           output,
-                           session,
-                           LinesToCompareReactive,
-                           ClickedVector,
-                           AreaSelected0,
-                           CarbonSelected0,
-                           RedSquirrelSelected0,
-                           VisitsSelected0,
-                           CarbonSelectedSD0,
-                           RedSquirrelSelectedSD0,
-                           VisitsSelectedSD0,
-                           DatBinaryCode0,
-                           NbRoundsMax,
-                           CurrentRound,
-                           FullTable,
-                           FullTableNotAvail,
-                           VecNbMet0,
-                           shconv)
+                           input = input,
+                           output = output,
+                           session = session,
+                           ConvertSample = ConvertSample,
+                           LinesToCompareReactive = LinesToCompareReactive,
+                           ClickedVector = ClickedVector,
+                           AreaSelected0 = AreaSelected0,
+                           CarbonSelected0 = CarbonSelected0,
+                           RedSquirrelSelected0 = RedSquirrelSelected0,
+                           VisitsSelected0 = VisitsSelected0,
+                           CarbonSelectedSD0 = CarbonSelectedSD0,
+                           RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
+                           VisitsSelectedSD0 = VisitsSelectedSD0,
+                           DatBinaryCode0 = DatBinaryCode0,
+                           NbRoundsMax = NbRoundsMax,
+                           CurrentRound = CurrentRound,
+                           FullTable = FullTable,
+                           FullTableNotAvail = FullTableNotAvail,
+                           VecNbMet0 = VecNbMet0,
+                           shconv = shconv,
+                           SelectedSimMatGlobal = SelectedSimMatGlobal,
+                           pref = pref)
   })
 
   observeEvent(input$choose2, {
     observe_event_function(choose = 2, # 1 for input$choose1, 2 for input$choose2
-                           input,
-                           output,
-                           session,
-                           LinesToCompareReactive,
-                           ClickedVector,
-                           AreaSelected0,
-                           CarbonSelected0,
-                           RedSquirrelSelected0,
-                           VisitsSelected0,
-                           CarbonSelectedSD0,
-                           RedSquirrelSelectedSD0,
-                           VisitsSelectedSD0,
-                           DatBinaryCode0,
-                           NbRoundsMax,
-                           CurrentRound,
-                           FullTable,
-                           FullTableNotAvail,
-                           VecNbMet0,
-                           shconv)
+                           input = input,
+                           output = output,
+                           session = session,
+                           ConvertSample = ConvertSample,
+                           LinesToCompareReactive = LinesToCompareReactive,
+                           ClickedVector = ClickedVector,
+                           AreaSelected0 = AreaSelected0,
+                           CarbonSelected0 = CarbonSelected0,
+                           RedSquirrelSelected0 = RedSquirrelSelected0,
+                           VisitsSelected0 = VisitsSelected0,
+                           CarbonSelectedSD0 = CarbonSelectedSD0,
+                           RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
+                           VisitsSelectedSD0 = VisitsSelectedSD0,
+                           DatBinaryCode0 = DatBinaryCode0,
+                           NbRoundsMax = NbRoundsMax,
+                           CurrentRound = CurrentRound,
+                           FullTable = FullTable,
+                           FullTableNotAvail = FullTableNotAvail,
+                           VecNbMet0 = VecNbMet0,
+                           shconv = shconv,
+                           SelectedSimMatGlobal = SelectedSimMatGlobal,
+                           pref = pref)
   })
 
   
@@ -472,7 +445,7 @@ server <- function(input, output, session) {
     click <- input$map_shape_click
     if(!is.null(click)){SavedVec<-ClickedVector()
     for(iii in 1:length(SavedVec)){
-      if((click$id == paste0("Square",iii))){SavedVec[iii]<-ifelse(SavedVec[iii]==1,0,1);ClickedVector(SavedVec)}  
+      if((click$id == paste0("Square",iii))){SavedVec[iii]<-ifelse(SavedVec[iii]==1,0,1);ClickedVector(SavedVec)}
     }
     }
     
@@ -497,54 +470,28 @@ server <- function(input, output, session) {
       RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
       VisitsSelectedSD<-VisitsSelectedSD0()
       
-      if(length(SavedVec)==1){
-        SelectedSimMat<-(as.matrix(simul636[,1:length(SavedVec)]))}else{ SelectedSimMat<-simul636[,1:length(SavedVec)]}
-      
-      SVMAT<-t(matrix(SavedVec,length(SavedVec),dim(SelectedSimMat)[1]))
-      CarbonMAT<-t(matrix(CarbonSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelMAT<-t(matrix(as.numeric(RedSquirrelSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      AreaMAT<-t(matrix(AreaSelected,length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsMAT<-t(matrix(as.numeric(VisitsSelected),length(SavedVec),dim(SelectedSimMat)[1]))
-      
-      
-      CarbonSDMAT<-t(matrix(CarbonSelectedSD,length(SavedVec),dim(SelectedSimMat)[1]))
-      RedSquirrelSDMAT<-t(matrix(as.numeric(RedSquirrelSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      VisitsSDMAT<-t(matrix(as.numeric(VisitsSelectedSD),length(SavedVec),dim(SelectedSimMat)[1]))
-      
-      
-      SelectedSimMat<-data.frame(1*(SelectedSimMat|SVMAT))
-      SelecTargetCarbon<-input$SliderMain
-      SelecTargetBio<-input$BioSlider
-      SelecTargetArea<-input$AreaSlider*1e6
-      SelecTargetVisits<-input$VisitsSlider
-      
-      
-      SelectedSimMat2<-data.frame(SelectedSimMat,
-                                  carbon=rowSums(SelectedSimMat*CarbonMAT),
-                                  redsquirel=rowMeans(SelectedSimMat*RedSquirrelMAT),
-                                  Area=rowSums(SelectedSimMat*AreaMAT),
-                                  Visits=rowMeans(SelectedSimMat*(VisitsMAT)),
-                                  carbonSD=sqrt(rowSums(SelectedSimMat*(CarbonSDMAT^2))),
-                                  redsquirelSD=sqrt(rowSums(SelectedSimMat*(RedSquirrelSDMAT^2)))/length(SavedVec),
-                                  VisitsSD=sqrt(rowSums(SelectedSimMat*(VisitsSDMAT^2)))/length(SavedVec)
-      ) 
-      
-      
-      
-      Icalc<-MultiImpl(TargetsVec=c(SelecTargetCarbon,SelecTargetBio,SelecTargetArea,SelecTargetVisits),
-                       EYMat=data.frame(SelectedSimMat2$carbon,SelectedSimMat2$redsquirel,SelectedSimMat2$Area,SelectedSimMat2$Visits),
-                       SDYMat=data.frame(SelectedSimMat2$carbonSD,SelectedSimMat2$redsquirelSD,rep(0,length(SelectedSimMat2$Area)),SelectedSimMat2$VisitsSD),
-                       alpha=0.05,
-                       tolVec=c(4,2,100,2))
-      
-      
-      
+      tmp <- outputmap_calculateMats(input = input,
+                                     SavedVec = SavedVec,
+                                     simul636 = simul636,
+                                     AreaSelected = AreaSelected,
+                                     CarbonSelected = CarbonSelected,
+                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     VisitsSelected = VisitsSelected,
+                                     CarbonSelectedSD = CarbonSelectedSD,
+                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     VisitsSelectedSD = VisitsSelectedSD)
+      SelectedSimMat2 <- tmp$SelectedSimMat2
+      Icalc <- tmp$Icalc
+      SelecTargetCarbon <- tmp$SelecTargetCarbon
+      SelecTargetBio <- tmp$SelecTargetBio
+      SelecTargetArea <- tmp$SelecTargetArea
+      SelecTargetVisits <- tmp$SelecTargetVisits
+      rm(tmp)
       
       SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$carbon>=SelecTargetCarbon)&
                                            (SelectedSimMat2$redsquirel>=SelecTargetBio)&
                                            (SelectedSimMat2$Area>=SelecTargetArea)&
                                            (SelectedSimMat2$Visits>=SelecTargetVisits),]
-      
       
       SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
@@ -560,11 +507,11 @@ server <- function(input, output, session) {
           }
         if(max(SelectedSimMat2$Area)!=min(SelectedSimMat2$Area)){
           DistSliderArea<-(SubsetMeetTargets$Area-SelecTargetArea)/(max(SelectedSimMat2$Area)-min(SelectedSimMat2$Area))}else{
-            DistSliderArea<-(SubsetMeetTargets$Area-SelecTargetArea)/(max(SelectedSimMat2$Area))  
+            DistSliderArea<-(SubsetMeetTargets$Area-SelecTargetArea)/(max(SelectedSimMat2$Area))
           }
         if(max(SelectedSimMat2$Visits)!=min(SelectedSimMat2$Visits)){
           DistSliderVisits<-(SubsetMeetTargets$Visits-SelecTargetVisits)/(max(SelectedSimMat2$Visits)-min(SelectedSimMat2$Visits))}else{
-            DistSliderVisits<-(SubsetMeetTargets$Visits-SelecTargetVisits)/(max(SelectedSimMat2$Visits))  
+            DistSliderVisits<-(SubsetMeetTargets$Visits-SelecTargetVisits)/(max(SelectedSimMat2$Visits))
           }
         
         SelecdMinRows<-which((DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits))
@@ -594,24 +541,19 @@ server <- function(input, output, session) {
                 map<-addPolygons(map,lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
             }
           }
-          map<-map%>%  
+          map<-map%>%
             addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
                                  Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
                                  Area Planted:",round(SelectedArea/1e6,2),"<br>
                                  Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
           
-        }else{ map<-map%>%  
+        }else{ map<-map%>%
           addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
         }
       }
     }
-    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                              SelectedDropdown = SelectedDropdown,
-                              map = map)
-    
-    
-    
+    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
   })
   
@@ -633,7 +575,16 @@ server <- function(input, output, session) {
       RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
       VisitsSelectedSD <- VisitsSelectedSD0()
       
-      tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+      tmp <- outputmap_calculateMats(input = input,
+                                     SavedVec = SavedVec,
+                                     simul636 = simul636,
+                                     AreaSelected = AreaSelected,
+                                     CarbonSelected = CarbonSelected,
+                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     VisitsSelected = VisitsSelected,
+                                     CarbonSelectedSD = CarbonSelectedSD,
+                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -651,7 +602,13 @@ server <- function(input, output, session) {
       SelIMAT <- Icalc$IVEC[CONDPROBA, ]
       
       if (dim(SubsetMeetTargets)[1] > 0) {
-        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        mapresults <- outputmap_createResults(map = map,
+                                              SubsetMeetTargets = SubsetMeetTargets,
+                                              alphaLVL = alphaLVL,
+                                              FullTable = FullTable,
+                                              SavedVec = SavedVec,
+                                              SelectedDropdown = SelectedDropdown,
+                                              randomValue = randomValue)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -669,7 +626,7 @@ server <- function(input, output, session) {
       }
     }
     
-    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
+    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
   })
   output$map3 <- renderLeaflet({
@@ -690,7 +647,16 @@ server <- function(input, output, session) {
       RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
       VisitsSelectedSD <- VisitsSelectedSD0()
       
-      tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+      tmp <- outputmap_calculateMats(input = input,
+                                     SavedVec = SavedVec,
+                                     simul636 = simul636,
+                                     AreaSelected = AreaSelected,
+                                     CarbonSelected = CarbonSelected,
+                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     VisitsSelected = VisitsSelected,
+                                     CarbonSelectedSD = CarbonSelectedSD,
+                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -714,7 +680,13 @@ server <- function(input, output, session) {
       SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[4]], ], NotMet = rep("NbVisits", sum(CONDPROBA3PositiveLIST[[4]]))))
       
       if (dim(SubsetMeetTargets)[1] > 0) {
-        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        mapresults <- outputmap_createResults(map = map,
+                                              SubsetMeetTargets = SubsetMeetTargets,
+                                              alphaLVL = alphaLVL,
+                                              FullTable = FullTable,
+                                              SavedVec = SavedVec,
+                                              SelectedDropdown = SelectedDropdown,
+                                              randomValue = randomValue)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -731,9 +703,7 @@ server <- function(input, output, session) {
         Text2("No strategy where 3 targets are met found")
       }
     }
-    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
-    
-    
+    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
   })
   output$map4 <- renderLeaflet({
@@ -753,7 +723,16 @@ server <- function(input, output, session) {
       RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
       VisitsSelectedSD <- VisitsSelectedSD0()
       
-      tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+      tmp <- outputmap_calculateMats(input = input,
+                                     SavedVec = SavedVec,
+                                     simul636 = simul636,
+                                     AreaSelected = AreaSelected,
+                                     CarbonSelected = CarbonSelected,
+                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     VisitsSelected = VisitsSelected,
+                                     CarbonSelectedSD = CarbonSelectedSD,
+                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -781,7 +760,13 @@ server <- function(input, output, session) {
       SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]], ], NotMet = rep("Area,NbVisits", sum(CONDPROBA2PositiveLIST[[6]]))))
       
       if (dim(SubsetMeetTargets)[1] > 0) {
-        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        mapresults <- outputmap_createResults(map = map,
+                                              SubsetMeetTargets = SubsetMeetTargets,
+                                              alphaLVL = alphaLVL,
+                                              FullTable = FullTable,
+                                              SavedVec = SavedVec,
+                                              SelectedDropdown = SelectedDropdown,
+                                              randomValue = randomValue)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -799,8 +784,7 @@ server <- function(input, output, session) {
         Text3("No strategy where the 2 targets are met found")
       }
     }
-    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
-    
+    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
   })
   output$map5 <- renderLeaflet({
@@ -820,7 +804,16 @@ server <- function(input, output, session) {
         RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
         VisitsSelectedSD <- VisitsSelectedSD0()
 
-        tmp <- outputmap_calculateMats(input, SavedVec, simul636, AreaSelected, CarbonSelected, RedSquirrelSelected, VisitsSelected, CarbonSelectedSD, RedSquirrelSelectedSD, VisitsSelectedSD)
+        tmp <- outputmap_calculateMats(input = input,
+                                       SavedVec = SavedVec,
+                                       simul636 = simul636,
+                                       AreaSelected = AreaSelected,
+                                       CarbonSelected = CarbonSelected,
+                                       RedSquirrelSelected = RedSquirrelSelected,
+                                       VisitsSelected = VisitsSelected,
+                                       CarbonSelectedSD = CarbonSelectedSD,
+                                       RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                       VisitsSelectedSD = VisitsSelectedSD)
         SelectedSimMat2 <- tmp$SelectedSimMat2
         Icalc <- tmp$Icalc
         LimitsMat <- tmp$LimitsMat
@@ -845,7 +838,13 @@ server <- function(input, output, session) {
         SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]], ], Met = rep("NbVisits", sum(CONDPROBA1PositiveLIST[[4]]))))
 
         if (dim(SubsetMeetTargets)[1] > 0) {
-        mapresults <- outputmap_createResults(map, SubsetMeetTargets, alphaLVL, FullTable, SavedVec, SelectedDropdown, randomValue)
+        mapresults <- outputmap_createResults(map = map,
+                                              SubsetMeetTargets = SubsetMeetTargets,
+                                              alphaLVL = alphaLVL,
+                                              FullTable = FullTable,
+                                              SavedVec = SavedVec,
+                                              SelectedDropdown = SelectedDropdown,
+                                              randomValue = randomValue)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -863,8 +862,7 @@ server <- function(input, output, session) {
         }
 
     }
-
-    map <- map_sell_not_avail(FullTableNotAvail, SelectedDropdown, map = map)
+    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
 })
   

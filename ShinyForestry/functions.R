@@ -130,6 +130,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    input,
                                    output,
                                    session,
+                                   ConvertSample,
                                    LinesToCompareReactive,
                                    ClickedVector,
                                    AreaSelected0,
@@ -145,19 +146,19 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    FullTable,
                                    FullTableNotAvail,
                                    VecNbMet0,
-                                   shconv) {
-  
+                                   shconv,
+                                   SelectedSimMatGlobal,
+                                   pref) {
   SavedVec <- ClickedVector()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
-  
+
   shinyjs::disable("choose1")
   shinyjs::disable("choose2")
   
-  ###########################################################
   if((!is.null(SavedVec))&(CurrentRound()>0)){
     calcBaseMap <- BaseMap(SelectedDropdown,layerId="main100",shconv=shconv)
-    
+
     SelectedSimMat2 <- SelectedSimMatGlobal
     if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
     {
@@ -167,28 +168,21 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       } else if (choose == 2) {
         pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
       }
-      
       if(CR<dim(LinesToCompare)[1]){
         LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
       }
-      
       LinesToCompareReactive(LinesToCompare)
       
       CR <- CR+1
       CurrentRound(CR)
-      
+
       listMaps <- list()
       listMaps[[1]] <- calcBaseMap$map
       listMaps[[2]] <- calcBaseMap$map
       
-      
-      
-      
-      
       SelectedLine <- list()
       SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
       SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
-      
       for(aai in 1:2){
         SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
         SelectedTreeCarbon <- SelectedLine[[aai]]$carbon
@@ -199,7 +193,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
         SelectedTreeCarbonSD <- SelectedLine[[aai]]$carbonSD
         SelectedBioSD <- SelectedLine[[aai]]$redsquirelSD
         SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
-        
+
         SELL <- (FullTable$extent==SelectedDropdown)
         if(!is.null(SELL)){
           sellng <- FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
@@ -212,7 +206,6 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
             }
           }
         }
-        
         
         listMaps[[aai]] <- listMaps[[aai]]%>%  
           addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
@@ -239,22 +232,16 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       shinyjs::disable("choose2")
       infpref <<- pref$infer()
       
-      
-      
       infpref[is.na(infpref)] <- 1e-5
       infpref[infpref<0] <- 1e-5
       
-      ###########
       SelectedSimMat2 <- SelectedSimMatGlobal
       VecNbMet <- VecNbMet0()
-      
       
       ClusteringDat <- data.frame(sqrt(infpref)*SelectedSimMat2[,c("carbon","redsquirel","Area","Visits")],NbTargetsMet=VecNbMet)
       ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
       ClusteringDat <- unique(ClusteringDat)
-      set.seed(123)  
-      
-      
+      set.seed(123)
       
       FailedTsne <- TRUE
       PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
@@ -269,7 +256,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       
       if(FailedTsne){
         
-        pp<<- ggplot() +theme_void() +
+        pp <- ggplot() +theme_void() +
           annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
                    size = 10, color = "black", hjust = 0.5, vjust = 0.5)
         output$plotOP1 <- renderPlot({pp})
@@ -302,7 +289,8 @@ outputmap_calculateMats <- function(input,
                                     VisitsSelected,
                                     CarbonSelectedSD,
                                     RedSquirrelSelectedSD,
-                                    VisitsSelectedSD) {
+                                    VisitsSelectedSD,
+                                    input_areaSlider_multiplicative_coefficient = TRUE) {
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVec) == 1) {
     SelectedSimMat <- as.matrix(simul636[, 1:length(SavedVec)])
@@ -325,12 +313,13 @@ outputmap_calculateMats <- function(input,
   
   SelecTargetCarbon <- input$SliderMain
   SelecTargetBio <- input$BioSlider
-  SelecTargetArea <- input$AreaSlider * 1e+06
+  SelecTargetArea <- ifelse(input_areaSlider_multiplicative_coefficient == TRUE, input$AreaSlider * 1e6, input$AreaSlider)
   SelecTargetVisits <- input$VisitsSlider
   
   SelectedSimMat2 <- data.frame(SelectedSimMat,
                                 carbon = rowSums(SelectedSimMat * CarbonMAT),
-                                redsquirel = rowMeans(SelectedSimMat * RedSquirrelMAT), Area = rowSums(SelectedSimMat * AreaMAT),
+                                redsquirel = rowMeans(SelectedSimMat * RedSquirrelMAT),
+                                Area = rowSums(SelectedSimMat * AreaMAT),
                                 Visits = rowMeans(SelectedSimMat * (VisitsMAT)),
                                 carbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
                                 redsquirelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
@@ -346,10 +335,9 @@ outputmap_calculateMats <- function(input,
                             SelectedSimMat2$Area,
                             SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$carbonSD^2 + 4^2, SelectedSimMat2$redsquirelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
   
-  
-  return(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat))
+  return(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
+              SelecTargetBio = SelecTargetBio, SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits))
 }
-
 
 outputmap_createResults <- function(map,
                                     SubsetMeetTargets,
