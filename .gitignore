@@ -2,3 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+baseline_species_prob_20.csv
+baseline_species_prob_30.csv
+baseline_species_prob_40.csv
+baseline_species_prob_50.csv
+climate_cells.csv
+scenario_species_prob_20.csv
+scenario_species_prob_30.csv
+scenario_species_prob_40.csv
+scenario_species_prob_50.csv
