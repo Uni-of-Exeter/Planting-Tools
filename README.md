@@ -1,10 +1,15 @@
-# Planting-Tools: TODO
-# 1- Area Target should be changed to below instead of above. Then in the display, we should find a way to represent the direction of the target. We should also change the code related to the implausibility
-# 2- reduce code size by created functions. Some of the code is repeated. some parts could be included in functions that are then called.
-# 3- at the moment, the 4 variables are hard coded. The code could be restructured to allow any number of variables/targets that could be above/below (or between, maybe?)
-# 4- how do we obtain the perplexity for the tsne based on the number of points:
-https://arxiv.org/pdf/2308.15513.pdf
-https://link.springer.com/article/10.1007/s41060-022-00348-7
-https://math.montana.edu/grad_students/writing-projects/2019/Anacker2019.pdf
-https://arxiv.org/pdf/1708.03229.pdf
-# 5- improve the tsne + clustering/visualization
+# Planting-Tools project
+
+## Instructions for contributors
+- Never try to push to the `master` branch, only to your own branch. If you try anyway, the admin (Daniel, and Timothée for now) will deny it.
+- Currently, you can only make a Pull Request to your own branch, this restriction may be lifted in the future.
+- Once you are happy with your branch and want to share your changes with everybody, make a Pull Request to the `dev` branch. Daniel (or Timothée for now) will process it.
+- Once in a while, when `dev` is stable enough, `master` will be updated.
+- When working, you need to pull changes from `dev` fairly often (especially before pushing to `dev`), because you may have conflicts when you try to push to `dev` if e.g. someone else worked on the same file as you did. Dealing with file conflicts late can cost you a decent amount of time.
+- Add some details in the commits and Pull Requests, this is very useful for everyone to understand what you did. This will also let you search more easily in the future.
+
+## Running the app
+1. (Optional but convenient) Open `Planting-Tools.Rproj` with RStudio
+2. Go in the folder `ShinyForestry`
+3. Execute the file named `NewShiny_v0.37b-gitlab.r`
+4. Wait a few seconds / a minute for the new window to popup, and enjoy!
