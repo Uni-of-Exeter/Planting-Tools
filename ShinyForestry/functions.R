@@ -118,11 +118,11 @@ map_sell_not_avail <- function(FullTableNotAvail,
                                      weight = 5)
       }
     }
-    if (is.null(map) && !is.null(listMaps)) {
-      return(listMaps)
-    } else if (!is.null(map) && is.null(listMaps)) {
-      return(map)
-    }
+  }
+  if (is.null(map) && !is.null(listMaps)) {
+    return(listMaps)
+  } else if (!is.null(map) && is.null(listMaps)) {
+    return(map)
   }
 }
 
@@ -152,13 +152,13 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
   SavedVec <- ClickedVector()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
-
+  
   shinyjs::disable("choose1")
   shinyjs::disable("choose2")
   
   if((!is.null(SavedVec))&(CurrentRound()>0)){
     calcBaseMap <- BaseMap(SelectedDropdown,layerId="main100",shconv=shconv)
-
+    
     SelectedSimMat2 <- SelectedSimMatGlobal
     if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
     {
@@ -175,7 +175,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       
       CR <- CR+1
       CurrentRound(CR)
-
+      
       listMaps <- list()
       listMaps[[1]] <- calcBaseMap$map
       listMaps[[2]] <- calcBaseMap$map
@@ -193,7 +193,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
         SelectedTreeCarbonSD <- SelectedLine[[aai]]$carbonSD
         SelectedBioSD <- SelectedLine[[aai]]$redsquirelSD
         SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
-
+        
         SELL <- (FullTable$extent==SelectedDropdown)
         if(!is.null(SELL)){
           sellng <- FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
