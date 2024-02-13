@@ -24,29 +24,52 @@ library(shinyWidgets)
 library(truncnorm)
 loadNamespace("prefeR")
 library(GGally)
+library(colorspace)
+library(rjson)
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
 #SelectedDropdown<-"Ennerdale"
+############################################
 
 
 source("functions.R")
 
-FolderSource<-""
-# Sys.setenv(PROJ_LIB="/usr/share/proj")
-# Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
-# load all shapes
-# PROJdir<-system.file("proj/proj.db", package = "sf")
-# PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-# sf_proj_search_paths(PROJdir)
-shfile<-sf::st_read(paste0(FolderSource,"_exp0308154002.gdb.zip"),layer = "INV_BLKDATA")
-shconv <- st_transform(shfile, crs = 4326)
-FullTable<-data.frame(read.csv(paste0(FolderSource,"FullTableResult.csv"))[,-1])
-FullTableNotAvail<-data.frame(read.csv(paste0(FolderSource,"FullTableNotAvail.csv"))[,-1])
+
+
+############################################
+
+shconv<-sf::st_read("BristolParcels.geojson")
+FullTable<-st_read("BristolFullTable.geojson")
+FullTableNotAvail<-sf::st_read("BristolFullTableNotAvail.geojson")
+
+#shconv<-sf::st_read("ForestryParcels.geojson")
+#FullTable<-st_read("ForestryFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("ForestryFullTableNotAvail.geojson")
+
+
+
+###############
+
+
+
 STDMEAN<-0.05
 STDSTD<-0.01
-simul636<-read.csv(file=paste0(FolderSource,"Simul636.csv"))[,-1]
+
+NSamp<-5000
+simul636<-matrix(0,NSamp,dim(FullTable)[1])
+for (aaa in 1:NSamp)
+{
+  Uniqunits<-unique(FullTable$units)
+  pp<-runif(1)
+  RandSamp<-rmultinom(length(Uniqunits),1,c(pp,1-pp))[1,]
+  for(bbb in 1:length(Uniqunits)){
+    simul636[aaa,FullTable$units==Uniqunits[bbb]]<-RandSamp[bbb]  
+    }
+}
+
+
 
 alphaLVL<-0.9
 
@@ -54,11 +77,17 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
+
+
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
                                            column(9,
                                                   #  tags$head(tags$style(HTML("#map {pointer-events: none;}"))),
-                                                  selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),"Ennerdale"),
+                                                  #tags$style("#inSelect {color: white; background-color: transparent; border: white;}"),
+                                                  selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),FullTable$extent[1]),
+                                                  fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light","rainbow dark/red","Terrain darkened/lightened"))),
+                                                  column(4,sliderInput("Darken","Darkening Factor:",min=0,max=100,value=70)),
+                                                  column(4,sliderInput("Lighten","Lightening Factor:",min=0,max=100,value=50))),
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
                                            ),
                                            column(3,
@@ -124,7 +153,15 @@ server <- function(input, output, session) {
   Text3<-reactiveVal("")
   Text4<-reactiveVal("")
   
+  ColorLighteningFactor<-reactiveVal(0.5)
+  ColorDarkeningFactor<-reactiveVal(0.7)
   
+  observeEvent(input$Darken,{
+    ColorDarkeningFactor(input$Darken/100)
+  })
+  observeEvent(input$Lighten,{
+    ColorLighteningFactor(input$Lighten/100)
+  })
   
   output$TargetText<-renderText({paste0("Targets:\n", "Tree Carbon: ",as.numeric(CarbonSliderVal()),
                                         "\nRed Squirrel: ",as.numeric(bioSliderVal()),
@@ -163,6 +200,20 @@ server <- function(input, output, session) {
   output$Trigger<-reactiveVal(TRUE)
   #inputOptions(intput, 'Trigger', suspendWhenHidden = FALSE)
   
+  observe({
+    Uni<-unique(FullTable$extent)
+    if(length(Uni)>1){  shinyjs::show("inSelect")}else{
+      
+      if (    unique(FullTable$extent)[1]=="NoExtent") {
+        shinyjs::hide("inSelect")
+      } else {
+        shinyjs::show("inSelect")
+      }
+    }
+   
+  })
+  
+  
   
   observeEvent(input$inSelect,{
     SelectedDropdown<-input$inSelect
@@ -176,18 +227,20 @@ server <- function(input, output, session) {
     RedSquirrelSelectedSD0(NULL)
     VisitsSelectedSD0(NULL)
     
-    SelectedSquares<-cbind(extent=FullTable[FullTable$extent==SelectedDropdown,c("extent")],FullTable[FullTable$extent==SelectedDropdown,c("lgn.1","lat.1")])
+    SelectedSquares<-cbind(extent=FullTable$extent[FullTable$extent==SelectedDropdown])#,FullTable$lgn.1[FullTable$extent==SelectedDropdown],
+                        #   FullTable$lat.1[FullTable$extent==SelectedDropdown])
     
     if(!(dim(SelectedSquares)[1]==0)){
-      AreaSelected<-FullTable[FullTable$extent==SelectedDropdown,c("area")]
-      CarbonSelected<-(FullTable[FullTable$extent==SelectedDropdown,c("JulesMean")]*AreaSelected)/1e6
-      RedSquirrelSelected<-FullTable[FullTable$extent==SelectedDropdown,c("BioMean_Sciurus_vulgaris")]
-      VisitsSelected<-FullTable[FullTable$extent==SelectedDropdown,c("VisitsMean")]
+      AreaSelected<-FullTable$area[FullTable$extent==SelectedDropdown]
+      CarbonSelected<-(FullTable$JulesMean[FullTable$extent==SelectedDropdown]*AreaSelected)/1e6
+      RedSquirrelSelected<-FullTable$BioMean_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
+      VisitsSelected<-FullTable$VisitsMean[FullTable$extent==SelectedDropdown]
       
       
-      CarbonSelectedSD<-(FullTable[FullTable$extent==SelectedDropdown,c("JulesSD")]*AreaSelected)/1e6
-      RedSquirrelSelectedSD<-FullTable[FullTable$extent==SelectedDropdown,c("BioSD_Sciurus_vulgaris")]
-      VisitsSelectedSD<-FullTable[FullTable$extent==SelectedDropdown,c("VisitsSD")]
+      CarbonSelectedSD<-(FullTable$JulesSD[FullTable$extent==SelectedDropdown]*AreaSelected)/1e6
+      RedSquirrelSelectedSD<-FullTable$BioSD_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
+      VisitsSelectedSD<-FullTable$VisitsSD[FullTable$extent==SelectedDropdown]
+      
       
       
       
@@ -211,7 +264,28 @@ server <- function(input, output, session) {
     
     
   })
+  ################ disable elements when 
+#  ChangeSliders<-reactiveVal(FALSE)
+#  observeEvent({input$SliderMain
+#                input$BioSlider
+#               input$AreaSlider
+#               input$VisitsSlider},
+#               {
+                # hideTab("tabs","Clustering")
+               # cat("aaa")
+ #              })
+  #observeEvent({ChangeSliders()==FALSE},
+  #  {shinyjs::enable(id="tabs")
+  #    
+  #  })
   
+  
+  #if (input$tabsetPanel == "Tab 1") {
+   # leafletProxy("map1") %>% clearMarkers()  # You can update the map here
+  #}
+  
+  
+  #################
   observeEvent(input$tabs == "Clustering",{
     
     SavedVec<-ClickedVector()
@@ -345,13 +419,34 @@ server <- function(input, output, session) {
           
           SELL<-(FullTable$extent==SelectedDropdown)
           if(!is.null(SELL)){
-            sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-            sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
+            SELGEO<-FullTable$geometry[SELL]
+            ############
+            
+            
+            ColObtained<-getCols(ColourScheme=input$ColourScheme,UnitsVec=FullTable$units[SELL],
+                              ColorLighteningFactor(),ColorDarkeningFactor())
+            #UnitsSel<-unique(FullTable$units[SELL])
+            
+            #'Cols<-rainbow(length(UnitsSel))
+            #FullColVec<-rep(0,dim(FullTable[SELL,])[1])
+            #for (iii in 1:length(Cols)){
+            #  FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
+            #}
+            #ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
+            #FullColVec<-darken(FullColVec,ColorDarkeningFactor)
+            #ClickedCols<-rep("red",length(ClickedCols))
+            
+            FullColVec<-ColObtained$FullColVec
+            ClickedCols<-ColObtained$ClickedCols
+            ############  
+            
+            #  sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
+          #  sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
             for (iii in 1:length(SwitchedOnCells)){
-              if(SavedVec[iii]==1){listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
+              if(SavedVec[iii]==1){listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color =ClickedCols[iii])}
               else{
                 if(SwitchedOnCells[iii]==1){
-                  listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
+                  listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color=FullColVec[iii])}
               }
             }
           }
@@ -412,7 +507,9 @@ server <- function(input, output, session) {
                            VecNbMet0 = VecNbMet0,
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
-                           pref = pref)
+                           pref = pref,
+                           ColorLighteningFactor=ColorLighteningFactor(),
+                           ColorDarkeningFactor=ColorDarkeningFactor())
   })
   
   observeEvent(input$choose2, {
@@ -438,16 +535,26 @@ server <- function(input, output, session) {
                            VecNbMet0 = VecNbMet0,
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
-                           pref = pref)
+                           pref = pref,
+                           ColorLighteningFactor=ColorLighteningFactor(),
+                           ColorDarkeningFactor=ColorDarkeningFactor())
   })
   
-  
+  ################## TO CHANGE
   
   observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
+    SelectedDropdown <- input$inSelect
+    SelectedRowsUnits<-FullTable$units[FullTable$extent==SelectedDropdown]
+    
     if(!is.null(click)){SavedVec<-ClickedVector()
     for(iii in 1:length(SavedVec)){
-      if((click$id == paste0("Square",iii))){SavedVec[iii]<-ifelse(SavedVec[iii]==1,0,1);ClickedVector(SavedVec)}
+      if((click$id == paste0("Square",iii))){
+        
+
+        SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
+        
+        ClickedVector(SavedVec)}
     }
     }
     
@@ -455,6 +562,7 @@ server <- function(input, output, session) {
   
   
   output$map <- renderLeaflet({
+  #  shinyjs::hide("tabs")
     
     SavedVec<-ClickedVector()
     SelectedDropdown<-input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
@@ -533,14 +641,32 @@ server <- function(input, output, session) {
           SelectedVisitsSD<-SelectedMins[SelecRow,]$VisitsSD
           
           
+          SELGEO<-FullTable$geometry[SELL]
+          ############
+          #UnitsSel<-unique(FullTable$units[SELL])
+          #Cols<-rainbow(length(UnitsSel))
+          #FullColVec<-rep(0,dim(FullTable[SELL,])[1])
+          #for (iii in 1:length(Cols)){
+          #  FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
+          #}
+          #ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
+          #FullColVec<-darken(FullColVec,ColorDarkeningFactor)
+          #ClickedCols<-rep("red",length(ClickedCols))
+          ColObtained<-getCols(ColourScheme=input$ColourScheme,UnitsVec=FullTable$units[SELL],
+                               ColorLighteningFactor(),ColorDarkeningFactor())
           
-          sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
+          FullColVec<-ColObtained$FullColVec
+          ClickedCols<-ColObtained$ClickedCols
+          
+          ############  
+          
+          #sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
+          #sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
           for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
+            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii])}
             else{
               if(SwitchedOnCells[iii]==1){
-                map<-addPolygons(map,lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
+                map<-addPolygons(map,lng=as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])}
             }
           }
           map<-map%>%
@@ -556,7 +682,13 @@ server <- function(input, output, session) {
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
+    #showTab("tabs","Clustering")
+   # cat("bbb3")
+  #  cat("\n")
     map
+   # ChangeSliders(FALSE)
+    # shinyjs::show("tabs")
+    
   })
   
   output$map2 <- renderLeaflet({
@@ -610,7 +742,9 @@ server <- function(input, output, session) {
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue)
+                                              randomValue = randomValue,
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -689,7 +823,9 @@ server <- function(input, output, session) {
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue)
+                                              randomValue = randomValue,
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -770,7 +906,9 @@ server <- function(input, output, session) {
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue)
+                                              randomValue = randomValue,
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -848,7 +986,9 @@ server <- function(input, output, session) {
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue)
+                                              randomValue = randomValue,
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
