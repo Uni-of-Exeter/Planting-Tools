@@ -31,23 +31,92 @@ library(rjson)
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
 #SelectedDropdown<-"Ennerdale"
 ############################################
-
-
 source("functions.R")
 
+ElicitatorAppFolder<-"c://INDICATEFOLDERNAME//"
+########################## Pre-processing
+DIRR<-list.files(ElicitatorAppFolder,full.names = TRUE)
+CTIMES<-file.info(DIRR)$ctime
+LatestFileNames<-c(LandPFileName="",UnitsFileName="",OutcomesFileName="")
+LatestFileNames[1]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land"))])]
+LatestFileNames[2]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"deci"))])]
+LatestFileNames[3]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"outc"))])]
+LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$ctime)
+
+LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
+#write.csv(LatestFilesInfo,"d://ElicitatorOutput//LastestFilesInfo.csv")
+PrevFilesInfo<-read.csv("d://ElicitatorOutput//LastestFilesInfo.csv")
+if(sum(PrevFilesInfo$ctime!=LatestFilesInfo$ctime)>0){
+if(file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){file.remove(paste0(ElicitatorAppFolder,"Parcels.geojson"))}
+if(file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))}
+if(file.exists(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))}  
+UnZipDirName<-substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFilesInfo$LatestFileNames[1])-4)
+if(dir.exists(UnZipDirName)){unlink(UnZipDirName, recursive = T)}
+dir.create(UnZipDirName)
+unzip(LatestFilesInfo$LatestFileNames[1], exdir = UnZipDirName)
+##################
+shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
+if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
+st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
+##################
+#FullTab<-data.frame(extent=shconv$extent,ids=shconv$gid,x=rep(0,lsh),y=rep(0,lsh),area=rep(1e6,lsh),JulesMean=rep(15,lsh),
+#                    JulesSD=rep(1,lsh),VisitsMean=rep(30,lsh),VisitsSD=rep(2,lsh),BioMean_Sciurus_vulgaris=rep(0.5,lsh),BioSD_Sciurus_vulgaris=rep(0.02,lsh))
+#FullTab$units<- rjson::fromJSON(file=LatestFilesInfo$LatestFileNames[2])$decision_unit_ids
+#FullTable <- st_sf(FullTab,geometry=shconv$geometry,crs=4326)
+###################
+sf_use_s2(FALSE)
+lsh<-dim(shconv)[1]
+AllUnits<- rjson::fromJSON(file=LatestFilesInfo$LatestFileNames[2])$decision_unit_ids
+Uni<-unique(AllUnits)
+FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1e6,length(Uni)),
+                          JulesMean=rep(15,length(Uni)),
+                          JulesSD=rep(1,length(Uni)),VisitsMean=rep(30,length(Uni)),
+                          VisitsSD=rep(2,length(Uni)),BioMean_Sciurus_vulgaris=rep(0.5,length(Uni)),
+                          BioSD_Sciurus_vulgaris=rep(0.02,length(Uni)),units=Uni)
 
 
+MER<-list()
+for(ii in 1:length(Uni))
+{
+  SELLL<-shconv$geometry[AllUnits==Uni[ii]]
+  MER[[ii]]<-st_union(SELLL[1],SELLL[2])
+  if(length(SELLL)>2){
+    for (jj in 1:length(SELLL)){
+      MER[[ii]]<-st_union(MER[[ii]],SELLL[jj])
+    }
+  }
+  
+  
+}
+FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
+st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
 
-############################################
 
-shconv<-sf::st_read("BristolParcels.geojson")
-FullTable<-st_read("BristolFullTable.geojson")
-FullTableNotAvail<-sf::st_read("BristolFullTableNotAvail.geojson")
+##################
+FullTableNotAvail<-data.frame(extent=NULL)
+st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
 
+
+   write.csv(LatestFilesInfo,paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
+}else{
+
+  shconv<-sf::st_read(paste0(ElicitatorAppFolder,"Parcels.geojson"))
+  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+  FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
+
+}
+
+
+#shconv<-sf::st_read("BristolParcels.geojson")
+#FullTable<-st_read("BristolFullTableMerged.geojson")
+#FullTableNotAvail<-sf::st_read("BristolFullTableNotAvail.geojson")
 #shconv<-sf::st_read("ForestryParcels.geojson")
 #FullTable<-st_read("ForestryFullTable.geojson")
 #FullTableNotAvail<-sf::st_read("ForestryFullTableNotAvail.geojson")
 
+#shconv<-sf::st_read("PoundsgateParcels.geojson")
+#FullTable<-st_read("PoundsgateFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("PoundsgateFullTableNotAvail.geojson")
 
 
 ###############
@@ -86,8 +155,8 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   #tags$style("#inSelect {color: white; background-color: transparent; border: white;}"),
                                                   selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),FullTable$extent[1]),
                                                   fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light","rainbow dark/red","Terrain darkened/lightened"))),
-                                                  column(4,sliderInput("Darken","Darkening Factor:",min=0,max=100,value=70)),
-                                                  column(4,sliderInput("Lighten","Lightening Factor:",min=0,max=100,value=50))),
+                                                  column(4,sliderInput("Darken","Darkening Factor:",min=-100,max=100,value=70)),
+                                                  column(4,sliderInput("Lighten","Lightening Factor:",min=-100,max=100,value=50))),
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
                                            ),
                                            column(3,
@@ -443,10 +512,34 @@ server <- function(input, output, session) {
             #  sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
           #  sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
             for (iii in 1:length(SwitchedOnCells)){
-              if(SavedVec[iii]==1){listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color =ClickedCols[iii])}
+              if(SavedVec[iii]==1){
+              
+                if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+                  
+                listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color =ClickedCols[iii])
+                }else{
+                  for(kk in 1:length(SELGEO[[iii]])) {
+                    listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[kk]][[1]][,2]) ,layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii])
+                    
+                  }
+                
+                  }
+                
+                }
               else{
                 if(SwitchedOnCells[iii]==1){
-                  listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color=FullColVec[iii])}
+                  if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+                  
+                    listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color=FullColVec[iii])
+                  }else{
+                    for(kk in 1:length(SELGEO[[iii]])) {
+                      listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=as.numeric(SELGEO[[iii]][[kk]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[kk]][[1]][,2]) ,layerId =paste0("Square",iii,"_",kk),color=FullColVec[iii])
+                      
+                    }
+                    
+                  }
+                  
+                  }
               }
             }
           }
@@ -547,17 +640,38 @@ server <- function(input, output, session) {
     SelectedDropdown <- input$inSelect
     SelectedRowsUnits<-FullTable$units[FullTable$extent==SelectedDropdown]
     
-    if(!is.null(click)){SavedVec<-ClickedVector()
-    for(iii in 1:length(SavedVec)){
-      if((click$id == paste0("Square",iii))){
-        
-
-        SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
-        
-        ClickedVector(SavedVec)}
-    }
-    }
     
+    GEOVEC<-st_geometry_type(FullTable$geometry)
+    
+    if(!is.null(click)){
+      ChangeDone<-FALSE
+      SavedVec<-ClickedVector()
+        iii<-1
+    
+        while((!ChangeDone)&&(iii<=length(SavedVec))){
+            kk<-1
+            while((!ChangeDone)&&(kk<=length(FullTable$geometry[[iii]]))){
+                if(st_geometry_type(FullTable$geometry)[iii]=="POLYGON"){
+                            if((click$id == paste0("Square",iii))){
+                              SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
+                              ClickedVector(SavedVec)
+                              ChangeDone<-TRUE
+                              }}else{
+                          if((click$id == paste0("Square",iii,"_",kk))){
+                            SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
+                            ClickedVector(SavedVec)
+                            ChangeDone<-TRUE
+                            
+                            }
+            
+                      }
+      
+          
+              kk<-kk+1
+            }
+            iii<-iii+1
+    }
+    }
   })
   
   
@@ -663,11 +777,36 @@ server <- function(input, output, session) {
           #sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
           #sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
           for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii])}
+            if(SavedVec[iii]==1){
+              
+              if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+              map<-addPolygons(map,lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii])
+              }else{
+                for(kk in 1:length(SELGEO[[iii]])) {
+                  map<-addPolygons(map,lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii])
+                  
+                }
+                
+              }
+              
+              }
             else{
               if(SwitchedOnCells[iii]==1){
-                map<-addPolygons(map,lng=as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])}
-            }
+                if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+                
+                map<-addPolygons(map,lng=as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])
+                }else{
+                  
+                  
+                  for(kk in 1:length(SELGEO[[iii]])) {
+                    map<-addPolygons(map,lng=as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color=FullColVec[iii])
+                    
+                  }
+                  
+                }
+              }
+                
+              }
           }
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
