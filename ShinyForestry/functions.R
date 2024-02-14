@@ -308,10 +308,30 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
           #  sellng <- FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
           #  sellat <- FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
           for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii])}
+            if(SavedVec[iii]==1){
+              
+              if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+              listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii])
+              }else{
+                for(kk in 1:length(SELGEO[[iii]])) {
+                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii])
+                }
+                
+              }
+              
+              }
             else{
               if(SwitchedOnCells[iii]==1){
-                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])}
+                if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])
+                }else{
+                  for(kk in 1:length(SELGEO[[iii]])) {
+                    listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])
+                    
+                  }
+                  
+                }
+                }
             }
           }
         }
@@ -490,10 +510,29 @@ outputmap_createResults <- function(map,
     ############  
     for (iii in 1:length(SwitchedOnCells)) {
       if (SavedVec[iii] == 1) {
+        
+        if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
         map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii])
+        }else{
+          for(kk in 1:length(SELGEO[[iii]])) {
+            map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk), color = ClickedCols[iii])
+            
+          }
+          
+        }
+        
       } else {
         if (SwitchedOnCells[iii] == 1) {
+          if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+          
           map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii])
+          }else{
+            for(kk in 1:length(SELGEO[[iii]])) {
+              map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk),color=FullColVec[iii])
+              
+            }
+            
+          }
         }
       }
     }
