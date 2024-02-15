@@ -33,11 +33,126 @@ library(GGally)
 FolderSource<-""
 
 source(paste0(FolderSource, "functions.R"))
-species_names <- colnames(read.csv(paste0(FolderSource, "Model Data/Biodiversity/JNCC/beta_JNCC100_interact_quad.csv")))[-1]
-english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
+# species_names <- colnames(read.csv(paste0(FolderSource, "Model Data/Biodiversity/JNCC/beta_JNCC100_interact_quad.csv")))[-1]
+# english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
+# english_species_names <- add_suffix_to_duplicates(english_species_names)
 
-english_species_names <- add_suffix_to_duplicates(english_species_names)
-name_conversion <- data.frame(Specie = species_names, English_specie = english_species_names)
+name_conversion <- matrix(data = c("Bird", "Acanthis cabaret", "Lesser Redpoll",
+                                   "Bird", "Alauda arvensis", "Skylark",
+                                   "Bird", "Anthus trivialis", "Tree Pipit",
+                                   "Bird", "Botaurus stellaris", "Bittern",
+                                   "Bird", "Caprimulgus europaeus", "Nightjar",
+                                   "Bird", "Emberiza citrinella", "Yellowhammer",
+                                   "Bird", "Emberiza schoeniclus", "Reed Bunting",
+                                   "Bird", "Locustella naevia", "Grasshopper Warbler",
+                                   "Bird", "Lullula arborea", "Woodlark",
+                                   "Bird", "Motacilla flava subsp flavissima", "Yellow Wagtail",
+                                   "Bird", "Muscicapa striata", "Spotted Flycatcher",
+                                   "Bird", "Numenius arquata", "Curlew",
+                                   "Bird", "Perdix perdix", "Grey Partridge",
+                                   "Bird", "Phylloscopus sibilatrix", "Wood Warbler",
+                                   "Bird", "Streptopelia turtur", "Turtle Dove",
+                                   "Bird", "Turdus torquatus", "Ring Ouzel",
+                                   "Bird", "Vanellus vanellus", "Lapwing",
+                                   "Herptile", "Vipera berus", "Adder",
+                                   "Invertebrate - bee", "Bombus monticola", "Mountain Bumblebee",
+                                   "Invertebrate - beetle", "Cercyon convexiusculus", "Water Beetle sp.",
+                                   "Invertebrate - beetle", "Gnorimus nobilis", "Noble Chafer",
+                                   "Invertebrate - beetle", "Liopterus haemorrhoidalis", "Water Beetle sp.",
+                                   "Invertebrate - beetle", "Lucanus cervus", "Stag Beetle",
+                                   "Invertebrate - butterfly", "Boloria selene", "Small Pearl-Bordered Fritillary",
+                                   "Invertebrate - butterfly", "Coenonympha pamphilus", "Small Heath",
+                                   "Invertebrate - butterfly", "Coenonympha tullia", "Large Heath",
+                                   "Invertebrate - butterfly", "Cupido minimus", "Small Blue",
+                                   "Invertebrate - butterfly", "Erebia epiphron", "Mountain Ringlet",
+                                   "Invertebrate - butterfly", "Erynnis tages", "Dingy Skipper",
+                                   "Invertebrate - butterfly", "Hipparchia semele", "Grayling",
+                                   "Invertebrate - butterfly", "Lasiommata megera", "Wall",
+                                   "Invertebrate - butterfly", "Limenitis camilla", "White Admiral",
+                                   "Invertebrate - butterfly", "Satyrium w-album", "White-Letter Hairstreak",
+                                   "Invertebrate - cricket", "Leptophyes punctatissima", "Speckled Bush Cricket",
+                                   "Invertebrate - cricket", "Metrioptera brachyptera", "Bog Bush Cricket",
+                                   "Invertebrate - moth", "Cossus cossus", "Goat Moth",
+                                   "Invertebrate - moth", "Acronicta psi", "Grey Dagger",
+                                   "Invertebrate - moth", "Allophyes oxyacanthae", "Green-brindled Crescent",
+                                   "Invertebrate - moth", "Dasypolia templi", "Brindled Ochre",
+                                   "Invertebrate - moth", "Xanthorhoe decoloraria", "Red Carpet",
+                                   "Invertebrate - snail", "Cochlodina laminata", "Plaited Door Snail",
+                                   "Invertebrate - snail", "Monacha cantiana", "Kentish Snail",
+                                   "Invertebrate - snail", "Zonitoides excavatus", "Hollowed Glass Snail",
+                                   "Lichen", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
+                                   "Lichen", "Leptogium brebissonii", "Lichen sp.",
+                                   "Lichen", "Parmeliella testacea", "Lichen sp.",
+                                   "Lichen", "Pseudocyphellaria intricata", "Lichen sp.",
+                                   "Lichen", "Usnea articulata", "String-Of-Sausage Lichen",
+                                   "Mammal", "Barbastella barbastellus", "Barbastelle bat",
+                                   "Mammal", "Felis silvestris", "Wildcat",
+                                   "Mammal", "Lepus europaeus", "European hare",
+                                   "Mammal", "Lepus timidus", "Mountain Hare",
+                                   "Mammal", "Martes martes", "Pine Marten",
+                                   "Mammal", "Micromys minutus", "Harvest Mouse",
+                                   "Mammal", "Muscardinus avellanarius", "Hazel Dormouse",
+                                   "Mammal", "Mustela putorius", "Polecat",
+                                   "Mammal", "Myotis bechsteinii", "Bechstein's bat",
+                                   "Mammal", "Nyctalus noctula", "Noctule Bat",
+                                   "Mammal", "Plecotus auritus", "Brown Long-eared Bat",
+                                   "Mammal", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
+                                   "Mammal", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
+                                   "Mammal", "Sciurus vulgaris", "Eurasian red squirrel",
+                                   "Vascular plant", "Anchusa arvensis", "Field bugloss",
+                                   "Vascular plant", "Andromeda polifolia", "Bog Rosemary",
+                                   "Vascular plant", "Arctostaphylos alpinus", "Mountain bearberry",
+                                   "Vascular plant", "Asplenium viride", "Green spleenwort",
+                                   "Vascular plant", "Atriplex laciniata", "Frosted Orache",
+                                   "Vascular plant", "Blysmus rufus", "Saltmarsh Flat-Sedge",
+                                   "Vascular plant", "Cakile maritima", "Sea Rocket",
+                                   "Vascular plant", "Campanula glomerata", "Clustered Bellflower",
+                                   "Vascular plant", "Carex extensa", "Long-Bracted Sedge",
+                                   "Vascular plant", "Carex magellanica", "Tall Bog-Sedge",
+                                   "Vascular plant", "Centaurium pulchellum", "Lesser Centaury",
+                                   "Vascular plant", "Cerastium arvense", "Field Mouse-Ear",
+                                   "Vascular plant", "Cirsium eriophorum", "Woolly Thistle",
+                                   "Vascular plant", "Daphne laureola", "Spurge-Laurel",
+                                   "Vascular plant", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
+                                   "Vascular plant", "Fumaria muralis", "Common Ramping-Fumitory",
+                                   "Vascular plant", "Genista anglica", "Petty Whin",
+                                   "Vascular plant", "Genista tinctoria", "Dyer's Greenweed",
+                                   "Vascular plant", "Gnaphalium supinum", "Dwarf Cudweed",
+                                   "Vascular plant", "Goodyera repens", "Creeping Lady's-Tresses",
+                                   "Vascular plant", "Hypericum elodes", "Marsh St John's-Wort",
+                                   "Vascular plant", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
+                                   "Vascular plant", "Leymus arenarius", "Lyme Grass",
+                                   "Vascular plant", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
+                                   "Vascular plant", "Neottia nidus-avis", "Bird's-Nest Orchid",
+                                   "Vascular plant", "Ornithopus perpusillus", "Bird's-Foot",
+                                   "Vascular plant", "Orthilia secunda", "Serrated Wintergreen",
+                                   "Vascular plant", "Oxyria digyna", "Mountain Sorrel",
+                                   "Vascular plant", "Pyrola media", "Intermediate Wintergreen",
+                                   "Vascular plant", "Radiola linoides", "Allseed",
+                                   "Vascular plant", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
+                                   "Vascular plant", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
+                                   "Vascular plant", "Silaum silaus", "Pepper-Saxifrage",
+                                   "Vascular plant", "Thymus pulegioides", "Large Thyme",
+                                   "Vascular plant", "Tilia cordata", "Small-Leaved Lime",
+                                   "Vascular plant", "Trifolium fragiferum", "Strawberry Clover",
+                                   "Vascular plant", "Trifolium striatum", "Knotted Clover",
+                                   "Vascular plant", "Vaccinium microcarpum", "Small Cranberry"),
+                          ncol = 3, byrow = TRUE)
+name_conversion <- data.frame(Specie = name_conversion[, 2],
+                              English_specie = add_suffix_to_duplicates(name_conversion[, 3]),
+                              Group = name_conversion[, 1]) %>%
+  # Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinator
+  dplyr::mutate(Group = case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinator",
+  .default = Group)) %>%
+  # Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
+  dplyr::mutate(Specie = gsub(" |-", "_", Specie)) %>%
+  # Sort by Specie
+  dplyr::arrange(Specie)
+# Swap rows 83 and 84
+row83 <- name_conversion[83, ]
+row84 <- name_conversion[84, ]
+name_conversion[83, ] <- row84
+name_conversion[84, ] <- row83
 
 # Sys.setenv(PROJ_LIB="/usr/share/proj")
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
@@ -49,6 +164,7 @@ name_conversion <- data.frame(Specie = species_names, English_specie = english_s
 shfile<-sf::st_read(paste0(FolderSource,"_exp0308154002.gdb.zip"),layer = "INV_BLKDATA")
 shconv <- st_transform(shfile, crs = 4326)
 FullTable<-data.frame(read.csv(paste0(FolderSource,"FullTableResult.csv"))[,-1])
+FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion)
 FullTableNotAvail<-data.frame(read.csv(paste0(FolderSource,"FullTableNotAvail.csv"))[,-1])
 STDMEAN<-0.05
 STDSTD<-0.01
@@ -60,10 +176,12 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
-SPECIES <- name_conversion[1:2, "Specie"]
-# SPECIES <- c("Acanthis_cabaret")
+
+
+# SPECIES <- name_conversion[1:2, "Specie"]
+SPECIES <- c("Pollinator", "All")
 N_SPECIES <- length(SPECIES)
-TARGETS <- c("carbon", SPECIES, "Area", "NbVisits")
+TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
 
 # slider_list <- list(
@@ -79,7 +197,7 @@ verticalLayout_params <- c(list(bquote(sliderInput("SliderMain","Tree Carbon Sto
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       paste("Average species", .(x), "% chance of appearance:"), 
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Richness for", .(x)) else paste("Average species", .(x), "% chance of appearance:"), 
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value))))
@@ -114,7 +232,7 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                            verticalLayout(verbatimTextOutput("SecondMapTxt"),jqui_resizable(leafletOutput("map3",height = 400,width="100%")))
                                                     ),
                                                     column(2, verticalLayout(verbatimTextOutput("TargetText"),
-                                                                             #  selectInput("chooseGrouping", "Grouping Type:",c("carbon level"),"carbon level"),
+                                                                             #  selectInput("chooseGrouping", "Grouping Type:",c("Carbon level"),"Carbon level"),
                                                                              actionButton("random", "Randomize!"))
                                                     )
                                                   ),
@@ -407,7 +525,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         CONDPROB_AtLeast1 <- CONDPROB_AtLeast1 | (PROBAMAT[,1]>=alphaLVL)
       }
       
-      #  datAll = data.frame(carbonMet=1*(PROBAMAT[,1]>=alphaLVL),
+      #  datAll = data.frame(CarbonMet=1*(PROBAMAT[,1]>=alphaLVL),
       ##                     redSquirrel=1*(PROBAMAT[,2]>=alphaLVL),
       #                   Area=1*(PROBAMAT[,3]>=alphaLVL),
       #                  Visits=1*(PROBAMAT[,4]>=alphaLVL))
@@ -416,7 +534,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       species_data_frame <- do.call("data.frame",
                                     setNames(lapply(SPECIES, function(x) bquote(SelectedSimMat2[.(x)])),
                                              SPECIES))
-      datAll=as.matrix(data.frame(carbon=SelectedSimMat2$carbon,
+      datAll=as.matrix(data.frame(Carbon=SelectedSimMat2$Carbon,
                                   # redsquirrel=SelectedSimMat2$redsquirrel,
                                   species_data_frame,
                                   Area=SelectedSimMat2$Area,
@@ -496,7 +614,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         
         for(aai in 1:2){
           SwitchedOnCells<-SelectedLine[[aai]][1:length(SavedVec)]
-          SelectedTreeCarbon<-SelectedLine[[aai]]$carbon
+          SelectedTreeCarbon<-SelectedLine[[aai]]$Carbon
           # SelectedBio<-SelectedLine[[aai]]$redsquirrel
           for (x in SPECIES) {
             var_name <- paste0("SelectedBio", x)
@@ -506,7 +624,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           SelectedArea<-SelectedLine[[aai]]$Area
           SelectedVisits<-SelectedLine[[aai]]$Visits
           
-          SelectedTreeCarbonSD<-SelectedLine[[aai]]$carbonSD
+          SelectedTreeCarbonSD<-SelectedLine[[aai]]$CarbonSD
           # SelectedBioSD<-SelectedLine[[aai]]$redsquirrelSD
           for (x in SPECIES) {
             var_name <- paste0("SelectedBioSD", x)
@@ -698,7 +816,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       SelecTargetVisits <- tmp$SelecTargetVisits
       rm(tmp)
       
-      # SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$carbon>=SelecTargetCarbon)&
+      # SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
       #                                      # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
       #                                      condition&
       #                                      (SelectedSimMat2$Area>=SelecTargetArea)&
@@ -707,9 +825,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
       if(dim(SubsetMeetTargets)[1]>0){
-        if(max(SelectedSimMat2$carbon)!=min(SelectedSimMat2$carbon)){
-          DistSliderCarbon<-(SubsetMeetTargets$carbon-SelecTargetCarbon)/(max(SelectedSimMat2$carbon)-min(SelectedSimMat2$carbon))}else{
-            DistSliderCarbon<-(SubsetMeetTargets$carbon-SelecTargetCarbon)/(max(SelectedSimMat2$carbon))
+        if(max(SelectedSimMat2$Carbon)!=min(SelectedSimMat2$Carbon)){
+          DistSliderCarbon<-(SubsetMeetTargets$Carbon-SelecTargetCarbon)/(max(SelectedSimMat2$Carbon)-min(SelectedSimMat2$Carbon))}else{
+            DistSliderCarbon<-(SubsetMeetTargets$Carbon-SelecTargetCarbon)/(max(SelectedSimMat2$Carbon))
           }
         # if(max(SelectedSimMat2$redsquirrel)!=min(SelectedSimMat2$redsquirrel)){
         #   
@@ -750,7 +868,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         
         SELL<-(FullTable$extent==SelectedDropdown)
         if(!is.null(SELL)){
-          SelectedTreeCarbon<-SelectedMins[SelecRow,]$carbon
+          SelectedTreeCarbon<-SelectedMins[SelecRow,]$Carbon
           # SelectedBio<-SelectedMins[SelecRow,]$redsquirrel
           for (x in SPECIES) {
             var_name <- paste0("SelectedBio", x)
@@ -760,7 +878,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           SelectedArea<-SelectedMins[SelecRow,]$Area
           SelectedVisits<-SelectedMins[SelecRow,]$Visits
           
-          SelectedTreeCarbonSD<-SelectedMins[SelecRow,]$carbonSD
+          SelectedTreeCarbonSD<-SelectedMins[SelecRow,]$CarbonSD
           # SelectedBioSD<-SelectedMins[SelecRow,]$redsquirrelSD
           for (x in SPECIES) {
             var_name <- paste0("SelectedBioSD", x)
@@ -960,7 +1078,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       CONDPROBA3PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 1)
       
       # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[1]], ],
-      #                                 NotMet = rep("carbon", sum(CONDPROBA3PositiveLIST[[1]])))
+      #                                 NotMet = rep("Carbon", sum(CONDPROBA3PositiveLIST[[1]])))
       # # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[2]], ], NotMet = rep("redSquirrel", sum(CONDPROBA3PositiveLIST[[2]]))))
       # for (i in 1:N_SPECIES) {
       #   specie <- SPECIES[i]
@@ -1073,9 +1191,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       # CONDPROBA2PositiveLIST[[6]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
       CONDPROBA2PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 2)
       
-      # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]], ], NotMet = rep("carbon,redSquirrel", sum(CONDPROBA2PositiveLIST[[1]])))
-      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]], ], NotMet = rep("carbon,Area", sum(CONDPROBA2PositiveLIST[[2]]))))
-      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[3]], ], NotMet = rep("carbon,NbVisits", sum(CONDPROBA2PositiveLIST[[3]]))))
+      # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]], ], NotMet = rep("Carbon,redSquirrel", sum(CONDPROBA2PositiveLIST[[1]])))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]], ], NotMet = rep("Carbon,Area", sum(CONDPROBA2PositiveLIST[[2]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[3]], ], NotMet = rep("Carbon,NbVisits", sum(CONDPROBA2PositiveLIST[[3]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[4]], ], NotMet = rep("redSquirrel,Area", sum(CONDPROBA2PositiveLIST[[4]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[5]], ], NotMet = rep("redSquirrel,NbVisits", sum(CONDPROBA2PositiveLIST[[5]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]], ], NotMet = rep("Area,NbVisits", sum(CONDPROBA2PositiveLIST[[6]]))))
@@ -1176,7 +1294,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       # CONDPROBA1PositiveLIST[[4]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
       CONDPROBA1PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 3)
       
-      # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]], ], Met = rep("carbon", sum(CONDPROBA1PositiveLIST[[1]])))
+      # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]], ], Met = rep("Carbon", sum(CONDPROBA1PositiveLIST[[1]])))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[2]], ], Met = rep("redSquirrel", sum(CONDPROBA1PositiveLIST[[2]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[3]], ], Met = rep("Area", sum(CONDPROBA1PositiveLIST[[3]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]], ], Met = rep("NbVisits", sum(CONDPROBA1PositiveLIST[[4]]))))

@@ -190,7 +190,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
       for(aai in 1:2){
         SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
-        SelectedTreeCarbon <- SelectedLine[[aai]]$carbon
+        SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
         # SelectedBio <- SelectedLine[[aai]]$redsquirrel
         for (x in SPECIES) {
           var_name <- paste0("SelectedBio", x)
@@ -200,7 +200,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
         SelectedArea <- SelectedLine[[aai]]$Area
         SelectedVisits <- SelectedLine[[aai]]$Visits
         
-        SelectedTreeCarbonSD <- SelectedLine[[aai]]$carbonSD
+        SelectedTreeCarbonSD <- SelectedLine[[aai]]$CarbonSD
         # SelectedBioSD <- SelectedLine[[aai]]$redsquirrelSD
         for (x in SPECIES) {
           var_name <- paste0("SelectedBioSD", x)
@@ -259,8 +259,8 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       SelectedSimMat2 <- SelectedSimMatGlobal
       VecNbMet <- VecNbMet0()
       
-      # columns <- c("carbon","redsquirrel","Area","Visits")
-      SelectedSimMat2columns <- c("carbon", SPECIES, "Area","Visits")
+      # columns <- c("Carbon","redsquirrel","Area","Visits")
+      SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
       ClusteringDat <- data.frame(sqrt(infpref)*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
       ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
       ClusteringDat <- unique(ClusteringDat)
@@ -375,12 +375,12 @@ outputmap_calculateMats <- function(input,
                                                  names(SpeciesListSelectedSD)))
   
   SelectedSimMat2 <- data.frame(SelectedSimMat,
-                                carbon = rowSums(SelectedSimMat * CarbonMAT),
+                                Carbon = rowSums(SelectedSimMat * CarbonMAT),
                                 # redsquirrel = rowMeans(SelectedSimMat * RedSquirrelMAT),
                                 speciesMat,
                                 Area = rowSums(SelectedSimMat * AreaMAT),
                                 Visits = rowMeans(SelectedSimMat * (VisitsMAT)),
-                                carbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+                                CarbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
                                 # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
                                 speciesMatSD,
                                 VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVec))
@@ -393,24 +393,24 @@ outputmap_calculateMats <- function(input,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(mean(SelectedSimMat2$carbon) / 50,
+  tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
               colMeans(speciesMat) / 50,
               mean(SelectedSimMat2$Area) / 50,
               SelectedSimMat2$Visits / 50)
   Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
                      TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
-                     # EYMat = data.frame(SelectedSimMat2$carbon, SelectedSimMat2$redsquirrel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
-                     EYMat = data.frame(SelectedSimMat2$carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
-                     # SDYMat = data.frame(SelectedSimMat2$carbonSD, SelectedSimMat2$redsquirrelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
-                     SDYMat = data.frame(SelectedSimMat2$carbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+                     # EYMat = data.frame(SelectedSimMat2$Carbon, SelectedSimMat2$redsquirrel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+                     EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+                     # SDYMat = data.frame(SelectedSimMat2$CarbonSD, SelectedSimMat2$redsquirrelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+                     SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
                      alpha = 0.05, tolVec = tolvec)
   
-  LimitsMat <- (-data.frame(SelectedSimMat2$carbon,
+  LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
                             # SelectedSimMat2$redsquirrel,
                             speciesMat,
                             SelectedSimMat2$Area,
-                            # SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$carbonSD^2 + 4^2, SelectedSimMat2$redsquirrelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
-                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$carbonSD^2 + 4^2, speciesMatSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            # SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + 4^2, SelectedSimMat2$redsquirrelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + 4^2, speciesMatSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
   
   return(c(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
               # SelecTargetBio = SelecTargetBio, SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits))
@@ -432,7 +432,7 @@ outputmap_createResults <- function(map,
   SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
   
   SwitchedOnCells <- SelectedLine[1:length(SavedVec)]
-  SelectedTreeCarbon <- SelectedLine$carbon
+  SelectedTreeCarbon <- SelectedLine$Carbon
   # SelectedBio <- SelectedLine$redsquirrel
   SelectedBioList <- list()
   for (x in SPECIES) {
@@ -444,7 +444,7 @@ outputmap_createResults <- function(map,
   SelectedArea <- SelectedLine$Area
   SelectedVisits <- SelectedLine$Visits
   
-  SelectedTreeCarbonSD <- SelectedLine$carbonSD
+  SelectedTreeCarbonSD <- SelectedLine$CarbonSD
   # SelectedBioSD <- SelectedLine$redsquirrelSD
   SelectedBioSDList <- list()
   for (x in SPECIES) {
@@ -543,4 +543,34 @@ subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST
                                                        sum(CONDPROBAPositiveLIST[[i]]))))
   }
   return(SubsetMeetTargets)
+}
+
+add_richness_columns <- function(FullTable, name_conversion) {
+  FullTable2 <- FullTable
+  # With an artifical group for all species
+  unique_groups <- c(unique(name_conversion$Group), "All")
+  for (group in unique_groups) {
+    if (group == "All") {
+      species_in_group <- name_conversion$Specie
+    } else {
+      species_in_group <- name_conversion[name_conversion$Group == group, "Specie"]
+    }
+    colnames_to_find <- paste0("BioMean_", species_in_group)
+    col_indices_of_group <- which(colnames(FullTable2) %in% colnames_to_find)
+    
+    if (length(col_indices_of_group) == 1) {
+      FullTable2 <- cbind(FullTable2,
+                          biomean = round(FullTable2[, col_indices_of_group]),
+                          biosd = 0)
+    } else {
+      FullTable2 <- cbind(FullTable2,
+                          biomean = round(rowSums(FullTable2[, col_indices_of_group]) / length(col_indices_of_group)),
+                          biosd = 0)
+    }
+    number_of_columns <- length(colnames(FullTable2))
+    column_names <- colnames(FullTable2)
+    column_names[(number_of_columns-1):number_of_columns] <- paste0(c("BioMean_", "BioSD_"), group)
+    colnames(FullTable2) <- column_names
+  }
+  return(FullTable2)
 }
