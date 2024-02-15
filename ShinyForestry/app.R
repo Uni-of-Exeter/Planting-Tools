@@ -33,9 +33,12 @@ library(rjson)
 ############################################
 source("functions.R")
 
-ElicitatorAppFolder<-"c://INDICATEFOLDERNAME//"
+ElicitatorAppFolder<-"c://NAME_OF_FOLDER//"
 ########################## Pre-processing
-DIRR<-list.files(ElicitatorAppFolder,full.names = TRUE)
+#remove all directories starting with "land"
+unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
+
+DIRR<-list.files(ElicitatorAppFolder,full.names = TRUE,recursive=F)
 CTIMES<-file.info(DIRR)$ctime
 LatestFileNames<-c(LandPFileName="",UnitsFileName="",OutcomesFileName="")
 LatestFileNames[1]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land"))])]
@@ -44,14 +47,13 @@ LatestFileNames[3]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFo
 LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$ctime)
 
 LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
-#write.csv(LatestFilesInfo,"d://ElicitatorOutput//LastestFilesInfo.csv")
-PrevFilesInfo<-read.csv("d://ElicitatorOutput//LastestFilesInfo.csv")
+PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv")
 if(sum(PrevFilesInfo$ctime!=LatestFilesInfo$ctime)>0){
 if(file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){file.remove(paste0(ElicitatorAppFolder,"Parcels.geojson"))}
 if(file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))}
 if(file.exists(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))}  
-UnZipDirName<-substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFilesInfo$LatestFileNames[1])-4)
-if(dir.exists(UnZipDirName)){unlink(UnZipDirName, recursive = T)}
+UnZipDirName<-paste0(substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFilesInfo$LatestFileNames[1])-4))
+#if(dir.exists(UnZipDirName)){unlink(UnZipDirName, recursive = T)}
 dir.create(UnZipDirName)
 unzip(LatestFilesInfo$LatestFileNames[1], exdir = UnZipDirName)
 ##################
@@ -81,12 +83,16 @@ for(ii in 1:length(Uni))
   SELLL<-shconv$geometry[AllUnits==Uni[ii]]
   MER[[ii]]<-st_union(SELLL[1],SELLL[2])
   if(length(SELLL)>2){
-    for (jj in 1:length(SELLL)){
-      MER[[ii]]<-st_union(MER[[ii]],SELLL[jj])
-    }
+    for (jj in 3:length(SELLL)){
+      MER[[ii]]<-st_union(MER[[ii]],st_make_valid(SELLL[jj]))
+      cat(jj)
+      cat(";")
+      }
+    
   }
   
-  
+  cat(ii)
+  cat("\n")
 }
 FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
 st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
@@ -107,16 +113,16 @@ st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojso
 }
 
 
-#shconv<-sf::st_read("BristolParcels.geojson")
-#FullTable<-st_read("BristolFullTableMerged.geojson")
-#FullTableNotAvail<-sf::st_read("BristolFullTableNotAvail.geojson")
-#shconv<-sf::st_read("ForestryParcels.geojson")
-#FullTable<-st_read("ForestryFullTable.geojson")
-#FullTableNotAvail<-sf::st_read("ForestryFullTableNotAvail.geojson")
+#shconv<-sf::st_read("d://BristolParcels.geojson")
+#FullTable<-st_read("d://BristolFullTableMerged.geojson")
+#FullTableNotAvail<-sf::st_read("d://BristolFullTableNotAvail.geojson")
+#shconv<-sf::st_read("d://ForestryParcels.geojson")
+#FullTable<-st_read("d://ForestryFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("d://ForestryFullTableNotAvail.geojson")
 
-#shconv<-sf::st_read("PoundsgateParcels.geojson")
-#FullTable<-st_read("PoundsgateFullTable.geojson")
-#FullTableNotAvail<-sf::st_read("PoundsgateFullTableNotAvail.geojson")
+#shconv<-sf::st_read("d://PoundsgateParcels.geojson")
+#FullTable<-st_read("d://PoundsgateFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("d://PoundsgateFullTableNotAvail.geojson")
 
 
 ###############
