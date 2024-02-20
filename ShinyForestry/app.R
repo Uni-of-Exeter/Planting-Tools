@@ -24,6 +24,20 @@ library(shinyWidgets)
 library(truncnorm)
 loadNamespace("prefeR")
 library(GGally)
+# if (!require("prefeR")) {
+  # install.packages("prefeR", lib = "/RPackages")
+  # detach("package:prefeR", unload = TRUE)
+  # loadNamespace("prefeR")
+# }
+# packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2", "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn", "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite", "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm", "GGally")
+# if(!all( packages %in% (.packages()) )) {
+  # for(pkg in packages) {
+    # if( !require(pkg, character.only = TRUE) ) {
+      # install.packages(pkg, lib = "/RPackages")
+      # library(pkg, character.only = TRUE)
+    # }
+  # }
+# }
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
@@ -140,11 +154,21 @@ name_conversion <- matrix(data = c("Bird", "Acanthis cabaret", "Lesser Redpoll",
                           ncol = 3, byrow = TRUE)
 name_conversion <- data.frame(Specie = name_conversion[, 2],
                               English_specie = add_suffix_to_duplicates(name_conversion[, 3]),
-                              Group = name_conversion[, 1]) %>%
-  # Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinator
-  dplyr::mutate(Group = case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinator",
-  .default = Group)) %>%
-  # Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
+                              Group = name_conversion[, 1])
+# Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinator
+# Crashes on the server for some reason, so we use data.frames instead
+# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinator",
+# .default = Group)) %>%
+indices <- grep("bee|beetle|butterfly|cricket|moth", name_conversion$Group)
+name_conversion[indices, "Group"] <- "Pollinator"
+# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bee" ~ "Pollinator",
+#                                        Group == "Invertebrate - beetle" ~ "Pollinator",
+#                                        Group == "Invertebrate - butterfly" ~ "Pollinator",
+#                                        Group == "Invertebrate - cricket" ~ "Pollinator",
+#                                        Group == "Invertebrate - moth" ~ "Pollinator",
+#                                        .default = Group)) %>%
+# Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
+name_conversion <- name_conversion %>%
   dplyr::mutate(Specie = gsub(" |-", "_", Specie)) %>%
   # Sort by Specie
   dplyr::arrange(Specie)
@@ -170,6 +194,37 @@ STDMEAN<-0.05
 STDSTD<-0.01
 simul636<-read.csv(file=paste0(FolderSource,"Simul636.csv"))[,-1]
 
+# Move rows from FullTableNotAvail to FullTable with blank data
+FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
+                                                   "id" = id,
+                                                   "area" = 1,
+                                                   x = lgn.1,
+                                                   y = lat.1,
+                                                   xbgn = 0,
+                                                   ybgn = 0,
+                                                   lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
+                                                   JulesMean=0,JulesSD=0,
+                                                   VisitsMean=0,VisitsSD=0)) %>%
+  mutate(across(x:lat.5, as.numeric)) %>% 
+  mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
+
+cols <- colnames(FullTable)
+FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
+FullTableAdd <- FullTableAdd[, cols]
+FullTableAdd$xybgn <- 1
+rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
+# Check which columns contain NA values
+columns_with_na <- colSums(is.na(FullTableAdd))
+colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
+# Replace NA with 0
+FullTableAdd[rows_na, colnames_with_na] <- 0
+FullTable <- FullTableAdd
+
+old_cols <- colnames(FullTableNotAvail)
+FullTableNotAvail <- data.frame(0)
+FullTableNotAvail[, old_cols] <- 0
+FullTableNotAvail <- FullTableNotAvail[, -1]
+
 alphaLVL<-0.9
 
 MaxRounds<-5
@@ -189,21 +244,21 @@ N_TARGETS <- length(TARGETS)
 # )
 # Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
 
-verticalLayout_params <- c(list(bquote(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800))),
-                           list(bquote(textOutput("SoilCarbonNotIncluded"))),
+verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
+                           list(textOutput("SoilCarbonNotIncluded")),
                            lapply(SPECIES, function(x, fulltable) {
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
                              # value <- round(max_specie / 2)
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Richness for", .(x)) else paste("Average species", .(x), "% chance of appearance:"), 
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x), "(%)") else paste("Average species", .(x), "chance of appearance (%):"), 
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value))))
                            }, fulltable = FullTable),
-                           list(bquote(sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15))),
-                           list(bquote(sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))))
+                           list(sliderInput("AreaSlider", HTML("Total Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
+                           list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
 
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
@@ -583,7 +638,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       priors <- c(prefeR::Normal(125,60),
                   prefeR::Normal(5,3))
       for (i in 1:N_SPECIES) {
-        priors <- c(priors, prefeR::Normal(10,20))
+        priors <- c(priors, prefeR::Normal(5,5))
       }
       priors <- c(priors, prefeR::Normal(8,5))
       pref <<- prefeR::prefEl(data=datAll2,
@@ -800,6 +855,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD)
+      
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       SelecTargetCarbon <- tmp$SelecTargetCarbon
