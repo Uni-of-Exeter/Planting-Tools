@@ -1,17 +1,17 @@
 
-normalize<-
-  function(x) {
+normalize <- function(x) {
     return(scale(x, center=TRUE, scale=TRUE)[,1])
   }
 
-Impl<-function(Target,EY,SDY,alpha,tol)
-{
+# Implausibility
+Impl <- function(Target,EY,SDY,alpha,tol) {
   Im<-(Target-EY)/sqrt(SDY^2+tol)
+  # Not Ruled-Out space Yet
   NROY<-(Im<=sqrt((1-alpha)/alpha))
   return(list(Im=Im,NROY=NROY))
 }
-MultiImpl<-function(TargetsVec,EYMat,SDYMat,alpha,tolVec)
-{
+
+MultiImpl <- function(TargetsVec,EYMat,SDYMat,alpha,tolVec) {
   IVEC<-matrix(0,dim(EYMat)[1],length(TargetsVec))
   for(ii in 1:length(TargetsVec))
   {
@@ -23,8 +23,7 @@ MultiImpl<-function(TargetsVec,EYMat,SDYMat,alpha,tolVec)
   return(list(ImTotMax=ItotalMax,ImTotMin=ItotalMin,NROYTotal=NROYTotal,IVEC=IVEC))
 }
 
-BaseMap<-function(SelectedMap,layerId=NULL,shconv)
-{
+BaseMap <- function(SelectedMap,layerId=NULL,shconv) {
   
   ListMaps<-shconv[shconv$extent==SelectedMap,]$shape[[1]]
   max_x2<-(-Inf);min_x2<-(Inf);max_y2<-(-Inf);min_y2<-Inf;
@@ -133,14 +132,16 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    ConvertSample,
                                    LinesToCompareReactive,
                                    ClickedVector,
-                                   AreaSelected0,
-                                   CarbonSelected0,
-                                   RedSquirrelSelected0,
-                                   VisitsSelected0,
-                                   CarbonSelectedSD0,
-                                   RedSquirrelSelectedSD0,
-                                   VisitsSelectedSD0,
-                                   DatBinaryCode0,
+                                   # AreaSelected0,
+                                   # CarbonSelected0,
+                                   # # RedSquirrelSelected0,
+                                   # SpeciesListSelected0, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected0, ...)
+                                   # VisitsSelected0,
+                                   # CarbonSelectedSD0,
+                                   # # RedSquirrelSelectedSD0,
+                                   # SpeciesListSelectedSD0, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD0, ...)
+                                   # VisitsSelectedSD0,
+                                   # DatBinaryCode0,
                                    NbRoundsMax,
                                    CurrentRound,
                                    FullTable,
@@ -148,7 +149,11 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    VecNbMet0,
                                    shconv,
                                    SelectedSimMatGlobal,
-                                   pref) {
+                                   pref,
+                                   SPECIES_ARG3,
+                                   N_TARGETS_ARG2) {
+  SPECIES <- SPECIES_ARG3
+  N_TARGETS <- N_TARGETS_ARG2
   SavedVec <- ClickedVector()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
@@ -185,13 +190,23 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
       for(aai in 1:2){
         SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
-        SelectedTreeCarbon <- SelectedLine[[aai]]$carbon
-        SelectedBio <- SelectedLine[[aai]]$redsquirel
+        SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
+        # SelectedBio <- SelectedLine[[aai]]$redsquirrel
+        for (x in SPECIES) {
+          var_name <- paste0("SelectedBio", x)
+          value <- SelectedLine[[aai]][[x]]
+          assign(var_name, value)
+        }
         SelectedArea <- SelectedLine[[aai]]$Area
         SelectedVisits <- SelectedLine[[aai]]$Visits
         
-        SelectedTreeCarbonSD <- SelectedLine[[aai]]$carbonSD
-        SelectedBioSD <- SelectedLine[[aai]]$redsquirelSD
+        SelectedTreeCarbonSD <- SelectedLine[[aai]]$CarbonSD
+        # SelectedBioSD <- SelectedLine[[aai]]$redsquirrelSD
+        for (x in SPECIES) {
+          var_name <- paste0("SelectedBioSD", x)
+          value <- SelectedLine[[aai]][[paste0(x, "SD")]]
+          assign(var_name, value)
+        }
         SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
         
         SELL <- (FullTable$extent==SelectedDropdown)
@@ -206,12 +221,18 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
             }
           }
         }
-        
+        addControlText <- ""
+        for (x in SPECIES) {
+          selectedBiospecie <- get(paste0("SelectedBio", x))
+          selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
+          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        }
         listMaps[[aai]] <- listMaps[[aai]]%>%  
-          addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
-                                 Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted:",round(SelectedArea/1e6,2),"<br>
-                                 Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
+          addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
+                                   # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
+                                   addControlText,
+                                   "Area Planted: ",round(SelectedArea/1e6,2),"<br>",
+                                   "Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                    "</p>"), position = "topright")
       }
       listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
@@ -238,7 +259,9 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       SelectedSimMat2 <- SelectedSimMatGlobal
       VecNbMet <- VecNbMet0()
       
-      ClusteringDat <- data.frame(sqrt(infpref)*SelectedSimMat2[,c("carbon","redsquirel","Area","Visits")],NbTargetsMet=VecNbMet)
+      # columns <- c("Carbon","redsquirrel","Area","Visits")
+      SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
+      ClusteringDat <- data.frame(sqrt(infpref)*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
       ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
       ClusteringDat <- unique(ClusteringDat)
       set.seed(123)
@@ -264,9 +287,9 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
         
       }else{
         
-        tsneclusters <- Mclust(tsRes$Y, 1:4)
+        tsneclusters <- Mclust(tsRes$Y, 1:N_TARGETS)
         ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
-          ggpairs(columns=1:4, aes(color=cluster),upper=list(continuous="points"))
+          ggpairs(columns=1:N_TARGETS, aes(color=cluster),upper=list(continuous="points"))
         output$plotOP1 <- renderPlot({ClusterPlot})
         
         
@@ -285,10 +308,12 @@ outputmap_calculateMats <- function(input,
                                     simul636,
                                     AreaSelected,
                                     CarbonSelected,
-                                    RedSquirrelSelected,
+                                    # RedSquirrelSelected,
+                                    SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
                                     VisitsSelected,
                                     CarbonSelectedSD,
-                                    RedSquirrelSelectedSD,
+                                    # RedSquirrelSelectedSD,
+                                    SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                     VisitsSelectedSD,
                                     input_areaSlider_multiplicative_coefficient = TRUE) {
   # If only one element in SavedVec, select corresponding column in simul636
@@ -300,43 +325,97 @@ outputmap_calculateMats <- function(input,
   
   SVMAT <- t(matrix(SavedVec, length(SavedVec), dim(SelectedSimMat)[1]))
   CarbonMAT <- t(matrix(CarbonSelected, length(SavedVec), dim(SelectedSimMat)[1]))
-  RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  # RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelected)) {
+    specie_name <- names(SpeciesListSelected)[i]
+    specie_value <- SpeciesListSelected[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "Selected"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVec), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
   AreaMAT <- t(matrix(AreaSelected, length(SavedVec), dim(SelectedSimMat)[1]))
   VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVec), dim(SelectedSimMat)[1]))
   
   CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVec), dim(SelectedSimMat)[1]))
-  RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  # RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelectedSD)) {
+    specie_name <- names(SpeciesListSelectedSD)[i]
+    specie_value <- SpeciesListSelectedSD[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "SelectedSD"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVec), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
   VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
   
   # Create a data frame representing the selected similarity matrix
   SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
   
   SelecTargetCarbon <- input$SliderMain
-  SelecTargetBio <- input$BioSlider
-  SelecTargetArea <- ifelse(input_areaSlider_multiplicative_coefficient == TRUE, input$AreaSlider * 1e6, input$AreaSlider)
+  # SelecTargetBio <- input$BioSlider
+  SelecTargetBioVector <- c()
+  SelecTargetBioList <- list()
+  for (x in names(SpeciesListSelected)) {
+    var_name <- paste0("SelecTargetBio", x)
+    # input[paste0("BioSlider", x)] bugs because it is a reactivevalue
+    value <- input[[paste0("BioSlider", x)]]
+    assign(var_name, value)
+    SelecTargetBioVector <- c(SelecTargetBioVector, value)
+    SelecTargetBioList[var_name] <- value
+  }
+  SelecTargetArea <- if (input_areaSlider_multiplicative_coefficient) input$AreaSlider * 1e6 else input$AreaSlider
   SelecTargetVisits <- input$VisitsSlider
   
+  speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
+                                                      function(x) bquote(rowMeans(SelectedSimMat * get(paste0(.(x), "MAT"))))),
+                                               names(SpeciesListSelected)))
+  speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVec))))),
+                                                 names(SpeciesListSelectedSD)))
+  
   SelectedSimMat2 <- data.frame(SelectedSimMat,
-                                carbon = rowSums(SelectedSimMat * CarbonMAT),
-                                redsquirel = rowMeans(SelectedSimMat * RedSquirrelMAT),
+                                Carbon = rowSums(SelectedSimMat * CarbonMAT),
+                                # redsquirrel = rowMeans(SelectedSimMat * RedSquirrelMAT),
+                                speciesMat,
                                 Area = rowSums(SelectedSimMat * AreaMAT),
                                 Visits = rowMeans(SelectedSimMat * (VisitsMAT)),
-                                carbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
-                                redsquirelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
+                                CarbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+                                # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
+                                speciesMatSD,
                                 VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVec))
+  # for (specie_name in names(SpeciesListSelected)) {
+  #   value <- rowMeans(SelectedSimMat * get(paste0(specie_name, "MAT")))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
+  # for (specie_name in names(SpeciesListSelectedSD)) {
+  #   value <- sqrt(rowSums(SelectedSimMat * (get(paste0(specie_name, "MAT"))^2) / length(SavedVec)))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
   
-  Icalc <- MultiImpl(TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
-                     EYMat = data.frame(SelectedSimMat2$carbon, SelectedSimMat2$redsquirel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
-                     SDYMat = data.frame(SelectedSimMat2$carbonSD, SelectedSimMat2$redsquirelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
-                     alpha = 0.05, tolVec = c(4, 2, 100, 2))
+  tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
+              colMeans(speciesMat) / 50,
+              mean(SelectedSimMat2$Area) / 50,
+              SelectedSimMat2$Visits / 50)
+  Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
+                     TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
+                     # EYMat = data.frame(SelectedSimMat2$Carbon, SelectedSimMat2$redsquirrel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+                     EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+                     # SDYMat = data.frame(SelectedSimMat2$CarbonSD, SelectedSimMat2$redsquirrelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+                     SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+                     alpha = 0.05, tolVec = tolvec)
   
-  LimitsMat <- (-data.frame(SelectedSimMat2$carbon,
-                            SelectedSimMat2$redsquirel,
+  LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
+                            # SelectedSimMat2$redsquirrel,
+                            speciesMat,
                             SelectedSimMat2$Area,
-                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$carbonSD^2 + 4^2, SelectedSimMat2$redsquirelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            # SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + 4^2, SelectedSimMat2$redsquirrelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + 4^2, speciesMatSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
   
-  return(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
-              SelecTargetBio = SelecTargetBio, SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits))
+  return(c(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
+              # SelecTargetBio = SelecTargetBio, SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits))
+              SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
+           SelecTargetBioList))
 }
 
 outputmap_createResults <- function(map,
@@ -345,19 +424,35 @@ outputmap_createResults <- function(map,
                                     FullTable,
                                     SavedVec,
                                     SelectedDropdown,
-                                    randomValue) {
+                                    randomValue,
+                                    SPECIES_ARG2) {
+  SPECIES <- SPECIES_ARG2
   SavedRVs <- randomValue()
   LSMT <- dim(SubsetMeetTargets)[1]
   SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
   
   SwitchedOnCells <- SelectedLine[1:length(SavedVec)]
-  SelectedTreeCarbon <- SelectedLine$carbon
-  SelectedBio <- SelectedLine$redsquirel
+  SelectedTreeCarbon <- SelectedLine$Carbon
+  # SelectedBio <- SelectedLine$redsquirrel
+  SelectedBioList <- list()
+  for (x in SPECIES) {
+    var_name <- paste0("SelectedBio", x)
+    value <- SelectedLine[[x]]
+    assign(var_name, value)
+    SelectedBioList[var_name] <- value
+  }
   SelectedArea <- SelectedLine$Area
   SelectedVisits <- SelectedLine$Visits
   
-  SelectedTreeCarbonSD <- SelectedLine$carbonSD
-  SelectedBioSD <- SelectedLine$redsquirelSD
+  SelectedTreeCarbonSD <- SelectedLine$CarbonSD
+  # SelectedBioSD <- SelectedLine$redsquirrelSD
+  SelectedBioSDList <- list()
+  for (x in SPECIES) {
+    var_name <- paste0("SelectedBioSD", x)
+    value <- SelectedLine[[paste0(x, "SD")]]
+    assign(var_name, value)
+    SelectedBioSDList[var_name] <- value
+  }
   SelectedVisitsSD <- SelectedLine$VisitsSD
   
   SELL <- (FullTable$extent == SelectedDropdown)
@@ -377,16 +472,105 @@ outputmap_createResults <- function(map,
     }
   }
   
-  return(list(map = map,
-              SelectedLine = SelectedLine,
-              SelectedTreeCarbon = SelectedTreeCarbon,
-              SelectedTreeCarbonSD = SelectedTreeCarbonSD,
-              SelectedBio = SelectedBio,
-              SelectedBioSD = SelectedBioSD,
-              SelectedArea = SelectedArea,
-              SelectedVisits = SelectedVisits,
-              SelectedVisitsSD = SelectedVisitsSD,
-              SubsetMeetTargets = SubsetMeetTargets,
-              SavedRVs = SavedRVs,
-              LSMT = LSMT))
+  return(c(list(map = map,
+                SelectedLine = SelectedLine,
+                SelectedTreeCarbon = SelectedTreeCarbon,
+                SelectedTreeCarbonSD = SelectedTreeCarbonSD,
+                # SelectedBio = SelectedBio,
+                # SelectedBioSD = SelectedBioSD,
+                SelectedArea = SelectedArea,
+                SelectedVisits = SelectedVisits,
+                SelectedVisitsSD = SelectedVisitsSD,
+                SubsetMeetTargets = SubsetMeetTargets,
+                SavedRVs = SavedRVs,
+                LSMT = LSMT),
+           SelectedBioList,
+           SelectedBioSDList))
+}
+
+add_suffix_to_duplicates <- function(vec) {
+  seen <- list()
+  for (i in seq_along(vec)) {
+    if (vec[i] %in% names(seen)) {
+      seen[[vec[i]]] <- seen[[vec[i]]] + 1
+      vec[i] <- paste(vec[i], seen[[vec[i]]], sep = "_")
+    } else {
+      seen[[vec[i]]] <- 1
+    }
+  }
+  vec
+}
+
+check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
+  n_metrics <- ncol(PROBAMAT)
+  # in case it is a vector
+  combinations <- as.data.frame(t(combn(n_metrics, nb_targets_met)))
+  # For some reason, Bertrand prefers it from n_metrics to 1, instead of 1 to n_metrics
+  combinations <- as.data.frame(combinations[nrow(combinations):1, ])
+  prob_list <- list()
+  
+  for (i in 1:nrow(combinations)) {
+    condition <- rep(TRUE, nrow(PROBAMAT))
+    for (j in 1:n_metrics) {
+      if (j %in% combinations[i, ]) {
+        condition <- condition & PROBAMAT[, j] >= target
+      } else {
+        condition <- condition & PROBAMAT[, j] < target
+      }
+    }
+    prob_list <- c(prob_list, list(condition))
+  }
+  if (length(prob_list) == 1) {
+    prob_list <- unlist(prob_list)
+  }
+  # if(anyNA(condition, recursive = TRUE)) browser()
+  return(prob_list)
+}
+
+subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST, TARGETS, nb_targets_met) {
+  n_metrics <- ncol(PROBAMAT)
+  targets_met <- t(combn(n_metrics, nb_targets_met))
+  targets_met <- targets_met[nrow(targets_met):1, ]
+  
+  SubsetMeetTargets <- data.frame()
+  for (i in 1:nrow(targets_met)) {
+    combination <- targets_met[i, ]
+    SubsetMeetTargets <- rbind(SubsetMeetTargets,
+                               data.frame(SelectedSimMat2[CONDPROBAPositiveLIST[[i]], ],
+                                          Met = rep(paste(TARGETS[combination], collapse = ","),
+                                                    sum(CONDPROBAPositiveLIST[[i]])),
+                                          NotMet = rep(paste(TARGETS[-combination], collapse = ","),
+                                                       sum(CONDPROBAPositiveLIST[[i]]))))
+  }
+  return(SubsetMeetTargets)
+}
+
+add_richness_columns <- function(FullTable, name_conversion) {
+  FullTable2 <- FullTable
+  # Add an artifical group for all species
+  unique_groups <- c(unique(name_conversion$Group), "All")
+  for (group in unique_groups) {
+    if (group == "All") {
+      species_in_group <- name_conversion$Specie
+    } else {
+      species_in_group <- name_conversion[name_conversion$Group == group, "Specie"]
+    }
+    colnames_to_find <- paste0("BioMean_", species_in_group)
+    col_indices_of_group <- which(colnames(FullTable2) %in% colnames_to_find)
+    
+    if (length(col_indices_of_group) == 1) {
+      FullTable2 <- cbind(FullTable2,
+                          biomean = round(FullTable2[, col_indices_of_group]),
+                          biosd = 0)
+    } else {
+      FullTable2 <- cbind(FullTable2,
+                          biomean = round(rowSums(FullTable2[, col_indices_of_group]) / length(col_indices_of_group)),
+                          biosd = 0)
+    }
+    number_of_columns <- length(colnames(FullTable2))
+    column_names <- colnames(FullTable2)
+    column_names[(number_of_columns-1):number_of_columns] <- paste0(c("BioMean_", "BioSD_"), group)
+    colnames(FullTable2) <- column_names
+  }
+  return(FullTable2)
 }
