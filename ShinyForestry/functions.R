@@ -547,7 +547,7 @@ subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST
 
 add_richness_columns <- function(FullTable, name_conversion) {
   FullTable2 <- FullTable
-  # With an artifical group for all species
+  # Add an artifical group for all species
   unique_groups <- c(unique(name_conversion$Group), "All")
   for (group in unique_groups) {
     if (group == "All") {
