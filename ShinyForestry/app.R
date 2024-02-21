@@ -26,6 +26,8 @@ loadNamespace("prefeR")
 library(GGally)
 library(colorspace)
 library(rjson)
+library(arrow)
+library(viridis)
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
@@ -33,7 +35,7 @@ library(rjson)
 ############################################
 source("functions.R")
 
-ElicitatorAppFolder<-"c://NAME_OF_FOLDER//"
+ElicitatorAppFolder<-"OUTPUTFOLDERNAME"
 ########################## Pre-processing
 #remove all directories starting with "land"
 unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
@@ -47,7 +49,8 @@ LatestFileNames[3]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFo
 LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$ctime)
 
 LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
-PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv")
+#write.csv(LatestFilesInfo,"d://ElicitatorOutput//LastestFilesInfo.csv")
+PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
 if(sum(PrevFilesInfo$ctime!=LatestFilesInfo$ctime)>0){
 if(file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){file.remove(paste0(ElicitatorAppFolder,"Parcels.geojson"))}
 if(file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))}
@@ -85,16 +88,20 @@ for(ii in 1:length(Uni))
   if(length(SELLL)>2){
     for (jj in 3:length(SELLL)){
       MER[[ii]]<-st_union(MER[[ii]],st_make_valid(SELLL[jj]))
-      cat(jj)
-      cat(";")
       }
     
   }
   
-  cat(ii)
-  cat("\n")
 }
 FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
+############################################
+PROJdir<-system.file("proj/proj.db", package = "sf")
+PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+sf_proj_search_paths(PROJdir)
+
+
+
+#######################################
 st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
 
 
@@ -113,16 +120,16 @@ st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojso
 }
 
 
-#shconv<-sf::st_read("d://BristolParcels.geojson")
-#FullTable<-st_read("d://BristolFullTableMerged.geojson")
-#FullTableNotAvail<-sf::st_read("d://BristolFullTableNotAvail.geojson")
-#shconv<-sf::st_read("d://ForestryParcels.geojson")
-#FullTable<-st_read("d://ForestryFullTable.geojson")
-#FullTableNotAvail<-sf::st_read("d://ForestryFullTableNotAvail.geojson")
+#shconv<-sf::st_read("BristolParcels.geojson")
+#FullTable<-st_read("BristolFullTableMerged.geojson")
+#FullTableNotAvail<-sf::st_read("BristolFullTableNotAvail.geojson")
+#shconv<-sf::st_read("ForestryParcels.geojson")
+#FullTable<-st_read("ForestryFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("ForestryFullTableNotAvail.geojson")
 
-#shconv<-sf::st_read("d://PoundsgateParcels.geojson")
-#FullTable<-st_read("d://PoundsgateFullTable.geojson")
-#FullTableNotAvail<-sf::st_read("d://PoundsgateFullTableNotAvail.geojson")
+#shconv<-sf::st_read("PoundsgateParcels.geojson")
+#FullTable<-st_read("PoundsgateFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("PoundsgateFullTableNotAvail.geojson")
 
 
 ###############
@@ -160,7 +167,11 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   #  tags$head(tags$style(HTML("#map {pointer-events: none;}"))),
                                                   #tags$style("#inSelect {color: white; background-color: transparent; border: white;}"),
                                                   selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),FullTable$extent[1]),
-                                                  fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light","rainbow dark/red","Terrain darkened/lightened"))),
+                                                  fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light",
+                                                                                                                 "rainbow dark/red",
+                                                                                                                 "Terrain darkened/lightened",
+                                                                                                                 "Terrain darkened/red",
+                                                                                                                 "Viridis darkened/red"))),
                                                   column(4,sliderInput("Darken","Darkening Factor:",min=-100,max=100,value=70)),
                                                   column(4,sliderInput("Lighten","Lightening Factor:",min=-100,max=100,value=50))),
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
@@ -339,26 +350,7 @@ server <- function(input, output, session) {
     
     
   })
-  ################ disable elements when 
-#  ChangeSliders<-reactiveVal(FALSE)
-#  observeEvent({input$SliderMain
-#                input$BioSlider
-#               input$AreaSlider
-#               input$VisitsSlider},
-#               {
-                # hideTab("tabs","Clustering")
-               # cat("aaa")
- #              })
-  #observeEvent({ChangeSliders()==FALSE},
-  #  {shinyjs::enable(id="tabs")
-  #    
-  #  })
-  
-  
-  #if (input$tabsetPanel == "Tab 1") {
-   # leafletProxy("map1") %>% clearMarkers()  # You can update the map here
-  #}
-  
+
   
   #################
   observeEvent(input$tabs == "Clustering",{
@@ -368,7 +360,7 @@ server <- function(input, output, session) {
     
     updateCheckboxInput(session,"Trigger", label = "", value = TRUE)
     #input$Trigger<-TRUE
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main20",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main20",shconv)
     
     shinyjs::disable("choose1")
     shinyjs::disable("choose2")
@@ -495,60 +487,33 @@ server <- function(input, output, session) {
           SELL<-(FullTable$extent==SelectedDropdown)
           if(!is.null(SELL)){
             SELGEO<-FullTable$geometry[SELL]
+            SELGEOFull<-FullTable[SELL,]
+            SELGEOFull$layerId<-paste0("Square",1:dim(SELGEOFull)[1])
             ############
             
             
             ColObtained<-getCols(ColourScheme=input$ColourScheme,UnitsVec=FullTable$units[SELL],
                               ColorLighteningFactor(),ColorDarkeningFactor())
-            #UnitsSel<-unique(FullTable$units[SELL])
-            
-            #'Cols<-rainbow(length(UnitsSel))
-            #FullColVec<-rep(0,dim(FullTable[SELL,])[1])
-            #for (iii in 1:length(Cols)){
-            #  FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
-            #}
-            #ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
-            #FullColVec<-darken(FullColVec,ColorDarkeningFactor)
-            #ClickedCols<-rep("red",length(ClickedCols))
             
             FullColVec<-ColObtained$FullColVec
             ClickedCols<-ColObtained$ClickedCols
+            SELGEOFull$color<-ColObtained$FullColVec
+            SELGEOFull$color[SavedVec==1]<-ColObtained$ClickedCols[SavedVec==1]
             ############  
+            SELGEOSavedVec<-SELGEOFull[,c("geometry","layerId")]
+            SELGEOSwitched<-SELGEOFull[,c("geometry","layerId")]
+
+            SELGEORemaining<-SELGEOFull[(SavedVec==1)|(SwitchedOnCells==1),c("geometry","layerId","color")]
             
-            #  sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          #  sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-            for (iii in 1:length(SwitchedOnCells)){
-              if(SavedVec[iii]==1){
-              
-                if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                  
-                listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color =ClickedCols[iii])
-                }else{
-                  for(kk in 1:length(SELGEO[[iii]])) {
-                    listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[kk]][[1]][,2]) ,layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii])
-                    
-                  }
-                
-                  }
-                
-                }
-              else{
-                if(SwitchedOnCells[iii]==1){
-                  if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                  
-                    listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=as.numeric(SELGEO[[iii]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[1]][,2]) ,layerId =paste0("Square",iii),color=FullColVec[iii])
-                  }else{
-                    for(kk in 1:length(SELGEO[[iii]])) {
-                      listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=as.numeric(SELGEO[[iii]][[kk]][[1]][,1]) ,lat=as.numeric(SELGEO[[iii]][[kk]][[1]][,2]) ,layerId =paste0("Square",iii,"_",kk),color=FullColVec[iii])
-                      
-                    }
-                    
-                  }
-                  
-                  }
-              }
+            
+            SELGEOSavedVec<-SELGEOSavedVec[SavedVec==1,]#;gpNamesSavedVec<-gpNamesSavedVec[SavedVec]
+            SELGEOSwitched<-SELGEOSwitched[(SwitchedOnCells==1)&(SavedVec!=1),]#;gpNamesSwitched<-gpNamesSwitched[SwitchedOnCells&(!SavedVec)]
+            
+            
+            if(dim(SELGEORemaining)[1]>0){listMaps[[aai]]<-addPolygons(listMaps[[aai]],data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
+            
+        
             }
-          }
           
           listMaps[[aai]]<-listMaps[[aai]]%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
@@ -649,32 +614,32 @@ server <- function(input, output, session) {
     
     GEOVEC<-st_geometry_type(FullTable$geometry)
     
-    if(!is.null(click)){
+    if(!is.null(click$id)){
       ChangeDone<-FALSE
       SavedVec<-ClickedVector()
         iii<-1
     
         while((!ChangeDone)&&(iii<=length(SavedVec))){
-            kk<-1
-            while((!ChangeDone)&&(kk<=length(FullTable$geometry[[iii]]))){
-                if(st_geometry_type(FullTable$geometry)[iii]=="POLYGON"){
+            #kk<-1
+            #while((!ChangeDone)&&(kk<=length(FullTable$geometry[[iii]]))){
+               # if(st_geometry_type(FullTable$geometry)[iii]=="POLYGON"){
                             if((click$id == paste0("Square",iii))){
                               SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
                               ClickedVector(SavedVec)
                               ChangeDone<-TRUE
-                              }}else{
-                          if((click$id == paste0("Square",iii,"_",kk))){
-                            SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
-                            ClickedVector(SavedVec)
-                            ChangeDone<-TRUE
+                              }#}#else{
+                         # if((click$id == paste0("Square",iii,"_",kk))){
+                          #  SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
+                          #  ClickedVector(SavedVec)
+                          #  ChangeDone<-TRUE
                             
-                            }
+                           # }
             
-                      }
+                      #}
       
           
-              kk<-kk+1
-            }
+          #    kk<-kk+1
+           # }
             iii<-iii+1
     }
     }
@@ -686,7 +651,7 @@ server <- function(input, output, session) {
     
     SavedVec<-ClickedVector()
     SelectedDropdown<-input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main",shconv)
     map<-calcBaseMap$map
     
     if(!is.null(SavedVec)){
@@ -761,59 +726,38 @@ server <- function(input, output, session) {
           SelectedVisitsSD<-SelectedMins[SelecRow,]$VisitsSD
           
           
+          SELGEOFull<-FullTable[SELL,]
+          SELGEOFull$layerId<-paste0("Square",1:dim(SELGEOFull)[1])
           SELGEO<-FullTable$geometry[SELL]
           ############
-          #UnitsSel<-unique(FullTable$units[SELL])
-          #Cols<-rainbow(length(UnitsSel))
-          #FullColVec<-rep(0,dim(FullTable[SELL,])[1])
-          #for (iii in 1:length(Cols)){
-          #  FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
-          #}
-          #ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
-          #FullColVec<-darken(FullColVec,ColorDarkeningFactor)
-          #ClickedCols<-rep("red",length(ClickedCols))
           ColObtained<-getCols(ColourScheme=input$ColourScheme,UnitsVec=FullTable$units[SELL],
                                ColorLighteningFactor(),ColorDarkeningFactor())
           
           FullColVec<-ColObtained$FullColVec
           ClickedCols<-ColObtained$ClickedCols
+          SELGEOFull$color<-ColObtained$FullColVec
+          SELGEOFull$color[SavedVec==1]<-ColObtained$ClickedCols[SavedVec==1]
+          
           
           ############  
+          SELGEOSavedVec<-SELGEOFull[,c("geometry","layerId")]
+          SELGEOSwitched<-SELGEOFull[,c("geometry","layerId")]
           
-          #sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          #sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-          for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){
-              
-              if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-              map<-addPolygons(map,lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii])
-              }else{
-                for(kk in 1:length(SELGEO[[iii]])) {
-                  map<-addPolygons(map,lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii])
-                  
-                }
-                
-              }
-              
-              }
-            else{
-              if(SwitchedOnCells[iii]==1){
-                if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                
-                map<-addPolygons(map,lng=as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])
-                }else{
-                  
-                  
-                  for(kk in 1:length(SELGEO[[iii]])) {
-                    map<-addPolygons(map,lng=as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color=FullColVec[iii])
-                    
-                  }
-                  
-                }
-              }
-                
-              }
-          }
+          SELGEOSavedVec<-SELGEOSavedVec[SavedVec==1,]#;gpNamesSavedVec<-gpNamesSavedVec[SavedVec]
+          SELGEOSwitched<-SELGEOSwitched[(SwitchedOnCells==1)&(SavedVec!=1),]#;gpNamesSwitched<-gpNamesSwitched[SwitchedOnCells&(!SavedVec)]
+          SELGEORemaining<-SELGEOFull[(SavedVec==1)|(SwitchedOnCells==1),c("geometry","layerId","color")]
+          
+        
+          
+          if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
+          
+
+          
+
+
+
+
+
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
                                  Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
@@ -827,9 +771,6 @@ server <- function(input, output, session) {
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
-    #showTab("tabs","Clustering")
-   # cat("bbb3")
-  #  cat("\n")
     map
    # ChangeSliders(FALSE)
     # shinyjs::show("tabs")
@@ -840,7 +781,7 @@ server <- function(input, output, session) {
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main2", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main2", shconv)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -915,7 +856,7 @@ server <- function(input, output, session) {
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main3", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main3", shconv)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -994,7 +935,7 @@ server <- function(input, output, session) {
   output$map4 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main4", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main4", shconv)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1078,7 +1019,7 @@ server <- function(input, output, session) {
   output$map5 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main5", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main5", shconv)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
