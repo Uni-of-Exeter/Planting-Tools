@@ -49,7 +49,6 @@ LatestFileNames[3]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFo
 LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$ctime)
 
 LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
-#write.csv(LatestFilesInfo,"d://ElicitatorOutput//LastestFilesInfo.csv")
 PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
 if(sum(PrevFilesInfo$ctime!=LatestFilesInfo$ctime)>0){
 if(file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){file.remove(paste0(ElicitatorAppFolder,"Parcels.geojson"))}
@@ -94,11 +93,6 @@ for(ii in 1:length(Uni))
   
 }
 FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
-############################################
-PROJdir<-system.file("proj/proj.db", package = "sf")
-PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-sf_proj_search_paths(PROJdir)
-
 
 
 #######################################
