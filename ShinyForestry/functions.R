@@ -46,6 +46,31 @@ getCols<-function(ColourScheme,UnitsVec,ColorLighteningFactor,ColorDarkeningFact
     
     
   }
+  if(ColourScheme=="Terrain darkened/red"){
+    Cols<-terrain.colors( length(UniqC))
+    FullColVec<-rep(0,LL)
+    for (iii in 1:length(Cols)){
+      FullColVec[UnitsVec==UniqC[iii]]<-Cols[iii]
+    }
+    ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
+    FullColVec<-darken(FullColVec,ColorDarkeningFactor)
+    ClickedCols<-rep("red",LL)
+    
+    
+  }
+  
+  if(ColourScheme=="Viridis darkened/red"){
+    Cols<-viridis( length(UniqC))
+    FullColVec<-rep(0,LL)
+    for (iii in 1:length(Cols)){
+      FullColVec[UnitsVec==UniqC[iii]]<-Cols[iii]
+    }
+    ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
+    FullColVec<-darken(FullColVec,ColorDarkeningFactor)
+    ClickedCols<-rep("red",LL)
+    
+    
+  }
   
   
   return(list(FullColVec=FullColVec,ClickedCols=ClickedCols))
@@ -137,6 +162,65 @@ BaseMap<-function(SelectedMap,layerId=NULL,shconv)
     
     
   }  
+    
+  return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
+}
+
+
+
+BaseMap2<-function(SelectedMap,layerId=NULL,shconv)
+{
+  
+  #ListMaps<-shconv[shconv$extent==SelectedMap,]$shape[[1]]
+  ListMaps<-shconv$geometry[shconv$extent==SelectedMap]
+  
+  max_x2<-(-Inf);min_x2<-(Inf);max_y2<-(-Inf);min_y2<-Inf;
+  
+  if(st_geometry_type(shconv)[1]=="POLYGON"){
+  
+  for(ii in 1: length(ListMaps)){
+    for(jj in 1: length(ListMaps[[ii]])){
+   
+      xvec<-ListMaps[[ii]][[jj]][,1]
+      yvec<-ListMaps[[ii]][[jj]][,2]
+      xvec<-xvec[!is.na(xvec)]
+      yvec<-yvec[!is.na(yvec)]
+      max_x2<-max(max_x2,xvec)
+      min_x2<-min(min_x2,xvec)
+      
+      max_y2<-max(max_y2,yvec)
+      min_y2<-min(min_y2,yvec)
+      }
+    }
+  
+    map<-leaflet() 
+    map<-  addTiles(map) 
+    map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
+                   lng2 = max_x2, lat2 =max_y2) #%>%
+    
+  }else{
+    for(ii in 1: length(ListMaps)){
+      for(jj in 1: length(ListMaps[[ii]])){
+        for(kk in 1: length(ListMaps[[ii]][[jj]])){
+          xvec<-ListMaps[[ii]][[jj]][[kk]][,1]
+          yvec<-ListMaps[[ii]][[jj]][[kk]][,2]
+          xvec<-xvec[!is.na(xvec)]
+          yvec<-yvec[!is.na(yvec)]
+          max_x2<-max(max_x2,xvec)
+          min_x2<-min(min_x2,xvec)
+          
+          max_y2<-max(max_y2,yvec)
+          min_y2<-min(min_y2,yvec)
+        }
+      }
+    }
+    map<-leaflet() 
+    map<-  addTiles(map) 
+    map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
+                   lng2 = max_x2, lat2 =max_y2) 
+    
+  }  
+          map<-addPolygons(map,data=ListMaps,color="grey")
     
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
