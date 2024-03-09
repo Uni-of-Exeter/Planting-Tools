@@ -27,7 +27,6 @@ library(GGally)
 library(colorspace)
 library(rjson)
 library(arrow)
-library(viridis)
 library(lwgeom)
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
@@ -37,12 +36,12 @@ library(lwgeom)
 
 source("functions.R")
 
-#PROJdir<-system.file("proj/proj.db", package = "sf")
-#PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-#sf_proj_search_paths(PROJdir)
+PROJdir<-system.file("proj/proj.db", package = "sf")
+PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+sf_proj_search_paths(PROJdir)
 
-ElicitatorAppFolder<-"..//ElicitatorOutput//"
-JulesAppFolder<-"..\\JulesOP\\"
+ElicitatorAppFolder<-"d://ElicitatorOutput//"
+JulesAppFolder<-"d:\\JulesOP\\"
 ########################## Pre-processing
 #remove all directories starting with "land"
 unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
@@ -56,6 +55,7 @@ LatestFileNames[3]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFo
 LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$ctime)
 
 LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
+#write.csv(LatestFilesInfo,"d://ElicitatorOutput//LastestFilesInfo.csv")
 PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
 
 
@@ -254,13 +254,13 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   #  tags$head(tags$style(HTML("#map {pointer-events: none;}"))),
                                                   #tags$style("#inSelect {color: white; background-color: transparent; border: white;}"),
                                                   selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),FullTable$extent[1]),
-                                                  fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light",
-                                                                                                                 "rainbow dark/red",
-                                                                                                                 "Terrain darkened/lightened",
-                                                                                                                 "Terrain darkened/red",
-                                                                                                                 "Viridis darkened/red"))),
-                                                  column(4,sliderInput("Darken","Darkening Factor:",min=-100,max=100,value=70)),
-                                                  column(4,sliderInput("Lighten","Lightening Factor:",min=-100,max=100,value=50))),
+                                                  #fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light",
+                                                   #                                                              "rainbow dark/red",
+                                                    #                                                             "Terrain darkened/lightened",
+                                                     #                                                            "Terrain darkened/red",
+                                                      #                                                           "Viridis darkened/red"))),
+                                                  #column(4,sliderInput("Darken","Darkening Factor:",min=-100,max=100,value=70)),
+                                                  #column(4,sliderInput("Lighten","Lightening Factor:",min=-100,max=100,value=50))),
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
                                            ),
                                            column(3,
@@ -329,12 +329,13 @@ server <- function(input, output, session) {
   ColorLighteningFactor<-reactiveVal(0.5)
   ColorDarkeningFactor<-reactiveVal(0.7)
   
-  observeEvent(input$Darken,{
-    ColorDarkeningFactor(input$Darken/100)
-  })
-  observeEvent(input$Lighten,{
-    ColorLighteningFactor(input$Lighten/100)
-  })
+  ColourScheme<-reactiveVal("Viridis darkened/red")
+ # observeEvent(input$Darken,{
+#    ColorDarkeningFactor(input$Darken/100)
+#  })
+ # observeEvent(input$Lighten,{
+#    ColorLighteningFactor(input$Lighten/100)
+#  })
   
   output$TargetText<-renderText({paste0("Targets:\n", "Tree Carbon: ",as.numeric(CarbonSliderVal()),
                                         "\nRed Squirrel: ",as.numeric(bioSliderVal()),
@@ -579,7 +580,7 @@ server <- function(input, output, session) {
             ############
             
             
-            ColObtained<-getCols(ColourScheme=input$ColourScheme,UnitsVec=FullTable$units[SELL],
+            ColObtained<-getCols(ColourScheme=ColourScheme(),UnitsVec=FullTable$units[SELL],
                               ColorLighteningFactor(),ColorDarkeningFactor())
             
             FullColVec<-ColObtained$FullColVec
@@ -700,7 +701,7 @@ server <- function(input, output, session) {
     SelectedRowsUnits<-FullTable$units[FullTable$extent==SelectedDropdown]
     
     
-    GEOVEC<-st_geometry_type(FullTable$geometry)
+    #GEOVEC<-st_geometry_type(FullTable$geometry)
     
     if(!is.null(click$id)){
       ChangeDone<-FALSE
@@ -708,26 +709,11 @@ server <- function(input, output, session) {
         iii<-1
     
         while((!ChangeDone)&&(iii<=length(SavedVec))){
-            #kk<-1
-            #while((!ChangeDone)&&(kk<=length(FullTable$geometry[[iii]]))){
-               # if(st_geometry_type(FullTable$geometry)[iii]=="POLYGON"){
                             if((click$id == paste0("Square",iii))){
                               SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
                               ClickedVector(SavedVec)
                               ChangeDone<-TRUE
-                              }#}#else{
-                         # if((click$id == paste0("Square",iii,"_",kk))){
-                          #  SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
-                          #  ClickedVector(SavedVec)
-                          #  ChangeDone<-TRUE
-                            
-                           # }
-            
-                      #}
-      
-          
-          #    kk<-kk+1
-           # }
+                              }
             iii<-iii+1
     }
     }
@@ -824,7 +810,7 @@ server <- function(input, output, session) {
           SELGEOFull$layerId<-paste0("Square",1:dim(SELGEOFull)[1])
           SELGEO<-FullTable$geometry[SELL]
           ############
-          ColObtained<-getCols(ColourScheme=input$ColourScheme,UnitsVec=FullTable$units[SELL],
+          ColObtained<-getCols(ColourScheme=ColourScheme(),UnitsVec=FullTable$units[SELL],
                                ColorLighteningFactor(),ColorDarkeningFactor())
           
           FullColVec<-ColObtained$FullColVec
@@ -844,14 +830,7 @@ server <- function(input, output, session) {
         
           
           if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
-          
-
-          
-
-
-
-
-
+    
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
                                  Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
