@@ -108,35 +108,36 @@ FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
 
 
 
-XVEC<-sort(unique(c(XYMAT$XMIN,XYMAT$XMAX)))
-YVEC<-sort(unique(c(XYMAT$YMIN,XYMAT$YMAX)))
+#XVEC<-sort(unique(c(XYMAT$XMIN,XYMAT$XMAX)))
+#YVEC<-sort(unique(c(XYMAT$YMIN,XYMAT$YMAX)))
 
 
-keptLines<-NULL
-shconvBack<-st_transform(shconv, crs =st_crs(27700))
-for(ii in 1:length(shconv$geometry))
-{
-  MERconvback<-shconvBack$geometry[[ii]][[1]]
-
-      xmin<-min(MERconvback[,1])
-      DIF<-xmin-XVEC
-      XMINVEC<-(XVEC[DIF>=0])[which.min(DIF[DIF>=0])]
-      
-      xmax<-max(MERconvback[,1])
-      DIF2<-XVEC-xmax
-      XMAXVEC<-(XVEC[DIF2>=0])[which.min(DIF2[DIF2>=0])]
-      
-      ymin<-min(MERconvback[,2])
-      DIF3<-ymin-YVEC
-      YMINVEC<-(YVEC[DIF3>=0])[which.min(DIF3[DIF3>=0])]
-      
-      ymax<-max(MERconvback[,2])
-      DIF4<-YVEC-ymax
-      YMAXVEC<-(YVEC[DIF4>=0])[which.min(DIF4[DIF4>=0])]
-      
-      keptLines<-unique(c(keptLines,which((XYMAT$XMAX<=XMAXVEC)&(XYMAT$XMIN>=XMINVEC)&(XYMAT$YMIN>=YMINVEC)&(XYMAT$YMAX<=YMAXVEC))))
-   
-}
+#keptLines<-NULL
+#shconvBack<-st_transform(shconv, crs =st_crs(27700))
+#for(ii in 1:length(shconv$geometry))
+#{
+#  MERconvback<-shconvBack$geometry[[ii]][[1]]##
+#
+#      xmin<-min(MERconvback[,1])
+#      DIF<-xmin-XVEC
+#      XMINVEC<-(XVEC[DIF>=0])[which.min(DIF[DIF>=0])]
+#      
+#      xmax<-max(MERconvback[,1])
+#      DIF2<-XVEC-xmax
+#      XMAXVEC<-(XVEC[DIF2>=0])[which.min(DIF2[DIF2>=0])]
+#      
+#      ymin<-min(MERconvback[,2])
+#      DIF3<-ymin-YVEC
+#      YMINVEC<-(YVEC[DIF3>=0])[which.min(DIF3[DIF3>=0])]
+#      
+#      ymax<-max(MERconvback[,2])
+ #     DIF4<-YVEC-ymax
+#      YMAXVEC<-(YVEC[DIF4>=0])[which.min(DIF4[DIF4>=0])]
+#      
+#      keptLines<-unique(c(keptLines,which((XYMAT$XMAX<=XMAXVEC)&(XYMAT$XMIN>=XMINVEC)&(XYMAT$YMIN>=YMINVEC)&(XYMAT$YMAX<=YMAXVEC))))
+#   
+#}
+keptLines<-sort(which(as.numeric(summary(sf::st_intersects(Sqconv,shconv))[,1])!=0))
 
 SELECTEDSquaresconv<-Sqconv$geometry[keptLines]
 LinesJules<-CorrespondenceJules[keptLines]
@@ -327,7 +328,7 @@ server <- function(input, output, session) {
   Text4<-reactiveVal("")
   
   ColorLighteningFactor<-reactiveVal(0.5)
-  ColorDarkeningFactor<-reactiveVal(0.7)
+  ColorDarkeningFactor<-reactiveVal(0.5)
   
   ColourScheme<-reactiveVal("Viridis darkened/red")
  # observeEvent(input$Darken,{
