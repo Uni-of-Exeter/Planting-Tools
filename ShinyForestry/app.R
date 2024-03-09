@@ -28,14 +28,21 @@ library(colorspace)
 library(rjson)
 library(arrow)
 library(viridis)
+library(lwgeom)
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
 #SelectedDropdown<-"Ennerdale"
 ############################################
+
 source("functions.R")
 
-ElicitatorAppFolder<-"OUTPUTFOLDERNAME"
+#PROJdir<-system.file("proj/proj.db", package = "sf")
+#PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+#sf_proj_search_paths(PROJdir)
+
+ElicitatorAppFolder<-"..//ElicitatorOutput//"
+JulesAppFolder<-"..\\JulesOP\\"
 ########################## Pre-processing
 #remove all directories starting with "land"
 unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
@@ -50,6 +57,8 @@ LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$cti
 
 LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
 PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
+
+
 if(sum(PrevFilesInfo$ctime!=LatestFilesInfo$ctime)>0){
 if(file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){file.remove(paste0(ElicitatorAppFolder,"Parcels.geojson"))}
 if(file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))}
@@ -58,21 +67,23 @@ UnZipDirName<-paste0(substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFil
 #if(dir.exists(UnZipDirName)){unlink(UnZipDirName, recursive = T)}
 dir.create(UnZipDirName)
 unzip(LatestFilesInfo$LatestFileNames[1], exdir = UnZipDirName)
-##################
+################## Load necessary files
 shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
 if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
 st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
-##################
-#FullTab<-data.frame(extent=shconv$extent,ids=shconv$gid,x=rep(0,lsh),y=rep(0,lsh),area=rep(1e6,lsh),JulesMean=rep(15,lsh),
-#                    JulesSD=rep(1,lsh),VisitsMean=rep(30,lsh),VisitsSD=rep(2,lsh),BioMean_Sciurus_vulgaris=rep(0.5,lsh),BioSD_Sciurus_vulgaris=rep(0.02,lsh))
-#FullTab$units<- rjson::fromJSON(file=LatestFilesInfo$LatestFileNames[2])$decision_unit_ids
-#FullTable <- st_sf(FullTab,geometry=shconv$geometry,crs=4326)
+JulesMean<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-mean-monthly.feather"))[,c("x","y","mean337")]
+JulesSD<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-sd-monthly.feather"))[,c("x","y","sd337")]
+SquaresLoad<-sf::st_read(paste0(JulesAppFolder,"SEER//Fishnet_1km_to_SEER_net2km.shp"))
+Sqconv<-st_transform(SquaresLoad, crs = 4326)
+XYMAT<-read.csv(paste0(JulesAppFolder,"XYMat_1km.csv"))[,-1]
+CorrespondenceJules<-read.csv(paste0(JulesAppFolder,"/CorrespondanceSqToJules.csv"))[,-1]
+
 ###################
 sf_use_s2(FALSE)
 lsh<-dim(shconv)[1]
 AllUnits<- rjson::fromJSON(file=LatestFilesInfo$LatestFileNames[2])$decision_unit_ids
 Uni<-unique(AllUnits)
-FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1e6,length(Uni)),
+FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1,length(Uni)),
                           JulesMean=rep(15,length(Uni)),
                           JulesSD=rep(1,length(Uni)),VisitsMean=rep(30,length(Uni)),
                           VisitsSD=rep(2,length(Uni)),BioMean_Sciurus_vulgaris=rep(0.5,length(Uni)),
@@ -93,7 +104,89 @@ for(ii in 1:length(Uni))
   
 }
 FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
+############################################ Replace the Jules Mean here
 
+
+
+XVEC<-sort(unique(c(XYMAT$XMIN,XYMAT$XMAX)))
+YVEC<-sort(unique(c(XYMAT$YMIN,XYMAT$YMAX)))
+
+
+keptLines<-NULL
+shconvBack<-st_transform(shconv, crs =st_crs(27700))
+for(ii in 1:length(shconv$geometry))
+{
+  MERconvback<-shconvBack$geometry[[ii]][[1]]
+
+      xmin<-min(MERconvback[,1])
+      DIF<-xmin-XVEC
+      XMINVEC<-(XVEC[DIF>=0])[which.min(DIF[DIF>=0])]
+      
+      xmax<-max(MERconvback[,1])
+      DIF2<-XVEC-xmax
+      XMAXVEC<-(XVEC[DIF2>=0])[which.min(DIF2[DIF2>=0])]
+      
+      ymin<-min(MERconvback[,2])
+      DIF3<-ymin-YVEC
+      YMINVEC<-(YVEC[DIF3>=0])[which.min(DIF3[DIF3>=0])]
+      
+      ymax<-max(MERconvback[,2])
+      DIF4<-YVEC-ymax
+      YMAXVEC<-(YVEC[DIF4>=0])[which.min(DIF4[DIF4>=0])]
+      
+      keptLines<-unique(c(keptLines,which((XYMAT$XMAX<=XMAXVEC)&(XYMAT$XMIN>=XMINVEC)&(XYMAT$YMIN>=YMINVEC)&(XYMAT$YMAX<=YMAXVEC))))
+   
+}
+
+SELECTEDSquaresconv<-Sqconv$geometry[keptLines]
+LinesJules<-CorrespondenceJules[keptLines]
+# Find lines where Jules is not available
+LinesJulesNoMinus1<-which(LinesJules==(-1))
+LinesJules[LinesJulesNoMinus1]<-1
+SelectedJulesMeanSq<-JulesMean[CorrespondenceJules[keptLines],]
+SelectedJulesMeanSq[LinesJulesNoMinus1]<-0
+SelectedJulesSDSq<-JulesSD[CorrespondenceJules[keptLines],]
+SelectedJulesSDSq[LinesJulesNoMinus1]<-0
+
+SELECTEDSquaresconvTab<-data.frame(idSq=seq_along(SELECTEDSquaresconv))
+SELECTEDSquaresconvTab<-st_sf(SELECTEDSquaresconvTab,geometry=SELECTEDSquaresconv,crs=4326)
+
+
+FullTableCopy<-FullTable
+FullTableCopy$idPoly<-seq_along(FullTableCopy$geometry)
+
+#st_as_sf(data.frame(geometry=SELECTEDSquaresconv))
+#st_as_sf(data.frame(FullTable))
+
+INTT<-st_intersection(st_make_valid(SELECTEDSquaresconvTab),st_make_valid(FullTableCopy))
+INTT$area<-st_area(INTT)/1e6
+
+NBSIMS<-500
+for(ii in 1:length(FullTableCopy$geometry))
+{
+  SELLLines<-INTT$idPoly==ii
+  SELLSqs<-INTT$idSq[SELLLines]
+  SELLWeights<-INTT$area[SELLLines]
+  SellWeightsArr<-t(matrix(SELLWeights,length(SELLWeights),NBSIMS))
+  
+  SelJulesMeans<-SelectedJulesMeanSq$mean337[SELLSqs]
+  SelJulesSDs<-SelectedJulesSDSq$sd337[SELLSqs]
+  SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
+  
+  FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
+  FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
+  FullTable$area[ii]<-sum(SELLWeights)
+}
+
+
+
+#aa<-leaflet()
+#aa<-  addTiles(aa) 
+#for(aaa in 1:30){
+#aa<-addPolygons(aa,data=MER[[aaa]])
+#}#
+
+  #aa<-addPolygons(aa,data=Sqconv$geometry[keptLines],col="red")
 
 #######################################
 st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
@@ -114,16 +207,16 @@ st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojso
 }
 
 
-#shconv<-sf::st_read("BristolParcels.geojson")
-#FullTable<-st_read("BristolFullTableMerged.geojson")
-#FullTableNotAvail<-sf::st_read("BristolFullTableNotAvail.geojson")
-#shconv<-sf::st_read("ForestryParcels.geojson")
-#FullTable<-st_read("ForestryFullTable.geojson")
-#FullTableNotAvail<-sf::st_read("ForestryFullTableNotAvail.geojson")
+#shconv<-sf::st_read("d://BristolParcels.geojson")
+#FullTable<-st_read("d://BristolFullTableMerged.geojson")
+#FullTableNotAvail<-sf::st_read("d://BristolFullTableNotAvail.geojson")
+#shconv<-sf::st_read("d://ForestryParcels.geojson")
+#FullTable<-st_read("d://ForestryFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("d://ForestryFullTableNotAvail.geojson")
 
-#shconv<-sf::st_read("PoundsgateParcels.geojson")
-#FullTable<-st_read("PoundsgateFullTable.geojson")
-#FullTableNotAvail<-sf::st_read("PoundsgateFullTableNotAvail.geojson")
+#shconv<-sf::st_read("d://PoundsgateParcels.geojson")
+#FullTable<-st_read("d://PoundsgateFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("d://PoundsgateFullTableNotAvail.geojson")
 
 
 ###############
@@ -312,12 +405,12 @@ server <- function(input, output, session) {
     
     if(!(dim(SelectedSquares)[1]==0)){
       AreaSelected<-FullTable$area[FullTable$extent==SelectedDropdown]
-      CarbonSelected<-(FullTable$JulesMean[FullTable$extent==SelectedDropdown]*AreaSelected)/1e6
+      CarbonSelected<-(FullTable$JulesMean[FullTable$extent==SelectedDropdown])#*AreaSelected)/1e6
       RedSquirrelSelected<-FullTable$BioMean_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
       VisitsSelected<-FullTable$VisitsMean[FullTable$extent==SelectedDropdown]
       
       
-      CarbonSelectedSD<-(FullTable$JulesSD[FullTable$extent==SelectedDropdown]*AreaSelected)/1e6
+      CarbonSelectedSD<-(FullTable$JulesSD[FullTable$extent==SelectedDropdown])#*AreaSelected)/1e6
       RedSquirrelSelectedSD<-FullTable$BioSD_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
       VisitsSelectedSD<-FullTable$VisitsSD[FullTable$extent==SelectedDropdown]
       
@@ -336,7 +429,7 @@ server <- function(input, output, session) {
       
       updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)),value=trunc(sum(CarbonSelected)))
       updateSliderInput(session, "BioSlider", max = trunc(mean(RedSquirrelSelected)),value=trunc(mean(RedSquirrelSelected)))
-      updateSliderInput(session, "AreaSlider", max = trunc(sum(AreaSelected)/1e6),value=trunc(sum(AreaSelected)/1e6))
+      updateSliderInput(session, "AreaSlider", max = trunc(100*sum(AreaSelected))/100,value=trunc(100*sum(AreaSelected))/100)#trunc(sum(AreaSelected)/1e6),value=trunc(sum(AreaSelected)/1e6))
       updateSliderInput(session, "VisitsSlider", max = trunc(mean(VisitsSelected)),value=trunc(mean(VisitsSelected)))
     }
     
@@ -512,9 +605,10 @@ server <- function(input, output, session) {
           listMaps[[aai]]<-listMaps[[aai]]%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
                                  Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted: ",round(SelectedArea/1e6,2),"<br>
+                                 Area Planted: ",round(SelectedArea,2),"<br>
                                  Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
+          #/1e6
           
         }
         
@@ -671,18 +765,24 @@ server <- function(input, output, session) {
                                      VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
+      LimitsMat <- tmp$LimitsMat
       SelecTargetCarbon <- tmp$SelecTargetCarbon
       SelecTargetBio <- tmp$SelecTargetBio
       SelecTargetArea <- tmp$SelecTargetArea
       SelecTargetVisits <- tmp$SelecTargetVisits
       rm(tmp)
+      PROBAMAT <- Icalc$IVEC
+      for (abc in 1:dim(Icalc$IVEC)[2]) {
+        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      }
+      
       
       SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$carbon>=SelecTargetCarbon)&
                                            (SelectedSimMat2$redsquirel>=SelecTargetBio)&
                                            (SelectedSimMat2$Area>=SelecTargetArea)&
                                            (SelectedSimMat2$Visits>=SelecTargetVisits),]
       
-      SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
+      #SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
       if(dim(SubsetMeetTargets)[1]>0){
         if(max(SelectedSimMat2$carbon)!=min(SelectedSimMat2$carbon)){
@@ -755,7 +855,7 @@ server <- function(input, output, session) {
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
                                  Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted: ",round(SelectedArea/1e6,2),"<br>
+                                 Area Planted: ",round(SelectedArea,2),"<br>
                                  Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
           
@@ -832,7 +932,7 @@ server <- function(input, output, session) {
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
                                                Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea/1e6, 2), "<br>
+                                               Area Planted: ", round(SelectedArea, 2), "<br>
                                                Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         Text1(paste0("Strategies that meet all 4 targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1)))
@@ -913,7 +1013,7 @@ server <- function(input, output, session) {
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
                                                Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea/1e6, 2), "<br>
+                                               Area Planted: ", round(SelectedArea, 2), "<br>
                                                Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         Text2(paste0("Strategies that meet exactly 3 targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", mapresults$SelectedLine$NotMet))
@@ -996,7 +1096,7 @@ server <- function(input, output, session) {
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
                                                Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea/1e6, 2), "<br>
+                                               Area Planted: ", round(SelectedArea, 2), "<br>
                                                Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
@@ -1076,7 +1176,7 @@ server <- function(input, output, session) {
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
                                                Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea/1e6, 2), "<br>
+                                               Area Planted: ", round(SelectedArea, 2), "<br>
                                                Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         Text4(paste0("Strategies that meet only 1 target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", mapresults$SelectedLine$Met))
