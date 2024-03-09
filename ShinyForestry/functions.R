@@ -567,6 +567,7 @@ outputmap_createResults <- function(map,
                                     SavedVec,
                                     SelectedDropdown,
                                     randomValue,
+                                    ColourScheme,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor) {
   SavedRVs <- randomValue()
@@ -591,14 +592,17 @@ outputmap_createResults <- function(map,
     SELGEO<-  FullTable$geometry[SELL]
     ############
     UnitsSel<-unique(FullTable$units[SELL])
-    Cols<-rainbow(length(UnitsSel))
-    FullColVec<-rep(0,dim(FullTable[SELL,])[1])
-    for (iii in 1:length(Cols)){
-      FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
-    }
-    ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
-    FullColVec<-darken(FullColVec,ColorDarkeningFactor)
-    ClickedCols<-rep("red",length(ClickedCols))
+    ColObtained<-getCols(ColourScheme,UnitsVec=FullTable$units[SELL],
+                         ColorLighteningFactor,ColorDarkeningFactor)
+    
+    #Cols<-rainbow(length(UnitsSel))
+    #FullColVec<-rep(0,dim(FullTable[SELL,])[1])
+    #for (iii in 1:length(Cols)){
+    #  FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
+    #}
+    #ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
+    FullColVec<-ColObtained$FullColVec#darken(FullColVec,ColorDarkeningFactor)
+    ClickedCols<-ColObtained$ClickedCols#rep("red",length(ClickedCols))
     ############  
     for (iii in 1:length(SwitchedOnCells)) {
       if (SavedVec[iii] == 1) {
