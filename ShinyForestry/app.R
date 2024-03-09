@@ -89,20 +89,34 @@ FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),
                           VisitsSD=rep(2,length(Uni)),BioMean_Sciurus_vulgaris=rep(0.5,length(Uni)),
                           BioSD_Sciurus_vulgaris=rep(0.02,length(Uni)),units=Uni)
 
+tt<-proc.time()
 
+#MER<-list()
+#for(ii in 1:length(Uni))
+#{
+#  SELLL<-shconv$geometry[AllUnits==Uni[ii]]
+#  MER[[ii]]<-st_union(SELLL[1],SELLL[2])
+#  if(length(SELLL)>2){
+#    for (jj in 3:length(SELLL)){
+#      MER[[ii]]<-st_union(MER[[ii]],st_make_valid(SELLL[jj]))
+#      }
+#    
+#  }
+#  
+#}
+
+tt2<-proc.time()-tt
+
+tt3<-proc.time()
 MER<-list()
 for(ii in 1:length(Uni))
 {
   SELLL<-shconv$geometry[AllUnits==Uni[ii]]
-  MER[[ii]]<-st_union(SELLL[1],SELLL[2])
-  if(length(SELLL)>2){
-    for (jj in 3:length(SELLL)){
-      MER[[ii]]<-st_union(MER[[ii]],st_make_valid(SELLL[jj]))
-      }
-    
-  }
+  MER[[ii]]<-st_union(st_make_valid(SELLL))
   
 }
+tt4<-proc.time()-tt3
+
 FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
 ############################################ Replace the Jules Mean here
 
