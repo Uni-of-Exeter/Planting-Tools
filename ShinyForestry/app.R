@@ -36,9 +36,9 @@ library(lwgeom)
 
 source("functions.R")
 
-PROJdir<-system.file("proj/proj.db", package = "sf")
-PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-sf_proj_search_paths(PROJdir)
+#PROJdir<-system.file("proj/proj.db", package = "sf")
+#PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+#sf_proj_search_paths(PROJdir)
 
 ElicitatorAppFolder<-"d://ElicitatorOutput//"
 JulesAppFolder<-"d:\\JulesOP\\"
@@ -281,7 +281,7 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                            column(3,
                                                   verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
                                                                  textOutput("SoilCarbonNotIncluded"),
-                                                                 sliderInput("BioSlider","Average Red Squirrel % increase:",min=0,max=36,value=25),
+                                                                 sliderInput("BioSlider","Average Red Squirrel % increase:",min=0,max=36,value=25,step=0.01),
                                                                  sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
                                                                  sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400)
                                                   )))
@@ -444,7 +444,7 @@ server <- function(input, output, session) {
       VisitsSelectedSD0(VisitsSelectedSD)
       
       updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)),value=trunc(sum(CarbonSelected)))
-      updateSliderInput(session, "BioSlider", max = trunc(mean(RedSquirrelSelected)),value=trunc(mean(RedSquirrelSelected)))
+      updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100,value=trunc(100*mean(RedSquirrelSelected))/100,step=0.01)
       updateSliderInput(session, "AreaSlider", max = trunc(100*sum(AreaSelected))/100,value=trunc(100*sum(AreaSelected))/100)#trunc(sum(AreaSelected)/1e6),value=trunc(sum(AreaSelected)/1e6))
       updateSliderInput(session, "VisitsSlider", max = trunc(mean(VisitsSelected)),value=trunc(mean(VisitsSelected)))
     }
@@ -917,6 +917,7 @@ server <- function(input, output, session) {
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
+                                              ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
@@ -998,6 +999,7 @@ server <- function(input, output, session) {
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
+                                              ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
@@ -1081,6 +1083,7 @@ server <- function(input, output, session) {
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
+                                              ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
@@ -1161,6 +1164,7 @@ server <- function(input, output, session) {
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
+                                              ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor())
         SavedRVs <- mapresults$SavedRVs
