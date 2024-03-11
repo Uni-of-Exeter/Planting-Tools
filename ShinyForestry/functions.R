@@ -822,16 +822,15 @@ add_richness_columns <- function(FullTable, name_conversion) {
   return(FullTable2)
 }
 
-convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table) {
+convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob40,jncc100,climatecells) {
   # Take the Biodiversity probabilities from Matlab results/scenario_species_prob_40.csv
   # and merge them with BristolFullTableMerged.geojson
     
   # Load the shapefile mapping new2kid with Polygons
-  id_polygons <- st_read("Documentation/SEER_net2km/SEER_net2km.shp") %>%
-    select(c(new2kid, geometry))
+  id_polygons <- seer2km %>%dplyr::select(c(new2kid, geometry))
   
   # Load the biodiversity results from Matlab
-  biodiversity <- read.csv("Matlab results/scenario_species_prob_40.csv", header = FALSE)
+  biodiversity <-speciesprob40
   
   # Replace NAs with column mean
   biodiversity <- biodiversity %>%
@@ -840,18 +839,18 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
                                           mean(.x, na.rm = TRUE))))
   
   # Load new2kid
-  new2kid <- read.csv("Matlab results/climate_cells.csv")$new2kid
+  new2kid <- climatecells$new2kid
   
   # Load species names
-  all_species_names <- colnames(read.csv("Model Data/Biodiversity/JNCC/beta_JNCC100_interact_quad.csv"))[-1]
+  all_species_names <- colnames(jncc100)[-1]
   colnames(biodiversity) <- all_species_names
   
   # Read the GeoJSON polygon layer
   polygons_jules <- Elicitor_table %>%
     # Duplicate the geometry column
-    mutate(geometry_jules = geometry) %>%
+    dplyr::mutate(geometry_jules = geometry) %>%
     # # Only keep useful columns
-    select(-starts_with("Bio"))
+    dplyr::select(-starts_with("Bio"))
     # select(c(JulesMean, JulesSD,
     #          VisitsMean, VisitsSD,
     #          geometry, geometry_jules))
@@ -859,13 +858,13 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   # Add new2kid to each data.frame, and change into percentages
   polygons_bio <- data.frame(new2kid, 100 * biodiversity) %>%
     # Add polygons
-    left_join(id_polygons, by = "new2kid") %>%
+    dplyr::left_join(id_polygons, by = "new2kid") %>%
     # Transform to sf object
     st_as_sf() %>%
     # Convert the CRS
     st_transform(crs = st_crs(polygons_jules)) %>%
     # Duplicate the geometry column
-    mutate(geometry_bio = geometry)
+    dplyr::mutate(geometry_bio = geometry)
   
   rm(biodiversity, new2kid)
   
@@ -901,23 +900,23 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   FullTable <- intersection %>%
     
     # Calculate the areas
-    mutate(area_bio = st_area(geometry_bio),
+    dplyr::mutate(area_bio = st_area(geometry_bio),
            area_jules = st_area(geometry_jules),
            area_intersection = st_area(geometry)) %>%
     
     # Calculate the ratio of areas
-    mutate(proportion_intersection_in_bio = area_intersection / area_bio,
+    dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
            proportion_intersection_in_jules = area_intersection / area_jules) %>%
     
     # Assume uniformity, multiply probability by proportion
-    mutate(across(all_of(all_species_names),
+    dplyr::mutate(dplyr::across(all_of(all_species_names),
                   ~ .x * proportion_intersection_in_bio)) %>%
   
     # Rename columns, add BioMean_ and BioSD_ to species
-    rename_with(.fn = ~ paste0("BioMean_", .x), .cols = all_of(all_species_names)) %>%
+    dplyr::rename_with(.fn = ~ paste0("BioMean_", .x), .cols = all_of(all_species_names)) %>%
     
     # Add empty SD columns for species
-    bind_cols(df0) %>%
+    dplyr::bind_cols(df0) %>%
     
     as_tibble() %>%
     
@@ -936,16 +935,16 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
       polygon_id_jules = mean(polygon_id_jules)
     ) %>%
   
-    mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
+    dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
     
     # Remove useless columns
     as_tibble() %>%
-    select(c(starts_with("Bio"), polygon_id_jules, area_diff)) %>%
+    dplyr::select(c(starts_with("Bio"), polygon_id_jules, area_diff)) %>%
     
     # Merge back to original table
     left_join(polygons_jules, by = "polygon_id_jules") %>%
     
-    select(-c(polygon_id_jules, starts_with("geometry_")))
+    dplyr::select(-c(polygon_id_jules, starts_with("geometry_")))
     
   rm(polygons_bio, polygons_jules)
   
@@ -954,7 +953,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   }
   rm(df0)
   
-  FullTable <- FullTable %>% select(-area_diff)
+  FullTable <- FullTable %>% dplyr::select(-area_diff) %>% st_as_sf()
 
   return(FullTable)
 }
