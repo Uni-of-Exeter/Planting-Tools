@@ -24,6 +24,8 @@ library(shinyWidgets)
 library(truncnorm)
 loadNamespace("prefeR")
 library(GGally)
+library(purrr)
+library(sp)
 # if (!require("prefeR")) {
   # install.packages("prefeR", lib = "/RPackages")
   # detach("package:prefeR", unload = TRUE)
