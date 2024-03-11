@@ -423,10 +423,10 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
         listMaps[[aai]] <- listMaps[[aai]]%>%  
           addControl(html = paste0("<p>Carbon:",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
                                  Red Squirrel:",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted:",round(SelectedArea/1e6,2),"<br>
+                                 Area Planted:",round(SelectedArea,2),"<br>
                                  Visitors:",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                    "</p>"), position = "topright")
-      }
+      }#/1e6
       listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
                                      SelectedDropdown = SelectedDropdown,
                                      listMaps = listMaps)
@@ -526,8 +526,10 @@ outputmap_calculateMats <- function(input,
   
   SelecTargetCarbon <- input$SliderMain
   SelecTargetBio <- input$BioSlider
-  SelecTargetArea <- ifelse(input_areaSlider_multiplicative_coefficient == TRUE, input$AreaSlider * 1e6, input$AreaSlider)
+  SelecTargetArea <- input$AreaSlider#ifelse(input_areaSlider_multiplicative_coefficient == TRUE, input$AreaSlider , input$AreaSlider)
   SelecTargetVisits <- input$VisitsSlider
+  
+  #* 1e6
   
   SelectedSimMat2 <- data.frame(SelectedSimMat,
                                 carbon = rowSums(SelectedSimMat * CarbonMAT),
@@ -541,12 +543,18 @@ outputmap_calculateMats <- function(input,
   Icalc <- MultiImpl(TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
                      EYMat = data.frame(SelectedSimMat2$carbon, SelectedSimMat2$redsquirel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
                      SDYMat = data.frame(SelectedSimMat2$carbonSD, SelectedSimMat2$redsquirelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
-                     alpha = 0.05, tolVec = c(4, 2, 100, 2))
+                     alpha = 0.05, tolVec = c(4, 0.05, 0.1, 2))
   
   LimitsMat <- (-data.frame(SelectedSimMat2$carbon,
                             SelectedSimMat2$redsquirel,
                             SelectedSimMat2$Area,
-                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$carbonSD^2 + 4^2, SelectedSimMat2$redsquirelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            SelectedSimMat2$Visits)) / 
+  #  sqrt(data.frame(SelectedSimMat2$carbonSD^2 + 4, SelectedSimMat2$redsquirelSD^2 + 2, rep(0, length(SelectedSimMat2$Area)) + 0.1, 
+   #                 SelectedSimMat2$VisitsSD^2 + 2))
+  #/ 
+    sqrt(data.frame(SelectedSimMat2$carbonSD^2+4 , SelectedSimMat2$redsquirelSD^2+0.05, rep(0, length(SelectedSimMat2$Area)) + 0.1, 
+                    SelectedSimMat2$VisitsSD^2+2))
+  
   
   return(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
               SelecTargetBio = SelecTargetBio, SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits))
@@ -559,6 +567,7 @@ outputmap_createResults <- function(map,
                                     SavedVec,
                                     SelectedDropdown,
                                     randomValue,
+                                    ColourScheme,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor) {
   SavedRVs <- randomValue()
@@ -583,14 +592,17 @@ outputmap_createResults <- function(map,
     SELGEO<-  FullTable$geometry[SELL]
     ############
     UnitsSel<-unique(FullTable$units[SELL])
-    Cols<-rainbow(length(UnitsSel))
-    FullColVec<-rep(0,dim(FullTable[SELL,])[1])
-    for (iii in 1:length(Cols)){
-      FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
-    }
-    ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
-    FullColVec<-darken(FullColVec,ColorDarkeningFactor)
-    ClickedCols<-rep("red",length(ClickedCols))
+    ColObtained<-getCols(ColourScheme,UnitsVec=FullTable$units[SELL],
+                         ColorLighteningFactor,ColorDarkeningFactor)
+    
+    #Cols<-rainbow(length(UnitsSel))
+    #FullColVec<-rep(0,dim(FullTable[SELL,])[1])
+    #for (iii in 1:length(Cols)){
+    #  FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
+    #}
+    #ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
+    FullColVec<-ColObtained$FullColVec#darken(FullColVec,ColorDarkeningFactor)
+    ClickedCols<-ColObtained$ClickedCols#rep("red",length(ClickedCols))
     ############  
     for (iii in 1:length(SwitchedOnCells)) {
       if (SavedVec[iii] == 1) {
