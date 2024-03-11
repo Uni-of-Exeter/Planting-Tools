@@ -24,6 +24,22 @@ library(shinyWidgets)
 library(truncnorm)
 loadNamespace("prefeR")
 library(GGally)
+library(purrr)
+library(sp)
+# if (!require("prefeR")) {
+  # install.packages("prefeR", lib = "/RPackages")
+  # detach("package:prefeR", unload = TRUE)
+  # loadNamespace("prefeR")
+# }
+# packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2", "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn", "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite", "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm", "GGally")
+# if(!all( packages %in% (.packages()) )) {
+  # for(pkg in packages) {
+    # if( !require(pkg, character.only = TRUE) ) {
+      # install.packages(pkg, lib = "/RPackages")
+      # library(pkg, character.only = TRUE)
+    # }
+  # }
+# }
 library(colorspace)
 library(rjson)
 library(arrow)
@@ -32,16 +48,151 @@ library(lwgeom)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
 #SelectedDropdown<-"Ennerdale"
-############################################
 
-source("functions.R")
+# FolderSource<-"ShinyForestry/"
+FolderSource<-""
 
-#PROJdir<-system.file("proj/proj.db", package = "sf")
-#PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-#sf_proj_search_paths(PROJdir)
+source(paste0(FolderSource, "functions.R"))
+# species_names <- colnames(read.csv(paste0(FolderSource, "Model Data/Biodiversity/JNCC/beta_JNCC100_interact_quad.csv")))[-1]
+# english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
+# english_species_names <- add_suffix_to_duplicates(english_species_names)
 
-ElicitatorAppFolder<-"d://ElicitatorOutput//"
-JulesAppFolder<-"d:\\JulesOP\\"
+name_conversion <- matrix(data = c("Bird", "Acanthis cabaret", "Lesser Redpoll",
+                                   "Bird", "Alauda arvensis", "Skylark",
+                                   "Bird", "Anthus trivialis", "Tree Pipit",
+                                   "Bird", "Botaurus stellaris", "Bittern",
+                                   "Bird", "Caprimulgus europaeus", "Nightjar",
+                                   "Bird", "Emberiza citrinella", "Yellowhammer",
+                                   "Bird", "Emberiza schoeniclus", "Reed Bunting",
+                                   "Bird", "Locustella naevia", "Grasshopper Warbler",
+                                   "Bird", "Lullula arborea", "Woodlark",
+                                   "Bird", "Motacilla flava subsp flavissima", "Yellow Wagtail",
+                                   "Bird", "Muscicapa striata", "Spotted Flycatcher",
+                                   "Bird", "Numenius arquata", "Curlew",
+                                   "Bird", "Perdix perdix", "Grey Partridge",
+                                   "Bird", "Phylloscopus sibilatrix", "Wood Warbler",
+                                   "Bird", "Streptopelia turtur", "Turtle Dove",
+                                   "Bird", "Turdus torquatus", "Ring Ouzel",
+                                   "Bird", "Vanellus vanellus", "Lapwing",
+                                   "Herptile", "Vipera berus", "Adder",
+                                   "Invertebrate - bee", "Bombus monticola", "Mountain Bumblebee",
+                                   "Invertebrate - beetle", "Cercyon convexiusculus", "Water Beetle sp.",
+                                   "Invertebrate - beetle", "Gnorimus nobilis", "Noble Chafer",
+                                   "Invertebrate - beetle", "Liopterus haemorrhoidalis", "Water Beetle sp.",
+                                   "Invertebrate - beetle", "Lucanus cervus", "Stag Beetle",
+                                   "Invertebrate - butterfly", "Boloria selene", "Small Pearl-Bordered Fritillary",
+                                   "Invertebrate - butterfly", "Coenonympha pamphilus", "Small Heath",
+                                   "Invertebrate - butterfly", "Coenonympha tullia", "Large Heath",
+                                   "Invertebrate - butterfly", "Cupido minimus", "Small Blue",
+                                   "Invertebrate - butterfly", "Erebia epiphron", "Mountain Ringlet",
+                                   "Invertebrate - butterfly", "Erynnis tages", "Dingy Skipper",
+                                   "Invertebrate - butterfly", "Hipparchia semele", "Grayling",
+                                   "Invertebrate - butterfly", "Lasiommata megera", "Wall",
+                                   "Invertebrate - butterfly", "Limenitis camilla", "White Admiral",
+                                   "Invertebrate - butterfly", "Satyrium w-album", "White-Letter Hairstreak",
+                                   "Invertebrate - cricket", "Leptophyes punctatissima", "Speckled Bush Cricket",
+                                   "Invertebrate - cricket", "Metrioptera brachyptera", "Bog Bush Cricket",
+                                   "Invertebrate - moth", "Cossus cossus", "Goat Moth",
+                                   "Invertebrate - moth", "Acronicta psi", "Grey Dagger",
+                                   "Invertebrate - moth", "Allophyes oxyacanthae", "Green-brindled Crescent",
+                                   "Invertebrate - moth", "Dasypolia templi", "Brindled Ochre",
+                                   "Invertebrate - moth", "Xanthorhoe decoloraria", "Red Carpet",
+                                   "Invertebrate - snail", "Cochlodina laminata", "Plaited Door Snail",
+                                   "Invertebrate - snail", "Monacha cantiana", "Kentish Snail",
+                                   "Invertebrate - snail", "Zonitoides excavatus", "Hollowed Glass Snail",
+                                   "Lichen", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
+                                   "Lichen", "Leptogium brebissonii", "Lichen sp.",
+                                   "Lichen", "Parmeliella testacea", "Lichen sp.",
+                                   "Lichen", "Pseudocyphellaria intricata", "Lichen sp.",
+                                   "Lichen", "Usnea articulata", "String-Of-Sausage Lichen",
+                                   "Mammal", "Barbastella barbastellus", "Barbastelle bat",
+                                   "Mammal", "Felis silvestris", "Wildcat",
+                                   "Mammal", "Lepus europaeus", "European hare",
+                                   "Mammal", "Lepus timidus", "Mountain Hare",
+                                   "Mammal", "Martes martes", "Pine Marten",
+                                   "Mammal", "Micromys minutus", "Harvest Mouse",
+                                   "Mammal", "Muscardinus avellanarius", "Hazel Dormouse",
+                                   "Mammal", "Mustela putorius", "Polecat",
+                                   "Mammal", "Myotis bechsteinii", "Bechstein's bat",
+                                   "Mammal", "Nyctalus noctula", "Noctule Bat",
+                                   "Mammal", "Plecotus auritus", "Brown Long-eared Bat",
+                                   "Mammal", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
+                                   "Mammal", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
+                                   "Mammal", "Sciurus vulgaris", "Eurasian red squirrel",
+                                   "Vascular plant", "Anchusa arvensis", "Field bugloss",
+                                   "Vascular plant", "Andromeda polifolia", "Bog Rosemary",
+                                   "Vascular plant", "Arctostaphylos alpinus", "Mountain bearberry",
+                                   "Vascular plant", "Asplenium viride", "Green spleenwort",
+                                   "Vascular plant", "Atriplex laciniata", "Frosted Orache",
+                                   "Vascular plant", "Blysmus rufus", "Saltmarsh Flat-Sedge",
+                                   "Vascular plant", "Cakile maritima", "Sea Rocket",
+                                   "Vascular plant", "Campanula glomerata", "Clustered Bellflower",
+                                   "Vascular plant", "Carex extensa", "Long-Bracted Sedge",
+                                   "Vascular plant", "Carex magellanica", "Tall Bog-Sedge",
+                                   "Vascular plant", "Centaurium pulchellum", "Lesser Centaury",
+                                   "Vascular plant", "Cerastium arvense", "Field Mouse-Ear",
+                                   "Vascular plant", "Cirsium eriophorum", "Woolly Thistle",
+                                   "Vascular plant", "Daphne laureola", "Spurge-Laurel",
+                                   "Vascular plant", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
+                                   "Vascular plant", "Fumaria muralis", "Common Ramping-Fumitory",
+                                   "Vascular plant", "Genista anglica", "Petty Whin",
+                                   "Vascular plant", "Genista tinctoria", "Dyer's Greenweed",
+                                   "Vascular plant", "Gnaphalium supinum", "Dwarf Cudweed",
+                                   "Vascular plant", "Goodyera repens", "Creeping Lady's-Tresses",
+                                   "Vascular plant", "Hypericum elodes", "Marsh St John's-Wort",
+                                   "Vascular plant", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
+                                   "Vascular plant", "Leymus arenarius", "Lyme Grass",
+                                   "Vascular plant", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
+                                   "Vascular plant", "Neottia nidus-avis", "Bird's-Nest Orchid",
+                                   "Vascular plant", "Ornithopus perpusillus", "Bird's-Foot",
+                                   "Vascular plant", "Orthilia secunda", "Serrated Wintergreen",
+                                   "Vascular plant", "Oxyria digyna", "Mountain Sorrel",
+                                   "Vascular plant", "Pyrola media", "Intermediate Wintergreen",
+                                   "Vascular plant", "Radiola linoides", "Allseed",
+                                   "Vascular plant", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
+                                   "Vascular plant", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
+                                   "Vascular plant", "Silaum silaus", "Pepper-Saxifrage",
+                                   "Vascular plant", "Thymus pulegioides", "Large Thyme",
+                                   "Vascular plant", "Tilia cordata", "Small-Leaved Lime",
+                                   "Vascular plant", "Trifolium fragiferum", "Strawberry Clover",
+                                   "Vascular plant", "Trifolium striatum", "Knotted Clover",
+                                   "Vascular plant", "Vaccinium microcarpum", "Small Cranberry"),
+                          ncol = 3, byrow = TRUE)
+name_conversion <- data.frame(Specie = name_conversion[, 2],
+                              English_specie = add_suffix_to_duplicates(name_conversion[, 3]),
+                              Group = name_conversion[, 1])
+# Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinator
+# Crashes on the server for some reason, so we use data.frames instead
+# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinator",
+# .default = Group)) %>%
+indices <- grep("bee|beetle|butterfly|cricket|moth", name_conversion$Group)
+name_conversion[indices, "Group"] <- "Pollinator"
+# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bee" ~ "Pollinator",
+#                                        Group == "Invertebrate - beetle" ~ "Pollinator",
+#                                        Group == "Invertebrate - butterfly" ~ "Pollinator",
+#                                        Group == "Invertebrate - cricket" ~ "Pollinator",
+#                                        Group == "Invertebrate - moth" ~ "Pollinator",
+#                                        .default = Group)) %>%
+# Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
+name_conversion <- name_conversion %>%
+  dplyr::mutate(Specie = gsub(" |-", "_", Specie)) %>%
+  # Sort by Specie
+  dplyr::arrange(Specie)
+# Swap rows 83 and 84
+row83 <- name_conversion[83, ]
+row84 <- name_conversion[84, ]
+name_conversion[83, ] <- row84
+name_conversion[84, ] <- row83
+
+# Sys.setenv(PROJ_LIB="/usr/share/proj")
+# Sys.setenv(GDAL_DATA = "/usr/share/proj/")
+
+# load all shapes
+# PROJdir<-system.file("proj/proj.db", package = "sf")
+# PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+# sf_proj_search_paths(PROJdir)
+ElicitatorAppFolder<-"./ElicitatorOutput/"
+JulesAppFolder<-"./JulesOutput/"
 ########################## Pre-processing
 #remove all directories starting with "land"
 unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
@@ -193,7 +344,8 @@ for(ii in 1:length(FullTableCopy$geometry))
   FullTable$area[ii]<-sum(SELLWeights)
 }
 
-
+# Replace Biodiversity columns with correct ones
+FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable)
 
 #aa<-leaflet()
 #aa<-  addTiles(aa) 
@@ -234,10 +386,6 @@ st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojso
 #FullTableNotAvail<-sf::st_read("d://PoundsgateFullTableNotAvail.geojson")
 
 
-###############
-
-
-
 STDMEAN<-0.05
 STDSTD<-0.01
 
@@ -255,12 +403,70 @@ for (aaa in 1:NSamp)
 
 
 
+# # Move rows from FullTableNotAvail to FullTable with blank data
+# FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
+                                                   # "id" = id,
+                                                   # "area" = 1,
+                                                   # x = lgn.1,
+                                                   # y = lat.1,
+                                                   # xbgn = 0,
+                                                   # ybgn = 0,
+                                                   # lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
+                                                   # JulesMean=0,JulesSD=0,
+                                                   # VisitsMean=0,VisitsSD=0)) %>%
+  # mutate(across(x:lat.5, as.numeric)) %>% 
+  # mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
+
+# cols <- colnames(FullTable)
+# FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
+# FullTableAdd <- FullTableAdd[, cols]
+# FullTableAdd$xybgn <- 1
+# rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
+# # Check which columns contain NA values
+# columns_with_na <- colSums(is.na(FullTableAdd))
+# colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
+# # Replace NA with 0
+# FullTableAdd[rows_na, colnames_with_na] <- 0
+# FullTable <- FullTableAdd
+
+# old_cols <- colnames(FullTableNotAvail)
+# FullTableNotAvail <- data.frame(0)
+# FullTableNotAvail[, old_cols] <- 0
+# FullTableNotAvail <- FullTableNotAvail[, -1]
+
 alphaLVL<-0.9
 
 MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
+# SPECIES <- name_conversion[1:2, "Specie"]
+SPECIES <- c("Pollinator", "All")
+N_SPECIES <- length(SPECIES)
+TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
+N_TARGETS <- length(TARGETS)
+
+# slider_list <- list(
+#   sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25)
+# )
+# Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
+
+verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
+                           list(textOutput("SoilCarbonNotIncluded")),
+                           lapply(SPECIES, function(x, fulltable) {
+                             # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
+                             # value <- round(max_specie / 2)
+                             max_specie <- 36
+                             value <- 1
+                             return(bquote(sliderInput(paste0("BioSlider", .(x)), 
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x)) else paste("Average species", .(x), "chance of appearance (%):"), 
+                                                       min = 0,
+                                                       max = .(max_specie),
+                                                       value = .(value),
+                                                       step = 0.5)))
+                           }, fulltable = FullTable),
+                           list(sliderInput("AreaSlider", HTML("Total Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
+                           list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
 
 
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
@@ -279,12 +485,14 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
                                            ),
                                            column(3,
-                                                  verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
-                                                                 textOutput("SoilCarbonNotIncluded"),
-                                                                 sliderInput("BioSlider","Average Red Squirrel % increase:",min=0,max=36,value=25,step=0.01),
-                                                                 sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
-                                                                 sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400)
-                                                  )))
+                                                  # verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
+                                                  #                textOutput("SoilCarbonNotIncluded"),
+                                                  #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25, step=0.01),
+                                                  #                sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
+                                                  #                sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))
+                                                  do.call("verticalLayout",
+                                                          verticalLayout_params)
+                                                  ))
                                          )
                                          ),
                                          tabPanel("Exploration",
@@ -296,7 +504,7 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                            verticalLayout(verbatimTextOutput("SecondMapTxt"),jqui_resizable(leafletOutput("map3",height = 400,width="100%")))
                                                     ),
                                                     column(2, verticalLayout(verbatimTextOutput("TargetText"),
-                                                                             #  selectInput("chooseGrouping", "Grouping Type:",c("carbon level"),"carbon level"),
+                                                                             #  selectInput("chooseGrouping", "Grouping Type:",c("Carbon level"),"Carbon level"),
                                                                              actionButton("random", "Randomize!"))
                                                     )
                                                   ),
@@ -330,16 +538,69 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   ))
 ))
 
-server <- function(input, output, session) {
+server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG1 = N_TARGETS) {
+  SPECIES <- SPECIES_ARG1
+  N_SPECIES <- length(SPECIES)
+  N_TARGETS <- N_TARGETS_ARG1
+  
   CarbonSliderVal<- reactive({input$SliderMain})
-  bioSliderVal<- reactive({input$BioSlider})
+
+  # bioSliderVal<- reactive({input$BioSlider})
+  # Add BioSliderValSPECIE <- reactive({input$BioSliderSPECIE}) for each specie
+  # for (x in SPECIES) {
+  #   var_name <- paste0("BioSliderVal", x)
+  #   value <- reactive({ input[[paste0("BioSlider", x)]] })
+  #   assign(var_name, value, envir = .GlobalEnv)
+  # }
+  # A for loop over the reactive values causes an issue: only the last reactive value
+  # takes effect and therefore overwrites other reactive values, i.e. all bioSliderValSPECIE take
+  # the same value. I have to work with a list for it to work.
+  reactive_list <- lapply(SPECIES, function(x) {
+    var_name <- paste0("BioSliderVal", x)
+    value <- reactive({
+      input[[paste0("BioSlider", x)]]
+    })
+    assign(var_name, value, envir = .GlobalEnv)
+    return(value)
+  })
   AreaSliderVal<- reactive({input$AreaSlider})
   VisitsSliderVal<- reactive({input$VisitsSlider})
-  
+
   Text1<-reactiveVal("")
   Text2<-reactiveVal("")
   Text3<-reactiveVal("")
   Text4<-reactiveVal("")
+  # # Add TextN<-reactiveVal("") for each specie
+  # for (i in 1:N_SPECIES) {
+  #   var_name <- paste0("Text", i + 3)
+  #   value <- reactiveVal("")
+  #   assign(var_name, value)
+  # }
+  
+  output$TargetText<-renderText({
+    SPECIES <- SPECIES_ARG1
+    N_SPECIES <- length(SPECIES)
+    N_TARGETS <- N_TARGETS_ARG1
+    
+    text <- paste0("Targets:\n",
+                   "Tree Carbon: ", as.numeric(CarbonSliderVal()))
+    # A for loop over the reactive values causes an issue: only the last reactive value
+    # takes effect and therefore overwrites other reactive values, i.e. all bioSliderValSPECIE take
+    # the same value. I have to work with a list for it to work.
+    # for (x in SPECIES) {
+    #   BioSliderValSpecie <- get(paste0("BioSliderVal", x))
+    #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
+    # }
+    for (i in seq_along(SPECIES)) {
+      x <- SPECIES[i]
+      BioSliderValSpecie <- reactive_list[[i]]
+      text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
+    }
+    text <- paste0(text,
+                   # "\nRed Squirrel: ",as.numeric(bioSliderVal()),
+                   "\nArea Planted: ", as.numeric(AreaSliderVal()),
+                   "\nVisits/km^2: ", as.numeric(VisitsSliderVal()))
+  })
   
   ColorLighteningFactor<-reactiveVal(0.5)
   ColorDarkeningFactor<-reactiveVal(0.5)
@@ -352,11 +613,6 @@ server <- function(input, output, session) {
 #    ColorLighteningFactor(input$Lighten/100)
 #  })
   
-  output$TargetText<-renderText({paste0("Targets:\n", "Tree Carbon: ",as.numeric(CarbonSliderVal()),
-                                        "\nRed Squirrel: ",as.numeric(bioSliderVal()),
-                                        "\nArea Planted: ",as.numeric(AreaSliderVal()),
-                                        "\nVisits/km^2: ",as.numeric(VisitsSliderVal())
-  )})
   output$SoilCarbonNotIncluded<-renderText({paste0("Soil carbon in future versions")})
   
   output$FirstMapTxt<-renderText({Text1()})
@@ -373,10 +629,18 @@ server <- function(input, output, session) {
   ClickedVector<-reactiveVal(NULL)
   AreaSelected0<-reactiveVal(NULL)
   CarbonSelected0<-reactiveVal(NULL)
-  RedSquirrelSelected0<-reactiveVal(NULL)
+  # RedSquirrelSelected0<-reactiveVal(NULL)
+  for (x in SPECIES) {
+    var_name <- paste0(x, "Selected0")
+    assign(var_name, reactiveVal(NULL))
+  }
   VisitsSelected0<-reactiveVal(NULL)
   CarbonSelectedSD0<-reactiveVal(NULL)
-  RedSquirrelSelectedSD0<-reactiveVal(NULL)
+  # RedSquirrelSelectedSD0<-reactiveVal(NULL)
+  for (x in SPECIES) {
+    var_name <- paste0(x, "SelectedSD0")
+    assign(var_name, reactiveVal(NULL))
+  }
   VisitsSelectedSD0<-reactiveVal(NULL)
   
   DatBinaryCode0<-reactiveVal(NULL)
@@ -404,16 +668,24 @@ server <- function(input, output, session) {
   
   
   
-  observeEvent(input$inSelect,{
+  observeEvent(input$inSelect, {
     SelectedDropdown<-input$inSelect
     ClickedVector(NULL)
     AreaSelected0(NULL)
     CarbonSelected0(NULL)
-    RedSquirrelSelected0(NULL)
+    # RedSquirrelSelected0(NULL)
+    for (x in SPECIES) {
+      fun <- get(paste0(x, "Selected0"))
+      fun(NULL)
+    }
     VisitsSelected0(NULL)
     
     CarbonSelectedSD0(NULL)
-    RedSquirrelSelectedSD0(NULL)
+    # RedSquirrelSelectedSD0(NULL)
+    for (x in SPECIES) {
+      fun <- get(paste0(x, "SelectedSD0"))
+      fun(NULL)
+    }
     VisitsSelectedSD0(NULL)
     
     SelectedSquares<-cbind(extent=FullTable$extent[FullTable$extent==SelectedDropdown])#,FullTable$lgn.1[FullTable$extent==SelectedDropdown],
@@ -421,31 +693,59 @@ server <- function(input, output, session) {
     
     if(!(dim(SelectedSquares)[1]==0)){
       AreaSelected<-FullTable$area[FullTable$extent==SelectedDropdown]
-      CarbonSelected<-(FullTable$JulesMean[FullTable$extent==SelectedDropdown])#*AreaSelected)/1e6
-      RedSquirrelSelected<-FullTable$BioMean_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
+      CarbonSelected<-(FullTable$JulesMean[FullTable$extent==SelectedDropdown])
+      # RedSquirrelSelected<-FullTable$BioMean_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
+      for (x in SPECIES) {
+        biomean_var <- paste0("BioMean_", x)
+        var_name <- paste0(x, "Selected")
+        # value <- FullTable[FullTable$extent==SelectedDropdown, biomean_var]
+        value <- FullTable[[biomean_var]][FullTable$extent==SelectedDropdown]
+        assign(var_name, value)
+      }
       VisitsSelected<-FullTable$VisitsMean[FullTable$extent==SelectedDropdown]
       
-      
-      CarbonSelectedSD<-(FullTable$JulesSD[FullTable$extent==SelectedDropdown])#*AreaSelected)/1e6
-      RedSquirrelSelectedSD<-FullTable$BioSD_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
+      CarbonSelectedSD<-(FullTable$JulesSD[FullTable$extent==SelectedDropdown])
+      # RedSquirrelSelectedSD<-FullTable$BioSD_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
+      for (x in SPECIES) {
+        biosd_var <- paste0("BioSD_", x)
+        var_name <- paste0(x, "SelectedSD")
+        # value <- FullTable[FullTable$extent==SelectedDropdown, biosd_var]
+        value <- FullTable[[biosd_var]][FullTable$extent==SelectedDropdown]
+        assign(var_name, value)
+      }
       VisitsSelectedSD<-FullTable$VisitsSD[FullTable$extent==SelectedDropdown]
-      
       
       
       
       ClickedVector(rep(0,dim(SelectedSquares)[1]))
       AreaSelected0(AreaSelected)
       CarbonSelected0(CarbonSelected)
-      RedSquirrelSelected0(RedSquirrelSelected)
+      # RedSquirrelSelected0(RedSquirrelSelected)
+      for (x in SPECIES) {
+        fun <- get(paste0(x, "Selected0"))
+        arg <- get(paste0(x, "Selected"))
+        fun(arg)
+      }
       VisitsSelected0(VisitsSelected)
       
       CarbonSelectedSD0(CarbonSelectedSD)
-      RedSquirrelSelectedSD0(RedSquirrelSelectedSD)
+      # RedSquirrelSelectedSD0(RedSquirrelSelectedSD)
+      for (x in SPECIES) {
+        fun <- get(paste0(x, "SelectedSD0"))
+        arg <- get(paste0(x, "SelectedSD"))
+        fun(arg)
+      }
       VisitsSelectedSD0(VisitsSelectedSD)
       
       updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)),value=trunc(sum(CarbonSelected)))
-      updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100,value=trunc(100*mean(RedSquirrelSelected))/100,step=0.01)
-      updateSliderInput(session, "AreaSlider", max = trunc(100*sum(AreaSelected))/100,value=trunc(100*sum(AreaSelected))/100)#trunc(sum(AreaSelected)/1e6),value=trunc(sum(AreaSelected)/1e6))
+      # updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100,value=trunc(100*mean(RedSquirrelSelected))/100,step=0.01)
+      for (x in SPECIES) {
+        bioslider <- paste0("BioSlider", x)
+        species_names <- paste0(x, "Selected")
+        species_selected <- unlist(mget(species_names))
+        updateSliderInput(session, bioslider, max = trunc(mean(species_selected)),value=trunc(mean(species_selected)), step = 0.5)
+      }
+      updateSliderInput(session, "AreaSlider", max = trunc(100*sum(AreaSelected))/100,value=trunc(100*sum(AreaSelected))/100)
       updateSliderInput(session, "VisitsSlider", max = trunc(mean(VisitsSelected)),value=trunc(mean(VisitsSelected)))
     }
     
@@ -455,8 +755,7 @@ server <- function(input, output, session) {
   })
 
   
-  #################
-  observeEvent(input$tabs == "Clustering",{
+  observeEvent(input$tabs == "Clustering", {
     
     SavedVec<-ClickedVector()
     SelectedDropdown<-input$inSelect
@@ -476,11 +775,26 @@ server <- function(input, output, session) {
       
       AreaSelected<-AreaSelected0()
       CarbonSelected<-CarbonSelected0()
-      RedSquirrelSelected<-RedSquirrelSelected0()
+      # RedSquirrelSelected<-RedSquirrelSelected0()
+      SpeciesListSelected <- list()
+      for (x in SPECIES) {
+        var_name <- paste0(x, "Selected")
+        value <- get(paste0(x, "Selected0"))
+        assign(var_name, value())
+        SpeciesListSelected[x] <- list(value())
+      }
       VisitsSelected<-VisitsSelected0()
       
       CarbonSelectedSD<-CarbonSelectedSD0()
-      RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
+      # RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
+      SpeciesListSelectedSD <- list()
+      for (x in SPECIES) {
+        var_name <- paste0(x, "Selected")
+        value <- get(paste0(x, "SelectedSD0"))
+        assign(var_name, value())
+        var_name <- paste0(x, "SD")
+        SpeciesListSelectedSD[var_name] <- list(value())
+      }
       VisitsSelectedSD<-VisitsSelectedSD0()
       
       tmp <- outputmap_calculateMats(input = input,
@@ -488,10 +802,12 @@ server <- function(input, output, session) {
                                      simul636 = simul636,
                                      AreaSelected = AreaSelected,
                                      CarbonSelected = CarbonSelected,
-                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
                                      VisitsSelected = VisitsSelected,
                                      CarbonSelectedSD = CarbonSelectedSD,
-                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD,
                                      input_areaSlider_multiplicative_coefficient = FALSE)
       SelectedSimMat2 <- tmp$SelectedSimMat2
@@ -505,50 +821,73 @@ server <- function(input, output, session) {
       for(abc in 1:dim(Icalc$IVEC)[2]){
         PROBAMAT[,abc]<-1-ptruncnorm(Icalc$IVEC[,abc],a=LimitsMat[,abc], b=Inf)}
       
-      CONDPROB_AtLeast1<-(PROBAMAT[,1]>=alphaLVL)|(PROBAMAT[,2]>=alphaLVL)|(PROBAMAT[,3]>=alphaLVL)|(PROBAMAT[,4]>=alphaLVL)
+      # CONDPROB_AtLeast1<-(PROBAMAT[,1]>=alphaLVL)|(PROBAMAT[,2]>=alphaLVL)|(PROBAMAT[,3]>=alphaLVL)|(PROBAMAT[,4]>=alphaLVL)
+      CONDPROB_AtLeast1 <- FALSE
+      for (i in 1:ncol(PROBAMAT)) {
+        CONDPROB_AtLeast1 <- CONDPROB_AtLeast1 | (PROBAMAT[,1]>=alphaLVL)
+      }
       
-      #  datAll = data.frame(carbonMet=1*(PROBAMAT[,1]>=alphaLVL),
+      #  datAll = data.frame(CarbonMet=1*(PROBAMAT[,1]>=alphaLVL),
       ##                     redSquirrel=1*(PROBAMAT[,2]>=alphaLVL),
       #                   Area=1*(PROBAMAT[,3]>=alphaLVL),
       #                  Visits=1*(PROBAMAT[,4]>=alphaLVL))
       AtleastOneDat<-unique(SelectedSimMat2[CONDPROB_AtLeast1,])
       
-      datAll=as.matrix(data.frame(carbon=SelectedSimMat2$carbon,
-                                  redsquirel=SelectedSimMat2$redsquirel,
+      species_data_frame <- do.call("data.frame",
+                                    setNames(lapply(SPECIES, function(x) bquote(SelectedSimMat2[.(x)])),
+                                             SPECIES))
+      datAll=as.matrix(data.frame(Carbon=SelectedSimMat2$Carbon,
+                                  # redsquirrel=SelectedSimMat2$redsquirrel,
+                                  species_data_frame,
                                   Area=SelectedSimMat2$Area,
                                   Visits=SelectedSimMat2$Visits))
       datAll2<-datAll[ConvertSample,]
       
-      DatBinaryCode<-paste0(1*(PROBAMAT[,1]>=alphaLVL),1*(PROBAMAT[,2]>=alphaLVL),1*(PROBAMAT[,3]>=alphaLVL),Visits=1*(PROBAMAT[,4]>=alphaLVL))
+      # DatBinaryCode<-paste0(1*(PROBAMAT[,1]>=alphaLVL),1*(PROBAMAT[,2]>=alphaLVL),1*(PROBAMAT[,3]>=alphaLVL),Visits=1*(PROBAMAT[,4]>=alphaLVL))
+      DatBinaryCode <- ""
+      for (i in 1:(ncol(PROBAMAT) - 1)) {
+        DatBinaryCode <- paste0(DatBinaryCode, 1 * (PROBAMAT[,1]>=alphaLVL))
+      }
+      DatBinaryCode <- paste0(DatBinaryCode, Visits = 1 * (PROBAMAT[,ncol(PROBAMAT)]>=alphaLVL))
+      
       
       DatBinaryCode0(DatBinaryCode)
       VecNbMet<-rep(0,length(CONDPROB_AtLeast1))
-      VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL)))]<-1
-      VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))
-      )]<-2
-      VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
-                  ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
-                  ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
-                  ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))
-      )]<-3
-      VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))
-      )]<-4
+      # VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
+      #             ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
+      #             ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
+      #             ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL)))]<-1
+      # VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
+      #             ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
+      #             ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
+      #             ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
+      #             ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
+      #             ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))
+      # )]<-2
+      # VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]<alphaLVL))|
+      #             ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]<alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
+      #             ((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]<alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))|
+      #             ((PROBAMAT[,1]<alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))
+      # )]<-3
+      # VecNbMet[(((PROBAMAT[,1]>=alphaLVL)&(PROBAMAT[,2]>=alphaLVL)&(PROBAMAT[,3]>=alphaLVL)&(PROBAMAT[,4]>=alphaLVL))
+      # )]<-4
+      for (i in 1:ncol(PROBAMAT)) {
+        indices_list <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = i)
+        indices <- FALSE
+        for (j in 1:length(indices_list)) {
+          indices <- indices | indices_list[[j]]
+        }
+        VecNbMet[indices] <- i
+      }
       
       VecNbMet0(VecNbMet)
       
       priors <- c(prefeR::Normal(125,60),
-                  prefeR::Normal(5,3),
-                  prefeR::Normal(10,20),
-                  prefeR::Normal(8,5)
-      )
+                  prefeR::Normal(5,3))
+      for (i in 1:N_SPECIES) {
+        priors <- c(priors, prefeR::Normal(5,5))
+      }
+      priors <- c(priors, prefeR::Normal(8,5))
       pref <<- prefeR::prefEl(data=datAll2,
                               priors = priors)
       
@@ -567,7 +906,6 @@ server <- function(input, output, session) {
         # LinesToCompare[iws,2]<-which(DatBinaryCode==UniqueBinCodes[indd])[1]
         # indd<-indd+1
         #}
-        
         LinesToCompare[1,]<-sample(1:dim(datAll2)[1],2,replace=F)
         CurrentRound(1)
         
@@ -578,17 +916,28 @@ server <- function(input, output, session) {
         
         for(aai in 1:2){
           SwitchedOnCells<-SelectedLine[[aai]][1:length(SavedVec)]
-          SelectedTreeCarbon<-SelectedLine[[aai]]$carbon
-          SelectedBio<-SelectedLine[[aai]]$redsquirel
+          SelectedTreeCarbon<-SelectedLine[[aai]]$Carbon
+          # SelectedBio<-SelectedLine[[aai]]$redsquirrel
+          for (x in SPECIES) {
+            var_name <- paste0("SelectedBio", x)
+            value <- SelectedLine[[aai]][[x]]
+            assign(var_name, value)
+          }
           SelectedArea<-SelectedLine[[aai]]$Area
           SelectedVisits<-SelectedLine[[aai]]$Visits
           
-          SelectedTreeCarbonSD<-SelectedLine[[aai]]$carbonSD
-          SelectedBioSD<-SelectedLine[[aai]]$redsquirelSD
+          SelectedTreeCarbonSD<-SelectedLine[[aai]]$CarbonSD
+          # SelectedBioSD<-SelectedLine[[aai]]$redsquirrelSD
+          for (x in SPECIES) {
+            var_name <- paste0("SelectedBioSD", x)
+            value <- SelectedLine[[aai]][[paste0(x, "SD")]]
+            assign(var_name, value)
+          }
           SelectedVisitsSD<-SelectedLine[[aai]]$VisitsSD
           
           SELL<-(FullTable$extent==SelectedDropdown)
           if(!is.null(SELL)){
+
             SELGEO<-FullTable$geometry[SELL]
             SELGEOFull<-FullTable[SELL,]
             SELGEOFull$layerId<-paste0("Square",1:dim(SELGEOFull)[1])
@@ -618,13 +967,21 @@ server <- function(input, output, session) {
         
             }
           
+                                     
+          addControlText <- ""
+          for (x in SPECIES) {
+            selectedBiospecie <- get(paste0("SelectedBio", x))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
+            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          }
+          
           listMaps[[aai]]<-listMaps[[aai]]%>%
-            addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
-                                 Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted: ",round(SelectedArea,2),"<br>
-                                 Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
+            addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
+                                     # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
+                                     addControlText,
+                                     "Area Planted: ",round(SelectedArea,2),"<br>",
+                                     "Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
-          #/1e6
           
         }
         
@@ -660,14 +1017,16 @@ server <- function(input, output, session) {
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
-                           AreaSelected0 = AreaSelected0,
-                           CarbonSelected0 = CarbonSelected0,
-                           RedSquirrelSelected0 = RedSquirrelSelected0,
-                           VisitsSelected0 = VisitsSelected0,
-                           CarbonSelectedSD0 = CarbonSelectedSD0,
-                           RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
-                           VisitsSelectedSD0 = VisitsSelectedSD0,
-                           DatBinaryCode0 = DatBinaryCode0,
+                           # AreaSelected0 = AreaSelected0,
+                           # CarbonSelected0 = CarbonSelected0,
+                           # RedSquirrelSelected0 = RedSquirrelSelected0,
+                           # SpeciesListSelected0 = SpeciesListSelected, # list(Acanthis_cabaret = Acanthis_cabaretSelected0, ...)
+                           # VisitsSelected0 = VisitsSelected0,
+                           # CarbonSelectedSD0 = CarbonSelectedSD0,
+                           # RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
+                           # SpeciesListSelectedSD0 = SpeciesListSelectedSD, # list(Acanthis_cabaretSD0 = Acanthis_cabaretSelectedSD0, ...)
+                           # VisitsSelectedSD0 = VisitsSelectedSD0,
+                           # DatBinaryCode0 = DatBinaryCode0,
                            NbRoundsMax = NbRoundsMax,
                            CurrentRound = CurrentRound,
                            FullTable = FullTable,
@@ -676,8 +1035,10 @@ server <- function(input, output, session) {
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
-                           ColorLighteningFactor=ColorLighteningFactor(),
-                           ColorDarkeningFactor=ColorDarkeningFactor())
+                           ColorLighteningFactor = ColorLighteningFactor(),
+                           ColorDarkeningFactor = ColorDarkeningFactor(),
+                           SPECIES_ARG3 = SPECIES,
+                           N_TARGETS_ARG2 = N_TARGETS)
   })
   
   observeEvent(input$choose2, {
@@ -688,14 +1049,16 @@ server <- function(input, output, session) {
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
-                           AreaSelected0 = AreaSelected0,
-                           CarbonSelected0 = CarbonSelected0,
-                           RedSquirrelSelected0 = RedSquirrelSelected0,
-                           VisitsSelected0 = VisitsSelected0,
-                           CarbonSelectedSD0 = CarbonSelectedSD0,
-                           RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
-                           VisitsSelectedSD0 = VisitsSelectedSD0,
-                           DatBinaryCode0 = DatBinaryCode0,
+                           # AreaSelected0 = AreaSelected0,
+                           # CarbonSelected0 = CarbonSelected0,
+                           # RedSquirrelSelected0 = RedSquirrelSelected0,
+                           # SpeciesListSelected0 = SpeciesListSelected, # list(Acanthis_cabaret = Acanthis_cabaretSelected0, ...)
+                           # VisitsSelected0 = VisitsSelected0,
+                           # CarbonSelectedSD0 = CarbonSelectedSD0,
+                           # RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
+                           # SpeciesListSelectedSD0 = SpeciesListSelectedSD, # list(Acanthis_cabaretSD0 = Acanthis_cabaretSelectedSD0, ...)
+                           # VisitsSelectedSD0 = VisitsSelectedSD0,
+                           # DatBinaryCode0 = DatBinaryCode0,
                            NbRoundsMax = NbRoundsMax,
                            CurrentRound = CurrentRound,
                            FullTable = FullTable,
@@ -705,10 +1068,11 @@ server <- function(input, output, session) {
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
                            ColorLighteningFactor=ColorLighteningFactor(),
-                           ColorDarkeningFactor=ColorDarkeningFactor())
+                           ColorDarkeningFactor=ColorDarkeningFactor(),
+                           SPECIES_ARG3 = SPECIES,
+                           N_TARGETS_ARG2 = N_TARGETS)
   })
   
-  ################## TO CHANGE
   
   observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
@@ -747,11 +1111,22 @@ server <- function(input, output, session) {
       
       AreaSelected<-AreaSelected0()
       CarbonSelected<-CarbonSelected0()
-      RedSquirrelSelected<-RedSquirrelSelected0()
+      # RedSquirrelSelected<-RedSquirrelSelected0()
+      SpeciesListSelected <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "Selected0"))
+        SpeciesListSelected[x] <- list(value())
+      }
       VisitsSelected<-VisitsSelected0()
       
       CarbonSelectedSD<-CarbonSelectedSD0()
-      RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
+      # RedSquirrelSelectedSD<-RedSquirrelSelectedSD0()
+      SpeciesListSelectedSD <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "SelectedSD0"))
+        var_name <- paste0(x, "SD")
+        SpeciesListSelectedSD[var_name] <- list(value())
+      }
       VisitsSelectedSD<-VisitsSelectedSD0()
       
       tmp <- outputmap_calculateMats(input = input,
@@ -759,16 +1134,27 @@ server <- function(input, output, session) {
                                      simul636 = simul636,
                                      AreaSelected = AreaSelected,
                                      CarbonSelected = CarbonSelected,
-                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
                                      VisitsSelected = VisitsSelected,
                                      CarbonSelectedSD = CarbonSelectedSD,
-                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD)
+      
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
       SelecTargetCarbon <- tmp$SelecTargetCarbon
-      SelecTargetBio <- tmp$SelecTargetBio
+      # SelecTargetBio <- tmp$SelecTargetBio
+      condition <- TRUE
+      for (x in SPECIES) {
+        var_name <- paste0("SelecTargetBio", x)
+        value <- tmp[[var_name]]
+        assign(var_name, value)
+        
+        condition <- condition & SelectedSimMat2[[x]] >= value
+      }
       SelecTargetArea <- tmp$SelecTargetArea
       SelecTargetVisits <- tmp$SelecTargetVisits
       rm(tmp)
@@ -778,46 +1164,75 @@ server <- function(input, output, session) {
       }
       
       
-      SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$carbon>=SelecTargetCarbon)&
-                                           (SelectedSimMat2$redsquirel>=SelecTargetBio)&
-                                           (SelectedSimMat2$Area>=SelecTargetArea)&
-                                           (SelectedSimMat2$Visits>=SelecTargetVisits),]
+      # SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
+      #                                      # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
+      #                                      condition&
+      #                                      (SelectedSimMat2$Area>=SelecTargetArea)&
+      #                                      (SelectedSimMat2$Visits>=SelecTargetVisits),]
       
       #SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
       if(dim(SubsetMeetTargets)[1]>0){
-        if(max(SelectedSimMat2$carbon)!=min(SelectedSimMat2$carbon)){
-          DistSliderCarbon<-(SubsetMeetTargets$carbon-SelecTargetCarbon)/(max(SelectedSimMat2$carbon)-min(SelectedSimMat2$carbon))}else{
-            DistSliderCarbon<-(SubsetMeetTargets$carbon-SelecTargetCarbon)/(max(SelectedSimMat2$carbon))
+        if(max(SelectedSimMat2$Carbon)!=min(SelectedSimMat2$Carbon)){
+          DistSliderCarbon<-(SubsetMeetTargets$Carbon-SelecTargetCarbon)/(max(SelectedSimMat2$Carbon)-min(SelectedSimMat2$Carbon))}else{
+            DistSliderCarbon<-(SubsetMeetTargets$Carbon-SelecTargetCarbon)/(max(SelectedSimMat2$Carbon))
           }
-        if(max(SelectedSimMat2$redsquirel)!=min(SelectedSimMat2$redsquirel)){
-          
-          DistSliderBio<-(SubsetMeetTargets$redsquirel-SelecTargetBio)/(max(SelectedSimMat2$redsquirel)-min(SelectedSimMat2$redsquirel))}else{
-            DistSliderBio<-(SubsetMeetTargets$redsquirel-SelecTargetBio)/(max(SelectedSimMat2$redsquirel))
+        # if(max(SelectedSimMat2$redsquirrel)!=min(SelectedSimMat2$redsquirrel)){
+        #   
+        #   DistSliderBio<-(SubsetMeetTargets$redsquirrel-SelecTargetBio)/(max(SelectedSimMat2$redsquirrel)-min(SelectedSimMat2$redsquirrel))}else{
+        #     DistSliderBio<-(SubsetMeetTargets$redsquirrel-SelecTargetBio)/(max(SelectedSimMat2$redsquirrel))
+        #   }
+        DistSliderBioListDataframes <- list()
+        for (x in SPECIES) {
+          SelecTargetBiospecie <- get(paste0("SelecTargetBio", x))[[1]]
+          var_name <- paste0("DistSliderBio", x)
+          if(max(SelectedSimMat2[x]) != min(SelectedSimMat2[x])) {
+            value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
+          } else {
+            value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
           }
+          assign(var_name, value)
+          DistSliderBioListDataframes[x] <- data.frame(x = value)
+        }
         if(max(SelectedSimMat2$Area)!=min(SelectedSimMat2$Area)){
-          DistSliderArea<-(SubsetMeetTargets$Area-SelecTargetArea)/(max(SelectedSimMat2$Area)-min(SelectedSimMat2$Area))}else{
-            DistSliderArea<-(SubsetMeetTargets$Area-SelecTargetArea)/(max(SelectedSimMat2$Area))
-          }
+          DistSliderArea<-(SubsetMeetTargets$Area-SelecTargetArea)/(max(SelectedSimMat2$Area)-min(SelectedSimMat2$Area))
+        } else {
+          DistSliderArea<-(SubsetMeetTargets$Area-SelecTargetArea)/(max(SelectedSimMat2$Area))
+        }
         if(max(SelectedSimMat2$Visits)!=min(SelectedSimMat2$Visits)){
-          DistSliderVisits<-(SubsetMeetTargets$Visits-SelecTargetVisits)/(max(SelectedSimMat2$Visits)-min(SelectedSimMat2$Visits))}else{
-            DistSliderVisits<-(SubsetMeetTargets$Visits-SelecTargetVisits)/(max(SelectedSimMat2$Visits))
-          }
+          DistSliderVisits<-(SubsetMeetTargets$Visits-SelecTargetVisits)/(max(SelectedSimMat2$Visits)-min(SelectedSimMat2$Visits))
+        } else {
+          DistSliderVisits<-(SubsetMeetTargets$Visits-SelecTargetVisits)/(max(SelectedSimMat2$Visits))
+        }
         
-        SelecdMinRows<-which((DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits))
+        # REMINDER TO SCALE VALUES
+        DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
+        # SelecdMinRows<-which((DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits))
+        # SelecdMinRows<-which((DistSliderCarbon+DistSliderBio1+DistSliderBio2+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio1+DistSliderBio2+DistSliderArea+DistSliderVisits))
+        SelecdMinRows<-which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
         SelectedMins<-SubsetMeetTargets[SelecdMinRows,]
         SelecRow<-which.min(rowSums(SelectedMins[1:length(SavedVec),]))
         SwitchedOnCells<-SelectedMins[SelecRow,1:length(SavedVec)]
         
         SELL<-(FullTable$extent==SelectedDropdown)
         if(!is.null(SELL)){
-          SelectedTreeCarbon<-SelectedMins[SelecRow,]$carbon
-          SelectedBio<-SelectedMins[SelecRow,]$redsquirel
+          SelectedTreeCarbon<-SelectedMins[SelecRow,]$Carbon
+          # SelectedBio<-SelectedMins[SelecRow,]$redsquirrel
+          for (x in SPECIES) {
+            var_name <- paste0("SelectedBio", x)
+            value <- SelectedMins[SelecRow, x]
+            assign(var_name, value)
+          }
           SelectedArea<-SelectedMins[SelecRow,]$Area
           SelectedVisits<-SelectedMins[SelecRow,]$Visits
           
-          SelectedTreeCarbonSD<-SelectedMins[SelecRow,]$carbonSD
-          SelectedBioSD<-SelectedMins[SelecRow,]$redsquirelSD
+          SelectedTreeCarbonSD<-SelectedMins[SelecRow,]$CarbonSD
+          # SelectedBioSD<-SelectedMins[SelecRow,]$redsquirrelSD
+          for (x in SPECIES) {
+            var_name <- paste0("SelectedBioSD", x)
+            value <- SelectedMins[SelecRow, paste0(x, "SD")]
+            assign(var_name, value)
+          }
           SelectedVisitsSD<-SelectedMins[SelecRow,]$VisitsSD
           
           
@@ -846,14 +1261,21 @@ server <- function(input, output, session) {
           
           if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
     
+          addControlText <- ""
+          for (x in SPECIES) {
+            selectedBiospecie <- get(paste0("SelectedBio", x))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
+            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          }
           map<-map%>%
-            addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>
-                                 Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>
-                                 Area Planted: ",round(SelectedArea,2),"<br>
-                                 Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
+            addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
+                                     # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
+                                     addControlText,
+                                     "Area Planted: ",round(SelectedArea,2),"<br>",
+                                     "Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
           
-        }else{ map<-map%>%
+        } else { map<-map %>%
           addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
         }
       }
@@ -876,11 +1298,22 @@ server <- function(input, output, session) {
       
       AreaSelected <- AreaSelected0()
       CarbonSelected <- CarbonSelected0()
-      RedSquirrelSelected <- RedSquirrelSelected0()
+      # RedSquirrelSelected <- RedSquirrelSelected0()
+      SpeciesListSelected <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "Selected0"))
+        SpeciesListSelected[x] <- list(value())
+      }
       VisitsSelected <- VisitsSelected0()
       
       CarbonSelectedSD <- CarbonSelectedSD0()
-      RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      SpeciesListSelectedSD <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "SelectedSD0"))
+        var_name <- paste0(x, "SD")
+        SpeciesListSelectedSD[var_name] <- list(value())
+      }
       VisitsSelectedSD <- VisitsSelectedSD0()
       
       tmp <- outputmap_calculateMats(input = input,
@@ -888,10 +1321,12 @@ server <- function(input, output, session) {
                                      simul636 = simul636,
                                      AreaSelected = AreaSelected,
                                      CarbonSelected = CarbonSelected,
-                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
                                      VisitsSelected = VisitsSelected,
                                      CarbonSelectedSD = CarbonSelectedSD,
-                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -904,10 +1339,11 @@ server <- function(input, output, session) {
         PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
       }
       
-      CONDPROBA <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
       
       SubsetMeetTargets <- SelectedSimMat2[CONDPROBA, ]
-      SelIMAT <- Icalc$IVEC[CONDPROBA, ]
+      # SelIMAT <- Icalc$IVEC[CONDPROBA, ]
       
       if (dim(SubsetMeetTargets)[1] > 0) {
         mapresults <- outputmap_createResults(map = map,
@@ -919,21 +1355,29 @@ server <- function(input, output, session) {
                                               randomValue = randomValue,
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
-                                              ColorDarkeningFactor=ColorDarkeningFactor())
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
+        addControlText <- ""
+        for (x in SPECIES) {
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
+          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        }
         map <- with(mapresults, map %>%
-                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
-                                               Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea, 2), "<br>
-                                               Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
+                                               # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
+                                               addControlText,
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
+                                               "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
-        Text1(paste0("Strategies that meet all 4 targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1)))
+        Text1(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1)))
         
       } else {
-        Text1("No strategy where all 4 targets are met found")
+        Text1(paste("No strategy where all", N_TARGETS, "targets are met found"))
       }
     }
     
@@ -952,11 +1396,22 @@ server <- function(input, output, session) {
       
       AreaSelected <- AreaSelected0()
       CarbonSelected <- CarbonSelected0()
-      RedSquirrelSelected <- RedSquirrelSelected0()
+      # RedSquirrelSelected <- RedSquirrelSelected0()
+      SpeciesListSelected <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "Selected0"))
+        SpeciesListSelected[x] <- list(value())
+      }
       VisitsSelected <- VisitsSelected0()
       
       CarbonSelectedSD <- CarbonSelectedSD0()
-      RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      SpeciesListSelectedSD <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "SelectedSD0"))
+        var_name <- paste0(x, "SD")
+        SpeciesListSelectedSD[var_name] <- list(value())
+      }
       VisitsSelectedSD <- VisitsSelectedSD0()
       
       tmp <- outputmap_calculateMats(input = input,
@@ -964,10 +1419,12 @@ server <- function(input, output, session) {
                                      simul636 = simul636,
                                      AreaSelected = AreaSelected,
                                      CarbonSelected = CarbonSelected,
-                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
                                      VisitsSelected = VisitsSelected,
                                      CarbonSelectedSD = CarbonSelectedSD,
-                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -980,16 +1437,29 @@ server <- function(input, output, session) {
         PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
       }
       
-      CONDPROBA3PositiveLIST <- list()
-      CONDPROBA3PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROBA3PositiveLIST[[2]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROBA3PositiveLIST[[3]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROBA3PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      # CONDPROBA3PositiveLIST <- list()
+      # CONDPROBA3PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA3PositiveLIST[[2]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA3PositiveLIST[[3]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA3PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      CONDPROBA3PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 1)
       
-      SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[1]], ], NotMet = rep("carbon", sum(CONDPROBA3PositiveLIST[[1]])))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[2]], ], NotMet = rep("redSquirrel", sum(CONDPROBA3PositiveLIST[[2]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[3]], ], NotMet = rep("Area", sum(CONDPROBA3PositiveLIST[[3]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[4]], ], NotMet = rep("NbVisits", sum(CONDPROBA3PositiveLIST[[4]]))))
+      # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[1]], ],
+      #                                 NotMet = rep("Carbon", sum(CONDPROBA3PositiveLIST[[1]])))
+      # # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[2]], ], NotMet = rep("redSquirrel", sum(CONDPROBA3PositiveLIST[[2]]))))
+      # for (i in 1:N_SPECIES) {
+      #   specie <- SPECIES[i]
+      #   SubsetMeetTargets <- rbind(SubsetMeetTargets, 
+      #                              data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[i + 1]], ],
+      #                                         NotMet = rep(specie, sum(CONDPROBA3PositiveLIST[[i + 1]]))))
+      # }
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets,
+      #                            data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[N_SPECIES + 2]], ],
+      #                                       NotMet = rep("Area", sum(CONDPROBA3PositiveLIST[[N_SPECIES + 2]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets,
+      #                            data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[N_SPECIES + 3]], ],
+      #                                       NotMet = rep("NbVisits", sum(CONDPROBA3PositiveLIST[[N_SPECIES + 3]]))))
+      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA3PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS - 1)
       
       if (dim(SubsetMeetTargets)[1] > 0) {
         mapresults <- outputmap_createResults(map = map,
@@ -1001,21 +1471,30 @@ server <- function(input, output, session) {
                                               randomValue = randomValue,
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
-                                              ColorDarkeningFactor=ColorDarkeningFactor())
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
+        addControlText <- ""
+        for (x in SPECIES) {
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
+          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        }
         map <- with(mapresults, map %>%
-                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
-                                               Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea, 2), "<br>
-                                               Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
+                                               # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
+                                               addControlText,
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
+                                               "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
-        Text2(paste0("Strategies that meet exactly 3 targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", mapresults$SelectedLine$NotMet))
+        
+        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", mapresults$SelectedLine$NotMet))
         
       } else {
-        Text2("No strategy where exactly 3 targets are met found")
+        Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
@@ -1032,11 +1511,22 @@ server <- function(input, output, session) {
       
       AreaSelected <- AreaSelected0()
       CarbonSelected <- CarbonSelected0()
-      RedSquirrelSelected <- RedSquirrelSelected0()
+      # RedSquirrelSelected <- RedSquirrelSelected0()
+      SpeciesListSelected <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "Selected0"))
+        SpeciesListSelected[x] <- list(value())
+      }
       VisitsSelected <- VisitsSelected0()
       
       CarbonSelectedSD <- CarbonSelectedSD0()
-      RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      SpeciesListSelectedSD <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "SelectedSD0"))
+        var_name <- paste0(x, "SD")
+        SpeciesListSelectedSD[var_name] <- list(value())
+      }
       VisitsSelectedSD <- VisitsSelectedSD0()
       
       tmp <- outputmap_calculateMats(input = input,
@@ -1044,10 +1534,12 @@ server <- function(input, output, session) {
                                      simul636 = simul636,
                                      AreaSelected = AreaSelected,
                                      CarbonSelected = CarbonSelected,
-                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
                                      VisitsSelected = VisitsSelected,
                                      CarbonSelectedSD = CarbonSelectedSD,
-                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1060,20 +1552,22 @@ server <- function(input, output, session) {
         PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
       }
       
-      CONDPROBA2PositiveLIST <- list()
-      CONDPROBA2PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROBA2PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROBA2PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-      CONDPROBA2PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROBA2PositiveLIST[[5]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-      CONDPROBA2PositiveLIST[[6]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      # CONDPROBA2PositiveLIST <- list()
+      # CONDPROBA2PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA2PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA2PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      # CONDPROBA2PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA2PositiveLIST[[5]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      # CONDPROBA2PositiveLIST[[6]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      CONDPROBA2PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 2)
       
-      SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]], ], NotMet = rep("carbon,redSquirrel", sum(CONDPROBA2PositiveLIST[[1]])))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]], ], NotMet = rep("carbon,Area", sum(CONDPROBA2PositiveLIST[[2]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[3]], ], NotMet = rep("carbon,NbVisits", sum(CONDPROBA2PositiveLIST[[3]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[4]], ], NotMet = rep("redSquirrel,Area", sum(CONDPROBA2PositiveLIST[[4]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[5]], ], NotMet = rep("redSquirrel,NbVisits", sum(CONDPROBA2PositiveLIST[[5]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]], ], NotMet = rep("Area,NbVisits", sum(CONDPROBA2PositiveLIST[[6]]))))
+      # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]], ], NotMet = rep("Carbon,redSquirrel", sum(CONDPROBA2PositiveLIST[[1]])))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]], ], NotMet = rep("Carbon,Area", sum(CONDPROBA2PositiveLIST[[2]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[3]], ], NotMet = rep("Carbon,NbVisits", sum(CONDPROBA2PositiveLIST[[3]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[4]], ], NotMet = rep("redSquirrel,Area", sum(CONDPROBA2PositiveLIST[[4]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[5]], ], NotMet = rep("redSquirrel,NbVisits", sum(CONDPROBA2PositiveLIST[[5]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]], ], NotMet = rep("Area,NbVisits", sum(CONDPROBA2PositiveLIST[[6]]))))
+      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA2PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS - 2)
       
       if (dim(SubsetMeetTargets)[1] > 0) {
         mapresults <- outputmap_createResults(map = map,
@@ -1085,22 +1579,30 @@ server <- function(input, output, session) {
                                               randomValue = randomValue,
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
-                                              ColorDarkeningFactor=ColorDarkeningFactor())
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
+        addControlText <- ""
+        for (x in SPECIES) {
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
+          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        }
         map <- with(mapresults, map %>%
-                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
-                                               Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea, 2), "<br>
-                                               Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
+                                               # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
+                                               addControlText,
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
+                                               "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text3(paste0("Strategies that meet exactly 2 targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", mapresults$SelectedLine$NotMet))
+        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", mapresults$SelectedLine$NotMet))
         
       } else {
-        Text3("No strategy where exactly 2 targets are met found")
+        Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
@@ -1117,11 +1619,22 @@ server <- function(input, output, session) {
       
       AreaSelected <- AreaSelected0()
       CarbonSelected <- CarbonSelected0()
-      RedSquirrelSelected <- RedSquirrelSelected0()
+      # RedSquirrelSelected <- RedSquirrelSelected0()
+      SpeciesListSelected <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "Selected0"))
+        SpeciesListSelected[x] <- list(value())
+      }
       VisitsSelected <- VisitsSelected0()
       
       CarbonSelectedSD <- CarbonSelectedSD0()
-      RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+      SpeciesListSelectedSD <- list()
+      for (x in SPECIES) {
+        value <- get(paste0(x, "SelectedSD0"))
+        var_name <- paste0(x, "SD")
+        SpeciesListSelectedSD[var_name] <- list(value())
+      }
       VisitsSelectedSD <- VisitsSelectedSD0()
       
       tmp <- outputmap_calculateMats(input = input,
@@ -1129,10 +1642,12 @@ server <- function(input, output, session) {
                                      simul636 = simul636,
                                      AreaSelected = AreaSelected,
                                      CarbonSelected = CarbonSelected,
-                                     RedSquirrelSelected = RedSquirrelSelected,
+                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
                                      VisitsSelected = VisitsSelected,
                                      CarbonSelectedSD = CarbonSelectedSD,
-                                     RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1145,16 +1660,18 @@ server <- function(input, output, session) {
         PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
       }
       
-      CONDPROBA1PositiveLIST <- list()
-      CONDPROBA1PositiveLIST[[1]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-      CONDPROBA1PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-      CONDPROBA1PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-      CONDPROBA1PositiveLIST[[4]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      # CONDPROBA1PositiveLIST <- list()
+      # CONDPROBA1PositiveLIST[[1]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      # CONDPROBA1PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      # CONDPROBA1PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
+      # CONDPROBA1PositiveLIST[[4]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
+      CONDPROBA1PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 3)
       
-      SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]], ], Met = rep("carbon", sum(CONDPROBA1PositiveLIST[[1]])))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[2]], ], Met = rep("redSquirrel", sum(CONDPROBA1PositiveLIST[[2]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[3]], ], Met = rep("Area", sum(CONDPROBA1PositiveLIST[[3]]))))
-      SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]], ], Met = rep("NbVisits", sum(CONDPROBA1PositiveLIST[[4]]))))
+      # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]], ], Met = rep("Carbon", sum(CONDPROBA1PositiveLIST[[1]])))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[2]], ], Met = rep("redSquirrel", sum(CONDPROBA1PositiveLIST[[2]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[3]], ], Met = rep("Area", sum(CONDPROBA1PositiveLIST[[3]]))))
+      # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]], ], Met = rep("NbVisits", sum(CONDPROBA1PositiveLIST[[4]]))))
+      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA1PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS - 3)
       
       if (dim(SubsetMeetTargets)[1] > 0) {
         mapresults <- outputmap_createResults(map = map,
@@ -1166,23 +1683,31 @@ server <- function(input, output, session) {
                                               randomValue = randomValue,
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
-                                              ColorDarkeningFactor=ColorDarkeningFactor())
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
+        addControlText <- ""
+        for (x in SPECIES) {
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
+          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        }
         map <- with(mapresults, map %>%
-                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>
-                                               Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>
-                                               Area Planted: ", round(SelectedArea, 2), "<br>
-                                               Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
+                      addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
+                                               # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
+                                               addControlText,
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
+                                               "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
-        Text4(paste0("Strategies that meet only 1 target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", mapresults$SelectedLine$Met))
+        
+        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", mapresults$SelectedLine$Met))
         
       } else {
-        Text4("No strategy where only 1 target is met found")
+        Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
       }
-      
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
