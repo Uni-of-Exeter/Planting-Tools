@@ -344,7 +344,8 @@ for(ii in 1:length(FullTableCopy$geometry))
   FullTable$area[ii]<-sum(SELLWeights)
 }
 
-
+# Replace Biodiversity columns with correct ones
+FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable)
 
 #aa<-leaflet()
 #aa<-  addTiles(aa) 
@@ -402,36 +403,36 @@ for (aaa in 1:NSamp)
 
 
 
-# Move rows from FullTableNotAvail to FullTable with blank data
-FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
-                                                   "id" = id,
-                                                   "area" = 1,
-                                                   x = lgn.1,
-                                                   y = lat.1,
-                                                   xbgn = 0,
-                                                   ybgn = 0,
-                                                   lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
-                                                   JulesMean=0,JulesSD=0,
-                                                   VisitsMean=0,VisitsSD=0)) %>%
-  mutate(across(x:lat.5, as.numeric)) %>% 
-  mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
+# # Move rows from FullTableNotAvail to FullTable with blank data
+# FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
+                                                   # "id" = id,
+                                                   # "area" = 1,
+                                                   # x = lgn.1,
+                                                   # y = lat.1,
+                                                   # xbgn = 0,
+                                                   # ybgn = 0,
+                                                   # lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
+                                                   # JulesMean=0,JulesSD=0,
+                                                   # VisitsMean=0,VisitsSD=0)) %>%
+  # mutate(across(x:lat.5, as.numeric)) %>% 
+  # mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
 
-cols <- colnames(FullTable)
-FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
-FullTableAdd <- FullTableAdd[, cols]
-FullTableAdd$xybgn <- 1
-rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
-# Check which columns contain NA values
-columns_with_na <- colSums(is.na(FullTableAdd))
-colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
-# Replace NA with 0
-FullTableAdd[rows_na, colnames_with_na] <- 0
-FullTable <- FullTableAdd
+# cols <- colnames(FullTable)
+# FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
+# FullTableAdd <- FullTableAdd[, cols]
+# FullTableAdd$xybgn <- 1
+# rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
+# # Check which columns contain NA values
+# columns_with_na <- colSums(is.na(FullTableAdd))
+# colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
+# # Replace NA with 0
+# FullTableAdd[rows_na, colnames_with_na] <- 0
+# FullTable <- FullTableAdd
 
-old_cols <- colnames(FullTableNotAvail)
-FullTableNotAvail <- data.frame(0)
-FullTableNotAvail[, old_cols] <- 0
-FullTableNotAvail <- FullTableNotAvail[, -1]
+# old_cols <- colnames(FullTableNotAvail)
+# FullTableNotAvail <- data.frame(0)
+# FullTableNotAvail[, old_cols] <- 0
+# FullTableNotAvail <- FullTableNotAvail[, -1]
 
 alphaLVL<-0.9
 
