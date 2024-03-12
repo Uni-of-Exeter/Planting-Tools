@@ -472,13 +472,13 @@ verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (20
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x)) else paste("Average species", name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "chance of appearance (%):"),
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species Richness (", .(x), ")") else paste(name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "Presence (%):"),
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value),
                                                        step = 0.5)))
                            }, fulltable = FullTable),
-                           list(sliderInput("AreaSlider", HTML("Total Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
+                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
                            list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
 
 
