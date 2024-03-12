@@ -453,8 +453,8 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
- SPECIES <- name_conversion[1:2, "Specie"]
-#SPECIES <- c("Pollinator", "All")
+SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinator", "All")
+SPECIES_ENGLISH <- c(name_conversion[1:2, "English_Specie"], "Pollinator", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
@@ -472,7 +472,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (20
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x)) else paste("Average species", .(x), "chance of appearance (%):"), 
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x)) else paste("Average species", name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "chance of appearance (%):"),
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value),
@@ -982,13 +982,15 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           
                                      
           addControlText <- ""
-          for (x in SPECIES) {
-            selectedBiospecie <- get(paste0("SelectedBio", x))
-            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          for (i in 1:length(SPECIES)) {
+            specie_latin <- SPECIES[i]
+            specie_english <- SPECIES_ENGLSH[i]
+            selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
-          listMaps[[aai]]<-listMaps[[aai]]%>%
+          listMaps[[aai]] <- listMaps[[aai]]%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
                                      # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
                                      addControlText,
@@ -1375,10 +1377,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLSH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
@@ -1491,10 +1495,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLSH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
@@ -1599,10 +1605,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLSH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
@@ -1703,10 +1711,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLSH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
