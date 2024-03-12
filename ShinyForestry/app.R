@@ -471,7 +471,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (20
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species Richness (", .(x), ")") else paste(name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "Presence (%):"),
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste0("Species Richness (", .(x), ")") else paste(name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "Presence (%):"),
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value),
@@ -602,11 +602,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
     #   BioSliderValSpecie <- get(paste0("BioSliderVal", x))
     #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
     # }
-    for (i in seq_along(SPECIES)) {
-      x <- SPECIES[i]
+    for (i in 1:length(SPECIES)) {
+      specie_english <- SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
-      text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
+      text <- paste0(text, "\n", specie_english, ": ", as.numeric(BioSliderValSpecie()))
     }
+
     text <- paste0(text,
                    # "\nRed Squirrel: ",as.numeric(bioSliderVal()),
                    "\nArea Planted: ", as.numeric(AreaSliderVal()),
@@ -1273,11 +1274,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
     
           addControlText <- ""
-          for (x in SPECIES) {
-            selectedBiospecie <- get(paste0("SelectedBio", x))
-            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          for (i in 1:length(SPECIES)) {
+            specie_latin <- SPECIES[i]
+            specie_english <- SPECIES_ENGLISH[i]
+            selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
+
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
                                      # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
@@ -1498,6 +1502,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet)
+        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
+        targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
+        
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
@@ -1506,7 +1515,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", mapresults$SelectedLine$NotMet))
+        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met_english))
         
       } else {
         Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
@@ -1608,6 +1617,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet)
+        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
+        targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
+
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
@@ -1616,7 +1630,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", mapresults$SelectedLine$NotMet))
+        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met_english))
         
       } else {
         Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
@@ -1714,6 +1728,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet)
+        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
+        targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
+        
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
@@ -1722,7 +1741,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", mapresults$SelectedLine$Met))
+        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_not_met_english))
         
       } else {
         Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
