@@ -1510,8 +1510,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         }
 
         vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
-        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
-        targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
+        indices_of_species_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Specie))
+        indices_of_groups_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Group))
+        
+        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_species_in_vector]), "English_specie"]
+        targets_not_met_group <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_groups_in_vector]), "Group"]
+
+        targets_not_met <- c(targets_not_met_group, targets_not_met_english)
+        targets_not_met <- paste(targets_not_met, collapse = ",")
         
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
@@ -1521,7 +1527,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met_english))
+        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met))
         
       } else {
         Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
@@ -1626,8 +1632,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         }
 
         vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
-        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
-        targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
+        indices_of_species_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Specie))
+        indices_of_groups_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Group))
+        
+        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_species_in_vector]), "English_specie"]
+        targets_not_met_group <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_groups_in_vector]), "Group"]
+
+        targets_not_met <- c(targets_not_met_group, targets_not_met_english)
+        targets_not_met <- paste(targets_not_met, collapse = ",")
 
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
@@ -1637,7 +1649,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met_english))
+        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met))
         
       } else {
         Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
@@ -1737,9 +1749,15 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
 
-        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
-        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
-        targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
+        vector_targets_met <- str_split_1(mapresults$SelectedLine$Met, ",")
+        indices_of_species_in_vector <- which(vector_targets_met %in% unique(name_conversion$Specie))
+        indices_of_groups_in_vector <- which(vector_targets_met %in% unique(name_conversion$Group))
+        
+        targets_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_met[indices_of_species_in_vector]), "English_specie"]
+        targets_met_group <- name_conversion[which(name_conversion$Specie %in% vector_targets_met[indices_of_groups_in_vector]), "Group"]
+
+        targets_met <- c(targets_met_group, targets_met_english)
+        targets_met <- paste(targets_met, collapse = ",")
         
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
@@ -1749,7 +1767,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_not_met_english))
+        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_met))
         
       } else {
         Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
