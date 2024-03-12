@@ -191,7 +191,7 @@ name_conversion[84, ] <- row83
 
 # load all shapes
 ElicitatorAppFolder<-"./ElicitatorOutput/"
-JulesAppFolder<-"./JulesOutput/"
+JulesAppFolder<-"./JulesOP/"
 
 ########################## Pre-processing
 #remove all directories starting with "land"
@@ -229,7 +229,7 @@ JulesMean<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-mean-mon
 JulesSD<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-sd-monthly.feather"))[,c("x","y","sd337")]
 SquaresLoad<-sf::st_read(paste0(JulesAppFolder,"SEER//Fishnet_1km_to_SEER_net2km.shp"))
 Sqconv<-st_transform(SquaresLoad, crs = 4326)
-XYMAT<-read.csv(paste0(JulesAppFolder,"XYMat_1km.csv"))[,-1]
+#XYMAT<-read.csv(paste0(JulesAppFolder,"XYMat_1km.csv"))[,-1]
 CorrespondenceJules<-read.csv(paste0(JulesAppFolder,"/CorrespondanceSqToJules.csv"))[,-1]
 seer2km<-st_read(paste0(JulesAppFolder,"/SEER_net2km.shp"))
 jncc100<-read.csv(paste0(JulesAppFolder,"/beta_JNCC100_interact_quad.csv"))
