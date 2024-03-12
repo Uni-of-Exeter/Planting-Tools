@@ -980,7 +980,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLSH[i]
+            specie_english <- SPECIES_ENGLISH[i]
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1375,7 +1375,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1493,7 +1493,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1603,7 +1603,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1709,7 +1709,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
