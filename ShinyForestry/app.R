@@ -1503,7 +1503,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
 
-        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet)
+        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
         targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
         targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
         
@@ -1618,7 +1618,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
 
-        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet)
+        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
         targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
         targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
 
@@ -1729,7 +1729,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
 
-        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet)
+        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
         targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met), "English_specie"]
         targets_not_met_english <- paste(targets_not_met_english, collapse = ",")
         
