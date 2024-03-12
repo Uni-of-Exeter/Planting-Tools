@@ -26,6 +26,12 @@ loadNamespace("prefeR")
 library(GGally)
 library(purrr)
 library(sp)
+library(colorspace)
+library(rjson)
+library(arrow)
+library(lwgeom)
+library(mvtnorm)
+library(dplyr)
 # if (!require("prefeR")) {
   # install.packages("prefeR", lib = "/RPackages")
   # detach("package:prefeR", unload = TRUE)
@@ -40,10 +46,6 @@ library(sp)
     # }
   # }
 # }
-library(colorspace)
-library(rjson)
-library(arrow)
-library(lwgeom)
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
@@ -188,11 +190,9 @@ name_conversion[84, ] <- row83
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
 # load all shapes
-# PROJdir<-system.file("proj/proj.db", package = "sf")
-# PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-# sf_proj_search_paths(PROJdir)
 ElicitatorAppFolder<-"./ElicitatorOutput/"
 JulesAppFolder<-"./JulesOutput/"
+
 ########################## Pre-processing
 #remove all directories starting with "land"
 unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
@@ -219,6 +219,9 @@ UnZipDirName<-paste0(substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFil
 dir.create(UnZipDirName)
 unzip(LatestFilesInfo$LatestFileNames[1], exdir = UnZipDirName)
 ################## Load necessary files
+# PROJdir<-system.file("proj/proj.db", package = "sf")
+# PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+# sf_proj_search_paths(PROJdir)
 shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
 if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
 st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
@@ -228,7 +231,10 @@ SquaresLoad<-sf::st_read(paste0(JulesAppFolder,"SEER//Fishnet_1km_to_SEER_net2km
 Sqconv<-st_transform(SquaresLoad, crs = 4326)
 XYMAT<-read.csv(paste0(JulesAppFolder,"XYMat_1km.csv"))[,-1]
 CorrespondenceJules<-read.csv(paste0(JulesAppFolder,"/CorrespondanceSqToJules.csv"))[,-1]
-
+seer2km<-st_read(paste0(JulesAppFolder,"/SEER_net2km.shp"))
+jncc100<-read.csv(paste0(JulesAppFolder,"/beta_JNCC100_interact_quad.csv"))
+speciesprob40<- read.csv(paste0(JulesAppFolder,"scenario_species_prob_40.csv"), header = FALSE)
+climatecells<-read.csv(paste0(JulesAppFolder,"climate_cells.csv"))
 ###################
 sf_use_s2(FALSE)
 lsh<-dim(shconv)[1]
@@ -345,7 +351,14 @@ for(ii in 1:length(FullTableCopy$geometry))
 }
 
 # Replace Biodiversity columns with correct ones
-FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable)
+
+FullTable2 <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
+                                                                            speciesprob40=speciesprob40,
+                                                                            seer2km=seer2km,
+                                                                            jncc100=jncc100,
+                                                                            climatecells=climatecells
+)
+
 
 #aa<-leaflet()
 #aa<-  addTiles(aa) 
@@ -356,7 +369,7 @@ FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elic
   #aa<-addPolygons(aa,data=Sqconv$geometry[keptLines],col="red")
 
 #######################################
-st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+st_write(FullTable2,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
 
 
 ##################
@@ -440,8 +453,8 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
-# SPECIES <- name_conversion[1:2, "Specie"]
-SPECIES <- c("Pollinator", "All")
+ SPECIES <- name_conversion[1:2, "Specie"]
+#SPECIES <- c("Pollinator", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
@@ -1164,11 +1177,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       }
       
       
-      # SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
-      #                                      # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
-      #                                      condition&
-      #                                      (SelectedSimMat2$Area>=SelecTargetArea)&
-      #                                      (SelectedSimMat2$Visits>=SelecTargetVisits),]
+       SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
+                                            # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
+                                            condition&
+                                            (SelectedSimMat2$Area>=SelecTargetArea)&
+                                            (SelectedSimMat2$Visits>=SelecTargetVisits),]
       
       #SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
