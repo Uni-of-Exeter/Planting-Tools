@@ -549,8 +549,9 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   ))
 ))
 
-server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG1 = N_TARGETS) {
+server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG_1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS) {
   SPECIES <- SPECIES_ARG1
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
   N_TARGETS <- N_TARGETS_ARG1
   
@@ -590,6 +591,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
   
   output$TargetText<-renderText({
     SPECIES <- SPECIES_ARG1
+    SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
     N_SPECIES <- length(SPECIES)
     N_TARGETS <- N_TARGETS_ARG1
     
@@ -1050,6 +1052,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
+                           SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS)
   })
   
@@ -1082,6 +1085,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                            ColorLighteningFactor=ColorLighteningFactor(),
                            ColorDarkeningFactor=ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
+                           SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS)
   })
   
@@ -1371,7 +1375,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1489,7 +1494,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1604,7 +1610,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1715,7 +1722,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
