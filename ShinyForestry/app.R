@@ -465,20 +465,19 @@ N_TARGETS <- length(TARGETS)
 # Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
 
 verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
-                           list(textOutput("SoilCarbonNotIncluded")),
                            lapply(SPECIES, function(x, fulltable) {
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
                              # value <- round(max_specie / 2)
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x)) else paste("Average species", name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "chance of appearance (%):"),
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species Richness (", .(x), ")") else paste(name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "Presence (%):"),
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value),
                                                        step = 0.5)))
                            }, fulltable = FullTable),
-                           list(sliderInput("AreaSlider", HTML("Total Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
+                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
                            list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
 
 
@@ -499,7 +498,6 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                            ),
                                            column(3,
                                                   # verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
-                                                  #                textOutput("SoilCarbonNotIncluded"),
                                                   #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25, step=0.01),
                                                   #                sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
                                                   #                sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))
@@ -625,9 +623,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
  # observeEvent(input$Lighten,{
 #    ColorLighteningFactor(input$Lighten/100)
 #  })
-  
-  output$SoilCarbonNotIncluded<-renderText({paste0("Soil carbon in future versions")})
-  
+    
   output$FirstMapTxt<-renderText({Text1()})
   output$SecondMapTxt<-renderText({Text2()})
   output$ThirdMapTxt<-renderText({Text3()})
@@ -984,7 +980,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLSH[i]
+            specie_english <- SPECIES_ENGLISH[i]
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1379,7 +1375,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1497,7 +1493,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1607,7 +1603,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1713,7 +1709,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
         addControlText <- ""
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLSH[i]
+          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
