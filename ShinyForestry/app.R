@@ -465,7 +465,6 @@ N_TARGETS <- length(TARGETS)
 # Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
 
 verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
-                           list(textOutput("SoilCarbonNotIncluded")),
                            lapply(SPECIES, function(x, fulltable) {
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
                              # value <- round(max_specie / 2)
@@ -499,7 +498,6 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                            ),
                                            column(3,
                                                   # verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
-                                                  #                textOutput("SoilCarbonNotIncluded"),
                                                   #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25, step=0.01),
                                                   #                sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
                                                   #                sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))
@@ -625,9 +623,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
  # observeEvent(input$Lighten,{
 #    ColorLighteningFactor(input$Lighten/100)
 #  })
-  
-  output$SoilCarbonNotIncluded<-renderText({paste0("Soil carbon in future versions")})
-  
+    
   output$FirstMapTxt<-renderText({Text1()})
   output$SecondMapTxt<-renderText({Text2()})
   output$ThirdMapTxt<-renderText({Text3()})
