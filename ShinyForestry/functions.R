@@ -327,8 +327,10 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    ColorLighteningFactor,
                                    ColorDarkeningFactor,
                                    SPECIES_ARG3,
+                                   SPECIES_ENGLISH_ARG3,
                                    N_TARGETS_ARG2) {
   SPECIES <- SPECIES_ARG3
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
   N_TARGETS <- N_TARGETS_ARG2
   SavedVec <- ClickedVector()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
@@ -641,8 +643,10 @@ outputmap_createResults <- function(map,
                                     ColourScheme,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor,
-                                    SPECIES_ARG2) {
+                                    SPECIES_ARG2,
+                                    SPECIES_ENGLISH_ARG2) {
   SPECIES <- SPECIES_ARG2
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG2
   SavedRVs <- randomValue()
   LSMT <- dim(SubsetMeetTargets)[1]
   SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
