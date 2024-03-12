@@ -793,7 +793,8 @@ subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST
 }
 
 add_richness_columns <- function(FullTable, name_conversion) {
-  FullTable2 <- FullTable
+  # Convert from sf to tibble
+  FullTable2 <- as_tibble(FullTable)
   # Add an artifical group for all species
   unique_groups <- c(unique(name_conversion$Group), "All")
   for (group in unique_groups) {
@@ -819,6 +820,8 @@ add_richness_columns <- function(FullTable, name_conversion) {
     column_names[(number_of_columns-1):number_of_columns] <- paste0(c("BioMean_", "BioSD_"), group)
     colnames(FullTable2) <- column_names
   }
+  # Convert back to sf object
+  FullTable2 <- st_as_sf(FullTable2)
   return(FullTable2)
 }
 
