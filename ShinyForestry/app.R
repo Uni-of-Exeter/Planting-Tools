@@ -1509,14 +1509,16 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
 
-        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
-        indices_of_species_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Specie))
-        indices_of_groups_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Group))
-        
-        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_species_in_vector]), "English_specie"]
-        targets_not_met_group <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_groups_in_vector]), "Group"]
-
-        targets_not_met <- c(targets_not_met_group, targets_not_met_english)
+        # Replace species Latin names with English names, and keep everything else
+        targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
+        for (i in seq_along(targets_not_met)) {
+          target <- targets_not_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_not_met[i] <- matching_english_specie
+          }
+        }
         targets_not_met <- paste(targets_not_met, collapse = ",")
         
         map <- with(mapresults, map %>%
@@ -1631,14 +1633,16 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
 
-        vector_targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
-        indices_of_species_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Specie))
-        indices_of_groups_in_vector <- which(vector_targets_not_met %in% unique(name_conversion$Group))
-        
-        targets_not_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_species_in_vector]), "English_specie"]
-        targets_not_met_group <- name_conversion[which(name_conversion$Specie %in% vector_targets_not_met[indices_of_groups_in_vector]), "Group"]
-
-        targets_not_met <- c(targets_not_met_group, targets_not_met_english)
+        # Replace species Latin names with English names, and keep everything else
+        targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
+        for (i in seq_along(targets_not_met)) {
+          target <- targets_not_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_not_met[i] <- matching_english_specie
+          }
+        }
         targets_not_met <- paste(targets_not_met, collapse = ",")
 
         map <- with(mapresults, map %>%
@@ -1749,14 +1753,16 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
 
-        vector_targets_met <- str_split_1(mapresults$SelectedLine$Met, ",")
-        indices_of_species_in_vector <- which(vector_targets_met %in% unique(name_conversion$Specie))
-        indices_of_groups_in_vector <- which(vector_targets_met %in% unique(name_conversion$Group))
-        
-        targets_met_english <- name_conversion[which(name_conversion$Specie %in% vector_targets_met[indices_of_species_in_vector]), "English_specie"]
-        targets_met_group <- name_conversion[which(name_conversion$Specie %in% vector_targets_met[indices_of_groups_in_vector]), "Group"]
-
-        targets_met <- c(targets_met_group, targets_met_english)
+        # Replace species Latin names with English names, and keep everything else
+        targets_met <- str_split_1(mapresults$SelectedLine$Met, ",")
+        for (i in seq_along(targets_met)) {
+          target <- targets_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_met[i] <- matching_english_specie
+          }
+        }
         targets_met <- paste(targets_met, collapse = ",")
         
         map <- with(mapresults, map %>%
