@@ -351,14 +351,14 @@ for(ii in 1:length(FullTableCopy$geometry))
 }
 
 # Replace Biodiversity columns with correct ones
-
-FullTable2 <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
+FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
                                                                             speciesprob40=speciesprob40,
                                                                             seer2km=seer2km,
                                                                             jncc100=jncc100,
                                                                             climatecells=climatecells
 )
-
+# Add richness columns
+FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion) %>% st_as_sf()
 
 #aa<-leaflet()
 #aa<-  addTiles(aa) 
@@ -369,7 +369,7 @@ FullTable2 <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Eli
   #aa<-addPolygons(aa,data=Sqconv$geometry[keptLines],col="red")
 
 #######################################
-st_write(FullTable2,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
 
 
 ##################
