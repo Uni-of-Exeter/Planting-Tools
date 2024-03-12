@@ -430,10 +430,12 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
           }
         }
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- get(paste0("SelectedBio", x))
-          selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+          selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         listMaps[[aai]] <- listMaps[[aai]]%>%  
           addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",

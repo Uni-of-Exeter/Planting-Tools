@@ -454,7 +454,7 @@ MaxRounds<-5
 ConvertSample<-sample(1:5000,200)
 
 SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinator", "All")
-SPECIES_ENGLISH <- c(name_conversion[1:2, "English_Specie"], "Pollinator", "All")
+SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinator", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
