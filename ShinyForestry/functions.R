@@ -327,8 +327,10 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    ColorLighteningFactor,
                                    ColorDarkeningFactor,
                                    SPECIES_ARG3,
+                                   SPECIES_ENGLISH_ARG3,
                                    N_TARGETS_ARG2) {
   SPECIES <- SPECIES_ARG3
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
   N_TARGETS <- N_TARGETS_ARG2
   SavedVec <- ClickedVector()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
@@ -430,10 +432,12 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
           }
         }
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- get(paste0("SelectedBio", x))
-          selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+          selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         listMaps[[aai]] <- listMaps[[aai]]%>%  
           addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
@@ -639,8 +643,10 @@ outputmap_createResults <- function(map,
                                     ColourScheme,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor,
-                                    SPECIES_ARG2) {
+                                    SPECIES_ARG2,
+                                    SPECIES_ENGLISH_ARG2) {
   SPECIES <- SPECIES_ARG2
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG2
   SavedRVs <- randomValue()
   LSMT <- dim(SubsetMeetTargets)[1]
   SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
@@ -793,7 +799,8 @@ subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST
 }
 
 add_richness_columns <- function(FullTable, name_conversion) {
-  FullTable2 <- FullTable
+  # Convert from sf to tibble
+  FullTable2 <- as_tibble(FullTable)
   # Add an artifical group for all species
   unique_groups <- c(unique(name_conversion$Group), "All")
   for (group in unique_groups) {
@@ -819,7 +826,143 @@ add_richness_columns <- function(FullTable, name_conversion) {
     column_names[(number_of_columns-1):number_of_columns] <- paste0(c("BioMean_", "BioSD_"), group)
     colnames(FullTable2) <- column_names
   }
+  # Convert back to sf object
+  FullTable2 <- st_as_sf(FullTable2)
   return(FullTable2)
 }
 
+convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob40,jncc100,climatecells) {
+  # Take the Biodiversity probabilities from Matlab results/scenario_species_prob_40.csv
+  # and merge them with BristolFullTableMerged.geojson
+    
+  # Load the shapefile mapping new2kid with Polygons
+  id_polygons <- seer2km %>%dplyr::select(c(new2kid, geometry))
+  
+  # Load the biodiversity results from Matlab
+  biodiversity <-speciesprob40
+  
+  # Replace NAs with column mean
+  biodiversity <- biodiversity %>%
+    mutate(across(everything(), ~ replace(.x,
+                                          is.na(.x),
+                                          mean(.x, na.rm = TRUE))))
+  
+  # Load new2kid
+  new2kid <- climatecells$new2kid
+  
+  # Load species names
+  all_species_names <- colnames(jncc100)[-1]
+  colnames(biodiversity) <- all_species_names
+  
+  # Read the GeoJSON polygon layer
+  polygons_jules <- Elicitor_table %>%
+    # Duplicate the geometry column
+    dplyr::mutate(geometry_jules = geometry) %>%
+    # # Only keep useful columns
+    dplyr::select(-starts_with("Bio"))
+    # select(c(JulesMean, JulesSD,
+    #          VisitsMean, VisitsSD,
+    #          geometry, geometry_jules))
+  
+  # Add new2kid to each data.frame, and change into percentages
+  polygons_bio <- data.frame(new2kid, 100 * biodiversity) %>%
+    # Add polygons
+    dplyr::left_join(id_polygons, by = "new2kid") %>%
+    # Transform to sf object
+    st_as_sf() %>%
+    # Convert the CRS
+    st_transform(crs = st_crs(polygons_jules)) %>%
+    # Duplicate the geometry column
+    dplyr::mutate(geometry_bio = geometry)
+  
+  rm(biodiversity, new2kid)
+  
+  # Validity of geometries
+  if (!all(st_is_valid(polygons_bio))) {
+    polygons_bio <- st_make_valid(polygons_bio)
+  }
+  if (!all(st_is_valid(polygons_jules))) {
+    polygons_jules <- st_make_valid(polygons_jules)
+  }
+  
+  # Perform the intersection (cartesian sense, all possible intersections)
+  polygons_bio$polygon_id_bio <- seq_along(polygons_bio$geometry)
+  polygons_jules$polygon_id_jules <- seq_along(polygons_jules$geometry)
+  # TODO: parallelize? Filter -> check how Bertrand does it
+  intersection <- st_intersection(polygons_bio, polygons_jules)
+  
+  # data.frame with SD = 0 for species
+  df0 <- as.data.frame(matrix(0, ncol = length(all_species_names)))
+  colnames(df0) <- paste0("BioSD_", all_species_names)
+  
+  # Look at the area difference rowwise for mutate
+  compute_difference_area <- function(geom1, geom2) {
+    diff_geom <- st_difference(geom1, geom2)
+    if (!is_empty(diff_geom)) {
+      return(st_area(diff_geom))
+    } else {
+      return(0)  # Return 0 if there is no difference
+    }
+  }
+  
+  # Calculate the proportion of areas (intersection / bio)
+  FullTable <- intersection %>%
+    
+    # Calculate the areas
+    dplyr::mutate(area_bio = st_area(geometry_bio),
+           area_jules = st_area(geometry_jules),
+           area_intersection = st_area(geometry)) %>%
+    
+    # Calculate the ratio of areas
+    dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
+           proportion_intersection_in_jules = area_intersection / area_jules) %>%
+    
+    # Assume uniformity, multiply probability by proportion
+    dplyr::mutate(dplyr::across(all_of(all_species_names),
+                  ~ .x * proportion_intersection_in_bio)) %>%
+  
+    # Rename columns, add BioMean_ and BioSD_ to species
+    dplyr::rename_with(.fn = ~ paste0("BioMean_", .x), .cols = all_of(all_species_names)) %>%
+    
+    # Add empty SD columns for species
+    dplyr::bind_cols(df0) %>%
+    
+    as_tibble() %>%
+    
+    # Group by polygon_id_jules
+    group_by(polygon_id_jules) %>%
+    summarize(
+      across(paste0("BioMean_", all_species_names),
+             ~ mean(.x * area_jules / area_intersection)),
+      
+      across(paste0("BioSD_", all_species_names),
+             ~ 0),
+      
+      geometry_union = st_union(geometry),
+      geometry_jules = st_union(geometry_jules),
+      
+      polygon_id_jules = mean(polygon_id_jules)
+    ) %>%
+  
+    dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
+    
+    # Remove useless columns
+    as_tibble() %>%
+    dplyr::select(c(starts_with("Bio"), polygon_id_jules, area_diff)) %>%
+    
+    # Merge back to original table
+    left_join(polygons_jules, by = "polygon_id_jules") %>%
+    
+    dplyr::select(-c(polygon_id_jules, starts_with("geometry_")))
+    
+  rm(polygons_bio, polygons_jules)
+  
+  if (any(FullTable$area_diff >= 1)) {
+    warning("The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference")
+  }
+  rm(df0)
+  
+  FullTable <- FullTable %>% dplyr::select(-area_diff) %>% st_as_sf()
 
+  return(FullTable)
+}

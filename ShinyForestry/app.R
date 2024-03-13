@@ -24,6 +24,14 @@ library(shinyWidgets)
 library(truncnorm)
 loadNamespace("prefeR")
 library(GGally)
+library(purrr)
+library(sp)
+library(colorspace)
+library(rjson)
+library(arrow)
+library(lwgeom)
+library(mvtnorm)
+library(dplyr)
 # if (!require("prefeR")) {
   # install.packages("prefeR", lib = "/RPackages")
   # detach("package:prefeR", unload = TRUE)
@@ -38,10 +46,6 @@ library(GGally)
     # }
   # }
 # }
-library(colorspace)
-library(rjson)
-library(arrow)
-library(lwgeom)
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
@@ -186,11 +190,9 @@ name_conversion[84, ] <- row83
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
 # load all shapes
-# PROJdir<-system.file("proj/proj.db", package = "sf")
-# PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-# sf_proj_search_paths(PROJdir)
 ElicitatorAppFolder<-"./ElicitatorOutput/"
 JulesAppFolder<-"./JulesOutput/"
+
 ########################## Pre-processing
 #remove all directories starting with "land"
 unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
@@ -217,6 +219,9 @@ UnZipDirName<-paste0(substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFil
 dir.create(UnZipDirName)
 unzip(LatestFilesInfo$LatestFileNames[1], exdir = UnZipDirName)
 ################## Load necessary files
+# PROJdir<-system.file("proj/proj.db", package = "sf")
+# PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+# sf_proj_search_paths(PROJdir)
 shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
 if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
 st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
@@ -226,7 +231,10 @@ SquaresLoad<-sf::st_read(paste0(JulesAppFolder,"SEER//Fishnet_1km_to_SEER_net2km
 Sqconv<-st_transform(SquaresLoad, crs = 4326)
 XYMAT<-read.csv(paste0(JulesAppFolder,"XYMat_1km.csv"))[,-1]
 CorrespondenceJules<-read.csv(paste0(JulesAppFolder,"/CorrespondanceSqToJules.csv"))[,-1]
-
+seer2km<-st_read(paste0(JulesAppFolder,"/SEER_net2km.shp"))
+jncc100<-read.csv(paste0(JulesAppFolder,"/beta_JNCC100_interact_quad.csv"))
+speciesprob40<- read.csv(paste0(JulesAppFolder,"scenario_species_prob_40.csv"), header = FALSE)
+climatecells<-read.csv(paste0(JulesAppFolder,"climate_cells.csv"))
 ###################
 sf_use_s2(FALSE)
 lsh<-dim(shconv)[1]
@@ -342,7 +350,15 @@ for(ii in 1:length(FullTableCopy$geometry))
   FullTable$area[ii]<-sum(SELLWeights)
 }
 
-
+# Replace Biodiversity columns with correct ones
+FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
+                                                                            speciesprob40=speciesprob40,
+                                                                            seer2km=seer2km,
+                                                                            jncc100=jncc100,
+                                                                            climatecells=climatecells
+)
+# Add richness columns
+FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion) %>% st_as_sf()
 
 #aa<-leaflet()
 #aa<-  addTiles(aa) 
@@ -400,36 +416,36 @@ for (aaa in 1:NSamp)
 
 
 
-# Move rows from FullTableNotAvail to FullTable with blank data
-FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
-                                                   "id" = id,
-                                                   "area" = 1,
-                                                   x = lgn.1,
-                                                   y = lat.1,
-                                                   xbgn = 0,
-                                                   ybgn = 0,
-                                                   lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
-                                                   JulesMean=0,JulesSD=0,
-                                                   VisitsMean=0,VisitsSD=0)) %>%
-  mutate(across(x:lat.5, as.numeric)) %>% 
-  mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
+# # Move rows from FullTableNotAvail to FullTable with blank data
+# FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
+                                                   # "id" = id,
+                                                   # "area" = 1,
+                                                   # x = lgn.1,
+                                                   # y = lat.1,
+                                                   # xbgn = 0,
+                                                   # ybgn = 0,
+                                                   # lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
+                                                   # JulesMean=0,JulesSD=0,
+                                                   # VisitsMean=0,VisitsSD=0)) %>%
+  # mutate(across(x:lat.5, as.numeric)) %>% 
+  # mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
 
-cols <- colnames(FullTable)
-FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
-FullTableAdd <- FullTableAdd[, cols]
-FullTableAdd$xybgn <- 1
-rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
-# Check which columns contain NA values
-columns_with_na <- colSums(is.na(FullTableAdd))
-colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
-# Replace NA with 0
-FullTableAdd[rows_na, colnames_with_na] <- 0
-FullTable <- FullTableAdd
+# cols <- colnames(FullTable)
+# FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
+# FullTableAdd <- FullTableAdd[, cols]
+# FullTableAdd$xybgn <- 1
+# rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
+# # Check which columns contain NA values
+# columns_with_na <- colSums(is.na(FullTableAdd))
+# colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
+# # Replace NA with 0
+# FullTableAdd[rows_na, colnames_with_na] <- 0
+# FullTable <- FullTableAdd
 
-old_cols <- colnames(FullTableNotAvail)
-FullTableNotAvail <- data.frame(0)
-FullTableNotAvail[, old_cols] <- 0
-FullTableNotAvail <- FullTableNotAvail[, -1]
+# old_cols <- colnames(FullTableNotAvail)
+# FullTableNotAvail <- data.frame(0)
+# FullTableNotAvail[, old_cols] <- 0
+# FullTableNotAvail <- FullTableNotAvail[, -1]
 
 alphaLVL<-0.9
 
@@ -437,8 +453,8 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
-# SPECIES <- name_conversion[1:2, "Specie"]
-SPECIES <- c("Pollinator", "All")
+SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinator", "All")
+SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinator", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
@@ -449,20 +465,19 @@ N_TARGETS <- length(TARGETS)
 # Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
 
 verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
-                           list(textOutput("SoilCarbonNotIncluded")),
                            lapply(SPECIES, function(x, fulltable) {
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
                              # value <- round(max_specie / 2)
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x)) else paste("Average species", .(x), "chance of appearance (%):"), 
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste0("Species Richness (", .(x), ")") else paste(name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "Presence (%):"),
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value),
                                                        step = 0.5)))
                            }, fulltable = FullTable),
-                           list(sliderInput("AreaSlider", HTML("Total Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
+                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
                            list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
 
 
@@ -483,7 +498,6 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                            ),
                                            column(3,
                                                   # verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
-                                                  #                textOutput("SoilCarbonNotIncluded"),
                                                   #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25, step=0.01),
                                                   #                sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
                                                   #                sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))
@@ -535,8 +549,9 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   ))
 ))
 
-server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG1 = N_TARGETS) {
+server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS) {
   SPECIES <- SPECIES_ARG1
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
   N_TARGETS <- N_TARGETS_ARG1
   
@@ -576,6 +591,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
   
   output$TargetText<-renderText({
     SPECIES <- SPECIES_ARG1
+    SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
     N_SPECIES <- length(SPECIES)
     N_TARGETS <- N_TARGETS_ARG1
     
@@ -588,11 +604,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
     #   BioSliderValSpecie <- get(paste0("BioSliderVal", x))
     #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
     # }
-    for (i in seq_along(SPECIES)) {
-      x <- SPECIES[i]
+    for (i in 1:length(SPECIES)) {
+      specie_english <- SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
-      text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
+      text <- paste0(text, "\n", specie_english, ": ", as.numeric(BioSliderValSpecie()))
     }
+
     text <- paste0(text,
                    # "\nRed Squirrel: ",as.numeric(bioSliderVal()),
                    "\nArea Planted: ", as.numeric(AreaSliderVal()),
@@ -609,9 +626,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
  # observeEvent(input$Lighten,{
 #    ColorLighteningFactor(input$Lighten/100)
 #  })
-  
-  output$SoilCarbonNotIncluded<-renderText({paste0("Soil carbon in future versions")})
-  
+    
   output$FirstMapTxt<-renderText({Text1()})
   output$SecondMapTxt<-renderText({Text2()})
   output$ThirdMapTxt<-renderText({Text3()})
@@ -966,13 +981,15 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           
                                      
           addControlText <- ""
-          for (x in SPECIES) {
-            selectedBiospecie <- get(paste0("SelectedBio", x))
-            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          for (i in 1:length(SPECIES)) {
+            specie_latin <- SPECIES[i]
+            specie_english <- SPECIES_ENGLISH[i]
+            selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
-          listMaps[[aai]]<-listMaps[[aai]]%>%
+          listMaps[[aai]] <- listMaps[[aai]]%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
                                      # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
                                      addControlText,
@@ -1035,6 +1052,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
+                           SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS)
   })
   
@@ -1067,6 +1085,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                            ColorLighteningFactor=ColorLighteningFactor(),
                            ColorDarkeningFactor=ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
+                           SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS)
   })
   
@@ -1161,11 +1180,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       }
       
       
-      # SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
-      #                                      # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
-      #                                      condition&
-      #                                      (SelectedSimMat2$Area>=SelecTargetArea)&
-      #                                      (SelectedSimMat2$Visits>=SelecTargetVisits),]
+       SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
+                                            # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
+                                            condition&
+                                            (SelectedSimMat2$Area>=SelecTargetArea)&
+                                            (SelectedSimMat2$Visits>=SelecTargetVisits),]
       
       #SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
@@ -1259,11 +1278,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
     
           addControlText <- ""
-          for (x in SPECIES) {
-            selectedBiospecie <- get(paste0("SelectedBio", x))
-            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          for (i in 1:length(SPECIES)) {
+            specie_latin <- SPECIES[i]
+            specie_english <- SPECIES_ENGLISH[i]
+            selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
+
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
                                      # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
@@ -1353,16 +1375,19 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
@@ -1469,17 +1494,33 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        # Replace species Latin names with English names, and keep everything else
+        targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
+        for (i in seq_along(targets_not_met)) {
+          target <- targets_not_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_not_met[i] <- matching_english_specie
+          }
+        }
+        targets_not_met <- paste(targets_not_met, collapse = ",")
+        
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
@@ -1488,7 +1529,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", mapresults$SelectedLine$NotMet))
+        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met))
         
       } else {
         Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
@@ -1577,17 +1618,33 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        # Replace species Latin names with English names, and keep everything else
+        targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
+        for (i in seq_along(targets_not_met)) {
+          target <- targets_not_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_not_met[i] <- matching_english_specie
+          }
+        }
+        targets_not_met <- paste(targets_not_met, collapse = ",")
+
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
@@ -1596,7 +1653,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", mapresults$SelectedLine$NotMet))
+        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met))
         
       } else {
         Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
@@ -1681,17 +1738,33 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               ColourScheme=ColourScheme(),
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
-                                              SPECIES_ARG2 = SPECIES)
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        # Replace species Latin names with English names, and keep everything else
+        targets_met <- str_split_1(mapresults$SelectedLine$Met, ",")
+        for (i in seq_along(targets_met)) {
+          target <- targets_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_met[i] <- matching_english_specie
+          }
+        }
+        targets_met <- paste(targets_met, collapse = ",")
+        
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
@@ -1700,7 +1773,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", mapresults$SelectedLine$Met))
+        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_met))
         
       } else {
         Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
