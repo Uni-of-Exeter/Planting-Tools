@@ -163,17 +163,17 @@ name_conversion <- matrix(data = c("Bird", "Acanthis cabaret", "Lesser Redpoll",
 name_conversion <- data.frame(Specie = name_conversion[, 2],
                               English_specie = add_suffix_to_duplicates(name_conversion[, 3]),
                               Group = name_conversion[, 1])
-# Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinator
+# Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinators
 # Crashes on the server for some reason, so we use data.frames instead
-# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinator",
+# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinators",
 # .default = Group)) %>%
 indices <- grep("bee|beetle|butterfly|cricket|moth", name_conversion$Group)
-name_conversion[indices, "Group"] <- "Pollinator"
-# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bee" ~ "Pollinator",
-#                                        Group == "Invertebrate - beetle" ~ "Pollinator",
-#                                        Group == "Invertebrate - butterfly" ~ "Pollinator",
-#                                        Group == "Invertebrate - cricket" ~ "Pollinator",
-#                                        Group == "Invertebrate - moth" ~ "Pollinator",
+name_conversion[indices, "Group"] <- "Pollinators"
+# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bee" ~ "Pollinators",
+#                                        Group == "Invertebrate - beetle" ~ "Pollinators",
+#                                        Group == "Invertebrate - butterfly" ~ "Pollinators",
+#                                        Group == "Invertebrate - cricket" ~ "Pollinators",
+#                                        Group == "Invertebrate - moth" ~ "Pollinators",
 #                                        .default = Group)) %>%
 # Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
 name_conversion <- name_conversion %>%
@@ -453,8 +453,8 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
-SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinator", "All")
-SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinator", "All")
+SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinators", "All")
+SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinators", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
