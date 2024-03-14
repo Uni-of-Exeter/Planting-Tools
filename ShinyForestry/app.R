@@ -186,6 +186,9 @@ row84 <- name_conversion[84, ]
 name_conversion[83, ] <- row84
 name_conversion[84, ] <- row83
 
+
+GreyPolygonWidth<-1
+UnitPolygonColours<-1
 # Sys.setenv(PROJ_LIB="/usr/share/proj")
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
@@ -774,7 +777,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     updateCheckboxInput(session,"Trigger", label = "", value = TRUE)
     #input$Trigger<-TRUE
-    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main20",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main20",shconv,GreyPolygonWidth=GreyPolygonWidth)
     
     shinyjs::disable("choose1")
     shinyjs::disable("choose2")
@@ -974,7 +977,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             SELGEOSwitched<-SELGEOSwitched[(SwitchedOnCells==1)&(SavedVec!=1),]#;gpNamesSwitched<-gpNamesSwitched[SwitchedOnCells&(!SavedVec)]
             
             
-            if(dim(SELGEORemaining)[1]>0){listMaps[[aai]]<-addPolygons(listMaps[[aai]],data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
+            if(dim(SELGEORemaining)[1]>0){listMaps[[aai]]<-addPolygons(listMaps[[aai]],data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
             
         
             }
@@ -1049,11 +1052,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
+                           ColourScheme=ColourScheme(),
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
-                           N_TARGETS_ARG2 = N_TARGETS)
+                           N_TARGETS_ARG2 = N_TARGETS,
+                           GreyPolygonWidth=GreyPolygonWidth,
+                           UnitPolygonColours=UnitPolygonColours)
   })
   
   observeEvent(input$choose2, {
@@ -1082,11 +1088,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
+                           ColourScheme=ColourScheme(),
                            ColorLighteningFactor=ColorLighteningFactor(),
                            ColorDarkeningFactor=ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
-                           N_TARGETS_ARG2 = N_TARGETS)
+                           N_TARGETS_ARG2 = N_TARGETS,
+                           GreyPolygonWidth=GreyPolygonWidth,
+                           UnitPolygonColours=UnitPolygonColours)
   })
   
   
@@ -1120,7 +1129,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     SavedVec<-ClickedVector()
     SelectedDropdown<-input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
-    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main",shconv,GreyPolygonWidth=GreyPolygonWidth)
     map<-calcBaseMap$map
     
     if(!is.null(SavedVec)){
@@ -1275,7 +1284,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
         
           
-          if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
+          if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
     
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
@@ -1310,7 +1319,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main2", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main2", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1376,7 +1385,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1411,7 +1421,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main3", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main3", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1495,7 +1505,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1542,7 +1553,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$map4 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main4", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main4", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1619,7 +1630,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1666,7 +1678,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$map5 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main5", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main5", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1739,7 +1751,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
