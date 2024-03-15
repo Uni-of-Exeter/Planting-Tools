@@ -24,6 +24,14 @@ library(shinyWidgets)
 library(truncnorm)
 loadNamespace("prefeR")
 library(GGally)
+library(purrr)
+library(sp)
+library(colorspace)
+library(rjson)
+library(arrow)
+library(lwgeom)
+library(mvtnorm)
+library(dplyr)
 # if (!require("prefeR")) {
   # install.packages("prefeR", lib = "/RPackages")
   # detach("package:prefeR", unload = TRUE)
@@ -51,121 +59,121 @@ source(paste0(FolderSource, "functions.R"))
 # english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
 # english_species_names <- add_suffix_to_duplicates(english_species_names)
 
-name_conversion <- matrix(data = c("Bird", "Acanthis cabaret", "Lesser Redpoll",
-                                   "Bird", "Alauda arvensis", "Skylark",
-                                   "Bird", "Anthus trivialis", "Tree Pipit",
-                                   "Bird", "Botaurus stellaris", "Bittern",
-                                   "Bird", "Caprimulgus europaeus", "Nightjar",
-                                   "Bird", "Emberiza citrinella", "Yellowhammer",
-                                   "Bird", "Emberiza schoeniclus", "Reed Bunting",
-                                   "Bird", "Locustella naevia", "Grasshopper Warbler",
-                                   "Bird", "Lullula arborea", "Woodlark",
-                                   "Bird", "Motacilla flava subsp flavissima", "Yellow Wagtail",
-                                   "Bird", "Muscicapa striata", "Spotted Flycatcher",
-                                   "Bird", "Numenius arquata", "Curlew",
-                                   "Bird", "Perdix perdix", "Grey Partridge",
-                                   "Bird", "Phylloscopus sibilatrix", "Wood Warbler",
-                                   "Bird", "Streptopelia turtur", "Turtle Dove",
-                                   "Bird", "Turdus torquatus", "Ring Ouzel",
-                                   "Bird", "Vanellus vanellus", "Lapwing",
-                                   "Herptile", "Vipera berus", "Adder",
-                                   "Invertebrate - bee", "Bombus monticola", "Mountain Bumblebee",
-                                   "Invertebrate - beetle", "Cercyon convexiusculus", "Water Beetle sp.",
-                                   "Invertebrate - beetle", "Gnorimus nobilis", "Noble Chafer",
-                                   "Invertebrate - beetle", "Liopterus haemorrhoidalis", "Water Beetle sp.",
-                                   "Invertebrate - beetle", "Lucanus cervus", "Stag Beetle",
-                                   "Invertebrate - butterfly", "Boloria selene", "Small Pearl-Bordered Fritillary",
-                                   "Invertebrate - butterfly", "Coenonympha pamphilus", "Small Heath",
-                                   "Invertebrate - butterfly", "Coenonympha tullia", "Large Heath",
-                                   "Invertebrate - butterfly", "Cupido minimus", "Small Blue",
-                                   "Invertebrate - butterfly", "Erebia epiphron", "Mountain Ringlet",
-                                   "Invertebrate - butterfly", "Erynnis tages", "Dingy Skipper",
-                                   "Invertebrate - butterfly", "Hipparchia semele", "Grayling",
-                                   "Invertebrate - butterfly", "Lasiommata megera", "Wall",
-                                   "Invertebrate - butterfly", "Limenitis camilla", "White Admiral",
-                                   "Invertebrate - butterfly", "Satyrium w-album", "White-Letter Hairstreak",
-                                   "Invertebrate - cricket", "Leptophyes punctatissima", "Speckled Bush Cricket",
-                                   "Invertebrate - cricket", "Metrioptera brachyptera", "Bog Bush Cricket",
-                                   "Invertebrate - moth", "Cossus cossus", "Goat Moth",
-                                   "Invertebrate - moth", "Acronicta psi", "Grey Dagger",
-                                   "Invertebrate - moth", "Allophyes oxyacanthae", "Green-brindled Crescent",
-                                   "Invertebrate - moth", "Dasypolia templi", "Brindled Ochre",
-                                   "Invertebrate - moth", "Xanthorhoe decoloraria", "Red Carpet",
-                                   "Invertebrate - snail", "Cochlodina laminata", "Plaited Door Snail",
-                                   "Invertebrate - snail", "Monacha cantiana", "Kentish Snail",
-                                   "Invertebrate - snail", "Zonitoides excavatus", "Hollowed Glass Snail",
-                                   "Lichen", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
-                                   "Lichen", "Leptogium brebissonii", "Lichen sp.",
-                                   "Lichen", "Parmeliella testacea", "Lichen sp.",
-                                   "Lichen", "Pseudocyphellaria intricata", "Lichen sp.",
-                                   "Lichen", "Usnea articulata", "String-Of-Sausage Lichen",
-                                   "Mammal", "Barbastella barbastellus", "Barbastelle bat",
-                                   "Mammal", "Felis silvestris", "Wildcat",
-                                   "Mammal", "Lepus europaeus", "European hare",
-                                   "Mammal", "Lepus timidus", "Mountain Hare",
-                                   "Mammal", "Martes martes", "Pine Marten",
-                                   "Mammal", "Micromys minutus", "Harvest Mouse",
-                                   "Mammal", "Muscardinus avellanarius", "Hazel Dormouse",
-                                   "Mammal", "Mustela putorius", "Polecat",
-                                   "Mammal", "Myotis bechsteinii", "Bechstein's bat",
-                                   "Mammal", "Nyctalus noctula", "Noctule Bat",
-                                   "Mammal", "Plecotus auritus", "Brown Long-eared Bat",
-                                   "Mammal", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
-                                   "Mammal", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
-                                   "Mammal", "Sciurus vulgaris", "Eurasian red squirrel",
-                                   "Vascular plant", "Anchusa arvensis", "Field bugloss",
-                                   "Vascular plant", "Andromeda polifolia", "Bog Rosemary",
-                                   "Vascular plant", "Arctostaphylos alpinus", "Mountain bearberry",
-                                   "Vascular plant", "Asplenium viride", "Green spleenwort",
-                                   "Vascular plant", "Atriplex laciniata", "Frosted Orache",
-                                   "Vascular plant", "Blysmus rufus", "Saltmarsh Flat-Sedge",
-                                   "Vascular plant", "Cakile maritima", "Sea Rocket",
-                                   "Vascular plant", "Campanula glomerata", "Clustered Bellflower",
-                                   "Vascular plant", "Carex extensa", "Long-Bracted Sedge",
-                                   "Vascular plant", "Carex magellanica", "Tall Bog-Sedge",
-                                   "Vascular plant", "Centaurium pulchellum", "Lesser Centaury",
-                                   "Vascular plant", "Cerastium arvense", "Field Mouse-Ear",
-                                   "Vascular plant", "Cirsium eriophorum", "Woolly Thistle",
-                                   "Vascular plant", "Daphne laureola", "Spurge-Laurel",
-                                   "Vascular plant", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
-                                   "Vascular plant", "Fumaria muralis", "Common Ramping-Fumitory",
-                                   "Vascular plant", "Genista anglica", "Petty Whin",
-                                   "Vascular plant", "Genista tinctoria", "Dyer's Greenweed",
-                                   "Vascular plant", "Gnaphalium supinum", "Dwarf Cudweed",
-                                   "Vascular plant", "Goodyera repens", "Creeping Lady's-Tresses",
-                                   "Vascular plant", "Hypericum elodes", "Marsh St John's-Wort",
-                                   "Vascular plant", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
-                                   "Vascular plant", "Leymus arenarius", "Lyme Grass",
-                                   "Vascular plant", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
-                                   "Vascular plant", "Neottia nidus-avis", "Bird's-Nest Orchid",
-                                   "Vascular plant", "Ornithopus perpusillus", "Bird's-Foot",
-                                   "Vascular plant", "Orthilia secunda", "Serrated Wintergreen",
-                                   "Vascular plant", "Oxyria digyna", "Mountain Sorrel",
-                                   "Vascular plant", "Pyrola media", "Intermediate Wintergreen",
-                                   "Vascular plant", "Radiola linoides", "Allseed",
-                                   "Vascular plant", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
-                                   "Vascular plant", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
-                                   "Vascular plant", "Silaum silaus", "Pepper-Saxifrage",
-                                   "Vascular plant", "Thymus pulegioides", "Large Thyme",
-                                   "Vascular plant", "Tilia cordata", "Small-Leaved Lime",
-                                   "Vascular plant", "Trifolium fragiferum", "Strawberry Clover",
-                                   "Vascular plant", "Trifolium striatum", "Knotted Clover",
-                                   "Vascular plant", "Vaccinium microcarpum", "Small Cranberry"),
+name_conversion <- matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll",
+                                   "Birds", "Alauda arvensis", "Skylark",
+                                   "Birds", "Anthus trivialis", "Tree Pipit",
+                                   "Birds", "Botaurus stellaris", "Bittern",
+                                   "Birds", "Caprimulgus europaeus", "Nightjar",
+                                   "Birds", "Emberiza citrinella", "Yellowhammer",
+                                   "Birds", "Emberiza schoeniclus", "Reed Bunting",
+                                   "Birds", "Locustella naevia", "Grasshopper Warbler",
+                                   "Birds", "Lullula arborea", "Woodlark",
+                                   "Birds", "Motacilla flava subsp flavissima", "Yellow Wagtail",
+                                   "Birds", "Muscicapa striata", "Spotted Flycatcher",
+                                   "Birds", "Numenius arquata", "Curlew",
+                                   "Birds", "Perdix perdix", "Grey Partridge",
+                                   "Birds", "Phylloscopus sibilatrix", "Wood Warbler",
+                                   "Birds", "Streptopelia turtur", "Turtle Dove",
+                                   "Birds", "Turdus torquatus", "Ring Ouzel",
+                                   "Birds", "Vanellus vanellus", "Lapwing",
+                                   "Herptiles", "Vipera berus", "Adder",
+                                   "Invertebrate - bees", "Bombus monticola", "Mountain Bumblebee",
+                                   "Invertebrate - beetles", "Cercyon convexiusculus", "Water Beetle sp.",
+                                   "Invertebrate - beetles", "Gnorimus nobilis", "Noble Chafer",
+                                   "Invertebrate - beetles", "Liopterus haemorrhoidalis", "Water Beetle sp.",
+                                   "Invertebrate - beetles", "Lucanus cervus", "Stag Beetle",
+                                   "Invertebrate - butterflies", "Boloria selene", "Small Pearl-Bordered Fritillary",
+                                   "Invertebrate - butterflies", "Coenonympha pamphilus", "Small Heath",
+                                   "Invertebrate - butterflies", "Coenonympha tullia", "Large Heath",
+                                   "Invertebrate - butterflies", "Cupido minimus", "Small Blue",
+                                   "Invertebrate - butterflies", "Erebia epiphron", "Mountain Ringlet",
+                                   "Invertebrate - butterflies", "Erynnis tages", "Dingy Skipper",
+                                   "Invertebrate - butterflies", "Hipparchia semele", "Grayling",
+                                   "Invertebrate - butterflies", "Lasiommata megera", "Wall",
+                                   "Invertebrate - butterflies", "Limenitis camilla", "White Admiral",
+                                   "Invertebrate - butterflies", "Satyrium w-album", "White-Letter Hairstreak",
+                                   "Invertebrate - crickets", "Leptophyes punctatissima", "Speckled Bush Cricket",
+                                   "Invertebrate - crickets", "Metrioptera brachyptera", "Bog Bush Cricket",
+                                   "Invertebrate - moths", "Cossus cossus", "Goat Moth",
+                                   "Invertebrate - moths", "Acronicta psi", "Grey Dagger",
+                                   "Invertebrate - moths", "Allophyes oxyacanthae", "Green-brindled Crescent",
+                                   "Invertebrate - moths", "Dasypolia templi", "Brindled Ochre",
+                                   "Invertebrate - moths", "Xanthorhoe decoloraria", "Red Carpet",
+                                   "Invertebrate - snails", "Cochlodina laminata", "Plaited Door Snail",
+                                   "Invertebrate - snails", "Monacha cantiana", "Kentish Snail",
+                                   "Invertebrate - snails", "Zonitoides excavatus", "Hollowed Glass Snail",
+                                   "Lichens", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
+                                   "Lichens", "Leptogium brebissonii", "Lichen sp.",
+                                   "Lichens", "Parmeliella testacea", "Lichen sp.",
+                                   "Lichens", "Pseudocyphellaria intricata", "Lichen sp.",
+                                   "Lichens", "Usnea articulata", "String-Of-Sausage Lichen",
+                                   "Mammals", "Barbastella barbastellus", "Barbastelle bat",
+                                   "Mammals", "Felis silvestris", "Wildcat",
+                                   "Mammals", "Lepus europaeus", "European hare",
+                                   "Mammals", "Lepus timidus", "Mountain Hare",
+                                   "Mammals", "Martes martes", "Pine Marten",
+                                   "Mammals", "Micromys minutus", "Harvest Mouse",
+                                   "Mammals", "Muscardinus avellanarius", "Hazel Dormouse",
+                                   "Mammals", "Mustela putorius", "Polecat",
+                                   "Mammals", "Myotis bechsteinii", "Bechstein's bat",
+                                   "Mammals", "Nyctalus noctula", "Noctule Bat",
+                                   "Mammals", "Plecotus auritus", "Brown Long-eared Bat",
+                                   "Mammals", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
+                                   "Mammals", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
+                                   "Mammals", "Sciurus vulgaris", "Eurasian red squirrel",
+                                   "Vascular plants", "Anchusa arvensis", "Field bugloss",
+                                   "Vascular plants", "Andromeda polifolia", "Bog Rosemary",
+                                   "Vascular plants", "Arctostaphylos alpinus", "Mountain bearberry",
+                                   "Vascular plants", "Asplenium viride", "Green spleenwort",
+                                   "Vascular plants", "Atriplex laciniata", "Frosted Orache",
+                                   "Vascular plants", "Blysmus rufus", "Saltmarsh Flat-Sedge",
+                                   "Vascular plants", "Cakile maritima", "Sea Rocket",
+                                   "Vascular plants", "Campanula glomerata", "Clustered Bellflower",
+                                   "Vascular plants", "Carex extensa", "Long-Bracted Sedge",
+                                   "Vascular plants", "Carex magellanica", "Tall Bog-Sedge",
+                                   "Vascular plants", "Centaurium pulchellum", "Lesser Centaury",
+                                   "Vascular plants", "Cerastium arvense", "Field Mouse-Ear",
+                                   "Vascular plants", "Cirsium eriophorum", "Woolly Thistle",
+                                   "Vascular plants", "Daphne laureola", "Spurge-Laurel",
+                                   "Vascular plants", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
+                                   "Vascular plants", "Fumaria muralis", "Common Ramping-Fumitory",
+                                   "Vascular plants", "Genista anglica", "Petty Whin",
+                                   "Vascular plants", "Genista tinctoria", "Dyer's Greenweed",
+                                   "Vascular plants", "Gnaphalium supinum", "Dwarf Cudweed",
+                                   "Vascular plants", "Goodyera repens", "Creeping Lady's-Tresses",
+                                   "Vascular plants", "Hypericum elodes", "Marsh St John's-Wort",
+                                   "Vascular plants", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
+                                   "Vascular plants", "Leymus arenarius", "Lyme Grass",
+                                   "Vascular plants", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
+                                   "Vascular plants", "Neottia nidus-avis", "Bird's-Nest Orchid",
+                                   "Vascular plants", "Ornithopus perpusillus", "Bird's-Foot",
+                                   "Vascular plants", "Orthilia secunda", "Serrated Wintergreen",
+                                   "Vascular plants", "Oxyria digyna", "Mountain Sorrel",
+                                   "Vascular plants", "Pyrola media", "Intermediate Wintergreen",
+                                   "Vascular plants", "Radiola linoides", "Allseed",
+                                   "Vascular plants", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
+                                   "Vascular plants", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
+                                   "Vascular plants", "Silaum silaus", "Pepper-Saxifrage",
+                                   "Vascular plants", "Thymus pulegioides", "Large Thyme",
+                                   "Vascular plants", "Tilia cordata", "Small-Leaved Lime",
+                                   "Vascular plants", "Trifolium fragiferum", "Strawberry Clover",
+                                   "Vascular plants", "Trifolium striatum", "Knotted Clover",
+                                   "Vascular plants", "Vaccinium microcarpum", "Small Cranberry"),
                           ncol = 3, byrow = TRUE)
 name_conversion <- data.frame(Specie = name_conversion[, 2],
                               English_specie = add_suffix_to_duplicates(name_conversion[, 3]),
                               Group = name_conversion[, 1])
-# Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinator
+# Replace Invertebrate - bees/beetles/butterflies/crickets/moths by Pollinators
 # Crashes on the server for some reason, so we use data.frames instead
-# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinator",
+# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinators",
 # .default = Group)) %>%
-indices <- grep("bee|beetle|butterfly|cricket|moth", name_conversion$Group)
-name_conversion[indices, "Group"] <- "Pollinator"
-# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bee" ~ "Pollinator",
-#                                        Group == "Invertebrate - beetle" ~ "Pollinator",
-#                                        Group == "Invertebrate - butterfly" ~ "Pollinator",
-#                                        Group == "Invertebrate - cricket" ~ "Pollinator",
-#                                        Group == "Invertebrate - moth" ~ "Pollinator",
+indices <- grep("bees|beetles|butterflys|crickets|moths", name_conversion$Group)
+name_conversion[indices, "Group"] <- "Pollinators"
+# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bees" ~ "Pollinators",
+#                                        Group == "Invertebrate - beetles" ~ "Pollinators",
+#                                        Group == "Invertebrate - butterflys" ~ "Pollinators",
+#                                        Group == "Invertebrate - crickets" ~ "Pollinators",
+#                                        Group == "Invertebrate - moths" ~ "Pollinators",
 #                                        .default = Group)) %>%
 # Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
 name_conversion <- name_conversion %>%
@@ -178,52 +186,269 @@ row84 <- name_conversion[84, ]
 name_conversion[83, ] <- row84
 name_conversion[84, ] <- row83
 
+
+GreyPolygonWidth<-1
+UnitPolygonColours<-1
 # Sys.setenv(PROJ_LIB="/usr/share/proj")
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
 # load all shapes
+ElicitatorAppFolder<-"./ElicitatorOutput/"
+JulesAppFolder<-"./JulesOP/"
+
+########################## Pre-processing
+#remove all directories starting with "land"
+unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
+
+DIRR<-list.files(ElicitatorAppFolder,full.names = TRUE,recursive=F)
+CTIMES<-file.info(DIRR)$ctime
+LatestFileNames<-c(LandPFileName="",UnitsFileName="",OutcomesFileName="")
+LatestFileNames[1]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land"))])]
+LatestFileNames[2]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"deci"))])]
+LatestFileNames[3]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"outc"))])]
+LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$ctime)
+
+LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
+#write.csv(LatestFilesInfo,"d://ElicitatorOutput//LastestFilesInfo.csv")
+PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
+
+
+if(sum(PrevFilesInfo$ctime!=LatestFilesInfo$ctime)>0){
+if(file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){file.remove(paste0(ElicitatorAppFolder,"Parcels.geojson"))}
+if(file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))}
+if(file.exists(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))}  
+UnZipDirName<-paste0(substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFilesInfo$LatestFileNames[1])-4))
+#if(dir.exists(UnZipDirName)){unlink(UnZipDirName, recursive = T)}
+dir.create(UnZipDirName)
+unzip(LatestFilesInfo$LatestFileNames[1], exdir = UnZipDirName)
+################## Load necessary files
 # PROJdir<-system.file("proj/proj.db", package = "sf")
 # PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
 # sf_proj_search_paths(PROJdir)
-shfile<-sf::st_read(paste0(FolderSource,"_exp0308154002.gdb.zip"),layer = "INV_BLKDATA")
-shconv <- st_transform(shfile, crs = 4326)
-FullTable<-data.frame(read.csv(paste0(FolderSource,"FullTableResult.csv"))[,-1])
-FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion)
-FullTableNotAvail<-data.frame(read.csv(paste0(FolderSource,"FullTableNotAvail.csv"))[,-1])
+shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
+if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
+st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
+JulesMean<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-mean-monthly.feather"))[,c("x","y","mean337")]
+JulesSD<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-sd-monthly.feather"))[,c("x","y","sd337")]
+SquaresLoad<-sf::st_read(paste0(JulesAppFolder,"SEER//Fishnet_1km_to_SEER_net2km.shp"))
+Sqconv<-st_transform(SquaresLoad, crs = 4326)
+#XYMAT<-read.csv(paste0(JulesAppFolder,"XYMat_1km.csv"))[,-1]
+CorrespondenceJules<-read.csv(paste0(JulesAppFolder,"/CorrespondanceSqToJules.csv"))[,-1]
+seer2km<-st_read(paste0(JulesAppFolder,"/SEER_net2km.shp"))
+jncc100<-read.csv(paste0(JulesAppFolder,"/beta_JNCC100_interact_quad.csv"))
+speciesprob40<- read.csv(paste0(JulesAppFolder,"scenario_species_prob_40.csv"), header = FALSE)
+climatecells<-read.csv(paste0(JulesAppFolder,"climate_cells.csv"))
+###################
+sf_use_s2(FALSE)
+lsh<-dim(shconv)[1]
+AllUnits<- rjson::fromJSON(file=LatestFilesInfo$LatestFileNames[2])$decision_unit_ids
+Uni<-unique(AllUnits)
+FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1,length(Uni)),
+                          JulesMean=rep(15,length(Uni)),
+                          JulesSD=rep(1,length(Uni)),VisitsMean=rep(30,length(Uni)),
+                          VisitsSD=rep(2,length(Uni)),BioMean_Sciurus_vulgaris=rep(0.5,length(Uni)),
+                          BioSD_Sciurus_vulgaris=rep(0.02,length(Uni)),units=Uni)
+
+tt<-proc.time()
+
+#MER<-list()
+#for(ii in 1:length(Uni))
+#{
+#  SELLL<-shconv$geometry[AllUnits==Uni[ii]]
+#  MER[[ii]]<-st_union(SELLL[1],SELLL[2])
+#  if(length(SELLL)>2){
+#    for (jj in 3:length(SELLL)){
+#      MER[[ii]]<-st_union(MER[[ii]],st_make_valid(SELLL[jj]))
+#      }
+#    
+#  }
+#  
+#}
+
+tt2<-proc.time()-tt
+
+tt3<-proc.time()
+MER<-list()
+for(ii in 1:length(Uni))
+{
+  SELLL<-shconv$geometry[AllUnits==Uni[ii]]
+  MER[[ii]]<-st_union(st_make_valid(SELLL))
+  
+}
+tt4<-proc.time()-tt3
+
+FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
+############################################ Replace the Jules Mean here
+
+
+
+#XVEC<-sort(unique(c(XYMAT$XMIN,XYMAT$XMAX)))
+#YVEC<-sort(unique(c(XYMAT$YMIN,XYMAT$YMAX)))
+
+
+#keptLines<-NULL
+#shconvBack<-st_transform(shconv, crs =st_crs(27700))
+#for(ii in 1:length(shconv$geometry))
+#{
+#  MERconvback<-shconvBack$geometry[[ii]][[1]]##
+#
+#      xmin<-min(MERconvback[,1])
+#      DIF<-xmin-XVEC
+#      XMINVEC<-(XVEC[DIF>=0])[which.min(DIF[DIF>=0])]
+#      
+#      xmax<-max(MERconvback[,1])
+#      DIF2<-XVEC-xmax
+#      XMAXVEC<-(XVEC[DIF2>=0])[which.min(DIF2[DIF2>=0])]
+#      
+#      ymin<-min(MERconvback[,2])
+#      DIF3<-ymin-YVEC
+#      YMINVEC<-(YVEC[DIF3>=0])[which.min(DIF3[DIF3>=0])]
+#      
+#      ymax<-max(MERconvback[,2])
+ #     DIF4<-YVEC-ymax
+#      YMAXVEC<-(YVEC[DIF4>=0])[which.min(DIF4[DIF4>=0])]
+#      
+#      keptLines<-unique(c(keptLines,which((XYMAT$XMAX<=XMAXVEC)&(XYMAT$XMIN>=XMINVEC)&(XYMAT$YMIN>=YMINVEC)&(XYMAT$YMAX<=YMAXVEC))))
+#   
+#}
+keptLines<-sort(which(as.numeric(summary(sf::st_intersects(Sqconv,shconv))[,1])!=0))
+
+SELECTEDSquaresconv<-Sqconv$geometry[keptLines]
+LinesJules<-CorrespondenceJules[keptLines]
+# Find lines where Jules is not available
+LinesJulesNoMinus1<-which(LinesJules==(-1))
+LinesJules[LinesJulesNoMinus1]<-1
+SelectedJulesMeanSq<-JulesMean[CorrespondenceJules[keptLines],]
+SelectedJulesMeanSq[LinesJulesNoMinus1]<-0
+SelectedJulesSDSq<-JulesSD[CorrespondenceJules[keptLines],]
+SelectedJulesSDSq[LinesJulesNoMinus1]<-0
+
+SELECTEDSquaresconvTab<-data.frame(idSq=seq_along(SELECTEDSquaresconv))
+SELECTEDSquaresconvTab<-st_sf(SELECTEDSquaresconvTab,geometry=SELECTEDSquaresconv,crs=4326)
+
+
+FullTableCopy<-FullTable
+FullTableCopy$idPoly<-seq_along(FullTableCopy$geometry)
+
+#st_as_sf(data.frame(geometry=SELECTEDSquaresconv))
+#st_as_sf(data.frame(FullTable))
+
+INTT<-st_intersection(st_make_valid(SELECTEDSquaresconvTab),st_make_valid(FullTableCopy))
+INTT$area<-st_area(INTT)/1e6
+
+NBSIMS<-500
+for(ii in 1:length(FullTableCopy$geometry))
+{
+  SELLLines<-INTT$idPoly==ii
+  SELLSqs<-INTT$idSq[SELLLines]
+  SELLWeights<-INTT$area[SELLLines]
+  SellWeightsArr<-t(matrix(SELLWeights,length(SELLWeights),NBSIMS))
+  
+  SelJulesMeans<-SelectedJulesMeanSq$mean337[SELLSqs]
+  SelJulesSDs<-SelectedJulesSDSq$sd337[SELLSqs]
+  SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
+  
+  FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
+  FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
+  FullTable$area[ii]<-sum(SELLWeights)
+}
+
+# Replace Biodiversity columns with correct ones
+FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
+                                                                            speciesprob40=speciesprob40,
+                                                                            seer2km=seer2km,
+                                                                            jncc100=jncc100,
+                                                                            climatecells=climatecells
+)
+# Add richness columns
+FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion) %>% st_as_sf()
+
+#aa<-leaflet()
+#aa<-  addTiles(aa) 
+#for(aaa in 1:30){
+#aa<-addPolygons(aa,data=MER[[aaa]])
+#}#
+
+  #aa<-addPolygons(aa,data=Sqconv$geometry[keptLines],col="red")
+
+#######################################
+st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+
+
+##################
+FullTableNotAvail<-data.frame(extent=NULL)
+st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
+
+
+   write.csv(LatestFilesInfo,paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
+}else{
+
+  shconv<-sf::st_read(paste0(ElicitatorAppFolder,"Parcels.geojson"))
+  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+  FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
+
+}
+
+
+#shconv<-sf::st_read("d://BristolParcels.geojson")
+#FullTable<-st_read("d://BristolFullTableMerged.geojson")
+#FullTableNotAvail<-sf::st_read("d://BristolFullTableNotAvail.geojson")
+#shconv<-sf::st_read("d://ForestryParcels.geojson")
+#FullTable<-st_read("d://ForestryFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("d://ForestryFullTableNotAvail.geojson")
+
+#shconv<-sf::st_read("d://PoundsgateParcels.geojson")
+#FullTable<-st_read("d://PoundsgateFullTable.geojson")
+#FullTableNotAvail<-sf::st_read("d://PoundsgateFullTableNotAvail.geojson")
+
+
 STDMEAN<-0.05
 STDSTD<-0.01
-simul636<-read.csv(file=paste0(FolderSource,"Simul636.csv"))[,-1]
 
-# Move rows from FullTableNotAvail to FullTable with blank data
-FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
-                                                   "id" = id,
-                                                   "area" = 1,
-                                                   x = lgn.1,
-                                                   y = lat.1,
-                                                   xbgn = 0,
-                                                   ybgn = 0,
-                                                   lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
-                                                   JulesMean=0,JulesSD=0,
-                                                   VisitsMean=0,VisitsSD=0)) %>%
-  mutate(across(x:lat.5, as.numeric)) %>% 
-  mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
+NSamp<-5000
+simul636<-matrix(0,NSamp,dim(FullTable)[1])
+for (aaa in 1:NSamp)
+{
+  Uniqunits<-unique(FullTable$units)
+  pp<-runif(1)
+  RandSamp<-rmultinom(length(Uniqunits),1,c(pp,1-pp))[1,]
+  for(bbb in 1:length(Uniqunits)){
+    simul636[aaa,FullTable$units==Uniqunits[bbb]]<-RandSamp[bbb]  
+    }
+}
 
-cols <- colnames(FullTable)
-FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
-FullTableAdd <- FullTableAdd[, cols]
-FullTableAdd$xybgn <- 1
-rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
-# Check which columns contain NA values
-columns_with_na <- colSums(is.na(FullTableAdd))
-colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
-# Replace NA with 0
-FullTableAdd[rows_na, colnames_with_na] <- 0
-FullTable <- FullTableAdd
 
-old_cols <- colnames(FullTableNotAvail)
-FullTableNotAvail <- data.frame(0)
-FullTableNotAvail[, old_cols] <- 0
-FullTableNotAvail <- FullTableNotAvail[, -1]
+
+# # Move rows from FullTableNotAvail to FullTable with blank data
+# FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
+                                                   # "id" = id,
+                                                   # "area" = 1,
+                                                   # x = lgn.1,
+                                                   # y = lat.1,
+                                                   # xbgn = 0,
+                                                   # ybgn = 0,
+                                                   # lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
+                                                   # JulesMean=0,JulesSD=0,
+                                                   # VisitsMean=0,VisitsSD=0)) %>%
+  # mutate(across(x:lat.5, as.numeric)) %>% 
+  # mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
+
+# cols <- colnames(FullTable)
+# FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
+# FullTableAdd <- FullTableAdd[, cols]
+# FullTableAdd$xybgn <- 1
+# rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
+# # Check which columns contain NA values
+# columns_with_na <- colSums(is.na(FullTableAdd))
+# colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
+# # Replace NA with 0
+# FullTableAdd[rows_na, colnames_with_na] <- 0
+# FullTable <- FullTableAdd
+
+# old_cols <- colnames(FullTableNotAvail)
+# FullTableNotAvail <- data.frame(0)
+# FullTableNotAvail[, old_cols] <- 0
+# FullTableNotAvail <- FullTableNotAvail[, -1]
 
 alphaLVL<-0.9
 
@@ -231,10 +456,22 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
+# Read the outcomes from the Elicitor app
+outcomes <- rjson::fromJSON(file = "ElicitatorOutput/outcomes.json")
+outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
+SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
+# Default specie and group
+if (length(SPECIES_ENGLISH) == 0) {
+  SPECIES_ENGLISH <- c("Lesser Redpoll", "Pollinators")
+}
+# Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
+groups <- base::intersect(SPECIES_ENGLISH, name_conversion$Group)
+indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
+SPECIES <- c(name_conversion[indices_species_english_in_name_conversion, "Specie"],
+             groups)
 
-
-# SPECIES <- name_conversion[1:2, "Specie"]
-SPECIES <- c("Pollinator", "All")
+# SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinators", "All")
+# SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinators", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
@@ -245,32 +482,40 @@ N_TARGETS <- length(TARGETS)
 # Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
 
 verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
-                           list(textOutput("SoilCarbonNotIncluded")),
                            lapply(SPECIES, function(x, fulltable) {
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
                              # value <- round(max_specie / 2)
                              max_specie <- 36
                              value <- 1
                              return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste("Species richness for", .(x), "(%)") else paste("Average species", .(x), "chance of appearance (%):"), 
+                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste0("Species Richness (", .(x), ")") else paste(name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "Presence (%):"),
                                                        min = 0,
                                                        max = .(max_specie),
-                                                       value = .(value))))
+                                                       value = .(value),
+                                                       step = 0.5)))
                            }, fulltable = FullTable),
-                           list(sliderInput("AreaSlider", HTML("Total Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
+                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
                            list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
+
 
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
                                            column(9,
                                                   #  tags$head(tags$style(HTML("#map {pointer-events: none;}"))),
-                                                  selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),"Ennerdale"),
+                                                  #tags$style("#inSelect {color: white; background-color: transparent; border: white;}"),
+                                                  selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),FullTable$extent[1]),
+                                                  #fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light",
+                                                   #                                                              "rainbow dark/red",
+                                                    #                                                             "Terrain darkened/lightened",
+                                                     #                                                            "Terrain darkened/red",
+                                                      #                                                           "Viridis darkened/red"))),
+                                                  #column(4,sliderInput("Darken","Darkening Factor:",min=-100,max=100,value=70)),
+                                                  #column(4,sliderInput("Lighten","Lightening Factor:",min=-100,max=100,value=50))),
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
                                            ),
                                            column(3,
                                                   # verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
-                                                  #                textOutput("SoilCarbonNotIncluded"),
-                                                  #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25),
+                                                  #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25, step=0.01),
                                                   #                sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
                                                   #                sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))
                                                   do.call("verticalLayout",
@@ -321,8 +566,9 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   ))
 ))
 
-server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG1 = N_TARGETS) {
+server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS) {
   SPECIES <- SPECIES_ARG1
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
   N_TARGETS <- N_TARGETS_ARG1
   
@@ -352,15 +598,17 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
   Text1<-reactiveVal("")
   Text2<-reactiveVal("")
   Text3<-reactiveVal("")
-  # Add TextN<-reactiveVal("") for each specie
-  for (i in 1:N_SPECIES) {
-    var_name <- paste0("Text", i + 3)
-    value <- reactiveVal("")
-    assign(var_name, value)
-  }
+  Text4<-reactiveVal("")
+  # # Add TextN<-reactiveVal("") for each specie
+  # for (i in 1:N_SPECIES) {
+  #   var_name <- paste0("Text", i + 3)
+  #   value <- reactiveVal("")
+  #   assign(var_name, value)
+  # }
   
   output$TargetText<-renderText({
     SPECIES <- SPECIES_ARG1
+    SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
     N_SPECIES <- length(SPECIES)
     N_TARGETS <- N_TARGETS_ARG1
     
@@ -373,18 +621,29 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
     #   BioSliderValSpecie <- get(paste0("BioSliderVal", x))
     #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
     # }
-    for (i in seq_along(SPECIES)) {
-      x <- SPECIES[i]
+    for (i in 1:length(SPECIES)) {
+      specie_english <- SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
-      text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
+      text <- paste0(text, "\n", specie_english, ": ", as.numeric(BioSliderValSpecie()))
     }
+
     text <- paste0(text,
                    # "\nRed Squirrel: ",as.numeric(bioSliderVal()),
                    "\nArea Planted: ", as.numeric(AreaSliderVal()),
                    "\nVisits/km^2: ", as.numeric(VisitsSliderVal()))
   })
-  output$SoilCarbonNotIncluded<-renderText({paste0("Soil carbon in future versions")})
   
+  ColorLighteningFactor<-reactiveVal(0.5)
+  ColorDarkeningFactor<-reactiveVal(0.5)
+  
+  ColourScheme<-reactiveVal("Viridis darkened/red")
+ # observeEvent(input$Darken,{
+#    ColorDarkeningFactor(input$Darken/100)
+#  })
+ # observeEvent(input$Lighten,{
+#    ColorLighteningFactor(input$Lighten/100)
+#  })
+    
   output$FirstMapTxt<-renderText({Text1()})
   output$SecondMapTxt<-renderText({Text2()})
   output$ThirdMapTxt<-renderText({Text3()})
@@ -423,6 +682,20 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
   output$Trigger<-reactiveVal(TRUE)
   #inputOptions(intput, 'Trigger', suspendWhenHidden = FALSE)
   
+  observe({
+    Uni<-unique(FullTable$extent)
+    if(length(Uni)>1){  shinyjs::show("inSelect")}else{
+      
+      if (    unique(FullTable$extent)[1]=="NoExtent") {
+        shinyjs::hide("inSelect")
+      } else {
+        shinyjs::show("inSelect")
+      }
+    }
+   
+  })
+  
+  
   
   observeEvent(input$inSelect, {
     SelectedDropdown<-input$inSelect
@@ -444,30 +717,32 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
     }
     VisitsSelectedSD0(NULL)
     
-    SelectedSquares<-cbind(extent=FullTable[FullTable$extent==SelectedDropdown,c("extent")],FullTable[FullTable$extent==SelectedDropdown,c("lgn.1","lat.1")])
+    SelectedSquares<-cbind(extent=FullTable$extent[FullTable$extent==SelectedDropdown])#,FullTable$lgn.1[FullTable$extent==SelectedDropdown],
+                        #   FullTable$lat.1[FullTable$extent==SelectedDropdown])
     
     if(!(dim(SelectedSquares)[1]==0)){
-      AreaSelected<-FullTable[FullTable$extent==SelectedDropdown,c("area")]
-      CarbonSelected<-(FullTable[FullTable$extent==SelectedDropdown,c("JulesMean")]*AreaSelected)/1e6
-      # RedSquirrelSelected<-FullTable[FullTable$extent==SelectedDropdown,c("BioMean_Sciurus_vulgaris")]
+      AreaSelected<-FullTable$area[FullTable$extent==SelectedDropdown]
+      CarbonSelected<-(FullTable$JulesMean[FullTable$extent==SelectedDropdown])
+      # RedSquirrelSelected<-FullTable$BioMean_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
       for (x in SPECIES) {
         biomean_var <- paste0("BioMean_", x)
         var_name <- paste0(x, "Selected")
-        value <- FullTable[FullTable$extent==SelectedDropdown, biomean_var]
+        # value <- FullTable[FullTable$extent==SelectedDropdown, biomean_var]
+        value <- FullTable[[biomean_var]][FullTable$extent==SelectedDropdown]
         assign(var_name, value)
       }
-      VisitsSelected<-FullTable[FullTable$extent==SelectedDropdown,c("VisitsMean")]
+      VisitsSelected<-FullTable$VisitsMean[FullTable$extent==SelectedDropdown]
       
-      
-      CarbonSelectedSD<-(FullTable[FullTable$extent==SelectedDropdown,c("JulesSD")]*AreaSelected)/1e6
-      # RedSquirrelSelectedSD<-FullTable[FullTable$extent==SelectedDropdown,c("BioSD_Sciurus_vulgaris")]
+      CarbonSelectedSD<-(FullTable$JulesSD[FullTable$extent==SelectedDropdown])
+      # RedSquirrelSelectedSD<-FullTable$BioSD_Sciurus_vulgaris[FullTable$extent==SelectedDropdown]
       for (x in SPECIES) {
         biosd_var <- paste0("BioSD_", x)
         var_name <- paste0(x, "SelectedSD")
-        value <- FullTable[FullTable$extent==SelectedDropdown, biosd_var]
+        # value <- FullTable[FullTable$extent==SelectedDropdown, biosd_var]
+        value <- FullTable[[biosd_var]][FullTable$extent==SelectedDropdown]
         assign(var_name, value)
       }
-      VisitsSelectedSD<-FullTable[FullTable$extent==SelectedDropdown,c("VisitsSD")]
+      VisitsSelectedSD<-FullTable$VisitsSD[FullTable$extent==SelectedDropdown]
       
       
       
@@ -492,14 +767,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       VisitsSelectedSD0(VisitsSelectedSD)
       
       updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)),value=trunc(sum(CarbonSelected)))
-      # updateSliderInput(session, "BioSlider", max = trunc(mean(RedSquirrelSelected)),value=trunc(mean(RedSquirrelSelected)))
+      # updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100,value=trunc(100*mean(RedSquirrelSelected))/100,step=0.01)
       for (x in SPECIES) {
         bioslider <- paste0("BioSlider", x)
         species_names <- paste0(x, "Selected")
         species_selected <- unlist(mget(species_names))
-        updateSliderInput(session, bioslider, max = trunc(mean(species_selected)),value=trunc(mean(species_selected)))
+        updateSliderInput(session, bioslider, max = trunc(mean(species_selected)),value=trunc(mean(species_selected)), step = 0.5)
       }
-      updateSliderInput(session, "AreaSlider", max = trunc(sum(AreaSelected)/1e6),value=trunc(sum(AreaSelected)/1e6))
+      updateSliderInput(session, "AreaSlider", max = trunc(100*sum(AreaSelected))/100,value=trunc(100*sum(AreaSelected))/100)
       updateSliderInput(session, "VisitsSlider", max = trunc(mean(VisitsSelected)),value=trunc(mean(VisitsSelected)))
     }
     
@@ -507,6 +782,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
     
     
   })
+
   
   observeEvent(input$tabs == "Clustering", {
     
@@ -515,7 +791,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
     
     updateCheckboxInput(session,"Trigger", label = "", value = TRUE)
     #input$Trigger<-TRUE
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main20",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main20",shconv,GreyPolygonWidth=GreyPolygonWidth)
     
     shinyjs::disable("choose1")
     shinyjs::disable("choose2")
@@ -690,29 +966,51 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           
           SELL<-(FullTable$extent==SelectedDropdown)
           if(!is.null(SELL)){
-            sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-            sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-            for (iii in 1:length(SwitchedOnCells)){
-              if(SavedVec[iii]==1){listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
-              else{
-                # Sometimes, SwitchedOnCells is a data.frame with 0 rows
-                if(nrow(SwitchedOnCells) != 0 && SwitchedOnCells[iii]==1){
-                  listMaps[[aai]]<-addPolygons(listMaps[[aai]],lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
-              }
+
+            SELGEO<-FullTable$geometry[SELL]
+            SELGEOFull<-FullTable[SELL,]
+            SELGEOFull$layerId<-paste0("Square",1:dim(SELGEOFull)[1])
+            ############
+            
+            
+            ColObtained<-getCols(ColourScheme=ColourScheme(),UnitsVec=FullTable$units[SELL],
+                              ColorLighteningFactor(),ColorDarkeningFactor())
+            
+            FullColVec<-ColObtained$FullColVec
+            ClickedCols<-ColObtained$ClickedCols
+            SELGEOFull$color<-ColObtained$FullColVec
+            SELGEOFull$color[SavedVec==1]<-ColObtained$ClickedCols[SavedVec==1]
+            ############  
+            SELGEOSavedVec<-SELGEOFull[,c("geometry","layerId")]
+            SELGEOSwitched<-SELGEOFull[,c("geometry","layerId")]
+
+            SELGEORemaining<-SELGEOFull[(SavedVec==1)|(SwitchedOnCells==1),c("geometry","layerId","color")]
+            
+            
+            SELGEOSavedVec<-SELGEOSavedVec[SavedVec==1,]#;gpNamesSavedVec<-gpNamesSavedVec[SavedVec]
+            SELGEOSwitched<-SELGEOSwitched[(SwitchedOnCells==1)&(SavedVec!=1),]#;gpNamesSwitched<-gpNamesSwitched[SwitchedOnCells&(!SavedVec)]
+            
+            
+            if(dim(SELGEORemaining)[1]>0){listMaps[[aai]]<-addPolygons(listMaps[[aai]],data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
+            
+        
             }
-          }
+          
+                                     
           addControlText <- ""
-          for (x in SPECIES) {
-            selectedBiospecie <- get(paste0("SelectedBio", x))
-            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          for (i in 1:length(SPECIES)) {
+            specie_latin <- SPECIES[i]
+            specie_english <- SPECIES_ENGLISH[i]
+            selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
-          listMaps[[aai]]<-listMaps[[aai]]%>%
+          listMaps[[aai]] <- listMaps[[aai]]%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
                                      # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
                                      addControlText,
-                                     "Area Planted: ",round(SelectedArea/1e6,2),"<br>",
+                                     "Area Planted: ",round(SelectedArea,2),"<br>",
                                      "Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
           
@@ -768,8 +1066,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
+                           ColourScheme=ColourScheme(),
+                           ColorLighteningFactor = ColorLighteningFactor(),
+                           ColorDarkeningFactor = ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
-                           N_TARGETS_ARG2 = N_TARGETS)
+                           SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
+                           N_TARGETS_ARG2 = N_TARGETS,
+                           GreyPolygonWidth=GreyPolygonWidth,
+                           UnitPolygonColours=UnitPolygonColours)
   })
   
   observeEvent(input$choose2, {
@@ -798,27 +1102,48 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
+                           ColourScheme=ColourScheme(),
+                           ColorLighteningFactor=ColorLighteningFactor(),
+                           ColorDarkeningFactor=ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
-                           N_TARGETS_ARG2 = N_TARGETS)
+                           SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
+                           N_TARGETS_ARG2 = N_TARGETS,
+                           GreyPolygonWidth=GreyPolygonWidth,
+                           UnitPolygonColours=UnitPolygonColours)
   })
   
   
   observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
-    if(!is.null(click)){SavedVec<-ClickedVector()
-    for(iii in 1:length(SavedVec)){
-      if((click$id == paste0("Square",iii))){SavedVec[iii]<-ifelse(SavedVec[iii]==1,0,1);ClickedVector(SavedVec)}
-    }
-    }
+    SelectedDropdown <- input$inSelect
+    SelectedRowsUnits<-FullTable$units[FullTable$extent==SelectedDropdown]
     
+    
+    #GEOVEC<-st_geometry_type(FullTable$geometry)
+    
+    if(!is.null(click$id)){
+      ChangeDone<-FALSE
+      SavedVec<-ClickedVector()
+        iii<-1
+    
+        while((!ChangeDone)&&(iii<=length(SavedVec))){
+                            if((click$id == paste0("Square",iii))){
+                              SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
+                              ClickedVector(SavedVec)
+                              ChangeDone<-TRUE
+                              }
+            iii<-iii+1
+    }
+    }
   })
   
   
   output$map <- renderLeaflet({
+  #  shinyjs::hide("tabs")
     
     SavedVec<-ClickedVector()
     SelectedDropdown<-input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
-    calcBaseMap<-BaseMap(SelectedDropdown,layerId="main",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main",shconv,GreyPolygonWidth=GreyPolygonWidth)
     map<-calcBaseMap$map
     
     if(!is.null(SavedVec)){
@@ -858,6 +1183,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
+      LimitsMat <- tmp$LimitsMat
       SelecTargetCarbon <- tmp$SelecTargetCarbon
       # SelecTargetBio <- tmp$SelecTargetBio
       condition <- TRUE
@@ -871,14 +1197,19 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
       SelecTargetArea <- tmp$SelecTargetArea
       SelecTargetVisits <- tmp$SelecTargetVisits
       rm(tmp)
+      PROBAMAT <- Icalc$IVEC
+      for (abc in 1:dim(Icalc$IVEC)[2]) {
+        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      }
       
-      # SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
-      #                                      # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
-      #                                      condition&
-      #                                      (SelectedSimMat2$Area>=SelecTargetArea)&
-      #                                      (SelectedSimMat2$Visits>=SelecTargetVisits),]
       
-      SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
+       SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
+                                            # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
+                                            condition&
+                                            (SelectedSimMat2$Area>=SelecTargetArea)&
+                                            (SelectedSimMat2$Visits>=SelecTargetVisits),]
+      
+      #SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
       if(dim(SubsetMeetTargets)[1]>0){
         if(max(SelectedSimMat2$Carbon)!=min(SelectedSimMat2$Carbon)){
@@ -944,46 +1275,65 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
           SelectedVisitsSD<-SelectedMins[SelecRow,]$VisitsSD
           
           
+          SELGEOFull<-FullTable[SELL,]
+          SELGEOFull$layerId<-paste0("Square",1:dim(SELGEOFull)[1])
+          SELGEO<-FullTable$geometry[SELL]
+          ############
+          ColObtained<-getCols(ColourScheme=ColourScheme(),UnitsVec=FullTable$units[SELL],
+                               ColorLighteningFactor(),ColorDarkeningFactor())
           
-          sellng<-FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          sellat<-FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-          for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){map<-addPolygons(map,lng= as.numeric(sellng[iii,]),lat= as.numeric(sellat[iii,]),layerId =paste0("Square",iii),color ="red")}
-            else{
-              # Sometimes, SwitchedOnCells is a data.frame with 0 rows
-              if(nrow(SwitchedOnCells) != 0 && SwitchedOnCells[iii]==1){
-                map<-addPolygons(map,lng=  as.numeric(sellng[iii,]),lat=  as.numeric(sellat[iii,]),layerId =paste0("Square",iii))}
-            }
-          }
+          FullColVec<-ColObtained$FullColVec
+          ClickedCols<-ColObtained$ClickedCols
+          SELGEOFull$color<-ColObtained$FullColVec
+          SELGEOFull$color[SavedVec==1]<-ColObtained$ClickedCols[SavedVec==1]
           
+          
+          ############  
+          SELGEOSavedVec<-SELGEOFull[,c("geometry","layerId")]
+          SELGEOSwitched<-SELGEOFull[,c("geometry","layerId")]
+          
+          SELGEOSavedVec<-SELGEOSavedVec[SavedVec==1,]#;gpNamesSavedVec<-gpNamesSavedVec[SavedVec]
+          SELGEOSwitched<-SELGEOSwitched[(SwitchedOnCells==1)&(SavedVec!=1),]#;gpNamesSwitched<-gpNamesSwitched[SwitchedOnCells&(!SavedVec)]
+          SELGEORemaining<-SELGEOFull[(SavedVec==1)|(SwitchedOnCells==1),c("geometry","layerId","color")]
+          
+        
+          
+          if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
+    
           addControlText <- ""
-          for (x in SPECIES) {
-            selectedBiospecie <- get(paste0("SelectedBio", x))
-            selectedBioSDspecie <- get(paste0("SelectedBioSD", x))
-            addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          for (i in 1:length(SPECIES)) {
+            specie_latin <- SPECIES[i]
+            specie_english <- SPECIES_ENGLISH[i]
+            selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+            selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
+
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
                                      # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
                                      addControlText,
-                                     "Area Planted: ",round(SelectedArea/1e6,2),"<br>",
+                                     "Area Planted: ",round(SelectedArea,2),"<br>",
                                      "Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
           
-        }else{ map<-map%>%
+        } else { map<-map %>%
           addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
         }
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
+   # ChangeSliders(FALSE)
+    # shinyjs::show("tabs")
+    
   })
   
   output$map2 <- renderLeaflet({
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main2", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main2", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1045,22 +1395,29 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
-                                              SPECIES_ARG2 = SPECIES)
+                                              ColourScheme=ColourScheme(),
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
                                                addControlText,
-                                               "Area Planted: ", round(SelectedArea/1e6, 2), "<br>",
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         Text1(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1)))
@@ -1078,7 +1435,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main3", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main3", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1158,26 +1515,46 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
-                                              SPECIES_ARG2 = SPECIES)
+                                              ColourScheme=ColourScheme(),
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        # Replace species Latin names with English names, and keep everything else
+        targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
+        for (i in seq_along(targets_not_met)) {
+          target <- targets_not_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_not_met[i] <- matching_english_specie
+          }
+        }
+        targets_not_met <- paste(targets_not_met, collapse = ",")
+        
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
                                                addControlText,
-                                               "Area Planted: ", round(SelectedArea/1e6, 2), "<br>",
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", mapresults$SelectedLine$NotMet))
+        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met))
         
       } else {
         Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
@@ -1190,7 +1567,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
   output$map4 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main4", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main4", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1263,26 +1640,46 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
-                                              SPECIES_ARG2 = SPECIES)
+                                              ColourScheme=ColourScheme(),
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        # Replace species Latin names with English names, and keep everything else
+        targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
+        for (i in seq_along(targets_not_met)) {
+          target <- targets_not_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_not_met[i] <- matching_english_specie
+          }
+        }
+        targets_not_met <- paste(targets_not_met, collapse = ",")
+
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
                                                addControlText,
-                                               "Area Planted: ", round(SelectedArea/1e6, 2), "<br>",
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", mapresults$SelectedLine$NotMet))
+        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met))
         
       } else {
         Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
@@ -1295,7 +1692,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
   output$map5 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap(SelectedDropdown, layerId = "main5", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main5", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1364,26 +1761,46 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, N_TARGETS_ARG
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValue = randomValue,
-                                              SPECIES_ARG2 = SPECIES)
+                                              ColourScheme=ColourScheme(),
+                                              ColorLighteningFactor=ColorLighteningFactor(),
+                                              ColorDarkeningFactor=ColorDarkeningFactor(),
+                                              SPECIES_ARG2 = SPECIES,
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
-        for (x in SPECIES) {
-          selectedBiospecie <- mapresults[[paste0("SelectedBio", x)]]
-          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", x)]]
-          addControlText <- paste0(addControlText, x, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
+          selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
+
+        # Replace species Latin names with English names, and keep everything else
+        targets_met <- str_split_1(mapresults$SelectedLine$Met, ",")
+        for (i in seq_along(targets_met)) {
+          target <- targets_met[i]
+          if (target %in% name_conversion$Specie) {
+            idx <- name_conversion$Specie == target
+            matching_english_specie <- name_conversion[idx, "English_specie"]
+            targets_met[i] <- matching_english_specie
+          }
+        }
+        targets_met <- paste(targets_met, collapse = ",")
+        
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
                                                addControlText,
-                                               "Area Planted: ", round(SelectedArea/1e6, 2), "<br>",
+                                               "Area Planted: ", round(SelectedArea, 2), "<br>",
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", mapresults$SelectedLine$Met))
+        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1]/5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_met))
         
       } else {
         Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
