@@ -192,202 +192,147 @@ UnitPolygonColours<-1
 # Sys.setenv(PROJ_LIB="/usr/share/proj")
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
-# load all shapes
+
 ElicitatorAppFolder<-"./ElicitatorOutput/"
 JulesAppFolder<-"./JulesOP/"
 
-########################## Pre-processing
-#remove all directories starting with "land"
-unlink(list.dirs(ElicitatorAppFolder)[substr(list.dirs(ElicitatorAppFolder),1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land")], recursive = T)
-
-DIRR<-list.files(ElicitatorAppFolder,full.names = TRUE,recursive=F)
-CTIMES<-file.info(DIRR)$ctime
-LatestFileNames<-c(LandPFileName="",UnitsFileName="",OutcomesFileName="")
-LatestFileNames[1]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"land"))])]
-LatestFileNames[2]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"deci"))])]
-LatestFileNames[3]<-DIRR[CTIMES==max(CTIMES[(substr(DIRR,1,nchar(ElicitatorAppFolder)+4)==paste0(ElicitatorAppFolder,"outc"))])]
-LatestFilesInfo<-data.frame(LatestFileNames,ctime=file.info(LatestFileNames)$ctime)
-
-LatestFilesInfo$ctime <- format(LatestFilesInfo$ctime, "%Y-%m-%d %H:%M:%OS4")
-#write.csv(LatestFilesInfo,"d://ElicitatorOutput//LastestFilesInfo.csv")
-PrevFilesInfo<-read.csv(paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
 
 
-if(sum(PrevFilesInfo$ctime!=LatestFilesInfo$ctime)>0){
-if(file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){file.remove(paste0(ElicitatorAppFolder,"Parcels.geojson"))}
-if(file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))}
-if(file.exists(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))){file.remove(paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))}  
-UnZipDirName<-paste0(substr(LatestFilesInfo$LatestFileNames[1],1,nchar(LatestFilesInfo$LatestFileNames[1])-4))
-#if(dir.exists(UnZipDirName)){unlink(UnZipDirName, recursive = T)}
-dir.create(UnZipDirName)
-unzip(LatestFilesInfo$LatestFileNames[1], exdir = UnZipDirName)
-################## Load necessary files
-# PROJdir<-system.file("proj/proj.db", package = "sf")
-# PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
-# sf_proj_search_paths(PROJdir)
-shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
-if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
-st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
+########################## Load Files
 JulesMean<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-mean-monthly.feather"))[,c("x","y","mean337")]
 JulesSD<-arrow::read_feather(paste0(JulesAppFolder,"JulesApp-rcp26-06-sd-monthly.feather"))[,c("x","y","sd337")]
 SquaresLoad<-sf::st_read(paste0(JulesAppFolder,"SEER//Fishnet_1km_to_SEER_net2km.shp"))
 Sqconv<-st_transform(SquaresLoad, crs = 4326)
-#XYMAT<-read.csv(paste0(JulesAppFolder,"XYMat_1km.csv"))[,-1]
 CorrespondenceJules<-read.csv(paste0(JulesAppFolder,"/CorrespondanceSqToJules.csv"))[,-1]
 seer2km<-st_read(paste0(JulesAppFolder,"/SEER_net2km.shp"))
 jncc100<-read.csv(paste0(JulesAppFolder,"/beta_JNCC100_interact_quad.csv"))
 speciesprob40<- read.csv(paste0(JulesAppFolder,"scenario_species_prob_40.csv"), header = FALSE)
 climatecells<-read.csv(paste0(JulesAppFolder,"climate_cells.csv"))
-###################
-sf_use_s2(FALSE)
-lsh<-dim(shconv)[1]
-AllUnits<- rjson::fromJSON(file=LatestFilesInfo$LatestFileNames[2])$decision_unit_ids
-Uni<-unique(AllUnits)
-FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1,length(Uni)),
-                          JulesMean=rep(15,length(Uni)),
-                          JulesSD=rep(1,length(Uni)),VisitsMean=rep(30,length(Uni)),
-                          VisitsSD=rep(2,length(Uni)),BioMean_Sciurus_vulgaris=rep(0.5,length(Uni)),
-                          BioSD_Sciurus_vulgaris=rep(0.02,length(Uni)),units=Uni)
+######################################################
 
-tt<-proc.time()
 
-#MER<-list()
-#for(ii in 1:length(Uni))
-#{
-#  SELLL<-shconv$geometry[AllUnits==Uni[ii]]
-#  MER[[ii]]<-st_union(SELLL[1],SELLL[2])
-#  if(length(SELLL)>2){
-#    for (jj in 3:length(SELLL)){
-#      MER[[ii]]<-st_union(MER[[ii]],st_make_valid(SELLL[jj]))
-#      }
-#    
-#  }
-#  
-#}
 
-tt2<-proc.time()-tt
+while(
+  !file.exists(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"))
+){Sys.sleep(5)}
 
-tt3<-proc.time()
-MER<-list()
-for(ii in 1:length(Uni))
-{
-  SELLL<-shconv$geometry[AllUnits==Uni[ii]]
-  MER[[ii]]<-st_union(st_make_valid(SELLL))
+if(!file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){
+  UnZipDirName<-paste0(substr(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"),1,nchar(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"))-4))
+  dir.create(UnZipDirName)
   
-}
-tt4<-proc.time()-tt3
-
-FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
-############################################ Replace the Jules Mean here
-
-
-
-#XVEC<-sort(unique(c(XYMAT$XMIN,XYMAT$XMAX)))
-#YVEC<-sort(unique(c(XYMAT$YMIN,XYMAT$YMAX)))
-
-
-#keptLines<-NULL
-#shconvBack<-st_transform(shconv, crs =st_crs(27700))
-#for(ii in 1:length(shconv$geometry))
-#{
-#  MERconvback<-shconvBack$geometry[[ii]][[1]]##
-#
-#      xmin<-min(MERconvback[,1])
-#      DIF<-xmin-XVEC
-#      XMINVEC<-(XVEC[DIF>=0])[which.min(DIF[DIF>=0])]
-#      
-#      xmax<-max(MERconvback[,1])
-#      DIF2<-XVEC-xmax
-#      XMAXVEC<-(XVEC[DIF2>=0])[which.min(DIF2[DIF2>=0])]
-#      
-#      ymin<-min(MERconvback[,2])
-#      DIF3<-ymin-YVEC
-#      YMINVEC<-(YVEC[DIF3>=0])[which.min(DIF3[DIF3>=0])]
-#      
-#      ymax<-max(MERconvback[,2])
- #     DIF4<-YVEC-ymax
-#      YMAXVEC<-(YVEC[DIF4>=0])[which.min(DIF4[DIF4>=0])]
-#      
-#      keptLines<-unique(c(keptLines,which((XYMAT$XMAX<=XMAXVEC)&(XYMAT$XMIN>=XMINVEC)&(XYMAT$YMIN>=YMINVEC)&(XYMAT$YMAX<=YMAXVEC))))
-#   
-#}
-keptLines<-sort(which(as.numeric(summary(sf::st_intersects(Sqconv,shconv))[,1])!=0))
-
-SELECTEDSquaresconv<-Sqconv$geometry[keptLines]
-LinesJules<-CorrespondenceJules[keptLines]
-# Find lines where Jules is not available
-LinesJulesNoMinus1<-which(LinesJules==(-1))
-LinesJules[LinesJulesNoMinus1]<-1
-SelectedJulesMeanSq<-JulesMean[CorrespondenceJules[keptLines],]
-SelectedJulesMeanSq[LinesJulesNoMinus1]<-0
-SelectedJulesSDSq<-JulesSD[CorrespondenceJules[keptLines],]
-SelectedJulesSDSq[LinesJulesNoMinus1]<-0
-
-SELECTEDSquaresconvTab<-data.frame(idSq=seq_along(SELECTEDSquaresconv))
-SELECTEDSquaresconvTab<-st_sf(SELECTEDSquaresconvTab,geometry=SELECTEDSquaresconv,crs=4326)
-
-
-FullTableCopy<-FullTable
-FullTableCopy$idPoly<-seq_along(FullTableCopy$geometry)
-
-#st_as_sf(data.frame(geometry=SELECTEDSquaresconv))
-#st_as_sf(data.frame(FullTable))
-
-INTT<-st_intersection(st_make_valid(SELECTEDSquaresconvTab),st_make_valid(FullTableCopy))
-INTT$area<-st_area(INTT)/1e6
-
-NBSIMS<-500
-for(ii in 1:length(FullTableCopy$geometry))
-{
-  SELLLines<-INTT$idPoly==ii
-  SELLSqs<-INTT$idSq[SELLLines]
-  SELLWeights<-INTT$area[SELLLines]
-  SellWeightsArr<-t(matrix(SELLWeights,length(SELLWeights),NBSIMS))
+  while(
+    class(tryCatch(unzip(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"), exdir = UnZipDirName)))=="try-error"
+          ){Sys.sleep(1)}
   
-  SelJulesMeans<-SelectedJulesMeanSq$mean337[SELLSqs]
-  SelJulesSDs<-SelectedJulesSDSq$sd337[SELLSqs]
-  SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
+  shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
+  if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
+  st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
+
   
-  FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
-  FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
-  FullTable$area[ii]<-sum(SELLWeights)
-}
-
-# Replace Biodiversity columns with correct ones
-FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
-                                                                            speciesprob40=speciesprob40,
-                                                                            seer2km=seer2km,
-                                                                            jncc100=jncc100,
-                                                                            climatecells=climatecells
-)
-# Add richness columns
-FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion) %>% st_as_sf()
-
-#aa<-leaflet()
-#aa<-  addTiles(aa) 
-#for(aaa in 1:30){
-#aa<-addPolygons(aa,data=MER[[aaa]])
-#}#
-
-  #aa<-addPolygons(aa,data=Sqconv$geometry[keptLines],col="red")
-
-#######################################
-st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
-
-
-##################
-FullTableNotAvail<-data.frame(extent=NULL)
-st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
-
-
-   write.csv(LatestFilesInfo,paste0(ElicitatorAppFolder,"LastestFilesInfo.csv"))
+  
 }else{
-
   shconv<-sf::st_read(paste0(ElicitatorAppFolder,"Parcels.geojson"))
-  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
-  FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
-
 }
+
+while(!file.exists(paste0(ElicitatorAppFolder,"decision_units.json"))){Sys.sleep(5)} 
+
+if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
+  
+  sf_use_s2(FALSE)
+  lsh<-dim(shconv)[1]
+
+  while(
+    class(tryCatch(  AllUnits<- rjson::fromJSON(file=paste0(ElicitatorAppFolder,"decision_units.json"))$decision_unit_ids))=="try-error"
+  ){Sys.sleep(1)}
+  
+  
+  Uni<-unique(AllUnits)
+  FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1,length(Uni)),
+                      JulesMean=rep(15,length(Uni)),
+                      JulesSD=rep(1,length(Uni)),VisitsMean=rep(30,length(Uni)),
+                      VisitsSD=rep(2,length(Uni)),BioMean_Sciurus_vulgaris=rep(0.5,length(Uni)),
+                      BioSD_Sciurus_vulgaris=rep(0.02,length(Uni)),units=Uni)
+  
+  
+  MER<-list()
+  for(ii in 1:length(Uni))
+  {
+    SELLL<-shconv$geometry[AllUnits==Uni[ii]]
+    MER[[ii]]<-st_union(st_make_valid(SELLL))
+    
+  }
+  
+  
+  FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
+  ############################################ Replace the Jules Mean here
+  
+ 
+  
+  keptLines<-sort(which(as.numeric(summary(sf::st_intersects(Sqconv,shconv))[,1])!=0))
+  
+  SELECTEDSquaresconv<-Sqconv$geometry[keptLines]
+  LinesJules<-CorrespondenceJules[keptLines]
+  # Find lines where Jules is not available
+  LinesJulesNoMinus1<-which(LinesJules==(-1))
+  LinesJules[LinesJulesNoMinus1]<-1
+  SelectedJulesMeanSq<-JulesMean[CorrespondenceJules[keptLines],]
+  SelectedJulesMeanSq[LinesJulesNoMinus1]<-0
+  SelectedJulesSDSq<-JulesSD[CorrespondenceJules[keptLines],]
+  SelectedJulesSDSq[LinesJulesNoMinus1]<-0
+  
+  SELECTEDSquaresconvTab<-data.frame(idSq=seq_along(SELECTEDSquaresconv))
+  SELECTEDSquaresconvTab<-st_sf(SELECTEDSquaresconvTab,geometry=SELECTEDSquaresconv,crs=4326)
+  
+  
+  FullTableCopy<-FullTable
+  FullTableCopy$idPoly<-seq_along(FullTableCopy$geometry)
+  
+  #st_as_sf(data.frame(geometry=SELECTEDSquaresconv))
+  #st_as_sf(data.frame(FullTable))
+  
+  INTT<-st_intersection(st_make_valid(SELECTEDSquaresconvTab),st_make_valid(FullTableCopy))
+  INTT$area<-st_area(INTT)/1e6
+  
+  NBSIMS<-500
+  for(ii in 1:length(FullTableCopy$geometry))
+  {
+    SELLLines<-INTT$idPoly==ii
+    SELLSqs<-INTT$idSq[SELLLines]
+    SELLWeights<-INTT$area[SELLLines]
+    SellWeightsArr<-t(matrix(SELLWeights,length(SELLWeights),NBSIMS))
+    
+    SelJulesMeans<-SelectedJulesMeanSq$mean337[SELLSqs]
+    SelJulesSDs<-SelectedJulesSDSq$sd337[SELLSqs]
+    SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
+    
+    FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
+    FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
+    FullTable$area[ii]<-sum(SELLWeights)
+  }
+  
+  # Replace Biodiversity columns with correct ones
+  FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
+                                                                              speciesprob40=speciesprob40,
+                                                                              seer2km=seer2km,
+                                                                              jncc100=jncc100,
+                                                                              climatecells=climatecells
+  )
+  # Add richness columns
+  FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion) %>% st_as_sf()
+  
+  
+  #######################################
+  st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+  
+  FullTableNotAvail<-data.frame(extent=NULL)
+  st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
+  
+
+}else{  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
+}
+
+
 
 
 #shconv<-sf::st_read("d://BristolParcels.geojson")
@@ -417,6 +362,8 @@ for (aaa in 1:NSamp)
     }
 }
 
+
+while(!file.exists(paste0(ElicitatorAppFolder,"outcomes.json"))){Sys.sleep(5)} 
 
 
 # # Move rows from FullTableNotAvail to FullTable with blank data
@@ -457,7 +404,13 @@ MaxRounds<-5
 ConvertSample<-sample(1:5000,200)
 
 # Read the outcomes from the Elicitor app
-outcomes <- rjson::fromJSON(file = "ElicitatorOutput/outcomes.json")
+
+while(
+  class(tryCatch(  outcomes <- rjson::fromJSON(file = "ElicitatorOutput/outcomes.json")
+                   ))=="try-error"
+){Sys.sleep(1)}
+
+
 outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
 SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
 # Default specie and group
