@@ -220,9 +220,12 @@ if(!file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){
   UnZipDirName<-paste0(substr(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"),1,nchar(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"))-4))
   dir.create(UnZipDirName)
   
+  
   while(
-    class(tryCatch(unzip(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"), exdir = UnZipDirName)))=="try-error"
-          ){Sys.sleep(1)}
+    inherits(suppressWarnings(try(
+      unzip(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"), exdir = UnZipDirName)
+      ,silent=T)), "try-error")
+  ){Sys.sleep(1)}
   
   shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
   if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
@@ -241,9 +244,13 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
   sf_use_s2(FALSE)
   lsh<-dim(shconv)[1]
 
-  while(
-    class(tryCatch(  AllUnits<- rjson::fromJSON(file=paste0(ElicitatorAppFolder,"decision_units.json"))$decision_unit_ids))=="try-error"
+   while(
+    inherits(suppressWarnings(try(
+      AllUnits<- rjson::fromJSON(file=paste0(ElicitatorAppFolder,"decision_units.json"))$decision_unit_ids
+      ,silent=T)), "try-error")
   ){Sys.sleep(1)}
+  
+    
   
   
   Uni<-unique(AllUnits)
@@ -405,9 +412,11 @@ ConvertSample<-sample(1:5000,200)
 
 # Read the outcomes from the Elicitor app
 
+
 while(
-  class(tryCatch(  outcomes <- rjson::fromJSON(file = "ElicitatorOutput/outcomes.json")
-                   ))=="try-error"
+  inherits(suppressWarnings(try(
+    outcomes <- rjson::fromJSON(file = "ElicitatorOutput/outcomes.json")
+    ,silent=T)), "try-error")
 ){Sys.sleep(1)}
 
 
