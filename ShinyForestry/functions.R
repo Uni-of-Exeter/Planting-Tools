@@ -96,73 +96,73 @@ MultiImpl <- function(TargetsVec,EYMat,SDYMat,alpha,tolVec) {
   return(list(ImTotMax=ItotalMax,ImTotMin=ItotalMin,NROYTotal=NROYTotal,IVEC=IVEC))
 }
 
-BaseMap <- function(SelectedMap,layerId=NULL,shconv) {
-  
-  #ListMaps<-shconv[shconv$extent==SelectedMap,]$shape[[1]]
-  ListMaps<-shconv$geometry[shconv$extent==SelectedMap]
-  
-  max_x2<-(-Inf);min_x2<-(Inf);max_y2<-(-Inf);min_y2<-Inf;
-  
-  if(st_geometry_type(shconv)[1]=="POLYGON"){
-  
-  for(ii in 1: length(ListMaps)){
-    for(jj in 1: length(ListMaps[[ii]])){
-   
-      xvec<-ListMaps[[ii]][[jj]][,1]
-      yvec<-ListMaps[[ii]][[jj]][,2]
-      xvec<-xvec[!is.na(xvec)]
-      yvec<-yvec[!is.na(yvec)]
-      max_x2<-max(max_x2,xvec)
-      min_x2<-min(min_x2,xvec)
-      
-      max_y2<-max(max_y2,yvec)
-      min_y2<-min(min_y2,yvec)
-      }
-    }
-  
-    map<-leaflet() 
-    map<-  addTiles(map) 
-    map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
-                   lng2 = max_x2, lat2 =max_y2) #%>%
-    for(ii in 1: length(ListMaps)){
-      for(jj in 1: length(ListMaps[[ii]])){
-          map<-addPolygons(map,lng=ListMaps[[ii]][[jj]][,1],lat=ListMaps[[ii]][[jj]][,2],color="grey",layerId==paste0(layerId,ii,"_",jj))}}
-    
-  
-  }else{
-    for(ii in 1: length(ListMaps)){
-      for(jj in 1: length(ListMaps[[ii]])){
-        for(kk in 1: length(ListMaps[[ii]][[jj]])){
-          xvec<-ListMaps[[ii]][[jj]][[kk]][,1]
-          yvec<-ListMaps[[ii]][[jj]][[kk]][,2]
-          xvec<-xvec[!is.na(xvec)]
-          yvec<-yvec[!is.na(yvec)]
-          max_x2<-max(max_x2,xvec)
-          min_x2<-min(min_x2,xvec)
-          
-          max_y2<-max(max_y2,yvec)
-          min_y2<-min(min_y2,yvec)
-        }
-      }
-    }
-    map<-leaflet() 
-    map<-  addTiles(map) 
-    map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
-                   lng2 = max_x2, lat2 =max_y2) #%>%
-    for(ii in 1: length(ListMaps)){
-      for(jj in 1: length(ListMaps[[ii]])){
-        for(kk in 1: length(ListMaps[[ii]][[jj]])){
-          map<-addPolygons(map,lng=ListMaps[[ii]][[jj]][[kk]][,1],lat=ListMaps[[ii]][[jj]][[kk]][,2],color="grey",layerId==paste0(layerId,ii,"_",jj,"_",kk))}}}
-    
-    
-  }  
-    
-  return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
-}
+#BaseMap <- function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth) {
+#  
+#  #ListMaps<-shconv[shconv$extent==SelectedMap,]$shape[[1]]
+#  ListMaps<-shconv$geometry[shconv$extent==SelectedMap]
+#  
+#  max_x2<-(-Inf);min_x2<-(Inf);max_y2<-(-Inf);min_y2<-Inf;
+#  
+#  if(st_geometry_type(shconv)[1]=="POLYGON"){
+#  
+#  for(ii in 1: length(ListMaps)){
+#    for(jj in 1: length(ListMaps[[ii]])){
+#   
+#      xvec<-ListMaps[[ii]][[jj]][,1]
+#      yvec<-ListMaps[[ii]][[jj]][,2]
+#      xvec<-xvec[!is.na(xvec)]
+#      yvec<-yvec[!is.na(yvec)]
+#      max_x2<-max(max_x2,xvec)
+#      min_x2<-min(min_x2,xvec)
+#      
+#      max_y2<-max(max_y2,yvec)
+#      min_y2<-min(min_y2,yvec)
+#      }
+#    }
+#  
+#    map<-leaflet() 
+#    map<-  addTiles(map) 
+#    map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
+#                   lng2 = max_x2, lat2 =max_y2) #%>%
+#    for(ii in 1: length(ListMaps)){
+#      for(jj in 1: length(ListMaps[[ii]])){
+##          map<-addPolygons(map,lng=ListMaps[[ii]][[jj]][,1],lat=ListMaps[[ii]][[jj]][,2],color="grey",layerId==paste0(layerId,ii,"_",jj,width=GreyPolygonWidth))}}
+#    
+#  
+#  }else{
+#    for(ii in 1: length(ListMaps)){
+#      for(jj in 1: length(ListMaps[[ii]])){
+#        for(kk in 1: length(ListMaps[[ii]][[jj]])){
+#          xvec<-ListMaps[[ii]][[jj]][[kk]][,1]
+#          yvec<-ListMaps[[ii]][[jj]][[kk]][,2]
+#          xvec<-xvec[!is.na(xvec)]
+#          yvec<-yvec[!is.na(yvec)]
+#          max_x2<-max(max_x2,xvec)
+#          min_x2<-min(min_x2,xvec)
+#          
+#          max_y2<-max(max_y2,yvec)
+#          min_y2<-min(min_y2,yvec)
+#        }
+#      }
+#    }
+#    map<-leaflet() 
+#    map<-  addTiles(map) 
+#    map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
+#                   lng2 = max_x2, lat2 =max_y2) #%>%
+#    for(ii in 1: length(ListMaps)){
+#      for(jj in 1: length(ListMaps[[ii]])){
+#        for(kk in 1: length(ListMaps[[ii]][[jj]])){
+#          map<-addPolygons(map,lng=ListMaps[[ii]][[jj]][[kk]][,1],lat=ListMaps[[ii]][[jj]][[kk]][,2],color="grey",layerId==paste0(layerId,ii,"_",jj,"_",kk,width=GreyPolygonWidth))}}}
+#    
+#    
+#  }  
+#    
+#  return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
+#}
 
 
 
-BaseMap2<-function(SelectedMap,layerId=NULL,shconv)
+BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
 {
   
   #ListMaps<-shconv[shconv$extent==SelectedMap,]$shape[[1]]
@@ -214,7 +214,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv)
                    lng2 = max_x2, lat2 =max_y2) 
     
   }  
-          map<-addPolygons(map,data=ListMaps,color="grey")
+          map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth)
     
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
@@ -324,11 +324,14 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    shconv,
                                    SelectedSimMatGlobal,
                                    pref,
+                                   ColourScheme,
                                    ColorLighteningFactor,
                                    ColorDarkeningFactor,
                                    SPECIES_ARG3,
                                    SPECIES_ENGLISH_ARG3,
-                                   N_TARGETS_ARG2) {
+                                   N_TARGETS_ARG2,
+                                   GreyPolygonWidth,
+                                   UnitPolygonColours) {
   SPECIES <- SPECIES_ARG3
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
   N_TARGETS <- N_TARGETS_ARG2
@@ -340,7 +343,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
   shinyjs::disable("choose2")
   
   if((!is.null(SavedVec))&(CurrentRound()>0)){
-    calcBaseMap <- BaseMap(SelectedDropdown,layerId="main100",shconv=shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown,layerId="main100",shconv=shconv,GreyPolygonWidth=GreyPolygonWidth)
     
     SelectedSimMat2 <- SelectedSimMatGlobal
     if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
@@ -401,16 +404,23 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
           ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
           FullColVec<-darken(FullColVec,ColorDarkeningFactor)
           ClickedCols<-rep("red",length(ClickedCols))
+          
+          ColObtained<-getCols(ColourScheme,UnitsVec=FullTable$units[SELL],
+                               ColorLighteningFactor,ColorDarkeningFactor)
+          
+          FullColVec<-ColObtained$FullColVec#darken(FullColVec,ColorDarkeningFactor)
+          ClickedCols<-ColObtained$ClickedCols
+          
           #  sellng <- FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
           #  sellat <- FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
           for (iii in 1:length(SwitchedOnCells)){
             if(SavedVec[iii]==1){
               
               if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-              listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii])
+              listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii],weight=UnitPolygonColours)
               }else{
                 for(kk in 1:length(SELGEO[[iii]])) {
-                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii])
+                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii],weight=UnitPolygonColours)
                 }
                 
               }
@@ -419,10 +429,10 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
             else{
               if(SwitchedOnCells[iii]==1){
                 if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])
+                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii],weight=UnitPolygonColours)
                 }else{
                   for(kk in 1:length(SELGEO[[iii]])) {
-                    listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii])
+                    listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii],weight=UnitPolygonColours)
                     
                   }
                   
@@ -644,7 +654,8 @@ outputmap_createResults <- function(map,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor,
                                     SPECIES_ARG2,
-                                    SPECIES_ENGLISH_ARG2) {
+                                    SPECIES_ENGLISH_ARG2,
+                                    UnitPolygonColours) {
   SPECIES <- SPECIES_ARG2
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG2
   SavedRVs <- randomValue()
@@ -699,10 +710,10 @@ outputmap_createResults <- function(map,
       if (SavedVec[iii] == 1) {
         
         if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-        map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii])
+        map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii],weight=UnitPolygonColours)
         }else{
           for(kk in 1:length(SELGEO[[iii]])) {
-            map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk), color = ClickedCols[iii])
+            map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk), color = ClickedCols[iii],weight=UnitPolygonColours)
             
           }
           
@@ -712,10 +723,10 @@ outputmap_createResults <- function(map,
         if (SwitchedOnCells[iii] == 1) {
           if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
           
-          map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii])
+          map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii],weight=UnitPolygonColours)
           }else{
             for(kk in 1:length(SELGEO[[iii]])) {
-              map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk),color=FullColVec[iii])
+              map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk),color=FullColVec[iii],weight=UnitPolygonColours)
               
             }
             

@@ -59,121 +59,121 @@ source(paste0(FolderSource, "functions.R"))
 # english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
 # english_species_names <- add_suffix_to_duplicates(english_species_names)
 
-name_conversion <- matrix(data = c("Bird", "Acanthis cabaret", "Lesser Redpoll",
-                                   "Bird", "Alauda arvensis", "Skylark",
-                                   "Bird", "Anthus trivialis", "Tree Pipit",
-                                   "Bird", "Botaurus stellaris", "Bittern",
-                                   "Bird", "Caprimulgus europaeus", "Nightjar",
-                                   "Bird", "Emberiza citrinella", "Yellowhammer",
-                                   "Bird", "Emberiza schoeniclus", "Reed Bunting",
-                                   "Bird", "Locustella naevia", "Grasshopper Warbler",
-                                   "Bird", "Lullula arborea", "Woodlark",
-                                   "Bird", "Motacilla flava subsp flavissima", "Yellow Wagtail",
-                                   "Bird", "Muscicapa striata", "Spotted Flycatcher",
-                                   "Bird", "Numenius arquata", "Curlew",
-                                   "Bird", "Perdix perdix", "Grey Partridge",
-                                   "Bird", "Phylloscopus sibilatrix", "Wood Warbler",
-                                   "Bird", "Streptopelia turtur", "Turtle Dove",
-                                   "Bird", "Turdus torquatus", "Ring Ouzel",
-                                   "Bird", "Vanellus vanellus", "Lapwing",
-                                   "Herptile", "Vipera berus", "Adder",
-                                   "Invertebrate - bee", "Bombus monticola", "Mountain Bumblebee",
-                                   "Invertebrate - beetle", "Cercyon convexiusculus", "Water Beetle sp.",
-                                   "Invertebrate - beetle", "Gnorimus nobilis", "Noble Chafer",
-                                   "Invertebrate - beetle", "Liopterus haemorrhoidalis", "Water Beetle sp.",
-                                   "Invertebrate - beetle", "Lucanus cervus", "Stag Beetle",
-                                   "Invertebrate - butterfly", "Boloria selene", "Small Pearl-Bordered Fritillary",
-                                   "Invertebrate - butterfly", "Coenonympha pamphilus", "Small Heath",
-                                   "Invertebrate - butterfly", "Coenonympha tullia", "Large Heath",
-                                   "Invertebrate - butterfly", "Cupido minimus", "Small Blue",
-                                   "Invertebrate - butterfly", "Erebia epiphron", "Mountain Ringlet",
-                                   "Invertebrate - butterfly", "Erynnis tages", "Dingy Skipper",
-                                   "Invertebrate - butterfly", "Hipparchia semele", "Grayling",
-                                   "Invertebrate - butterfly", "Lasiommata megera", "Wall",
-                                   "Invertebrate - butterfly", "Limenitis camilla", "White Admiral",
-                                   "Invertebrate - butterfly", "Satyrium w-album", "White-Letter Hairstreak",
-                                   "Invertebrate - cricket", "Leptophyes punctatissima", "Speckled Bush Cricket",
-                                   "Invertebrate - cricket", "Metrioptera brachyptera", "Bog Bush Cricket",
-                                   "Invertebrate - moth", "Cossus cossus", "Goat Moth",
-                                   "Invertebrate - moth", "Acronicta psi", "Grey Dagger",
-                                   "Invertebrate - moth", "Allophyes oxyacanthae", "Green-brindled Crescent",
-                                   "Invertebrate - moth", "Dasypolia templi", "Brindled Ochre",
-                                   "Invertebrate - moth", "Xanthorhoe decoloraria", "Red Carpet",
-                                   "Invertebrate - snail", "Cochlodina laminata", "Plaited Door Snail",
-                                   "Invertebrate - snail", "Monacha cantiana", "Kentish Snail",
-                                   "Invertebrate - snail", "Zonitoides excavatus", "Hollowed Glass Snail",
-                                   "Lichen", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
-                                   "Lichen", "Leptogium brebissonii", "Lichen sp.",
-                                   "Lichen", "Parmeliella testacea", "Lichen sp.",
-                                   "Lichen", "Pseudocyphellaria intricata", "Lichen sp.",
-                                   "Lichen", "Usnea articulata", "String-Of-Sausage Lichen",
-                                   "Mammal", "Barbastella barbastellus", "Barbastelle bat",
-                                   "Mammal", "Felis silvestris", "Wildcat",
-                                   "Mammal", "Lepus europaeus", "European hare",
-                                   "Mammal", "Lepus timidus", "Mountain Hare",
-                                   "Mammal", "Martes martes", "Pine Marten",
-                                   "Mammal", "Micromys minutus", "Harvest Mouse",
-                                   "Mammal", "Muscardinus avellanarius", "Hazel Dormouse",
-                                   "Mammal", "Mustela putorius", "Polecat",
-                                   "Mammal", "Myotis bechsteinii", "Bechstein's bat",
-                                   "Mammal", "Nyctalus noctula", "Noctule Bat",
-                                   "Mammal", "Plecotus auritus", "Brown Long-eared Bat",
-                                   "Mammal", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
-                                   "Mammal", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
-                                   "Mammal", "Sciurus vulgaris", "Eurasian red squirrel",
-                                   "Vascular plant", "Anchusa arvensis", "Field bugloss",
-                                   "Vascular plant", "Andromeda polifolia", "Bog Rosemary",
-                                   "Vascular plant", "Arctostaphylos alpinus", "Mountain bearberry",
-                                   "Vascular plant", "Asplenium viride", "Green spleenwort",
-                                   "Vascular plant", "Atriplex laciniata", "Frosted Orache",
-                                   "Vascular plant", "Blysmus rufus", "Saltmarsh Flat-Sedge",
-                                   "Vascular plant", "Cakile maritima", "Sea Rocket",
-                                   "Vascular plant", "Campanula glomerata", "Clustered Bellflower",
-                                   "Vascular plant", "Carex extensa", "Long-Bracted Sedge",
-                                   "Vascular plant", "Carex magellanica", "Tall Bog-Sedge",
-                                   "Vascular plant", "Centaurium pulchellum", "Lesser Centaury",
-                                   "Vascular plant", "Cerastium arvense", "Field Mouse-Ear",
-                                   "Vascular plant", "Cirsium eriophorum", "Woolly Thistle",
-                                   "Vascular plant", "Daphne laureola", "Spurge-Laurel",
-                                   "Vascular plant", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
-                                   "Vascular plant", "Fumaria muralis", "Common Ramping-Fumitory",
-                                   "Vascular plant", "Genista anglica", "Petty Whin",
-                                   "Vascular plant", "Genista tinctoria", "Dyer's Greenweed",
-                                   "Vascular plant", "Gnaphalium supinum", "Dwarf Cudweed",
-                                   "Vascular plant", "Goodyera repens", "Creeping Lady's-Tresses",
-                                   "Vascular plant", "Hypericum elodes", "Marsh St John's-Wort",
-                                   "Vascular plant", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
-                                   "Vascular plant", "Leymus arenarius", "Lyme Grass",
-                                   "Vascular plant", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
-                                   "Vascular plant", "Neottia nidus-avis", "Bird's-Nest Orchid",
-                                   "Vascular plant", "Ornithopus perpusillus", "Bird's-Foot",
-                                   "Vascular plant", "Orthilia secunda", "Serrated Wintergreen",
-                                   "Vascular plant", "Oxyria digyna", "Mountain Sorrel",
-                                   "Vascular plant", "Pyrola media", "Intermediate Wintergreen",
-                                   "Vascular plant", "Radiola linoides", "Allseed",
-                                   "Vascular plant", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
-                                   "Vascular plant", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
-                                   "Vascular plant", "Silaum silaus", "Pepper-Saxifrage",
-                                   "Vascular plant", "Thymus pulegioides", "Large Thyme",
-                                   "Vascular plant", "Tilia cordata", "Small-Leaved Lime",
-                                   "Vascular plant", "Trifolium fragiferum", "Strawberry Clover",
-                                   "Vascular plant", "Trifolium striatum", "Knotted Clover",
-                                   "Vascular plant", "Vaccinium microcarpum", "Small Cranberry"),
+name_conversion <- matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll",
+                                   "Birds", "Alauda arvensis", "Skylark",
+                                   "Birds", "Anthus trivialis", "Tree Pipit",
+                                   "Birds", "Botaurus stellaris", "Bittern",
+                                   "Birds", "Caprimulgus europaeus", "Nightjar",
+                                   "Birds", "Emberiza citrinella", "Yellowhammer",
+                                   "Birds", "Emberiza schoeniclus", "Reed Bunting",
+                                   "Birds", "Locustella naevia", "Grasshopper Warbler",
+                                   "Birds", "Lullula arborea", "Woodlark",
+                                   "Birds", "Motacilla flava subsp flavissima", "Yellow Wagtail",
+                                   "Birds", "Muscicapa striata", "Spotted Flycatcher",
+                                   "Birds", "Numenius arquata", "Curlew",
+                                   "Birds", "Perdix perdix", "Grey Partridge",
+                                   "Birds", "Phylloscopus sibilatrix", "Wood Warbler",
+                                   "Birds", "Streptopelia turtur", "Turtle Dove",
+                                   "Birds", "Turdus torquatus", "Ring Ouzel",
+                                   "Birds", "Vanellus vanellus", "Lapwing",
+                                   "Herptiles", "Vipera berus", "Adder",
+                                   "Invertebrate - bees", "Bombus monticola", "Mountain Bumblebee",
+                                   "Invertebrate - beetles", "Cercyon convexiusculus", "Water Beetle sp.",
+                                   "Invertebrate - beetles", "Gnorimus nobilis", "Noble Chafer",
+                                   "Invertebrate - beetles", "Liopterus haemorrhoidalis", "Water Beetle sp.",
+                                   "Invertebrate - beetles", "Lucanus cervus", "Stag Beetle",
+                                   "Invertebrate - butterflies", "Boloria selene", "Small Pearl-Bordered Fritillary",
+                                   "Invertebrate - butterflies", "Coenonympha pamphilus", "Small Heath",
+                                   "Invertebrate - butterflies", "Coenonympha tullia", "Large Heath",
+                                   "Invertebrate - butterflies", "Cupido minimus", "Small Blue",
+                                   "Invertebrate - butterflies", "Erebia epiphron", "Mountain Ringlet",
+                                   "Invertebrate - butterflies", "Erynnis tages", "Dingy Skipper",
+                                   "Invertebrate - butterflies", "Hipparchia semele", "Grayling",
+                                   "Invertebrate - butterflies", "Lasiommata megera", "Wall",
+                                   "Invertebrate - butterflies", "Limenitis camilla", "White Admiral",
+                                   "Invertebrate - butterflies", "Satyrium w-album", "White-Letter Hairstreak",
+                                   "Invertebrate - crickets", "Leptophyes punctatissima", "Speckled Bush Cricket",
+                                   "Invertebrate - crickets", "Metrioptera brachyptera", "Bog Bush Cricket",
+                                   "Invertebrate - moths", "Cossus cossus", "Goat Moth",
+                                   "Invertebrate - moths", "Acronicta psi", "Grey Dagger",
+                                   "Invertebrate - moths", "Allophyes oxyacanthae", "Green-brindled Crescent",
+                                   "Invertebrate - moths", "Dasypolia templi", "Brindled Ochre",
+                                   "Invertebrate - moths", "Xanthorhoe decoloraria", "Red Carpet",
+                                   "Invertebrate - snails", "Cochlodina laminata", "Plaited Door Snail",
+                                   "Invertebrate - snails", "Monacha cantiana", "Kentish Snail",
+                                   "Invertebrate - snails", "Zonitoides excavatus", "Hollowed Glass Snail",
+                                   "Lichens", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
+                                   "Lichens", "Leptogium brebissonii", "Lichen sp.",
+                                   "Lichens", "Parmeliella testacea", "Lichen sp.",
+                                   "Lichens", "Pseudocyphellaria intricata", "Lichen sp.",
+                                   "Lichens", "Usnea articulata", "String-Of-Sausage Lichen",
+                                   "Mammals", "Barbastella barbastellus", "Barbastelle bat",
+                                   "Mammals", "Felis silvestris", "Wildcat",
+                                   "Mammals", "Lepus europaeus", "European hare",
+                                   "Mammals", "Lepus timidus", "Mountain Hare",
+                                   "Mammals", "Martes martes", "Pine Marten",
+                                   "Mammals", "Micromys minutus", "Harvest Mouse",
+                                   "Mammals", "Muscardinus avellanarius", "Hazel Dormouse",
+                                   "Mammals", "Mustela putorius", "Polecat",
+                                   "Mammals", "Myotis bechsteinii", "Bechstein's bat",
+                                   "Mammals", "Nyctalus noctula", "Noctule Bat",
+                                   "Mammals", "Plecotus auritus", "Brown Long-eared Bat",
+                                   "Mammals", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
+                                   "Mammals", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
+                                   "Mammals", "Sciurus vulgaris", "Eurasian red squirrel",
+                                   "Vascular plants", "Anchusa arvensis", "Field bugloss",
+                                   "Vascular plants", "Andromeda polifolia", "Bog Rosemary",
+                                   "Vascular plants", "Arctostaphylos alpinus", "Mountain bearberry",
+                                   "Vascular plants", "Asplenium viride", "Green spleenwort",
+                                   "Vascular plants", "Atriplex laciniata", "Frosted Orache",
+                                   "Vascular plants", "Blysmus rufus", "Saltmarsh Flat-Sedge",
+                                   "Vascular plants", "Cakile maritima", "Sea Rocket",
+                                   "Vascular plants", "Campanula glomerata", "Clustered Bellflower",
+                                   "Vascular plants", "Carex extensa", "Long-Bracted Sedge",
+                                   "Vascular plants", "Carex magellanica", "Tall Bog-Sedge",
+                                   "Vascular plants", "Centaurium pulchellum", "Lesser Centaury",
+                                   "Vascular plants", "Cerastium arvense", "Field Mouse-Ear",
+                                   "Vascular plants", "Cirsium eriophorum", "Woolly Thistle",
+                                   "Vascular plants", "Daphne laureola", "Spurge-Laurel",
+                                   "Vascular plants", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
+                                   "Vascular plants", "Fumaria muralis", "Common Ramping-Fumitory",
+                                   "Vascular plants", "Genista anglica", "Petty Whin",
+                                   "Vascular plants", "Genista tinctoria", "Dyer's Greenweed",
+                                   "Vascular plants", "Gnaphalium supinum", "Dwarf Cudweed",
+                                   "Vascular plants", "Goodyera repens", "Creeping Lady's-Tresses",
+                                   "Vascular plants", "Hypericum elodes", "Marsh St John's-Wort",
+                                   "Vascular plants", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
+                                   "Vascular plants", "Leymus arenarius", "Lyme Grass",
+                                   "Vascular plants", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
+                                   "Vascular plants", "Neottia nidus-avis", "Bird's-Nest Orchid",
+                                   "Vascular plants", "Ornithopus perpusillus", "Bird's-Foot",
+                                   "Vascular plants", "Orthilia secunda", "Serrated Wintergreen",
+                                   "Vascular plants", "Oxyria digyna", "Mountain Sorrel",
+                                   "Vascular plants", "Pyrola media", "Intermediate Wintergreen",
+                                   "Vascular plants", "Radiola linoides", "Allseed",
+                                   "Vascular plants", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
+                                   "Vascular plants", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
+                                   "Vascular plants", "Silaum silaus", "Pepper-Saxifrage",
+                                   "Vascular plants", "Thymus pulegioides", "Large Thyme",
+                                   "Vascular plants", "Tilia cordata", "Small-Leaved Lime",
+                                   "Vascular plants", "Trifolium fragiferum", "Strawberry Clover",
+                                   "Vascular plants", "Trifolium striatum", "Knotted Clover",
+                                   "Vascular plants", "Vaccinium microcarpum", "Small Cranberry"),
                           ncol = 3, byrow = TRUE)
 name_conversion <- data.frame(Specie = name_conversion[, 2],
                               English_specie = add_suffix_to_duplicates(name_conversion[, 3]),
                               Group = name_conversion[, 1])
-# Replace Invertebrate - bee/beetle/butterfly/cricket/moth by Pollinators
+# Replace Invertebrate - bees/beetles/butterflies/crickets/moths by Pollinators
 # Crashes on the server for some reason, so we use data.frames instead
 # dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinators",
 # .default = Group)) %>%
-indices <- grep("bee|beetle|butterfly|cricket|moth", name_conversion$Group)
+indices <- grep("bees|beetles|butterflys|crickets|moths", name_conversion$Group)
 name_conversion[indices, "Group"] <- "Pollinators"
-# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bee" ~ "Pollinators",
-#                                        Group == "Invertebrate - beetle" ~ "Pollinators",
-#                                        Group == "Invertebrate - butterfly" ~ "Pollinators",
-#                                        Group == "Invertebrate - cricket" ~ "Pollinators",
-#                                        Group == "Invertebrate - moth" ~ "Pollinators",
+# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bees" ~ "Pollinators",
+#                                        Group == "Invertebrate - beetles" ~ "Pollinators",
+#                                        Group == "Invertebrate - butterflys" ~ "Pollinators",
+#                                        Group == "Invertebrate - crickets" ~ "Pollinators",
+#                                        Group == "Invertebrate - moths" ~ "Pollinators",
 #                                        .default = Group)) %>%
 # Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
 name_conversion <- name_conversion %>%
@@ -186,6 +186,9 @@ row84 <- name_conversion[84, ]
 name_conversion[83, ] <- row84
 name_conversion[84, ] <- row83
 
+
+GreyPolygonWidth<-1
+UnitPolygonColours<-1
 # Sys.setenv(PROJ_LIB="/usr/share/proj")
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
@@ -453,8 +456,22 @@ MaxRounds<-5
 
 ConvertSample<-sample(1:5000,200)
 
-SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinators", "All")
-SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinators", "All")
+# Read the outcomes from the Elicitor app
+outcomes <- rjson::fromJSON(file = "ElicitatorOutput/outcomes.json")
+outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
+SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
+# Default specie and group
+if (length(SPECIES_ENGLISH) == 0) {
+  SPECIES_ENGLISH <- c("Lesser Redpoll", "Pollinators")
+}
+# Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
+groups <- base::intersect(SPECIES_ENGLISH, name_conversion$Group)
+indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
+SPECIES <- c(name_conversion[indices_species_english_in_name_conversion, "Specie"],
+             groups)
+
+# SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinators", "All")
+# SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinators", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
@@ -774,7 +791,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     updateCheckboxInput(session,"Trigger", label = "", value = TRUE)
     #input$Trigger<-TRUE
-    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main20",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main20",shconv,GreyPolygonWidth=GreyPolygonWidth)
     
     shinyjs::disable("choose1")
     shinyjs::disable("choose2")
@@ -974,7 +991,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             SELGEOSwitched<-SELGEOSwitched[(SwitchedOnCells==1)&(SavedVec!=1),]#;gpNamesSwitched<-gpNamesSwitched[SwitchedOnCells&(!SavedVec)]
             
             
-            if(dim(SELGEORemaining)[1]>0){listMaps[[aai]]<-addPolygons(listMaps[[aai]],data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
+            if(dim(SELGEORemaining)[1]>0){listMaps[[aai]]<-addPolygons(listMaps[[aai]],data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
             
         
             }
@@ -1049,11 +1066,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
+                           ColourScheme=ColourScheme(),
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
-                           N_TARGETS_ARG2 = N_TARGETS)
+                           N_TARGETS_ARG2 = N_TARGETS,
+                           GreyPolygonWidth=GreyPolygonWidth,
+                           UnitPolygonColours=UnitPolygonColours)
   })
   
   observeEvent(input$choose2, {
@@ -1082,11 +1102,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
                            pref = pref,
+                           ColourScheme=ColourScheme(),
                            ColorLighteningFactor=ColorLighteningFactor(),
                            ColorDarkeningFactor=ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
-                           N_TARGETS_ARG2 = N_TARGETS)
+                           N_TARGETS_ARG2 = N_TARGETS,
+                           GreyPolygonWidth=GreyPolygonWidth,
+                           UnitPolygonColours=UnitPolygonColours)
   })
   
   
@@ -1120,7 +1143,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     SavedVec<-ClickedVector()
     SelectedDropdown<-input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
-    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main",shconv)
+    calcBaseMap<-BaseMap2(SelectedDropdown,layerId="main",shconv,GreyPolygonWidth=GreyPolygonWidth)
     map<-calcBaseMap$map
     
     if(!is.null(SavedVec)){
@@ -1275,7 +1298,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
         
           
-          if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId)}
+          if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
     
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
@@ -1310,7 +1333,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main2", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main2", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1376,7 +1399,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1411,7 +1435,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main3", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main3", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1495,7 +1519,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1542,7 +1567,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$map4 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main4", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main4", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1619,7 +1644,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
@@ -1666,7 +1692,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$map5 <- renderLeaflet({
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main5", shconv)
+    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main5", shconv,GreyPolygonWidth=GreyPolygonWidth)
     map <- calcBaseMap$map
     
     if (!is.null(SavedVec)) {
@@ -1739,7 +1765,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               ColorLighteningFactor=ColorLighteningFactor(),
                                               ColorDarkeningFactor=ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
-                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH)
+                                              SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
+                                              UnitPolygonColours=UnitPolygonColours)
         SavedRVs <- mapresults$SavedRVs
         LSMT <- mapresults$LSMT
         map <- mapresults$map
