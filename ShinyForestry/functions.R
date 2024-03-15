@@ -777,12 +777,12 @@ check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
     condition <- rep(TRUE, nrow(PROBAMAT))
     for (j in 1:n_metrics) {
       if (j %in% combinations[i, ]) {
-        condition <- condition & PROBAMAT[, j] >= target
+        condition <- condition & (PROBAMAT[, j] >= target)
       } else {
-        condition <- condition & PROBAMAT[, j] < target
+        condition <- condition & (PROBAMAT[, j] < target)
       }
     }
-    prob_list <- c(prob_list, list(condition))
+    prob_list[[i]] <- condition
   }
   if (length(prob_list) == 1) {
     prob_list <- unlist(prob_list)
@@ -794,7 +794,7 @@ check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
 subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST, TARGETS, nb_targets_met) {
   n_metrics <- ncol(PROBAMAT)
   targets_met <- t(combn(n_metrics, nb_targets_met))
-  targets_met <- targets_met[nrow(targets_met):1, ]
+  targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
   
   SubsetMeetTargets <- data.frame()
   for (i in 1:nrow(targets_met)) {
