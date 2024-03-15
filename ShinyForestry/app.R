@@ -415,10 +415,10 @@ outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Bi
 SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
 # Default specie and group
 if (length(SPECIES_ENGLISH) == 0) {
-  SPECIES_ENGLISH <- c("Lesser Redpoll", "Pollinators")
+  SPECIES_ENGLISH <- "All"
 }
 # Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
-groups <- base::intersect(SPECIES_ENGLISH, name_conversion$Group)
+groups <- base::intersect(SPECIES_ENGLISH, c(unique(name_conversion$Group), "All"))
 indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
 SPECIES <- c(name_conversion[indices_species_english_in_name_conversion, "Specie"],
              groups)
