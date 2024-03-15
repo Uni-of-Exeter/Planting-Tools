@@ -193,7 +193,7 @@ UnitPolygonColours<-1
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
 
-ElicitatorAppFolder<-"./ElicitatorOutput/"
+ElicitatorAppFolder <- paste0(Sys.getenv("USERPROFILE"), "\\Downloads\\")
 JulesAppFolder<-"./JulesOP/"
 
 
