@@ -617,7 +617,8 @@ outputmap_calculateMats <- function(input,
   tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
               colMeans(speciesMat) / 50,
               mean(SelectedSimMat2$Area) / 50,
-              SelectedSimMat2$Visits / 50)
+              mean(SelectedSimMat2$Visits)) / 50)
+  for(fgh in 1:length(tolvec)){if(tolvec[i])==0){tolvec[i]<-0.1}}                          
   # tolVec <- c(4, 0.05, 0.1, 2)
   Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
                      TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
