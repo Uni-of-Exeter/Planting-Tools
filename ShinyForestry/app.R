@@ -453,6 +453,9 @@ N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
 
+
+
+                                 
 # slider_list <- list(
 #   sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25)
 # )
@@ -474,6 +477,9 @@ verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (20
                            list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
                            list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
 
+JulesMean<-0;JulesSD<-0;SquaresLoad<-0;Sqconv<-0;CorrespondenceJules<-0;seer2km<-0;jncc100<-0;speciesprob40<-0;climatecells<-0;
+gc()
+                                
 
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
