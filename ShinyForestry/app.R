@@ -422,7 +422,7 @@ ConvertSample<-sample(1:5000,200)
 
 while(
   inherits(suppressWarnings(try(
-    outcomes <- rjson::fromJSON(file = "ElicitatorOutput/outcomes.json")
+      outcomes <- rjson::fromJSON(file = paste0(ElicitatorAppFolder,"outcomes.json") )
     ,silent=T)), "try-error")
 ){Sys.sleep(1)}
 cat(paste0("File loaded, processing... \n" ))
@@ -435,10 +435,17 @@ if (length(SPECIES_ENGLISH) == 0) {
   SPECIES_ENGLISH <- "All"
 }
 # Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
-groups <- base::intersect(SPECIES_ENGLISH, c(unique(name_conversion$Group), "All"))
+#groups <- base::intersect(SPECIES_ENGLISH, c(unique(name_conversion$Group), "All"))
+#indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
+#SPECIES <- c(name_conversion[indices_species_english_in_name_conversion, "Specie"],
+ #            groups)
+
+indices_groups_english_in_name_conversion<-which(SPECIES_ENGLISH %in%  c(unique(name_conversion$Group), "All"))
+indices_species_in_vec<-which(SPECIES_ENGLISH %in% name_conversion$English_specie )
 indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
-SPECIES <- c(name_conversion[indices_species_english_in_name_conversion, "Specie"],
-             groups)
+SPECIES<-SPECIES_ENGLISH
+SPECIES[indices_species_in_vec] <- name_conversion[indices_species_english_in_name_conversion, "Specie"]
+                                 
 
 # SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinators", "All")
 # SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinators", "All")
@@ -605,8 +612,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   ColorLighteningFactor<-reactiveVal(0.5)
   ColorDarkeningFactor<-reactiveVal(0.5)
-  
-  ColourScheme<-reactiveVal("Viridis darkened/red")
+
+    ColourScheme<-reactiveVal("blue/red")
+#  ColourScheme<-reactiveVal("Viridis darkened/red")
  # observeEvent(input$Darken,{
 #    ColorDarkeningFactor(input$Darken/100)
 #  })
