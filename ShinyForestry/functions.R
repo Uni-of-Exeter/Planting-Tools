@@ -78,6 +78,12 @@ normalize <- function(x) {
 
 # Implausibility
 Impl <- function(Target,EY,SDY,alpha,tol) {
+  # Avoid division by 0
+  if (0 %in% SDY^2+tol) {
+    idx <- which(SDY^2+tol == 0)
+    tol[idx] <- 0.1
+  }
+  
   Im<-(Target-EY)/sqrt(SDY^2+tol)
   # Not Ruled-Out space Yet
   NROY<-(Im<=sqrt((1-alpha)/alpha))
@@ -85,6 +91,12 @@ Impl <- function(Target,EY,SDY,alpha,tol) {
 }
 
 MultiImpl <- function(TargetsVec,EYMat,SDYMat,alpha,tolVec) {
+  # Avoid tolVec values equal to 0
+  if (0 %in% tolVec) {
+    idx = which(tolVec == 0)
+    tolVec[idx] <- 0.1
+  }
+  
   IVEC<-matrix(0,dim(EYMat)[1],length(TargetsVec))
   for(ii in 1:length(TargetsVec))
   {
@@ -617,13 +629,12 @@ outputmap_calculateMats <- function(input,
   tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
               colMeans(speciesMat) / 50,
               mean(SelectedSimMat2$Area) / 50,
-              mean(SelectedSimMat2$Visits)/ 50
-             ) 
+              mean(SelectedSimMat2$Visits) / 50)
   for(i in 1:length(tolvec)) {
     if (tolvec[i] == 0) {
       tolvec[i] <- 0.1
     }
-  }                 
+  }
   # tolVec <- c(4, 0.05, 0.1, 2)
   Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
                      TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
@@ -805,26 +816,28 @@ subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST
   SubsetMeetTargets <- data.frame()
   for (i in 1:nrow(targets_met)) {
     combination <- targets_met[i, ]
-    SubsetMeetTargets <- rbind(SubsetMeetTargets,
-                               data.frame(SelectedSimMat2[CONDPROBAPositiveLIST[[i]], ],
-                                          Met = rep(paste(TARGETS[combination], collapse = ","),
-                                                    sum(CONDPROBAPositiveLIST[[i]])),
-                                          NotMet = rep(paste(TARGETS[-combination], collapse = ","),
-                                                       sum(CONDPROBAPositiveLIST[[i]]))))
+    if (length(CONDPROBAPositiveLIST[[i]]) != 0) {
+      SubsetMeetTargets <- rbind(SubsetMeetTargets,
+                                 data.frame(SelectedSimMat2[CONDPROBAPositiveLIST[[i]], ],
+                                            Met = rep(paste(TARGETS[combination], collapse = ","),
+                                                      sum(CONDPROBAPositiveLIST[[i]])),
+                                            NotMet = rep(paste(TARGETS[-combination], collapse = ","),
+                                                         sum(CONDPROBAPositiveLIST[[i]]))))
+    }
   }
   return(SubsetMeetTargets)
 }
 
-add_richness_columns <- function(FullTable, name_conversion) {
+add_richness_columns <- function(FullTable, NAME_CONVERSION) {
   # Convert from sf to tibble
   FullTable2 <- as_tibble(FullTable)
   # Add an artifical group for all species
-  unique_groups <- c(unique(name_conversion$Group), "All")
+  unique_groups <- c(unique(NAME_CONVERSION$Group), "All")
   for (group in unique_groups) {
     if (group == "All") {
-      species_in_group <- name_conversion$Specie
+      species_in_group <- NAME_CONVERSION$Specie
     } else {
-      species_in_group <- name_conversion[name_conversion$Group == group, "Specie"]
+      species_in_group <- NAME_CONVERSION[NAME_CONVERSION$Group == group, "Specie"]
     }
     colnames_to_find <- paste0("BioMean_", species_in_group)
     col_indices_of_group <- which(colnames(FullTable2) %in% colnames_to_find)
@@ -982,4 +995,75 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   FullTable <- FullTable %>% dplyr::select(-area_diff) %>% st_as_sf()
 
   return(FullTable)
+}
+
+get_pretty_specie <- function(ugly_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (ugly_specie %in% NAME_CONVERSION_ARG$Specie_pretty) return(usgly_specie)
+  idx <- which(NAME_CONVERSION_ARG$Specie == ugly_specie)
+  if (length(idx) == 0) return(ugly_specie)
+  result <- NAME_CONVERSION_ARG$Specie_pretty[idx]
+  return(result)
+}
+
+get_ugly_specie <- function(pretty_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (pretty_specie %in% NAME_CONVERSION_ARG$Specie) return(pretty_specie)
+  idx <- which(NAME_CONVERSION_ARG$Specie_pretty == pretty_specie)
+  if (length(idx) == 0) return(pretty_specie)
+  result <- NAME_CONVERSION_ARG$Specie[idx]
+  return(result)
+}
+
+get_pretty_group <- function(ugly_group, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (ugly_group %in% NAME_CONVERSION_ARG$Group_pretty) return(ugly_group)
+  idx <- which(NAME_CONVERSION_ARG$Group == ugly_group)
+  if (length(idx) == 0) return(ugly_group)
+  result <- NAME_CONVERSION_ARG$Group_pretty[idx[1]]
+  return(result)
+}
+
+get_ugly_group <- function(pretty_group, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (pretty_group %in% NAME_CONVERSION_ARG$Group) return(pretty_group)
+  idx <- which(NAME_CONVERSION_ARG$Group_pretty == pretty_group)
+  if (length(idx) == 0) return(pretty_group)
+  result <- NAME_CONVERSION_ARG$Group[idx[1]]
+  return(result)
+}
+ 
+get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
+  idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
+  if (length(idx) == 0) return(ugly_english_specie)
+  result <- NAME_CONVERSION_ARG$English_specie_pretty[idx]
+  return(result)
+}
+
+get_ugly_english_specie <- function(pretty_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (pretty_english_specie %in% NAME_CONVERSION_ARG$English_specie) return(pretty_english_specie)
+  idx <- which(NAME_CONVERSION_ARG$English_specie_pretty == pretty_english_specie)
+  if (length(idx) == 0) return(pretty_english_specie)
+  result <- NAME_CONVERSION_ARG$English_specie[idx]
+  return(result)
+}
+
+get_english_specie_from_specie <- function(specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (specie %in% NAME_CONVERSION_ARG$English_specie) return(specie)
+  idx <- which(NAME_CONVERSION_ARG$Specie == specie)
+  if (length(idx) == 0) return(specie)
+  result <- NAME_CONVERSION_ARG$English_specie[idx]
+  return(result)
+}
+
+get_specie_from_english_specie <- function(english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (english_specie %in% NAME_CONVERSION_ARG$Specie) return(english_specie)
+  idx <- which(NAME_CONVERSION_ARG$English_specie == english_specie)
+  if (length(idx) == 0) return(english_specie)
+  result <- NAME_CONVERSION_ARG$Specie[idx]
+  return(result)
+}
+
+get_group_from_specie <- function(specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  idx <- which(NAME_CONVERSION_ARG$Specie == specie)
+  if (length(idx) == 0) return(specie)
+  result <- NAME_CONVERSION_ARG$Group[idx]
+  return(result)
 }
