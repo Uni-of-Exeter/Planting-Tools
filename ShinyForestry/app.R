@@ -1362,10 +1362,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      "Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
                                      "</p>"), position = "topright")
           
-        } else { map<-map %>%
+        } 
+      } else { map<-map %>%
           addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
         }
-      }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
