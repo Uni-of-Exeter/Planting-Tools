@@ -1228,7 +1228,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           if(max(SelectedSimMat2[x]) != min(SelectedSimMat2[x])) {
             value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
           } else {
-            value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
+             if(max(SelectedSimMat2[x])!=0){ 
+            value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))}else{ value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) }
           }
           assign(var_name, value)
           DistSliderBioListDataframes[x] <- data.frame(x = value)
@@ -1248,9 +1249,15 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
         # SelecdMinRows<-which((DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits))
         # SelecdMinRows<-which((DistSliderCarbon+DistSliderBio1+DistSliderBio2+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio1+DistSliderBio2+DistSliderArea+DistSliderVisits))
-        SelecdMinRows<-which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
+        #SelecdMinRows<-which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
+        #SelectedMins<-SubsetMeetTargets[SelecdMinRows,]
+        #SelecRow<-which.min(rowSums(SelectedMins[1:length(SavedVec),]))
+        SUMM<-DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits
+        SelecdMinRows<-which(SUMM==min(SUMM))
         SelectedMins<-SubsetMeetTargets[SelecdMinRows,]
-        SelecRow<-which.min(rowSums(SelectedMins[1:length(SavedVec),]))
+        SelecRow<-which.min(rowSums(SelectedMins[,1:length(SavedVec)]))
+        
+        
         SwitchedOnCells<-SelectedMins[SelecRow,1:length(SavedVec)]
         
         SELL<-(FullTable$extent==SelectedDropdown)
