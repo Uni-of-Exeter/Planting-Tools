@@ -316,11 +316,27 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
     
     SelJulesMeans<-SelectedJulesMeanSq$mean337[SELLSqs]
     SelJulesSDs<-SelectedJulesSDSq$sd337[SELLSqs]
+    if(length(SelJulesMeans)>1){
     SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
-    
     FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
     FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
     FullTable$area[ii]<-sum(SELLWeights)
+      }else{
+        if(length(SelJulesMeans)==1){
+         SimuArr<-rnorm(NBSIMS,mean=SelJulesMeans,sd=SelJulesSDs)
+        FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
+        FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
+        FullTable$area[ii]<-sum(SELLWeights)
+
+          }else{
+            FullTable$JulesMean[ii]<-0
+            FullTable$JulesSD[ii]<-0
+            FullTable$area[ii]<-sum(SELLWeights)
+
+          }
+
+      
+      }
   }
   
   # Replace Biodiversity columns with correct ones
