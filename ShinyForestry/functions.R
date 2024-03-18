@@ -214,7 +214,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
                    lng2 = max_x2, lat2 =max_y2) 
     
   }  
-          map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth)
+          map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
     
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
@@ -617,7 +617,12 @@ outputmap_calculateMats <- function(input,
   tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
               colMeans(speciesMat) / 50,
               mean(SelectedSimMat2$Area) / 50,
-              SelectedSimMat2$Visits / 50)
+              mean(SelectedSimMat2$Visits)) / 50)
+  for(i in 1:length(tolvec)) {
+    if (tolvec[i] == 0) {
+      tolvec[i] <- 0.1
+    }
+  }                 
   # tolVec <- c(4, 0.05, 0.1, 2)
   Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
                      TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
@@ -777,12 +782,12 @@ check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
     condition <- rep(TRUE, nrow(PROBAMAT))
     for (j in 1:n_metrics) {
       if (j %in% combinations[i, ]) {
-        condition <- condition & PROBAMAT[, j] >= target
+        condition <- condition & (PROBAMAT[, j] >= target)
       } else {
-        condition <- condition & PROBAMAT[, j] < target
+        condition <- condition & (PROBAMAT[, j] < target)
       }
     }
-    prob_list <- c(prob_list, list(condition))
+    prob_list[[i]] <- condition
   }
   if (length(prob_list) == 1) {
     prob_list <- unlist(prob_list)
@@ -794,7 +799,7 @@ check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
 subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST, TARGETS, nb_targets_met) {
   n_metrics <- ncol(PROBAMAT)
   targets_met <- t(combn(n_metrics, nb_targets_met))
-  targets_met <- targets_met[nrow(targets_met):1, ]
+  targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
   
   SubsetMeetTargets <- data.frame()
   for (i in 1:nrow(targets_met)) {
