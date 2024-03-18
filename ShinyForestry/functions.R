@@ -617,7 +617,8 @@ outputmap_calculateMats <- function(input,
   tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
               colMeans(speciesMat) / 50,
               mean(SelectedSimMat2$Area) / 50,
-              mean(SelectedSimMat2$Visits)) / 50)
+              mean(SelectedSimMat2$Visits)/ 50
+             ) 
   for(i in 1:length(tolvec)) {
     if (tolvec[i] == 0) {
       tolvec[i] <- 0.1
