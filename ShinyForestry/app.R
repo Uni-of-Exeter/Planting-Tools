@@ -1229,7 +1229,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
           } else {
              if(max(SelectedSimMat2[x])!=0){ 
-            value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))}else{ value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) }
+            value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
+             } else {
+               value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
+             }
           }
           assign(var_name, value)
           DistSliderBioListDataframes[x] <- data.frame(x = value)
