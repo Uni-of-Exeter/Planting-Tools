@@ -226,7 +226,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
                    lng2 = max_x2, lat2 =max_y2) 
     
   }  
-          map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth)
+          map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
     
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
@@ -634,7 +634,7 @@ outputmap_calculateMats <- function(input,
     if (tolvec[i] == 0) {
       tolvec[i] <- 0.1
     }
-  }      
+  }
   # tolVec <- c(4, 0.05, 0.1, 2)
   Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
                      TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),

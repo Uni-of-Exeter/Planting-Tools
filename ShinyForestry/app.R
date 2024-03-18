@@ -200,7 +200,7 @@ UnitPolygonColours<-1
 
 
 ElicitatorAppFolder <- paste0(Sys.getenv("USERPROFILE"), "\\Downloads\\")
-JulesAppFolder<-paste0(FolderSource, "./JulesOP/")
+JulesAppFolder<-paste0(FolderSource, "JulesOP/")
 
 
 
@@ -228,7 +228,6 @@ if(!file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){
   UnZipDirName<-paste0(substr(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"),1,nchar(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"))-4))
   dir.create(UnZipDirName)
   
-  
   while(
     inherits(suppressWarnings(try(
       unzip(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"), exdir = UnZipDirName)
@@ -240,9 +239,7 @@ if(!file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){
   if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
   st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
   
-  
-  
-}else{
+} else {
   shconv<-sf::st_read(paste0(ElicitatorAppFolder,"Parcels.geojson"))
 }
 
@@ -261,9 +258,6 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
       ,silent=T)), "try-error")
   ){Sys.sleep(1)}
   cat(paste0("File loaded, processing... \n" ))
-  
-  
-  
   
   Uni<-unique(AllUnits)
   FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1,length(Uni)),
@@ -284,8 +278,6 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
   
   FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
   ############################################ Replace the Jules Mean here
-  
-  
   
   keptLines<-sort(which(as.numeric(summary(sf::st_intersects(Sqconv,shconv))[,1])!=0))
   
@@ -322,11 +314,24 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
     
     SelJulesMeans<-SelectedJulesMeanSq$mean337[SELLSqs]
     SelJulesSDs<-SelectedJulesSDSq$sd337[SELLSqs]
-    SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
     
-    FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
-    FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
-    FullTable$area[ii]<-sum(SELLWeights)
+    if(length(SelJulesMeans)>1){
+      SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
+      FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
+      FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
+      FullTable$area[ii]<-sum(SELLWeights)
+    } else {
+      if(length(SelJulesMeans)==1){
+        SimuArr<-rnorm(NBSIMS,mean=SelJulesMeans,sd=SelJulesSDs)
+        FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
+        FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
+        FullTable$area[ii]<-sum(SELLWeights)
+      } else {
+        FullTable$JulesMean[ii]<-0
+        FullTable$JulesSD[ii]<-0
+        FullTable$area[ii]<-sum(SELLWeights)
+      }
+    }
   }
   
   # Replace Biodiversity columns with correct ones
@@ -338,16 +343,15 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
   # Add richness columns
   FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
-  
   #######################################
   st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
   
   FullTableNotAvail<-data.frame(extent=NULL)
   st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
   
-  
-}else{  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
-FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
+} else {
+  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+  FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
 }
 
 
@@ -449,15 +453,21 @@ if (length(SPECIES_ENGLISH) == 0) {
 #SPECIES <- c(NAME_CONVERSION[indices_species_english_in_NAME_CONVERSION, "Specie"],
 #            groups)
 
+# indices_groups_english_in_name_conversion<-which(SPECIES_ENGLISH %in%  c(unique(name_conversion$Group), "All"))
+# indices_species_in_vec<-which(SPECIES_ENGLISH %in% name_conversion$English_specie )
+# indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
+# SPECIES<-SPECIES_ENGLISH
+# SPECIES[indices_species_in_vec] <- name_conversion[indices_species_english_in_name_conversion, "Specie"]
+
 SPECIES <- SPECIES_ENGLISH
 for (i in 1:length(SPECIES_ENGLISH)) {
-  ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i])
+  ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
   # If it is a group
   if (ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All")) {
-    SPECIES[i] <- get_ugly_group(ugly_english_specie)
+    SPECIES[i] <- get_ugly_group(ugly_english_specie, NAME_CONVERSION)
   } else {
     # If it is a specie
-    SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie)
+    SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
   }
 }
 
@@ -473,8 +483,6 @@ for (i in 1:length(SPECIES_ENGLISH)) {
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
-
-source(paste0(FolderSource, "functions.R"))
 
 # slider_list <- list(
 #   sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25)
@@ -508,6 +516,9 @@ verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (20
                            }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
                            list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
                            list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
+
+JulesMean<-0;JulesSD<-0;SquaresLoad<-0;Sqconv<-0;CorrespondenceJules<-0;seer2km<-0;jncc100<-0;speciesprob40<-0;climatecells<-0;
+gc()
 
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
@@ -638,7 +649,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     for (i in 1:length(SPECIES)) {
       specie_english <- SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
-      text <- paste0(text, "\n", get_pretty_english_specie(specie_english), ": ", as.numeric(BioSliderValSpecie()))
+      text <- paste0(text, "\n", get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", as.numeric(BioSliderValSpecie()))
     }
     
     text <- paste0(text,
@@ -1018,7 +1029,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             specie_english <- get_ugly_english_specie(SPECIES_ENGLISH[i])
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-            addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+            addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
           listMaps[[aai]] <- listMaps[[aai]]%>%
@@ -1243,7 +1254,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           if(max(SelectedSimMat2[x]) != min(SelectedSimMat2[x])) {
             value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
           } else {
+             if(max(SelectedSimMat2[x])!=0){ 
             value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
+             } else {
+               value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
+             }
           }
           assign(var_name, value)
           DistSliderBioListDataframes[x] <- data.frame(x = value)
@@ -1263,9 +1278,23 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
         # SelecdMinRows<-which((DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio+DistSliderArea+DistSliderVisits))
         # SelecdMinRows<-which((DistSliderCarbon+DistSliderBio1+DistSliderBio2+DistSliderArea+DistSliderVisits)==min(DistSliderCarbon+DistSliderBio1+DistSliderBio2+DistSliderArea+DistSliderVisits))
-        SelecdMinRows<-which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
+        #SelecdMinRows<-which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
+        #SelectedMins<-SubsetMeetTargets[SelecdMinRows,]
+        #SelecRow<-which.min(rowSums(SelectedMins[1:length(SavedVec),]))
+        SUMM<-DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits
+        SelecdMinRows<-which(SUMM==min(SUMM))
         SelectedMins<-SubsetMeetTargets[SelecdMinRows,]
-        SelecRow<-which.min(rowSums(SelectedMins[1:length(SavedVec),]))
+        
+        # If it is a vector, i.e. only 1 unit is available
+        if (length(SavedVec) == 1) {
+          result <- SelectedMins[,1]
+        } else {
+          # If it is a data frame
+          result <- rowSums(SelectedMins[,1:length(SavedVec)])
+        }
+        SelecRow<-which.min(result)
+        
+        
         SwitchedOnCells<-SelectedMins[SelecRow,1:length(SavedVec)]
         
         SELL<-(FullTable$extent==SelectedDropdown)
