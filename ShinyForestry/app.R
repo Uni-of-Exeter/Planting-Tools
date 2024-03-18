@@ -1025,8 +1025,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
-            specie_latin <- get_ugly_specie(SPECIES[i])
-            specie_english <- get_ugly_english_specie(SPECIES_ENGLISH[i])
+            specie_latin <- get_ugly_specie(SPECIES[i], NAME_CONVERSION)
+            specie_english <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1218,7 +1218,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         value <- tmp[[var_name]]
         assign(var_name, value)
         
-        condition <- condition & SelectedSimMat2[[x]] >= value
+        condition <- condition & (SelectedSimMat2[[x]] >= value)
       }
       SelecTargetArea <- tmp$SelecTargetArea
       SelecTargetVisits <- tmp$SelecTargetVisits
