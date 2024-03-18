@@ -33,18 +33,18 @@ library(lwgeom)
 library(mvtnorm)
 library(dplyr)
 # if (!require("prefeR")) {
-  # install.packages("prefeR", lib = "/RPackages")
-  # detach("package:prefeR", unload = TRUE)
-  # loadNamespace("prefeR")
+# install.packages("prefeR", lib = "/RPackages")
+# detach("package:prefeR", unload = TRUE)
+# loadNamespace("prefeR")
 # }
 # packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2", "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn", "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite", "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm", "GGally")
 # if(!all( packages %in% (.packages()) )) {
-  # for(pkg in packages) {
-    # if( !require(pkg, character.only = TRUE) ) {
-      # install.packages(pkg, lib = "/RPackages")
-      # library(pkg, character.only = TRUE)
-    # }
-  # }
+# for(pkg in packages) {
+# if( !require(pkg, character.only = TRUE) ) {
+# install.packages(pkg, lib = "/RPackages")
+# library(pkg, character.only = TRUE)
+# }
+# }
 # }
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
@@ -59,7 +59,7 @@ source(paste0(FolderSource, "functions.R"))
 # english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
 # english_species_names <- add_suffix_to_duplicates(english_species_names)
 
-name_conversion <- matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll",
+NAME_CONVERSION <- matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll",
                                    "Birds", "Alauda arvensis", "Skylark",
                                    "Birds", "Anthus trivialis", "Tree Pipit",
                                    "Birds", "Botaurus stellaris", "Bittern",
@@ -160,15 +160,15 @@ name_conversion <- matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll"
                                    "Vascular plants", "Trifolium striatum", "Knotted Clover",
                                    "Vascular plants", "Vaccinium microcarpum", "Small Cranberry"),
                           ncol = 3, byrow = TRUE)
-name_conversion <- data.frame(Specie = name_conversion[, 2],
-                              English_specie = add_suffix_to_duplicates(name_conversion[, 3]),
-                              Group = name_conversion[, 1])
+NAME_CONVERSION <- data.frame(Specie = NAME_CONVERSION[, 2],
+                              English_specie = add_suffix_to_duplicates(NAME_CONVERSION[, 3]),
+                              Group = NAME_CONVERSION[, 1])
 # Replace Invertebrate - bees/beetles/butterflies/crickets/moths by Pollinators
 # Crashes on the server for some reason, so we use data.frames instead
 # dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinators",
 # .default = Group)) %>%
-indices <- grep("bees|beetles|butterflys|crickets|moths", name_conversion$Group)
-name_conversion[indices, "Group"] <- "Pollinators"
+indices <- grep("bees|beetles|butterflys|crickets|moths", NAME_CONVERSION$Group)
+NAME_CONVERSION[indices, "Group"] <- "Pollinators"
 # dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bees" ~ "Pollinators",
 #                                        Group == "Invertebrate - beetles" ~ "Pollinators",
 #                                        Group == "Invertebrate - butterflys" ~ "Pollinators",
@@ -176,15 +176,21 @@ name_conversion[indices, "Group"] <- "Pollinators"
 #                                        Group == "Invertebrate - moths" ~ "Pollinators",
 #                                        .default = Group)) %>%
 # Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
-name_conversion <- name_conversion %>%
-  dplyr::mutate(Specie = gsub(" |-", "_", Specie)) %>%
+NAME_CONVERSION <- NAME_CONVERSION %>%
+  dplyr::mutate(Specie_pretty = Specie,
+                Group_pretty = Group,
+                English_specie_pretty = English_specie,
+                Specie = gsub(" |-", "_", Specie),
+                English_specie = gsub(" |-", "_", English_specie),
+                Group = gsub(" - ", "_", Group)) %>%
+  dplyr::mutate(Group = gsub(" ", "_", Group)) %>%
   # Sort by Specie
   dplyr::arrange(Specie)
 # Swap rows 83 and 84
-row83 <- name_conversion[83, ]
-row84 <- name_conversion[84, ]
-name_conversion[83, ] <- row84
-name_conversion[84, ] <- row83
+row83 <- NAME_CONVERSION[83, ]
+row84 <- NAME_CONVERSION[84, ]
+NAME_CONVERSION[83, ] <- row84
+NAME_CONVERSION[84, ] <- row83
 
 
 GreyPolygonWidth<-1
@@ -194,7 +200,7 @@ UnitPolygonColours<-1
 
 
 ElicitatorAppFolder <- paste0(Sys.getenv("USERPROFILE"), "\\Downloads\\")
-JulesAppFolder<-"./JulesOP/"
+JulesAppFolder<-paste0(FolderSource, "JulesOP/")
 
 
 
@@ -217,11 +223,10 @@ while(
 ){Sys.sleep(5)}
 
 if(!file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){
-
+  
   cat(paste0("File land_parcels.shp.zip found in folder ", ElicitatorAppFolder,". Trying to load file \n" ))
   UnZipDirName<-paste0(substr(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"),1,nchar(paste0(ElicitatorAppFolder,"land_parcels.shp.zip"))-4))
   dir.create(UnZipDirName)
-  
   
   while(
     inherits(suppressWarnings(try(
@@ -233,10 +238,8 @@ if(!file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){
   shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
   if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
   st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
-
   
-  
-}else{
+} else {
   shconv<-sf::st_read(paste0(ElicitatorAppFolder,"Parcels.geojson"))
 }
 
@@ -248,16 +251,13 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
   sf_use_s2(FALSE)
   lsh<-dim(shconv)[1]
   cat(paste0("File decision_units.json found in folder ", ElicitatorAppFolder,". Trying to load file \n" ))
-
-   while(
+  
+  while(
     inherits(suppressWarnings(try(
       AllUnits<- rjson::fromJSON(file=paste0(ElicitatorAppFolder,"decision_units.json"))$decision_unit_ids
       ,silent=T)), "try-error")
   ){Sys.sleep(1)}
   cat(paste0("File loaded, processing... \n" ))
-  
-    
-  
   
   Uni<-unique(AllUnits)
   FullTab<-data.frame(extent="NoExtent",x=rep(0,length(Uni)),y=rep(0,length(Uni)),area=rep(1,length(Uni)),
@@ -278,8 +278,6 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
   
   FullTable <- st_sf(FullTab,geometry=do.call(c,MER),crs=4326)
   ############################################ Replace the Jules Mean here
-  
- 
   
   keptLines<-sort(which(as.numeric(summary(sf::st_intersects(Sqconv,shconv))[,1])!=0))
   
@@ -316,27 +314,24 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
     
     SelJulesMeans<-SelectedJulesMeanSq$mean337[SELLSqs]
     SelJulesSDs<-SelectedJulesSDSq$sd337[SELLSqs]
+    
     if(length(SelJulesMeans)>1){
-    SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
-    FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
-    FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
-    FullTable$area[ii]<-sum(SELLWeights)
-      }else{
-        if(length(SelJulesMeans)==1){
-         SimuArr<-rnorm(NBSIMS,mean=SelJulesMeans,sd=SelJulesSDs)
+      SimuArr<-rmvnorm(NBSIMS,mean=SelJulesMeans,sigma=diag(SelJulesSDs^2))
+      FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
+      FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
+      FullTable$area[ii]<-sum(SELLWeights)
+    } else {
+      if(length(SelJulesMeans)==1){
+        SimuArr<-rnorm(NBSIMS,mean=SelJulesMeans,sd=SelJulesSDs)
         FullTable$JulesMean[ii]<-sum(colMeans(SimuArr*SellWeightsArr))
         FullTable$JulesSD[ii]<-sd(rowSums(SimuArr*SellWeightsArr))
         FullTable$area[ii]<-sum(SELLWeights)
-
-          }else{
-            FullTable$JulesMean[ii]<-0
-            FullTable$JulesSD[ii]<-0
-            FullTable$area[ii]<-sum(SELLWeights)
-
-          }
-
-      
+      } else {
+        FullTable$JulesMean[ii]<-0
+        FullTable$JulesSD[ii]<-0
+        FullTable$area[ii]<-sum(SELLWeights)
       }
+    }
   }
   
   # Replace Biodiversity columns with correct ones
@@ -344,11 +339,9 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
                                                                               speciesprob40=speciesprob40,
                                                                               seer2km=seer2km,
                                                                               jncc100=jncc100,
-                                                                              climatecells=climatecells
-  )
+                                                                              climatecells=climatecells)
   # Add richness columns
-  FullTable <- add_richness_columns(FullTable = FullTable, name_conversion = name_conversion) %>% st_as_sf()
-  
+  FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
   #######################################
   st_write(FullTable,paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
@@ -356,9 +349,9 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
   FullTableNotAvail<-data.frame(extent=NULL)
   st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
   
-
-}else{  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
-FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
+} else {
+  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+  FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
 }
 
 
@@ -388,7 +381,7 @@ for (aaa in 1:NSamp)
   RandSamp<-rmultinom(length(Uniqunits),1,c(pp,1-pp))[1,]
   for(bbb in 1:length(Uniqunits)){
     simul636[aaa,FullTable$units==Uniqunits[bbb]]<-RandSamp[bbb]  
-    }
+  }
 }
 
 cat(paste0("Waiting for file outcomes.json in folder ", ElicitatorAppFolder,"\n" ))
@@ -398,23 +391,23 @@ cat(paste0("File outcomes.json found in folder ", ElicitatorAppFolder,".  Trying
 
 # # Move rows from FullTableNotAvail to FullTable with blank data
 # FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
-                                                   # "id" = id,
-                                                   # "area" = 1,
-                                                   # x = lgn.1,
-                                                   # y = lat.1,
-                                                   # xbgn = 0,
-                                                   # ybgn = 0,
-                                                   # lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
-                                                   # JulesMean=0,JulesSD=0,
-                                                   # VisitsMean=0,VisitsSD=0)) %>%
-  # mutate(across(x:lat.5, as.numeric)) %>% 
-  # mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
+# "id" = id,
+# "area" = 1,
+# x = lgn.1,
+# y = lat.1,
+# xbgn = 0,
+# ybgn = 0,
+# lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3=lgn.3,lgn.4=lgn.4,lgn.5=lgn.5,lat.1=lat.1,lat.2=lat.2,lat.3=lat.3,lat.4=lat.4,lat.5=lat.5,
+# JulesMean=0,JulesSD=0,
+# VisitsMean=0,VisitsSD=0)) %>%
+# mutate(across(x:lat.5, as.numeric)) %>% 
+# mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
 
 # cols <- colnames(FullTable)
 # FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
 # FullTableAdd <- FullTableAdd[, cols]
 # FullTableAdd$xybgn <- 1
-# rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", name_conversion[1, "Specie"])]))
+# rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", NAME_CONVERSION[1, "Specie"])]))
 # # Check which columns contain NA values
 # columns_with_na <- colSums(is.na(FullTableAdd))
 # colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
@@ -438,64 +431,94 @@ ConvertSample<-sample(1:5000,200)
 
 while(
   inherits(suppressWarnings(try(
-      outcomes <- rjson::fromJSON(file = paste0(ElicitatorAppFolder,"outcomes.json") )
+    outcomes <- rjson::fromJSON(file = paste0(ElicitatorAppFolder,"outcomes.json") )
     ,silent=T)), "try-error")
 ){Sys.sleep(1)}
 cat(paste0("File loaded, processing... \n" ))
 
-
 outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
 SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
+
+# SPECIES_ENGLISH <- c("Pollinators", "Reed Bunting", "Lapwing", "Invertebrate - snails")
+# c("Pollinators", "Herptiles")
+# SPECIES_ENGLISH <- unique(NAME_CONVERSION$Group_pretty)[c(2,7)]
+
 # Default specie and group
 if (length(SPECIES_ENGLISH) == 0) {
   SPECIES_ENGLISH <- "All"
 }
 # Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
-#groups <- base::intersect(SPECIES_ENGLISH, c(unique(name_conversion$Group), "All"))
-#indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
-#SPECIES <- c(name_conversion[indices_species_english_in_name_conversion, "Specie"],
- #            groups)
+#groups <- base::intersect(SPECIES_ENGLISH, c(unique(NAME_CONVERSION$Group), "All"))
+#indices_species_english_in_NAME_CONVERSION <- which(NAME_CONVERSION$English_specie %in% SPECIES_ENGLISH)
+#SPECIES <- c(NAME_CONVERSION[indices_species_english_in_NAME_CONVERSION, "Specie"],
+#            groups)
 
-indices_groups_english_in_name_conversion<-which(SPECIES_ENGLISH %in%  c(unique(name_conversion$Group), "All"))
-indices_species_in_vec<-which(SPECIES_ENGLISH %in% name_conversion$English_specie )
-indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
-SPECIES<-SPECIES_ENGLISH
-SPECIES[indices_species_in_vec] <- name_conversion[indices_species_english_in_name_conversion, "Specie"]
-                                 
+# indices_groups_english_in_name_conversion<-which(SPECIES_ENGLISH %in%  c(unique(name_conversion$Group), "All"))
+# indices_species_in_vec<-which(SPECIES_ENGLISH %in% name_conversion$English_specie )
+# indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
+# SPECIES<-SPECIES_ENGLISH
+# SPECIES[indices_species_in_vec] <- name_conversion[indices_species_english_in_name_conversion, "Specie"]
 
-# SPECIES <- c(name_conversion[1:2, "Specie"], "Pollinators", "All")
-# SPECIES_ENGLISH <- c(name_conversion[1:2, "English_specie"], "Pollinators", "All")
+SPECIES <- SPECIES_ENGLISH
+for (i in 1:length(SPECIES_ENGLISH)) {
+  ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
+  # If it is a group
+  if (ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All")) {
+    SPECIES[i] <- get_ugly_group(ugly_english_specie, NAME_CONVERSION)
+  } else {
+    # If it is a specie
+    SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
+  }
+}
+
+# indices_groups_english_in_NAME_CONVERSION <- which(SPECIES_ENGLISH %in% c(unique(NAME_CONVERSION$Group), "All"))
+# indices_species_in_NAME_CONVERSION <- which(SPECIES_ENGLISH %in% NAME_CONVERSION$English_specie)
+# indices_NAME_CONVERSION_in_species_english <- which(NAME_CONVERSION$English_specie %in% SPECIES_ENGLISH)
+# SPECIES <- SPECIES_ENGLISH
+# SPECIES[indices_species_in_NAME_CONVERSION] <- NAME_CONVERSION[indices_NAME_CONVERSION_in_species_english, "Specie"]
+
+
+# SPECIES <- c(NAME_CONVERSION[1:2, "Specie"], "Pollinators", "All")
+# SPECIES_ENGLISH <- c(NAME_CONVERSION[1:2, "English_specie"], "Pollinators", "All")
 N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
 
-
-
-                                 
 # slider_list <- list(
 #   sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25)
 # )
 # Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
 
 verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
-                           lapply(SPECIES, function(x, fulltable) {
+                           lapply(SPECIES, function(x, fulltable, NAME_CONVERSION_ARG) {
+                             NAME_CONVERSION <- NAME_CONVERSION_ARG
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
                              # value <- round(max_specie / 2)
                              max_specie <- 36
                              value <- 1
-                             return(bquote(sliderInput(paste0("BioSlider", .(x)), 
-                                                       if (.(x) %in% name_conversion$Group || .(x) == "All") paste0("Species Richness (", .(x), ")") else paste(name_conversion[which(name_conversion$Specie == .(x)), "English_specie"], "Presence (%):"),
+                             
+                             # If it is a group
+                             if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
+                               text <- paste0("Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
+                             } else {
+                               # If it is a specie
+                               text <- get_english_specie_from_specie(x, NAME_CONVERSION)
+                               text <- get_pretty_english_specie(text, NAME_CONVERSION)
+                               text <- paste(text, "Presence (%):")
+                             }
+                             
+                             return(bquote(sliderInput(paste0("BioSlider", .(x)),
+                                                       .(text),
                                                        min = 0,
                                                        max = .(max_specie),
                                                        value = .(value),
                                                        step = 0.5)))
-                           }, fulltable = FullTable),
+                           }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
                            list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
                            list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
 
 JulesMean<-0;JulesSD<-0;SquaresLoad<-0;Sqconv<-0;CorrespondenceJules<-0;seer2km<-0;jncc100<-0;speciesprob40<-0;climatecells<-0;
 gc()
-                                
 
 ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                          tabPanel("Maps",fluidPage(fluidRow(
@@ -504,10 +527,10 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   #tags$style("#inSelect {color: white; background-color: transparent; border: white;}"),
                                                   selectInput("inSelect", "area",sort(unique(c(FullTable$extent,FullTableNotAvail$extent))),FullTable$extent[1]),
                                                   #fluidRow(column(4,selectInput("ColourScheme","Colour Scheme",c("blue/red","rainbow dark/light",
-                                                   #                                                              "rainbow dark/red",
-                                                    #                                                             "Terrain darkened/lightened",
-                                                     #                                                            "Terrain darkened/red",
-                                                      #                                                           "Viridis darkened/red"))),
+                                                  #                                                              "rainbow dark/red",
+                                                  #                                                             "Terrain darkened/lightened",
+                                                  #                                                            "Terrain darkened/red",
+                                                  #                                                           "Viridis darkened/red"))),
                                                   #column(4,sliderInput("Darken","Darkening Factor:",min=-100,max=100,value=70)),
                                                   #column(4,sliderInput("Lighten","Lightening Factor:",min=-100,max=100,value=50))),
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
@@ -519,7 +542,7 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   #                sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))
                                                   do.call("verticalLayout",
                                                           verticalLayout_params)
-                                                  ))
+                                           ))
                                          )
                                          ),
                                          tabPanel("Exploration",
@@ -565,14 +588,16 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   ))
 ))
 
-server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS) {
+server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
+                   NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
   N_TARGETS <- N_TARGETS_ARG1
+  NAME_CONVERSION <- NAME_CONVERSION_ARG1
   
   CarbonSliderVal<- reactive({input$SliderMain})
-
+  
   # bioSliderVal<- reactive({input$BioSlider})
   # Add BioSliderValSPECIE <- reactive({input$BioSliderSPECIE}) for each specie
   # for (x in SPECIES) {
@@ -593,7 +618,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   })
   AreaSliderVal<- reactive({input$AreaSlider})
   VisitsSliderVal<- reactive({input$VisitsSlider})
-
+  
   Text1<-reactiveVal("")
   Text2<-reactiveVal("")
   Text3<-reactiveVal("")
@@ -605,11 +630,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   #   assign(var_name, value)
   # }
   
-  output$TargetText<-renderText({
+  output$TargetText <- renderText({
     SPECIES <- SPECIES_ARG1
     SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
     N_SPECIES <- length(SPECIES)
     N_TARGETS <- N_TARGETS_ARG1
+    NAME_CONVERSION <- NAME_CONVERSION_ARG1
     
     text <- paste0("Targets:\n",
                    "Tree Carbon: ", as.numeric(CarbonSliderVal()))
@@ -623,9 +649,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     for (i in 1:length(SPECIES)) {
       specie_english <- SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
-      text <- paste0(text, "\n", specie_english, ": ", as.numeric(BioSliderValSpecie()))
+      text <- paste0(text, "\n", get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", as.numeric(BioSliderValSpecie()))
     }
-
+    
     text <- paste0(text,
                    # "\nRed Squirrel: ",as.numeric(bioSliderVal()),
                    "\nArea Planted: ", as.numeric(AreaSliderVal()),
@@ -634,16 +660,16 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   ColorLighteningFactor<-reactiveVal(0.5)
   ColorDarkeningFactor<-reactiveVal(0.5)
-
-    ColourScheme<-reactiveVal("blue/red")
-#  ColourScheme<-reactiveVal("Viridis darkened/red")
- # observeEvent(input$Darken,{
-#    ColorDarkeningFactor(input$Darken/100)
-#  })
- # observeEvent(input$Lighten,{
-#    ColorLighteningFactor(input$Lighten/100)
-#  })
-    
+  
+  ColourScheme<-reactiveVal("blue/red")
+  #  ColourScheme<-reactiveVal("Viridis darkened/red")
+  # observeEvent(input$Darken,{
+  #    ColorDarkeningFactor(input$Darken/100)
+  #  })
+  # observeEvent(input$Lighten,{
+  #    ColorLighteningFactor(input$Lighten/100)
+  #  })
+  
   output$FirstMapTxt<-renderText({Text1()})
   output$SecondMapTxt<-renderText({Text2()})
   output$ThirdMapTxt<-renderText({Text3()})
@@ -684,15 +710,15 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   observe({
     Uni<-unique(FullTable$extent)
-    if(length(Uni)>1){  shinyjs::show("inSelect")}else{
-      
-      if (    unique(FullTable$extent)[1]=="NoExtent") {
+    if(length(Uni)>1) {
+      shinyjs::show("inSelect")
+    } else {
+      if (unique(FullTable$extent)[1]=="NoExtent") {
         shinyjs::hide("inSelect")
       } else {
         shinyjs::show("inSelect")
       }
     }
-   
   })
   
   
@@ -718,7 +744,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     VisitsSelectedSD0(NULL)
     
     SelectedSquares<-cbind(extent=FullTable$extent[FullTable$extent==SelectedDropdown])#,FullTable$lgn.1[FullTable$extent==SelectedDropdown],
-                        #   FullTable$lat.1[FullTable$extent==SelectedDropdown])
+    #   FullTable$lat.1[FullTable$extent==SelectedDropdown])
     
     if(!(dim(SelectedSquares)[1]==0)){
       AreaSelected<-FullTable$area[FullTable$extent==SelectedDropdown]
@@ -770,9 +796,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       # updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100,value=trunc(100*mean(RedSquirrelSelected))/100,step=0.01)
       for (x in SPECIES) {
         bioslider <- paste0("BioSlider", x)
-        species_names <- paste0(x, "Selected")
-        species_selected <- unlist(mget(species_names))
-        updateSliderInput(session, bioslider, max = trunc(mean(species_selected)),value=trunc(mean(species_selected)), step = 0.5)
+        specie_names <- paste0(x, "Selected")
+        specie_selected <- get(specie_names)
+        updateSliderInput(session, bioslider, max = trunc(mean(specie_selected)),value=trunc(mean(specie_selected)), step = 0.5)
       }
       updateSliderInput(session, "AreaSlider", max = trunc(100*sum(AreaSelected))/100,value=trunc(100*sum(AreaSelected))/100)
       updateSliderInput(session, "VisitsSlider", max = trunc(mean(VisitsSelected)),value=trunc(mean(VisitsSelected)))
@@ -782,7 +808,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
     
   })
-
+  
   
   observeEvent(input$tabs == "Clustering", {
     
@@ -966,7 +992,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
           SELL<-(FullTable$extent==SelectedDropdown)
           if(!is.null(SELL)){
-
+            
             SELGEO<-FullTable$geometry[SELL]
             SELGEOFull<-FullTable[SELL,]
             SELGEOFull$layerId<-paste0("Square",1:dim(SELGEOFull)[1])
@@ -974,7 +1000,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             
             
             ColObtained<-getCols(ColourScheme=ColourScheme(),UnitsVec=FullTable$units[SELL],
-                              ColorLighteningFactor(),ColorDarkeningFactor())
+                                 ColorLighteningFactor(),ColorDarkeningFactor())
             
             FullColVec<-ColObtained$FullColVec
             ClickedCols<-ColObtained$ClickedCols
@@ -983,7 +1009,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             ############  
             SELGEOSavedVec<-SELGEOFull[,c("geometry","layerId")]
             SELGEOSwitched<-SELGEOFull[,c("geometry","layerId")]
-
+            
             SELGEORemaining<-SELGEOFull[(SavedVec==1)|(SwitchedOnCells==1),c("geometry","layerId","color")]
             
             
@@ -993,17 +1019,17 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             
             if(dim(SELGEORemaining)[1]>0){listMaps[[aai]]<-addPolygons(listMaps[[aai]],data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
             
-        
-            }
+            
+          }
           
-                                     
+          
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
-            specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLISH[i]
+            specie_latin <- get_ugly_specie(SPECIES[i])
+            specie_english <- get_ugly_english_specie(SPECIES_ENGLISH[i])
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+            addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
           listMaps[[aai]] <- listMaps[[aai]]%>%
@@ -1124,22 +1150,22 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     if(!is.null(click$id)){
       ChangeDone<-FALSE
       SavedVec<-ClickedVector()
-        iii<-1
-    
-        while((!ChangeDone)&&(iii<=length(SavedVec))){
-                            if((click$id == paste0("Square",iii))){
-                              SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
-                              ClickedVector(SavedVec)
-                              ChangeDone<-TRUE
-                              }
-            iii<-iii+1
-    }
+      iii<-1
+      
+      while((!ChangeDone)&&(iii<=length(SavedVec))){
+        if((click$id == paste0("Square",iii))){
+          SavedVec[SelectedRowsUnits==SelectedRowsUnits[iii]]<-ifelse(SavedVec[iii]==1,0,1);
+          ClickedVector(SavedVec)
+          ChangeDone<-TRUE
+        }
+        iii<-iii+1
+      }
     }
   })
   
   
   output$map <- renderLeaflet({
-  #  shinyjs::hide("tabs")
+    #  shinyjs::hide("tabs")
     
     SavedVec<-ClickedVector()
     SelectedDropdown<-input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
@@ -1203,11 +1229,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       }
       
       
-       SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
-                                            # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
-                                            condition&
-                                            (SelectedSimMat2$Area>=SelecTargetArea)&
-                                            (SelectedSimMat2$Visits>=SelecTargetVisits),]
+      SubsetMeetTargets<-SelectedSimMat2[(SelectedSimMat2$Carbon>=SelecTargetCarbon)&
+                                           # (SelectedSimMat2$redsquirrel>=SelecTargetBio)&
+                                           condition&
+                                           (SelectedSimMat2$Area>=SelecTargetArea)&
+                                           (SelectedSimMat2$Visits>=SelecTargetVisits),]
       
       #SubsetMeetTargets<-SelectedSimMat2[Icalc$NROYTotal,]
       
@@ -1258,7 +1284,15 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         SUMM<-DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits
         SelecdMinRows<-which(SUMM==min(SUMM))
         SelectedMins<-SubsetMeetTargets[SelecdMinRows,]
-        SelecRow<-which.min(rowSums(SelectedMins[,1:length(SavedVec)]))
+        
+        # If it is a vector, i.e. only 1 unit is available
+        if (length(SavedVec) == 1) {
+          result <- SelectedMins[,1]
+        } else {
+          # If it is a data frame
+          result <- rowSums(SelectedMins[,1:length(SavedVec)])
+        }
+        SelecRow<-which.min(result)
         
         
         SwitchedOnCells<-SelectedMins[SelecRow,1:length(SavedVec)]
@@ -1306,10 +1340,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           SELGEOSwitched<-SELGEOSwitched[(SwitchedOnCells==1)&(SavedVec!=1),]#;gpNamesSwitched<-gpNamesSwitched[SwitchedOnCells&(!SavedVec)]
           SELGEORemaining<-SELGEOFull[(SavedVec==1)|(SwitchedOnCells==1),c("geometry","layerId","color")]
           
-        
+          
           
           if(dim(SELGEORemaining)[1]>0){map<-addPolygons(map,data=SELGEORemaining,color=SELGEORemaining$color,layerId=SELGEORemaining$layerId,weight=UnitPolygonColours)}
-    
+          
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
@@ -1318,7 +1352,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
-
+          
           map<-map%>%
             addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
                                      # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
@@ -1334,7 +1368,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
     map
-   # ChangeSliders(FALSE)
+    # ChangeSliders(FALSE)
     # shinyjs::show("tabs")
     
   })
@@ -1543,14 +1577,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
-
+        
         # Replace species Latin names with English names, and keep everything else
         targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
         for (i in seq_along(targets_not_met)) {
           target <- targets_not_met[i]
-          if (target %in% name_conversion$Specie) {
-            idx <- name_conversion$Specie == target
-            matching_english_specie <- name_conversion[idx, "English_specie"]
+          if (target %in% NAME_CONVERSION$Specie) {
+            idx <- NAME_CONVERSION$Specie == target
+            matching_english_specie <- NAME_CONVERSION[idx, "English_specie"]
             targets_not_met[i] <- matching_english_specie
           }
         }
@@ -1668,19 +1702,19 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
-
+        
         # Replace species Latin names with English names, and keep everything else
         targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ",")
         for (i in seq_along(targets_not_met)) {
           target <- targets_not_met[i]
-          if (target %in% name_conversion$Specie) {
-            idx <- name_conversion$Specie == target
-            matching_english_specie <- name_conversion[idx, "English_specie"]
+          if (target %in% NAME_CONVERSION$Specie) {
+            idx <- NAME_CONVERSION$Specie == target
+            matching_english_specie <- NAME_CONVERSION[idx, "English_specie"]
             targets_not_met[i] <- matching_english_specie
           }
         }
         targets_not_met <- paste(targets_not_met, collapse = ",")
-
+        
         map <- with(mapresults, map %>%
                       addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
                                                # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
@@ -1789,14 +1823,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
           addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
-
+        
         # Replace species Latin names with English names, and keep everything else
         targets_met <- str_split_1(mapresults$SelectedLine$Met, ",")
         for (i in seq_along(targets_met)) {
           target <- targets_met[i]
-          if (target %in% name_conversion$Specie) {
-            idx <- name_conversion$Specie == target
-            matching_english_specie <- name_conversion[idx, "English_specie"]
+          if (target %in% NAME_CONVERSION$Specie) {
+            idx <- NAME_CONVERSION$Specie == target
+            matching_english_specie <- NAME_CONVERSION[idx, "English_specie"]
             targets_met[i] <- matching_english_specie
           }
         }
