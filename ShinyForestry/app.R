@@ -1192,7 +1192,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         value <- tmp[[var_name]]
         assign(var_name, value)
         
-        condition <- condition & SelectedSimMat2[[x]] >= value
+        condition <- condition & (SelectedSimMat2[[x]] >= value)
       }
       SelecTargetArea <- tmp$SelecTargetArea
       SelecTargetVisits <- tmp$SelecTargetVisits
