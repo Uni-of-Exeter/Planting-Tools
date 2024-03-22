@@ -1,51 +1,59 @@
-library(shiny)
-library(shinyjs)
-library(shinyjqui)
-library(leaflet)
-library(sf)
-library(ggplot2)
-library(geosphere)
-library(feather)
-library(readr)
-library(dplyr)
-library(tidyverse)
-library(gsubfn)
-library(ggpubr)
-library(comprehenr)
-library(Rtsne)
-library(mclust)
-library(seriation)
-library(jsonlite)
-library(viridis)
-library(ggmap)
-library(shinyjqui)
-library(MASS)
-library(shinyWidgets)
-library(truncnorm)
-loadNamespace("prefeR")
-library(GGally)
-library(purrr)
-library(sp)
-library(colorspace)
-library(rjson)
-library(arrow)
-library(lwgeom)
-library(mvtnorm)
-library(dplyr)
-# if (!require("prefeR")) {
-# install.packages("prefeR", lib = "/RPackages")
-# detach("package:prefeR", unload = TRUE)
+# library(shiny)
+# library(shinyjs)
+# library(shinyjqui)
+# library(leaflet)
+# library(sf)
+# library(ggplot2)
+# library(geosphere)
+# library(feather)
+# library(readr)
+# library(dplyr)
+# library(tidyverse)
+# library(gsubfn)
+# library(ggpubr)
+# library(comprehenr)
+# library(Rtsne)
+# library(mclust)
+# library(seriation)
+# library(jsonlite)
+# library(viridis)
+# library(ggmap)
+# library(shinyjqui)
+# library(MASS)
+# library(shinyWidgets)
+# library(truncnorm)
 # loadNamespace("prefeR")
-# }
-# packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2", "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn", "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite", "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm", "GGally")
-# if(!all( packages %in% (.packages()) )) {
-# for(pkg in packages) {
-# if( !require(pkg, character.only = TRUE) ) {
-# install.packages(pkg, lib = "/RPackages")
-# library(pkg, character.only = TRUE)
-# }
-# }
-# }
+# library(GGally)
+# library(purrr)
+# library(sp)
+# library(colorspace)
+# library(rjson)
+# library(arrow)
+# library(lwgeom)
+# library(mvtnorm)
+# library(dplyr)
+# Load packages and install if necessary
+packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
+              "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+              "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+              "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
+              "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+              "mvtnorm", "dplyr")
+lib <- .libPaths()[1]
+repo <- "https://cran.rstudio.com/" 
+# update.packages(lib.loc = lib, repos = repo)
+
+if (!require("prefeR")) {
+  install.packages("prefeR", lib = lib, repos = repo)
+}
+loadNamespace("prefeR")
+
+idx <- which(!(packages %in% (.packages())))
+packages_to_install <- packages[idx]
+install.packages(packages_to_install, lib = lib, repos = repo, Ncpus = 4)
+sapply(packages, library, character.only = TRUE)
+
+
 #  SavedVec<-rep(0,47)
 #SelecTargetCarbon<-240;      SelecTargetBio<-19;SelecTargetArea<-13890596;SelecTargetVisits<-17
 #SelecTargetCarbon<-1000;      SelecTargetBio<-1100;SelecTargetArea<-1000000000;SelecTargetVisits<-1000000
@@ -238,7 +246,7 @@ if(!file.exists(paste0(ElicitatorAppFolder,"Parcels.geojson"))){
   shconv<-sf::st_read(paste0(UnZipDirName,"//land_parcels.shp"))
   if(is.null(shconv$extent)){shconv$extent<-"NoExtent"}
   st_write(shconv, paste0(ElicitatorAppFolder,"Parcels.geojson"))
-  
+  shconv<-sf::st_read(paste0(ElicitatorAppFolder,"Parcels.geojson"))  
 } else {
   shconv<-sf::st_read(paste0(ElicitatorAppFolder,"Parcels.geojson"))
 }
@@ -348,7 +356,8 @@ if(!file.exists(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))){
   
   FullTableNotAvail<-data.frame(extent=NULL)
   st_write(FullTableNotAvail, paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
-  
+  FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
+  FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
 } else {
   FullTable<-st_read(paste0(ElicitatorAppFolder,"FullTableMerged.geojson"))
   FullTableNotAvail<-sf::st_read( paste0(ElicitatorAppFolder,"FullTableNotAvail.geojson"))
@@ -489,7 +498,7 @@ N_TARGETS <- length(TARGETS)
 # )
 # Add sliderInput("BioSliderSPECIE","Average SPECIE % increase:",min=0,max=36,value=25) for each specie
 
-verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800)),
+verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (tonnes of CO2):",min=0,max=870,value=800)),
                            lapply(SPECIES, function(x, fulltable, NAME_CONVERSION_ARG) {
                              NAME_CONVERSION <- NAME_CONVERSION_ARG
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
@@ -499,12 +508,12 @@ verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (20
                              
                              # If it is a group
                              if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
-                               text <- paste0("Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
+                               text <- paste(get_pretty_group(x, NAME_CONVERSION), "(Change in Species Richness)")
                              } else {
                                # If it is a specie
                                text <- get_english_specie_from_specie(x, NAME_CONVERSION)
                                text <- get_pretty_english_specie(text, NAME_CONVERSION)
-                               text <- paste(text, "Presence (%):")
+                               text <- paste(text, " (Change in Presence, %):")
                              }
                              
                              return(bquote(sliderInput(paste0("BioSlider", .(x)),
@@ -515,7 +524,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain","Tree Carbon Stored (20
                                                        step = 0.5)))
                            }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
                            list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"),min=0,max=25,value=15)),
-                           list(sliderInput("VisitsSlider", "Average Number of Visitors per cell:",min=0,max=750,value=400)))
+                           list(sliderInput("VisitsSlider", "Recreation (average visits per month):",min=0,max=750,value=400)))
 
 JulesMean<-0;JulesSD<-0;SquaresLoad<-0;Sqconv<-0;CorrespondenceJules<-0;seer2km<-0;jncc100<-0;speciesprob40<-0;climatecells<-0;
 gc()
@@ -536,7 +545,7 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   jqui_resizable(leafletOutput("map",height = 800,width="100%"))
                                            ),
                                            column(3,
-                                                  # verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (2050):",min=0,max=870,value=800),
+                                                  # verticalLayout(sliderInput("SliderMain","Tree Carbon Stored (tonnes of CO2):",min=0,max=870,value=800),
                                                   #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25, step=0.01),
                                                   #                sliderInput("AreaSlider","Total Area Planted (km^2):",min=0,max=25,value=15),
                                                   #                sliderInput("VisitsSlider","Average Number of Visitors per cell:",min=0,max=750,value=400))
@@ -545,7 +554,7 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                            ))
                                          )
                                          ),
-                                         tabPanel("Exploration",
+                                         tabPanel("Exploration", id = "Exploration",
                                                   fluidPage(fluidRow(
                                                     column(5,
                                                            verticalLayout(verbatimTextOutput("FirstMapTxt"),jqui_resizable(leafletOutput("map2",height = 400,width="100%")))
@@ -569,7 +578,7 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
                                                   )
                                                   )
                                          ),
-                                         tabPanel("Clustering",
+                                         tabPanel("Clustering", id = "Clustering",
                                                   fluidPage(
                                                     shinyjs::hidden(
                                                       fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))),
@@ -590,6 +599,9 @@ ui <- fluidPage(useShinyjs(),tabsetPanel(id = "tabs",
 
 server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
+  hideTab(inputId = "tabs", target = "Exploration")
+  hideTab(inputId = "tabs", target = "Clustering")
+  
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
@@ -798,10 +810,22 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         bioslider <- paste0("BioSlider", x)
         specie_names <- paste0(x, "Selected")
         specie_selected <- get(specie_names)
-        updateSliderInput(session, bioslider, max = trunc(mean(specie_selected)),value=trunc(mean(specie_selected)), step = 0.5)
+        max_bioslider <- trunc(mean(specie_selected))
+        if (is.nan(max_bioslider)) {
+          max_bioslider <- 0
+        }
+        max_areaslider <- trunc(100*sum(AreaSelected))/100
+        if (is.nan(max_areaslider)) {
+          max_areaslider <- 0
+        }
+        max_visitsslider <- trunc(mean(VisitsSelected))
+        if (is.nan(max_visitsslider)) {
+          max_visitsslider <- 0
+        }
+        updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 0.5)
       }
-      updateSliderInput(session, "AreaSlider", max = trunc(100*sum(AreaSelected))/100,value=trunc(100*sum(AreaSelected))/100)
-      updateSliderInput(session, "VisitsSlider", max = trunc(mean(VisitsSelected)),value=trunc(mean(VisitsSelected)))
+      updateSliderInput(session, "AreaSlider", max = max_areaslider, value = max_areaslider, step = 0.5)
+      updateSliderInput(session, "VisitsSlider", max = max_visitsslider, value = max_visitsslider)
     }
     
     
@@ -1254,11 +1278,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           if(max(SelectedSimMat2[x]) != min(SelectedSimMat2[x])) {
             value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
           } else {
-             if(max(SelectedSimMat2[x])!=0){ 
-            value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
-             } else {
-               value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
-             }
+            if(max(SelectedSimMat2[x])!=0){ 
+              value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
+            } else {
+              value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
+            }
           }
           assign(var_name, value)
           DistSliderBioListDataframes[x] <- data.frame(x = value)
