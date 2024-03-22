@@ -1,38 +1,3 @@
-# library(shiny)
-# library(shinyjs)
-# library(shinyjqui)
-# library(leaflet)
-# library(sf)
-# library(ggplot2)
-# library(geosphere)
-# library(feather)
-# library(readr)
-# library(dplyr)
-# library(tidyverse)
-# library(gsubfn)
-# library(ggpubr)
-# library(comprehenr)
-# library(Rtsne)
-# library(mclust)
-# library(seriation)
-# library(jsonlite)
-# library(viridis)
-# library(ggmap)
-# library(shinyjqui)
-# library(MASS)
-# library(shinyWidgets)
-# library(truncnorm)
-# loadNamespace("prefeR")
-# library(GGally)
-# library(purrr)
-# library(sp)
-# library(colorspace)
-# library(rjson)
-# library(arrow)
-# library(lwgeom)
-# library(mvtnorm)
-# library(dplyr)
-# Load packages and install if necessary
 packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
               "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
               "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
@@ -42,16 +7,19 @@ packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2"
 lib <- .libPaths()[1]
 repo <- "https://cran.rstudio.com/" 
 # update.packages(lib.loc = lib, repos = repo)
-
 if (!require("prefeR")) {
   install.packages("prefeR", lib = lib, repos = repo)
 }
 loadNamespace("prefeR")
-
-idx <- which(!(packages %in% (.packages())))
-packages_to_install <- packages[idx]
+# Load the packages already installed
+packages_status <- sapply(packages, require, character.only = TRUE, quietly = TRUE)
+packages_to_install <- packages[packages_status == FALSE]
+# Remove packages that failed to load if they are already there
+try(remove.packages(packages_to_install, lib = lib))
+# Install packages
 install.packages(packages_to_install, lib = lib, repos = repo, Ncpus = 4)
-sapply(packages, library, character.only = TRUE)
+# Load packages
+sapply(packages, library, character.only = TRUE, quietly = TRUE)
 
 
 #  SavedVec<-rep(0,47)
