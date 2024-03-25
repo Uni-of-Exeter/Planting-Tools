@@ -8,7 +8,10 @@
 # sudo apt-get -y --no-install-recommends install libproj-dev
 # sudo apt-get -y --no-install-recommends install cmake
 # sudo apt-get -y --no-install-recommends install libgdal-dev
+# sudo apt-get -y --no-install-recommends install libharfbuzz-dev
+# sudo apt-get -y --no-install-recommends install libfribidi-dev
 
+# Load packages
 packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
               "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
               "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
@@ -185,11 +188,10 @@ UnitPolygonColours <- 1
 # Sys.setenv(PROJ_LIB = "/usr/share/proj")
 # Sys.setenv(GDAL_DATA = "/usr/share/proj/")
 
+USER_PATH <- user_path()
 
-ElicitatorAppFolder <- normalizePath(file.path(Sys.getenv("USERPROFILE"), "Downloads"))
+ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
-
-
 
 # Load Files
 JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
@@ -202,23 +204,23 @@ jncc100 <- read.csv(normalizePath(file.path(JulesAppFolder, "beta_JNCC100_intera
 speciesprob40 <-  read.csv(normalizePath(file.path(JulesAppFolder, "scenario_species_prob_40.csv")), header = FALSE)
 climatecells <- read.csv(normalizePath(file.path(JulesAppFolder, "climate_cells.csv")))
 
-cat(paste0("Waiting for file land_parcels.shp.zip in folder ", ElicitatorAppFolder, "\n" ))
+cat(paste0("Waiting for file land_parcels.shp.zip in folder ", ElicitorAppFolder, "\n" ))
 
-while (!file.exists(normalizePath(file.path(ElicitatorAppFolder, "land_parcels.shp.zip")))) {
+while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")))) {
   Sys.sleep(5)
 }
 
-if (!file.exists(normalizePath(file.path(ElicitatorAppFolder, "Parcels.geojson")))) {
-  cat(paste0("File land_parcels.shp.zip found in folder ", ElicitatorAppFolder, ". Trying to load file \n"))
-  UnZipDirName <- paste0(substr(normalizePath(file.path(ElicitatorAppFolder, "land_parcels.shp.zip")),
+if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))) {
+  cat(paste0("File land_parcels.shp.zip found in folder ", ElicitorAppFolder, ". Trying to load file \n"))
+  UnZipDirName <- paste0(substr(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")),
                                 1,
-                                nchar(normalizePath(file.path(ElicitatorAppFolder, "land_parcels.shp.zip"))) - 4)
+                                nchar(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))) - 4)
   )
   dir.create(UnZipDirName)
   
-  while(inherits(suppressWarnings(try(unzip(normalizePath(file.path(ElicitatorAppFolder, "land_parcels.shp.zip")), exdir = UnZipDirName),
-                                      silent = TRUE)),
-                 "try-error")) {
+  while (inherits(suppressWarnings(try(unzip(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), exdir = UnZipDirName),
+                                       silent = TRUE)),
+                  "try-error")) {
     Sys.sleep(1)
   }
   cat(paste0("File unzipped, processing... \n" ))
@@ -227,25 +229,25 @@ if (!file.exists(normalizePath(file.path(ElicitatorAppFolder, "Parcels.geojson")
   if (is.null(shconv$extent)) {
     shconv$extent <- "NoExtent"
   }
-  st_write(shconv, normalizePath(file.path(ElicitatorAppFolder, "Parcels.geojson")))
-  shconv <- sf::st_read(normalizePath(file.path(ElicitatorAppFolder, "Parcels.geojson"))  )
+  st_write(shconv, normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
+  shconv <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson"))  )
 } else {
-  shconv <- sf::st_read(normalizePath(file.path(ElicitatorAppFolder, "Parcels.geojson")))
+  shconv <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
 }
 
-cat(paste0("Waiting for file decision_units.json in folder ", ElicitatorAppFolder, "\n" ))
-while(!file.exists(normalizePath(file.path(ElicitatorAppFolder, "decision_units.json")))) {
+cat(paste0("Waiting for file decision_units.json in folder ", ElicitorAppFolder, "\n" ))
+while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))) {
   Sys.sleep(5)
 }
 
-if (!file.exists(paste0(ElicitatorAppFolder, "FullTableMerged.geojson"))) {
+if (!file.exists(paste0(ElicitorAppFolder, "FullTableMerged.geojson"))) {
   sf_use_s2(FALSE)
   lsh <- dim(shconv)[1]
-  cat(paste0("File decision_units.json found in folder ", ElicitatorAppFolder, ". Trying to load file \n" ))
+  cat(paste0("File decision_units.json found in folder ", ElicitorAppFolder, ". Trying to load file \n" ))
   
-  while(inherits(suppressWarnings(try(AllUnits <- rjson::fromJSON(file = normalizePath(file.path(ElicitatorAppFolder, "decision_units.json")))$decision_unit_ids,
-                                      silent = TRUE)),
-                 "try-error")) {
+  while (inherits(suppressWarnings(try(AllUnits <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))$decision_unit_ids,
+                                       silent = TRUE)),
+                  "try-error")) {
     Sys.sleep(1)
   }
   cat(paste0("File loaded, processing... \n" ))
@@ -259,7 +261,7 @@ if (!file.exists(paste0(ElicitatorAppFolder, "FullTableMerged.geojson"))) {
   
   
   MER <- list()
-  for(ii in 1:length(Uni)) {
+  for (ii in 1:length(Uni)) {
     SELLL <- shconv$geometry[AllUnits == Uni[ii]]
     MER[[ii]] <- st_union(st_make_valid(SELLL))
   }
@@ -294,7 +296,7 @@ if (!file.exists(paste0(ElicitatorAppFolder, "FullTableMerged.geojson"))) {
   INTT$area <- st_area(INTT)/1e6
   
   NBSIMS <- 500
-  for(ii in 1:length(FullTableCopy$geometry))
+  for (ii in 1:length(FullTableCopy$geometry))
   {
     SELLLines <- INTT$idPoly == ii
     SELLSqs <- INTT$idSq[SELLLines]
@@ -309,17 +311,15 @@ if (!file.exists(paste0(ElicitatorAppFolder, "FullTableMerged.geojson"))) {
       FullTable$JulesMean[ii] <- sum(colMeans(SimuArr*SellWeightsArr))
       FullTable$JulesSD[ii] <- sd(rowSums(SimuArr*SellWeightsArr))
       FullTable$area[ii] <- sum(SELLWeights)
+    } else if (length(SelJulesMeans) == 1) {
+      SimuArr <- rnorm(NBSIMS, mean = SelJulesMeans, sd = SelJulesSDs)
+      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr*SellWeightsArr))
+      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr*SellWeightsArr))
+      FullTable$area[ii] <- sum(SELLWeights)
     } else {
-      if (length(SelJulesMeans) == 1) {
-        SimuArr <- rnorm(NBSIMS, mean = SelJulesMeans, sd = SelJulesSDs)
-        FullTable$JulesMean[ii] <- sum(colMeans(SimuArr*SellWeightsArr))
-        FullTable$JulesSD[ii] <- sd(rowSums(SimuArr*SellWeightsArr))
-        FullTable$area[ii] <- sum(SELLWeights)
-      } else {
-        FullTable$JulesMean[ii] <- 0
-        FullTable$JulesSD[ii] <- 0
-        FullTable$area[ii] <- sum(SELLWeights)
-      }
+      FullTable$JulesMean[ii] <- 0
+      FullTable$JulesSD[ii] <- 0
+      FullTable$area[ii] <- sum(SELLWeights)
     }
   }
   
@@ -333,15 +333,15 @@ if (!file.exists(paste0(ElicitatorAppFolder, "FullTableMerged.geojson"))) {
   FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
   
-  st_write(FullTable, normalizePath(file.path(ElicitatorAppFolder, "FullTableMerged.geojson")))
+  st_write(FullTable, normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
   
   FullTableNotAvail <- data.frame(extent = NULL)
-  st_write(FullTableNotAvail, normalizePath(file.path(ElicitatorAppFolder, "FullTableNotAvail.geojson")))
-  FullTable <- st_read(normalizePath(file.path(ElicitatorAppFolder, "FullTableMerged.geojson")))
-  FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitatorAppFolder, "FullTableNotAvail.geojson")))
+  st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
+  FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
+  FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 } else {
-  FullTable <- st_read(normalizePath(file.path(ElicitatorAppFolder, "FullTableMerged.geojson")))
-  FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitatorAppFolder, "FullTableNotAvail.geojson")))
+  FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
+  FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 }
 
 
@@ -369,16 +369,16 @@ for (aaa in 1:NSamp)
   Uniqunits <- unique(FullTable$units)
   pp <- runif(1)
   RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
-  for(bbb in 1:length(Uniqunits)) {
+  for (bbb in 1:length(Uniqunits)) {
     simul636[aaa, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
   }
 }
 
-cat(paste0("Waiting for file outcomes.json in folder ", ElicitatorAppFolder, "\n" ))
-while (!file.exists(normalizePath(file.path(ElicitatorAppFolder, "outcomes.json")))) {
+cat(paste0("Waiting for file outcomes.json in folder ", ElicitorAppFolder, "\n" ))
+while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
   Sys.sleep(5)
 }
-cat(paste0("File outcomes.json found in folder ", ElicitatorAppFolder, ".  Trying to load file \n"))
+cat(paste0("File outcomes.json found in folder ", ElicitorAppFolder, ".  Trying to load file \n"))
 
 
 # # Move rows from FullTableNotAvail to FullTable with blank data
@@ -421,9 +421,9 @@ ConvertSample <- sample(1:5000, 200)
 # Read the outcomes from the Elicitor app
 
 
-while(inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitatorAppFolder, "outcomes.json")))
-                                    , silent = TRUE)),
-               "try-error")) {
+while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
+                                     , silent = TRUE)),
+                "try-error")) {
   Sys.sleep(1)
 }
 cat(paste0("File loaded, processing... \n" ))
@@ -880,7 +880,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       SelectedSimMatGlobal <<- SelectedSimMat2
       
       PROBAMAT <- Icalc$IVEC
-      for(abc in 1:dim(Icalc$IVEC)[2]) {
+      for (abc in 1:dim(Icalc$IVEC)[2]) {
         PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
       }
       
@@ -963,7 +963,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         LinesToCompare <- matrix(1, MaxRounds, 2)
         #  indd <- 1
         
-        #  for(iws in 1:(as.integer(trunc(length(UniqueBinCodes)/2)))) {
+        #  for (iws in 1:(as.integer(trunc(length(UniqueBinCodes)/2)))) {
         #  LinesToCompare[iws, 1] <- which(DatBinaryCode == UniqueBinCodes[indd])[1]
         # indd <- indd + 1
         # LinesToCompare[iws, 2] <- which(DatBinaryCode == UniqueBinCodes[indd])[1]
@@ -977,7 +977,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
         SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
         
-        for(aai in 1:2) {
+        for (aai in 1:2) {
           SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
           SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
           # SelectedBio <- SelectedLine[[aai]]$redsquirrel
@@ -1163,7 +1163,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       SavedVec <- ClickedVector()
       iii <- 1
       
-      while((!ChangeDone) && (iii <= length(SavedVec))) {
+      while ((!ChangeDone) && (iii <= length(SavedVec))) {
         if ((click$id == paste0("Square", iii))) {
           SavedVec[SelectedRowsUnits == SelectedRowsUnits[iii]] <- ifelse(SavedVec[iii] == 1, 0, 1);
           ClickedVector(SavedVec)

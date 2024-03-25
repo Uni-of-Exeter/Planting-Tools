@@ -1071,3 +1071,40 @@ get_group_from_specie <- function(specie, NAME_CONVERSION_ARG = NAME_CONVERSION)
 normalizePath <- function(path) {
   return(base::normalizePath(path, mustWork = FALSE))
 }
+
+user_path <- function() {
+  sysinf <- Sys.info()
+  if (!is.null(sysinf)){
+    os <- sysinf['sysname']
+    if (os == 'Darwin')
+      os <- "osx"
+  } else { ## mystery machine
+    os <- .Platform$OS.type
+    if (grepl("^darwin", R.version$os))
+      os <- "osx"
+    if (grepl("linux-gnu", R.version$os))
+      os <- "linux"
+  }
+  
+  # Windows
+  if (Sys.info()['sysname'] == "Windows") {
+    OS <- "Windows"
+  } else if (.Platform$OS.type == "unix") {
+    # Windows Subsystem for Linux
+    # if (system('grep -ci Microsoft /proc/version') == 1)
+    if (grepl("WSL", Sys.info()["release"], ignore.case = TRUE)) {
+      OS <- "WSL"
+    } else {
+      OS <- "Linux"
+    }
+  }
+  if (OS == "Windows") {
+    UserPath <- normalizePath(file.path(Sys.getenv("USERPROFILE")))
+  } else if (OS == "Linux") {
+    UserPath <- normalizePath(file.path(Sys.getenv("HOME")))
+  } else if (OS == "WSL") {
+    # https://superuser.com/a/1568668
+    UserPath <- normalizePath(file.path(system('wslpath "$(wslvar USERPROFILE)"', intern = TRUE)))
+  }
+  return(UserPath)
+}
