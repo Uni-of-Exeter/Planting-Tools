@@ -1067,3 +1067,7 @@ get_group_from_specie <- function(specie, NAME_CONVERSION_ARG = NAME_CONVERSION)
   result <- NAME_CONVERSION_ARG$Group[idx]
   return(result)
 }
+
+normalizePath <- function(path) {
+  return(base::normalizePath(path, mustWork = FALSE))
+}
