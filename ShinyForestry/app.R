@@ -43,6 +43,9 @@ sapply(packages, library, character.only = TRUE, quietly = TRUE)
 
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
+if (!grepl("ShinyForestry", FolderSource)) {
+  FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
+}
 
 source(normalizePath(file.path(FolderSource, "functions.R")))
 # species_names <- colnames(read.csv(paste0(FolderSource, "Model Data/Biodiversity/JNCC/beta_JNCC100_interact_quad.csv")))[-1]
@@ -204,14 +207,14 @@ jncc100 <- read.csv(normalizePath(file.path(JulesAppFolder, "beta_JNCC100_intera
 speciesprob40 <-  read.csv(normalizePath(file.path(JulesAppFolder, "scenario_species_prob_40.csv")), header = FALSE)
 climatecells <- read.csv(normalizePath(file.path(JulesAppFolder, "climate_cells.csv")))
 
-cat(paste0("Waiting for file land_parcels.shp.zip in folder ", ElicitorAppFolder, "\n" ))
+cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "\n" ))
 
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")))) {
   Sys.sleep(5)
 }
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))) {
-  cat(paste0("File land_parcels.shp.zip found in folder ", ElicitorAppFolder, ". Trying to load file \n"))
+  cat(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to load file \n"))
   UnZipDirName <- paste0(substr(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")),
                                 1,
                                 nchar(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))) - 4)
@@ -223,7 +226,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
                   "try-error")) {
     Sys.sleep(1)
   }
-  cat(paste0("File unzipped, processing... \n" ))
+  cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "unzipped, processing... \n" ))
   
   shconv <- sf::st_read(normalizePath(file.path(UnZipDirName, "land_parcels.shp")))
   if (is.null(shconv$extent)) {
@@ -235,22 +238,22 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   shconv <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
 }
 
-cat(paste0("Waiting for file decision_units.json in folder ", ElicitorAppFolder, "\n" ))
+cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "\n" ))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))) {
   Sys.sleep(5)
 }
 
-if (!file.exists(paste0(ElicitorAppFolder, "FullTableMerged.geojson"))) {
+if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))) {
   sf_use_s2(FALSE)
   lsh <- dim(shconv)[1]
-  cat(paste0("File decision_units.json found in folder ", ElicitorAppFolder, ". Trying to load file \n" ))
+  cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file \n"))
   
   while (inherits(suppressWarnings(try(AllUnits <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))$decision_unit_ids,
                                        silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  cat(paste0("File loaded, processing... \n" ))
+  cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing... \n" ))
   
   Uni <- unique(AllUnits)
   FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
@@ -364,8 +367,7 @@ STDSTD <- 0.01
 
 NSamp <- 5000
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
-for (aaa in 1:NSamp)
-{
+for (aaa in 1:NSamp) {
   Uniqunits <- unique(FullTable$units)
   pp <- runif(1)
   RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
@@ -374,11 +376,11 @@ for (aaa in 1:NSamp)
   }
 }
 
-cat(paste0("Waiting for file outcomes.json in folder ", ElicitorAppFolder, "\n" ))
+cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "\n" ))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
   Sys.sleep(5)
 }
-cat(paste0("File outcomes.json found in folder ", ElicitorAppFolder, ".  Trying to load file \n"))
+cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file \n"))
 
 
 # # Move rows from FullTableNotAvail to FullTable with blank data
@@ -413,9 +415,7 @@ cat(paste0("File outcomes.json found in folder ", ElicitorAppFolder, ".  Trying 
 # FullTableNotAvail <- FullTableNotAvail[, -1]
 
 alphaLVL <- 0.9
-
 MaxRounds <- 5
-
 ConvertSample <- sample(1:5000, 200)
 
 # Read the outcomes from the Elicitor app
@@ -426,7 +426,7 @@ while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normaliz
                 "try-error")) {
   Sys.sleep(1)
 }
-cat(paste0("File loaded, processing... \n" ))
+cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing... \n" ))
 
 outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
 SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
