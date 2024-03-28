@@ -1,3 +1,5 @@
+# Created and maintained by Bertrand Nortier and Timothée Bacri
+
 # Ubuntu packages needed
 # sudo apt-get -y --no-install-recommends install libcurl4-openssl-dev
 # sudo apt-get -y --no-install-recommends install libfontconfig1-dev
