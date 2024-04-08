@@ -196,6 +196,7 @@ UnitPolygonColours <- 1
 USER_PATH <- user_path()
 
 ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
+# ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 # Load Files
@@ -298,11 +299,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   #st_as_sf(data.frame(FullTable))
   
   INTT <- st_intersection(st_make_valid(SELECTEDSquaresconvTab), st_make_valid(FullTableCopy))
-  INTT$area <- st_area(INTT)/1e6
+  INTT$area <- st_area(INTT) / 1e6
   
   NBSIMS <- 500
-  for (ii in 1:length(FullTableCopy$geometry))
-  {
+  for (ii in 1:length(FullTableCopy$geometry)) {
     SELLLines <- INTT$idPoly == ii
     SELLSqs <- INTT$idSq[SELLLines]
     SELLWeights <- INTT$area[SELLLines]
@@ -313,13 +313,13 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
     
     if (length(SelJulesMeans) > 1) {
       SimuArr <- rmvnorm(NBSIMS, mean = SelJulesMeans, sigma = diag(SelJulesSDs^2))
-      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr*SellWeightsArr))
-      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr*SellWeightsArr))
+      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr * SellWeightsArr))
+      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr * SellWeightsArr))
       FullTable$area[ii] <- sum(SELLWeights)
     } else if (length(SelJulesMeans) == 1) {
       SimuArr <- rnorm(NBSIMS, mean = SelJulesMeans, sd = SelJulesSDs)
-      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr*SellWeightsArr))
-      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr*SellWeightsArr))
+      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr * SellWeightsArr))
+      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr * SellWeightsArr))
       FullTable$area[ii] <- sum(SELLWeights)
     } else {
       FullTable$JulesMean[ii] <- 0
