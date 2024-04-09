@@ -196,6 +196,7 @@ UnitPolygonColours <- 1
 USER_PATH <- user_path()
 
 ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
+# ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 # Load Files
@@ -258,6 +259,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing... \n" ))
   
   Uni <- unique(AllUnits)
+  # units is the list of decision units
   FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
                         JulesMean = rep(15, length(Uni)),
                         JulesSD = rep(1, length(Uni)), VisitsMean = rep(30, length(Uni)),
@@ -298,11 +300,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   #st_as_sf(data.frame(FullTable))
   
   INTT <- st_intersection(st_make_valid(SELECTEDSquaresconvTab), st_make_valid(FullTableCopy))
-  INTT$area <- st_area(INTT)/1e6
+  INTT$area <- st_area(INTT) / 1e6
   
   NBSIMS <- 500
-  for (ii in 1:length(FullTableCopy$geometry))
-  {
+  for (ii in 1:length(FullTableCopy$geometry)) {
     SELLLines <- INTT$idPoly == ii
     SELLSqs <- INTT$idSq[SELLLines]
     SELLWeights <- INTT$area[SELLLines]
@@ -313,13 +314,13 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
     
     if (length(SelJulesMeans) > 1) {
       SimuArr <- rmvnorm(NBSIMS, mean = SelJulesMeans, sigma = diag(SelJulesSDs^2))
-      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr*SellWeightsArr))
-      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr*SellWeightsArr))
+      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr * SellWeightsArr))
+      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr * SellWeightsArr))
       FullTable$area[ii] <- sum(SELLWeights)
     } else if (length(SelJulesMeans) == 1) {
       SimuArr <- rnorm(NBSIMS, mean = SelJulesMeans, sd = SelJulesSDs)
-      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr*SellWeightsArr))
-      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr*SellWeightsArr))
+      FullTable$JulesMean[ii] <- sum(colMeans(SimuArr * SellWeightsArr))
+      FullTable$JulesSD[ii] <- sd(rowSums(SimuArr * SellWeightsArr))
       FullTable$area[ii] <- sum(SELLWeights)
     } else {
       FullTable$JulesMean[ii] <- 0
@@ -337,19 +338,21 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   # Add richness columns
   FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
+  # Move decision units with id -1 (Maintain current land use) from FullTable to FullTableNotAvail if we want to handle them in a special way
+  # OR
+  # Only delete lines with "units"=-1 from FullTable
+  FullTableNotAvail <- FullTable %>%
+    dplyr::filter(units == -1)
+  FullTable <- FullTable %>%
+    dplyr::filter(units != -1)
   
   st_write(FullTable, normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
-  
-  FullTableNotAvail <- data.frame(extent = NULL)
+  # FullTableNotAvail <- data.frame(extent = NULL)
   st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
-  FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
-  FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
-} else {
-  FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
-  FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 }
 
-
+FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
+FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 
 
 #shconv <- sf::st_read("d://BristolParcels.geojson")
@@ -367,6 +370,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
 STDMEAN <- 0.05
 STDSTD <- 0.01
 
+# Random sampling
 NSamp <- 5000
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 for (aaa in 1:NSamp) {
@@ -421,8 +425,6 @@ MaxRounds <- 5
 ConvertSample <- sample(1:5000, 200)
 
 # Read the outcomes from the Elicitor app
-
-
 while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
                                      , silent = TRUE)),
                 "try-error")) {
