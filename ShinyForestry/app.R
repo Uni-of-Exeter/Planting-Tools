@@ -259,6 +259,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing... \n" ))
   
   Uni <- unique(AllUnits)
+  # units is the list of decision units
   FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
                         JulesMean = rep(15, length(Uni)),
                         JulesSD = rep(1, length(Uni)), VisitsMean = rep(30, length(Uni)),
@@ -367,6 +368,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
 STDMEAN <- 0.05
 STDSTD <- 0.01
 
+# Random sampling
 NSamp <- 5000
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 for (aaa in 1:NSamp) {
