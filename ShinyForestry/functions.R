@@ -998,7 +998,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
 }
 
 get_pretty_specie <- function(ugly_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
-  if (ugly_specie %in% NAME_CONVERSION_ARG$Specie_pretty) return(usgly_specie)
+  if (ugly_specie %in% NAME_CONVERSION_ARG$Specie_pretty) return(ugly_specie)
   idx <- which(NAME_CONVERSION_ARG$Specie == ugly_specie)
   if (length(idx) == 0) return(ugly_specie)
   result <- NAME_CONVERSION_ARG$Specie_pretty[idx]

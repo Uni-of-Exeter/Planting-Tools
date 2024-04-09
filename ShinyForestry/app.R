@@ -421,8 +421,6 @@ MaxRounds <- 5
 ConvertSample <- sample(1:5000, 200)
 
 # Read the outcomes from the Elicitor app
-
-
 while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
                                      , silent = TRUE)),
                 "try-error")) {
