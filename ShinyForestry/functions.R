@@ -675,7 +675,8 @@ outputmap_createResults <- function(map,
                                     FullTable,
                                     SavedVec,
                                     SelectedDropdown,
-                                    randomValue,
+                                    randomValueOnButton,
+                                    randomValueOnExplorationTab,
                                     ColourScheme,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor,
@@ -684,9 +685,19 @@ outputmap_createResults <- function(map,
                                     UnitPolygonColours) {
   SPECIES <- SPECIES_ARG2
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG2
-  SavedRVs <- randomValue()
   LSMT <- dim(SubsetMeetTargets)[1]
   SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
+  SavedRVs <- c()
+  if (!is.null(randomValueOnButton())) {
+    SavedRVs[1] <- randomValueOnButton()
+  } else {
+    SavedRVs[1] <- -1
+  }
+  if (!is.null(randomValueOnExplorationTab())) {
+    SavedRVs[2] <- randomValueOnExplorationTab()
+  } else {
+    SavedRVs[2] <- -1
+  }
   
   SwitchedOnCells <- SelectedLine[1:length(SavedVec)]
   SelectedTreeCarbon <- SelectedLine$Carbon

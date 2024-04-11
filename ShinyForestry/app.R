@@ -674,12 +674,27 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$ThirdMapTxt <- renderText({Text3()})
   output$FourthMapTxt <- renderText({Text4()})
   
-  randomValue <- eventReactive({
+  # The randomValue is there to reset the vector of selected strategies/maps in the Exploration tab
+  randomValueOnButton <- eventReactive({
     input$random
-    input$tabsetPanel == "Exploration"
   }, {
-    runif(1)
-  })
+    # When we randomize the Exploration tab, reset the vector of selected strategies/maps
+    SelectedLinesIndicesInExplorationMapsReactive(c())
+    return(runif(1))
+  },
+  ignoreNULL = FALSE)
+  # The randomValue is there to reset the vector of selected strategies/maps in the Exploration tab
+  randomValueOnExplorationTab <- eventReactive({
+    input$tabs
+  }, {
+    if (input$tabs == "Exploration") {
+      # When we randomize the Exploration tab, reset the vector of selected strategies/maps
+      SelectedLinesIndicesInExplorationMapsReactive(c())
+      return(runif(1))
+    }
+  },
+  ignoreNULL = FALSE)
+  
   ClickedVector <- reactiveVal(NULL)
   AreaSelected0 <- reactiveVal(NULL)
   CarbonSelected0 <- reactiveVal(NULL)
@@ -1460,7 +1475,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
@@ -1580,7 +1596,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
@@ -1707,7 +1724,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
@@ -1830,7 +1848,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
