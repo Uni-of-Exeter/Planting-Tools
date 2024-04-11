@@ -685,6 +685,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     SelectedLinesIndicesInExplorationMapsReactive(c())
     return(runif(1))
   },
+  # the action should be triggered (or value calculated, in the case of eventReactive) when the input event expression is NULL
   ignoreNULL = FALSE)
   # The randomValue is there to reset the vector of selected strategies/maps in the Exploration tab
   randomValueOnExplorationTab <- eventReactive({
@@ -696,6 +697,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       return(runif(1))
     }
   },
+  # the action should be triggered (or value calculated, in the case of eventReactive) when the input event expression is NULL
   ignoreNULL = FALSE)
   
   ClickedVector <- reactiveVal(NULL)
