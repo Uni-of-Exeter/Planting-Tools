@@ -587,7 +587,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
 server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
   # hideTab(inputId = "tabs", target = "Exploration")
-  hideTab(inputId = "tabs", target = "Clustering")
+  # hideTab(inputId = "tabs", target = "Clustering")
   
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
