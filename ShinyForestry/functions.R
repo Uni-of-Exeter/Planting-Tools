@@ -677,7 +677,7 @@ outputmap_createResults <- function(map,
                                     SavedVec,
                                     SelectedDropdown,
                                     randomValueOnButton,
-                                    randomValueOnExplorationTab,
+                                    # randomValueOnExplorationTab,
                                     SelectedLinesIndicesInExplorationMapsReactive,
                                     ColourScheme,
                                     ColorLighteningFactor,
@@ -692,11 +692,6 @@ outputmap_createResults <- function(map,
     SavedRVs[1] <- randomValueOnButton()
   } else {
     SavedRVs[1] <- -1
-  }
-  if (!is.null(randomValueOnExplorationTab())) {
-    SavedRVs[2] <- randomValueOnExplorationTab()
-  } else {
-    SavedRVs[2] <- -1
   }
   # LSMT <- dim(SubsetMeetTargets)[1]
   
