@@ -767,7 +767,7 @@ outputmap_createResults <- function(map,
       if (SavedVec[iii] == 1) {
         
         if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-        map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii],weight=UnitPolygonColours)
+          map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii],weight=UnitPolygonColours)
         }else{
           for(kk in 1:length(SELGEO[[iii]])) {
             map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk), color = ClickedCols[iii],weight=UnitPolygonColours)
@@ -777,10 +777,10 @@ outputmap_createResults <- function(map,
         }
         
       } else {
-        if (SwitchedOnCells[iii] == 1) {
+        if (SwitchedOnCells[[iii]] == 1) {
           if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-          
-          map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii],weight=UnitPolygonColours)
+            
+            map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii],weight=UnitPolygonColours)
           }else{
             for(kk in 1:length(SELGEO[[iii]])) {
               map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk),color=FullColVec[iii],weight=UnitPolygonColours)
@@ -820,7 +820,7 @@ add_suffix_to_duplicates <- function(vec) {
       seen[[vec[i]]] <- 1
     }
   }
-  vec
+  return(vec)
 }
 
 check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
@@ -1155,3 +1155,4 @@ generate_unique_id <- function(used_ids_reactive, sample_space) {
     id <- sample(sample_space, 1)
   }
   return(id)
+}
