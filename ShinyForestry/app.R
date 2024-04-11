@@ -586,7 +586,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
 
 server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
-  hideTab(inputId = "tabs", target = "Exploration")
+  # hideTab(inputId = "tabs", target = "Exploration")
   hideTab(inputId = "tabs", target = "Clustering")
   
   SPECIES <- SPECIES_ARG1
@@ -674,12 +674,30 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$ThirdMapTxt <- renderText({Text3()})
   output$FourthMapTxt <- renderText({Text4()})
   
-  randomValue <- eventReactive({
+  # We want to select unique strategies to display on maps, this stores them
+  SelectedLinesIndicesInExplorationMapsReactive <- reactiveVal(c())
+  
+  # The randomValue is there to reset the vector of selected strategies/maps in the Exploration tab
+  randomValueOnButton <- eventReactive({
     input$random
-    input$tabsetPanel == "Exploration"
   }, {
-    runif(1)
-  })
+    # When we randomize the Exploration tab, reset the vector of selected strategies/maps
+    SelectedLinesIndicesInExplorationMapsReactive(c())
+    return(runif(1))
+  },
+  ignoreNULL = FALSE)
+  # The randomValue is there to reset the vector of selected strategies/maps in the Exploration tab
+  randomValueOnExplorationTab <- eventReactive({
+    input$tabs
+  }, {
+    if (input$tabs == "Exploration") {
+      # When we randomize the Exploration tab, reset the vector of selected strategies/maps
+      SelectedLinesIndicesInExplorationMapsReactive(c())
+      return(runif(1))
+    }
+  },
+  ignoreNULL = FALSE)
+  
   ClickedVector <- reactiveVal(NULL)
   AreaSelected0 <- reactiveVal(NULL)
   CarbonSelected0 <- reactiveVal(NULL)
@@ -875,6 +893,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL,
                                      input_areaSlider_multiplicative_coefficient = FALSE)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1220,7 +1239,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1431,7 +1451,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1446,25 +1467,32 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       # CONDPROBA <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
       CONDPROBA <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
       
-      SubsetMeetTargets <- SelectedSimMat2[CONDPROBA, ]
+      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
+      # SubsetMeetTargets <- SelectedSimMat2[CONDPROBA, ]
+      SubsetMeetTargets <- unique(SubsetMeetTargets)
       # SelIMAT <- Icalc$IVEC[CONDPROBA, ]
       
-      if (dim(SubsetMeetTargets)[1] > 0) {
+      if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 1) {
         mapresults <- outputmap_createResults(map = map,
+                                              map_number = 2,
                                               SubsetMeetTargets = SubsetMeetTargets,
                                               alphaLVL = alphaLVL,
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
+                                              SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
                                               SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
                                               UnitPolygonColours = UnitPolygonColours)
-        SavedRVs <- mapresults$SavedRVs
-        LSMT <- mapresults$LSMT
+        # SavedRVs <- mapresults$SavedRVs
+        
+        strategy_idx <- mapresults$strategy_idx
+        # LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
@@ -1482,8 +1510,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                                "Area Planted: ", round(SelectedArea, 2), "<br>",
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
-        Text1(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1)))
-        
+        Text1(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
       } else {
         Text1(paste("No strategy where all", N_TARGETS, "targets are met found"))
       }
@@ -1533,7 +1560,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1550,7 +1578,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       # CONDPROBA3PositiveLIST[[2]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
       # CONDPROBA3PositiveLIST[[3]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
       # CONDPROBA3PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-      CONDPROBA3PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 1)
+      CONDPROBA3PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
       
       # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[1]], ],
       #                                 NotMet = rep("Carbon", sum(CONDPROBA3PositiveLIST[[1]])))
@@ -1567,24 +1595,29 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       # SubsetMeetTargets <- rbind(SubsetMeetTargets,
       #                            data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[N_SPECIES + 3]], ],
       #                                       NotMet = rep("NbVisits", sum(CONDPROBA3PositiveLIST[[N_SPECIES + 3]]))))
-      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA3PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS - 1)
+      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA3PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
+      SubsetMeetTargets <- unique(SubsetMeetTargets)
       
-      if (dim(SubsetMeetTargets)[1] > 0) {
+      if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 2) {
         mapresults <- outputmap_createResults(map = map,
+                                              map_number = 3,
                                               SubsetMeetTargets = SubsetMeetTargets,
                                               alphaLVL = alphaLVL,
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
+                                              SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
                                               SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
                                               UnitPolygonColours = UnitPolygonColours)
-        SavedRVs <- mapresults$SavedRVs
-        LSMT <- mapresults$LSMT
+        # SavedRVs <- mapresults$SavedRVs
+        strategy_idx <- mapresults$strategy_idx
+        # LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
@@ -1616,10 +1649,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met))
-        
+        # Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met))
+        Text2(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
       } else {
-        Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
+        # Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
+        Text2(paste("No strategy where all", N_TARGETS, "targets are met found"))
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
@@ -1665,7 +1699,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1684,7 +1719,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       # CONDPROBA2PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
       # CONDPROBA2PositiveLIST[[5]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
       # CONDPROBA2PositiveLIST[[6]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-      CONDPROBA2PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 2)
+      CONDPROBA2PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
       
       # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]], ], NotMet = rep("Carbon, redSquirrel", sum(CONDPROBA2PositiveLIST[[1]])))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]], ], NotMet = rep("Carbon, Area", sum(CONDPROBA2PositiveLIST[[2]]))))
@@ -1692,24 +1727,29 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[4]], ], NotMet = rep("redSquirrel, Area", sum(CONDPROBA2PositiveLIST[[4]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[5]], ], NotMet = rep("redSquirrel, NbVisits", sum(CONDPROBA2PositiveLIST[[5]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]], ], NotMet = rep("Area, NbVisits", sum(CONDPROBA2PositiveLIST[[6]]))))
-      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA2PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS - 2)
+      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA2PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
+      SubsetMeetTargets <- unique(SubsetMeetTargets)
       
-      if (dim(SubsetMeetTargets)[1] > 0) {
+      if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 3) {
         mapresults <- outputmap_createResults(map = map,
+                                              map_number = 4,
                                               SubsetMeetTargets = SubsetMeetTargets,
                                               alphaLVL = alphaLVL,
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
+                                              SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
                                               SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
                                               UnitPolygonColours = UnitPolygonColours)
-        SavedRVs <- mapresults$SavedRVs
-        LSMT <- mapresults$LSMT
+        # SavedRVs <- mapresults$SavedRVs
+        strategy_idx <- mapresults$strategy_idx
+        # LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
@@ -1741,10 +1781,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met))
-        
+        # Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met))
+        Text3(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
       } else {
-        Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
+        # Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
+        Text3(paste("No strategy where all", N_TARGETS, "targets are met found"))
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
@@ -1790,7 +1831,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1807,30 +1849,35 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       # CONDPROBA1PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
       # CONDPROBA1PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
       # CONDPROBA1PositiveLIST[[4]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROBA1PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS - 3)
+      CONDPROBA1PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
       
       # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]], ], Met = rep("Carbon", sum(CONDPROBA1PositiveLIST[[1]])))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[2]], ], Met = rep("redSquirrel", sum(CONDPROBA1PositiveLIST[[2]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[3]], ], Met = rep("Area", sum(CONDPROBA1PositiveLIST[[3]]))))
       # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]], ], Met = rep("NbVisits", sum(CONDPROBA1PositiveLIST[[4]]))))
-      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA1PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS - 3)
+      SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA1PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
+      SubsetMeetTargets <- unique(SubsetMeetTargets)
       
-      if (dim(SubsetMeetTargets)[1] > 0) {
+      if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 4) {
         mapresults <- outputmap_createResults(map = map,
+                                              map_number = 5,
                                               SubsetMeetTargets = SubsetMeetTargets,
                                               alphaLVL = alphaLVL,
                                               FullTable = FullTable,
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
-                                              randomValue = randomValue,
+                                              randomValueOnButton = randomValueOnButton,
+                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
+                                              SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
                                               ColorDarkeningFactor = ColorDarkeningFactor(),
                                               SPECIES_ARG2 = SPECIES,
                                               SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
                                               UnitPolygonColours = UnitPolygonColours)
-        SavedRVs <- mapresults$SavedRVs
-        LSMT <- mapresults$LSMT
+        # SavedRVs <- mapresults$SavedRVs
+        strategy_idx <- mapresults$strategy_idx
+        # LSMT <- mapresults$LSMT
         map <- mapresults$map
         
         addControlText <- ""
@@ -1862,10 +1909,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                                "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
                                                "</p>"), position = "topright"))
         
-        Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_met))
-        
+        # Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_met))
+        Text4(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
       } else {
-        Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
+        # Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
+        Text4(paste("No strategy where all", N_TARGETS, "targets are met found"))
       }
     }
     map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
