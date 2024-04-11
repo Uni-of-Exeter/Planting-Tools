@@ -495,7 +495,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                              
                              # If it is a group
                              if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
-                               text <- paste(get_pretty_group(x, NAME_CONVERSION), "(Change in Species Richness)")
+                               text <- paste0("Change in Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
                              } else {
                                # If it is a specie
                                text <- get_english_specie_from_specie(x, NAME_CONVERSION)
@@ -1390,6 +1390,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             specie_english <- SPECIES_ENGLISH[i]
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            if (SPECIES[i] == "All") {
+              specie_english <- "All species"
+            }
             addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
