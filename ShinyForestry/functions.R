@@ -557,6 +557,7 @@ outputmap_calculateMats <- function(input,
                                     # RedSquirrelSelectedSD,
                                     SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                     VisitsSelectedSD,
+                                    alphaLVL = alphaLVL,
                                     input_areaSlider_multiplicative_coefficient = TRUE) {
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVec) == 1) {
@@ -650,7 +651,7 @@ outputmap_calculateMats <- function(input,
                      EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
                      # SDYMat = data.frame(SelectedSimMat2$CarbonSD, SelectedSimMat2$redsquirrelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
                      SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
-                     alpha = 0.05, tolVec = tolvec)
+                     alpha = alphaLVL, tolVec = tolvec)
   
   LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
                             # SelectedSimMat2$redsquirrel,

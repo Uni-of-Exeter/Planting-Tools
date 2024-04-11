@@ -875,6 +875,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL,
                                      input_areaSlider_multiplicative_coefficient = FALSE)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1220,7 +1221,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1431,7 +1433,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1533,7 +1536,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1666,7 +1670,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1792,7 +1797,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      CarbonSelectedSD = CarbonSelectedSD,
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alphaLVL = alphaLVL)
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
