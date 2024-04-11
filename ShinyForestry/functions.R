@@ -670,6 +670,7 @@ outputmap_calculateMats <- function(input,
 }
 
 outputmap_createResults <- function(map,
+                                    map_number, # takes values 2, 3, 4, 5 in reference to "output$map2 <- renderLeaflet({...})" ... "output$map5 <- renderLeaflet({...})"
                                     SubsetMeetTargets,
                                     alphaLVL,
                                     FullTable,
@@ -677,6 +678,7 @@ outputmap_createResults <- function(map,
                                     SelectedDropdown,
                                     randomValueOnButton,
                                     randomValueOnExplorationTab,
+                                    SelectedLinesIndicesInExplorationMapsReactive,
                                     ColourScheme,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor,
@@ -685,8 +687,6 @@ outputmap_createResults <- function(map,
                                     UnitPolygonColours) {
   SPECIES <- SPECIES_ARG2
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG2
-  LSMT <- dim(SubsetMeetTargets)[1]
-  SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
   SavedRVs <- c()
   if (!is.null(randomValueOnButton())) {
     SavedRVs[1] <- randomValueOnButton()
@@ -698,6 +698,26 @@ outputmap_createResults <- function(map,
   } else {
     SavedRVs[2] <- -1
   }
+  # LSMT <- dim(SubsetMeetTargets)[1]
+  
+  # randomValue (triggered on clicking the Exploration tab and the Randomize! button) ensures the vector of
+  # strategies SelectedLinesIndicesInExplorationMapsReactive is reset when needed
+  
+  # If we have already selected a strategy for the map with number map_number, select it instead of picking a new one
+  # "output$map2 <- renderLeaflet({...})" and the other maps are called in a loop as long as any variable changes, the goal is to stabilize
+  # So we need to avoid generating a strategy if we have already done so before
+  if (length(SelectedLinesIndicesInExplorationMapsReactive()) >= (map_number - 1)) {
+    strategy_idx <- SelectedLinesIndicesInExplorationMapsReactive()[map_number - 1]
+  } else {
+    # Pick a unused row for this map
+    strategy_idx <- generate_unique_id(used_ids_reactive = SelectedLinesIndicesInExplorationMapsReactive,
+                                       sample_space = 1:(dim(SubsetMeetTargets)[1]))
+    # Add the ID to the used IDs list
+    SelectedLinesIndicesInExplorationMapsReactive(c(SelectedLinesIndicesInExplorationMapsReactive(), strategy_idx))
+  }
+  
+  # SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
+  SelectedLine <- SubsetMeetTargets[strategy_idx, ]
   
   SwitchedOnCells <- SelectedLine[1:length(SavedVec)]
   SelectedTreeCarbon <- SelectedLine$Carbon
@@ -784,7 +804,8 @@ outputmap_createResults <- function(map,
                 SelectedVisitsSD = SelectedVisitsSD,
                 SubsetMeetTargets = SubsetMeetTargets,
                 SavedRVs = SavedRVs,
-                LSMT = LSMT),
+                strategy_idx = strategy_idx),
+                # LSMT = LSMT),
            SelectedBioList,
            SelectedBioSDList))
 }
@@ -821,17 +842,15 @@ check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
     }
     prob_list[[i]] <- condition
   }
-  if (length(prob_list) == 1) {
-    prob_list <- unlist(prob_list)
-  }
-  # if(anyNA(condition, recursive = TRUE)) browser()
   return(prob_list)
 }
 
 subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST, TARGETS, nb_targets_met) {
   n_metrics <- ncol(PROBAMAT)
   targets_met <- t(combn(n_metrics, nb_targets_met))
-  targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
+  if (nb_targets_met != n_metrics) {
+    targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
+  }
   
   SubsetMeetTargets <- data.frame()
   for (i in 1:nrow(targets_met)) {
@@ -1128,3 +1147,11 @@ user_path <- function() {
   }
   return(UserPath)
 }
+
+# Function to generate a unique ID
+generate_unique_id <- function(used_ids_reactive, sample_space) {
+  id <- sample(sample_space, 1)
+  while (id %in% used_ids_reactive()) {
+    id <- sample(sample_space, 1)
+  }
+  return(id)
