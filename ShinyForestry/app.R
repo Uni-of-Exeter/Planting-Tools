@@ -13,36 +13,6 @@
 # sudo apt-get -y --no-install-recommends install libharfbuzz-dev
 # sudo apt-get -y --no-install-recommends install libfribidi-dev
 
-# Load packages
-packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
-              "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-              "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-              "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
-              "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-              "mvtnorm", "dplyr")
-lib <- normalizePath(Sys.getenv("R_LIBS_USER"))
-repo <- "https://cran.rstudio.com/"
-# update.packages(lib.loc = lib, repos = repo)
-if (!require("prefeR")) {
-  install.packages("prefeR", lib = lib, repos = repo)
-}
-loadNamespace("prefeR")
-# Load the packages already installed
-packages_status <- sapply(packages, require, character.only = TRUE, quietly = TRUE)
-packages_to_install <- packages[packages_status == FALSE]
-# Remove packages that failed to load if they are already there
-try(remove.packages(packages_to_install, lib = lib))
-# Install packages
-install.packages(packages_to_install, lib = lib, repos = repo)
-# Load packages
-sapply(packages, library, character.only = TRUE, quietly = TRUE)
-
-
-#  SavedVec <- rep(0, 47)
-#SelecTargetCarbon <- 240;      SelecTargetBio <- 19;SelecTargetArea <- 13890596;SelecTargetVisits <- 17
-#SelecTargetCarbon <- 1000;      SelecTargetBio <- 1100;SelecTargetArea <- 1000000000;SelecTargetVisits <- 1000000
-#SelectedDropdown <- "Ennerdale"
-
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
 if (!grepl("ShinyForestry", FolderSource)) {
@@ -50,6 +20,54 @@ if (!grepl("ShinyForestry", FolderSource)) {
 }
 
 source(normalizePath(file.path(FolderSource, "functions.R")))
+
+# Load packages
+libs <- unique(c(normalizePath(.libPaths()),
+                 normalizePath(Sys.getenv("R_LIBS_USER")),
+                 normalizePath(file.path(getwd(), "myRlibrary"))))
+packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
+              "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+              "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+              "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
+              "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+              "mvtnorm", "dplyr")
+repo <- "https://cran.rstudio.com/"
+
+# Loop through libraries until one is writable
+error <- TRUE
+i <- 1
+while (error == TRUE && i <= length(libs)) {
+  lib <- libs[i]
+  tryCatch({
+    # update.packages(lib.loc = lib, repos = repo)
+    if (!require("prefeR")) {
+      install.packages("prefeR", lib = lib, repos = repo)
+    }
+    loadNamespace("prefeR")
+    # Load the packages already installed
+    packages_status <- sapply(packages, require, character.only = TRUE, quietly = TRUE)
+    packages_to_install <- packages[packages_status == FALSE]
+    # Remove packages that failed to load if they are already there
+    tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {})
+    # Install packages
+    install.packages(packages_to_install, lib = lib, repos = repo)
+    # Load packages
+    sapply(packages, library, character.only = TRUE, quietly = TRUE)
+    # Stop the loop
+    error <- FALSE
+  },
+  error = function(e) {},
+  finally = {
+    i <- i + 1
+  }
+  )
+}
+
+#  SavedVec <- rep(0, 47)
+#SelecTargetCarbon <- 240;      SelecTargetBio <- 19;SelecTargetArea <- 13890596;SelecTargetVisits <- 17
+#SelecTargetCarbon <- 1000;      SelecTargetBio <- 1100;SelecTargetArea <- 1000000000;SelecTargetVisits <- 1000000
+#SelectedDropdown <- "Ennerdale"
+
 # species_names <- colnames(read.csv(paste0(FolderSource, "Model Data/Biodiversity/JNCC/beta_JNCC100_interact_quad.csv")))[-1]
 # english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
 # english_species_names <- add_suffix_to_duplicates(english_species_names)
@@ -495,7 +513,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                              
                              # If it is a group
                              if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
-                               text <- paste(get_pretty_group(x, NAME_CONVERSION), "(Change in Species Richness)")
+                               text <- paste0("Change in Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
                              } else {
                                # If it is a specie
                                text <- get_english_specie_from_specie(x, NAME_CONVERSION)
@@ -587,7 +605,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
 server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
   # hideTab(inputId = "tabs", target = "Exploration")
-  hideTab(inputId = "tabs", target = "Clustering")
+  # hideTab(inputId = "tabs", target = "Clustering")
   
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
@@ -685,19 +703,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     SelectedLinesIndicesInExplorationMapsReactive(c())
     return(runif(1))
   },
+  # the action should be triggered (or value calculated, in the case of eventReactive) when the input event expression is NULL
   ignoreNULL = FALSE)
-  # The randomValue is there to reset the vector of selected strategies/maps in the Exploration tab
-  randomValueOnExplorationTab <- eventReactive({
-    input$tabs
-  }, {
-    if (input$tabs == "Exploration") {
-      # When we randomize the Exploration tab, reset the vector of selected strategies/maps
-      SelectedLinesIndicesInExplorationMapsReactive(c())
-      return(runif(1))
-    }
-  },
-  ignoreNULL = FALSE)
-  
+
   ClickedVector <- reactiveVal(NULL)
   AreaSelected0 <- reactiveVal(NULL)
   CarbonSelected0 <- reactiveVal(NULL)
@@ -1388,6 +1396,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             specie_english <- SPECIES_ENGLISH[i]
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+            if (SPECIES[i] == "All") {
+              specie_english <- "All species"
+            }
             addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
@@ -1481,7 +1492,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValueOnButton = randomValueOnButton,
-                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
@@ -1607,7 +1617,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValueOnButton = randomValueOnButton,
-                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
@@ -1739,7 +1748,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValueOnButton = randomValueOnButton,
-                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
@@ -1867,7 +1875,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                               SavedVec = SavedVec,
                                               SelectedDropdown = SelectedDropdown,
                                               randomValueOnButton = randomValueOnButton,
-                                              randomValueOnExplorationTab = randomValueOnExplorationTab,
                                               SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
                                               ColourScheme = ColourScheme(),
                                               ColorLighteningFactor = ColorLighteningFactor(),
