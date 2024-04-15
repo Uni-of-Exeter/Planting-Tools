@@ -343,78 +343,86 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
 
+# When we worked on squares, it replaced unusable ones with squares.
+# Now we work with polygons and have not updated it.
+# If you uncomment it, you need to update it before actually using it.
 map_sell_not_avail <- function(FullTableNotAvail,
                                SelectedDropdown,
                                listMaps = NULL,
                                map = NULL) {
-  if(dim(FullTableNotAvail)[1]>0){  SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown}else{SELLNOTAVAIL<-NULL}
-  if(sum(SELLNOTAVAIL)>0){
-    # here we assume that not avail is only list of polygons
-    
-    #sellngNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
-    #sellatNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
-    
-    SELGEO<-FullTableNotAvail$geometry[SELLNOTAVAIL]
-    
-    
-    for (iii in 1:length(SELGEO)) {
-      if (is.null(map) && !is.null(listMaps)) {
-        listMaps[[1]] <- leaflet::addPolygons(listMaps[[1]],
-                                              lng = SELGEO[[iii]][[1]][,1],#as.numeric(sellngNotAvail[iii, ]),
-                                              lat = SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii, ]),
-                                              layerId = paste0("SquareNotAvail", iii),
-                                              color = "yellow")
-        listMaps[[2]] <- leaflet::addPolygons(listMaps[[2]],
-                                              lng = SELGEO[[iii]][[1]][,1],# as.numeric(sellngNotAvail[iii,]),
-                                              lat =  SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii,]),
-                                              layerId = paste0("SquareNotAvail",iii),
-                                              color ="yellow")
-        
-        midlng <- ( SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1]) / 2
-        midlat <- ( SELGEO[[iii]][[1]][1,2] +  SELGEO[[iii]][[1]][3,2]) / 2
-        
-        listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng - 0.004, midlng + 0.004),
-                                               color = "orange",
-                                               weight = 5)
-        listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng + 0.004, midlng - 0.004),
-                                               color = "orange",
-                                               weight = 5)
-        listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng - 0.004, midlng + 0.004),
-                                               color = "orange",
-                                               weight = 5)
-        listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng + 0.004, midlng - 0.004),
-                                               color = "orange",
-                                               weight = 5)
-      } else if (!is.null(map) && is.null(listMaps)) {
-        map <- leaflet::addPolygons(map,
-                                    lng = SELGEO[[iii]][[1]][,1],
-                                    lat = SELGEO[[iii]][[1]][,2],
-                                    layerId = paste0("SquareNotAvail", iii),
-                                    color = "yellow")
-        
-        midlng <- (SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1]) / 2
-        midlat <- (SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2]) / 2
-        
-        map <- leaflet::addPolylines(map,
-                                     lat = c(midlat - 0.0025, midlat + 0.0025),
-                                     lng = c(midlng - 0.004, midlng + 0.004),
-                                     color = "orange",
-                                     weight = 5)
-        map <- leaflet::addPolylines(map,
-                                     lat = c(midlat - 0.0025, midlat + 0.0025),
-                                     lng = c(midlng + 0.004, midlng - 0.004),
-                                     color = "orange",
-                                     weight = 5)
-      }
-    }}
+  # if (dim(FullTableNotAvail)[1]>0) { 
+  #   SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown
+  # } else {
+  #   SELLNOTAVAIL <- NULL
+  # }
+  # if (sum(SELLNOTAVAIL) > 0) {
+  #   # here we assume that not avail is only list of polygons
+  #   
+  #   #sellngNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
+  #   #sellatNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
+  #   
+  #   SELGEO <- FullTableNotAvail$geometry[SELLNOTAVAIL]
+  #   
+  #   
+  #   for (iii in 1:length(SELGEO)) {
+  #     if (is.null(map) && !is.null(listMaps)) {
+  #       listMaps[[1]] <- leaflet::addPolygons(listMaps[[1]],
+  #                                             lng = SELGEO[[iii]][[1]][,1],#as.numeric(sellngNotAvail[iii, ]),
+  #                                             lat = SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii, ]),
+  #                                             layerId = paste0("SquareNotAvail", iii),
+  #                                             color = "yellow")
+  #       listMaps[[2]] <- leaflet::addPolygons(listMaps[[2]],
+  #                                             lng = SELGEO[[iii]][[1]][,1],# as.numeric(sellngNotAvail[iii,]),
+  #                                             lat =  SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii,]),
+  #                                             layerId = paste0("SquareNotAvail",iii),
+  #                                             color ="yellow")
+  #       
+  #       midlng <- ( SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1] ) / 2
+  #       midlat <- ( SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2] ) / 2
+  #       
+  #       listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng - 0.004, midlng + 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #       listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng + 0.004, midlng - 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #       listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng - 0.004, midlng + 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #       listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng + 0.004, midlng - 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #     } else if (!is.null(map) && is.null(listMaps)) {
+  #       map <- leaflet::addPolygons(map,
+  #                                   lng = SELGEO[[iii]][[1]][,1],
+  #                                   lat = SELGEO[[iii]][[1]][,2],
+  #                                   layerId = paste0("SquareNotAvail", iii),
+  #                                   color = "yellow")
+  #       
+  #       midlng <- (SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1]) / 2
+  #       midlat <- (SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2]) / 2
+  #       
+  #       map <- leaflet::addPolylines(map,
+  #                                    lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                    lng = c(midlng - 0.004, midlng + 0.004),
+  #                                    color = "orange",
+  #                                    weight = 5)
+  #       map <- leaflet::addPolylines(map,
+  #                                    lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                    lng = c(midlng + 0.004, midlng - 0.004),
+  #                                    color = "orange",
+  #                                    weight = 5)
+  #     }
+  #   }
+  # }
   if (is.null(map) && !is.null(listMaps)) {
     return(listMaps)
   } else if (!is.null(map) && is.null(listMaps)) {
@@ -661,8 +669,9 @@ outputmap_calculateMats <- function(input,
                                     # RedSquirrelSelectedSD,
                                     SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                     VisitsSelectedSD,
-                                    input_areaSlider_multiplicative_coefficient = TRUE,
-                                    alpha) {
+                                    alphaLVL = alphaLVL,
+                                    input_areaSlider_multiplicative_coefficient = TRUE) {
+
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVecLoc) == 1) {
     SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecLoc)])
@@ -755,7 +764,7 @@ outputmap_calculateMats <- function(input,
                      EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
                      # SDYMat = data.frame(SelectedSimMat2$CarbonSD, SelectedSimMat2$redsquirrelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
                      SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
-                     alpha = alpha, tolVec = tolvec)
+                     alpha = alphaLVL, tolVec = tolvec)
   
   LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
                             # SelectedSimMat2$redsquirrel,
@@ -916,12 +925,15 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
 
 
 outputmap_createResults <- function(map,
+                                    map_number, # takes values 2, 3, 4, 5 in reference to "output$map2 <- renderLeaflet({...})" ... "output$map5 <- renderLeaflet({...})"
                                     SubsetMeetTargets,
                                     alphaLVL,
                                     FullTable,
                                     SavedVec,
                                     SelectedDropdown,
-                                    randomValue,
+                                    randomValueOnButton,
+                                    # randomValueOnExplorationTab,
+                                    SelectedLinesIndicesInExplorationMapsReactive,
                                     ColourScheme,
                                     ColorLighteningFactor,
                                     ColorDarkeningFactor,
@@ -930,9 +942,32 @@ outputmap_createResults <- function(map,
                                     UnitPolygonColours) {
   SPECIES <- SPECIES_ARG2
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG2
-  SavedRVs <- randomValue()
-  LSMT <- dim(SubsetMeetTargets)[1]
-  SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
+  SavedRVs <- c()
+  if (!is.null(randomValueOnButton())) {
+    SavedRVs[1] <- randomValueOnButton()
+  } else {
+    SavedRVs[1] <- -1
+  }
+  # LSMT <- dim(SubsetMeetTargets)[1]
+  
+  # randomValue (triggered on clicking the Exploration tab and the Randomize! button) ensures the vector of
+  # strategies SelectedLinesIndicesInExplorationMapsReactive is reset when needed
+  
+  # If we have already selected a strategy for the map with number map_number, select it instead of picking a new one
+  # "output$map2 <- renderLeaflet({...})" and the other maps are called in a loop as long as any variable changes, the goal is to stabilize
+  # So we need to avoid generating a strategy if we have already done so before
+  if (length(SelectedLinesIndicesInExplorationMapsReactive()) >= (map_number - 1)) {
+    strategy_idx <- SelectedLinesIndicesInExplorationMapsReactive()[map_number - 1]
+  } else {
+    # Pick a unused row for this map
+    strategy_idx <- generate_unique_id(used_ids_reactive = SelectedLinesIndicesInExplorationMapsReactive,
+                                       sample_space = 1:(dim(SubsetMeetTargets)[1]))
+    # Add the ID to the used IDs list
+    SelectedLinesIndicesInExplorationMapsReactive(c(SelectedLinesIndicesInExplorationMapsReactive(), strategy_idx))
+  }
+  
+  # SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
+  SelectedLine <- SubsetMeetTargets[strategy_idx, ]
   
   SwitchedOnCells <- SelectedLine[1:length(SavedVec)]
   SelectedTreeCarbon <- SelectedLine$Carbon
@@ -982,7 +1017,7 @@ outputmap_createResults <- function(map,
       if (SavedVec[iii] == 1) {
         
         if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-        map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii],weight=UnitPolygonColours)
+          map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii],weight=UnitPolygonColours)
         }else{
           for(kk in 1:length(SELGEO[[iii]])) {
             map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk), color = ClickedCols[iii],weight=UnitPolygonColours)
@@ -992,10 +1027,10 @@ outputmap_createResults <- function(map,
         }
         
       } else {
-        if (SwitchedOnCells[iii] == 1) {
+        if (SwitchedOnCells[[iii]] == 1) {
           if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-          
-          map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii],weight=UnitPolygonColours)
+            
+            map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii],weight=UnitPolygonColours)
           }else{
             for(kk in 1:length(SELGEO[[iii]])) {
               map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk),color=FullColVec[iii],weight=UnitPolygonColours)
@@ -1019,7 +1054,8 @@ outputmap_createResults <- function(map,
                 SelectedVisitsSD = SelectedVisitsSD,
                 SubsetMeetTargets = SubsetMeetTargets,
                 SavedRVs = SavedRVs,
-                LSMT = LSMT),
+                strategy_idx = strategy_idx),
+                # LSMT = LSMT),
            SelectedBioList,
            SelectedBioSDList))
 }
@@ -1034,7 +1070,7 @@ add_suffix_to_duplicates <- function(vec) {
       seen[[vec[i]]] <- 1
     }
   }
-  vec
+  return(vec)
 }
 
 check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
@@ -1056,17 +1092,15 @@ check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
     }
     prob_list[[i]] <- condition
   }
-  if (length(prob_list) == 1) {
-    prob_list <- unlist(prob_list)
-  }
-  # if(anyNA(condition, recursive = TRUE)) browser()
   return(prob_list)
 }
 
 subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST, TARGETS, nb_targets_met) {
   n_metrics <- ncol(PROBAMAT)
   targets_met <- t(combn(n_metrics, nb_targets_met))
-  targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
+  if (nb_targets_met != n_metrics) {
+    targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
+  }
   
   SubsetMeetTargets <- data.frame()
   for (i in 1:nrow(targets_met)) {
@@ -1253,7 +1287,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
 }
 
 get_pretty_specie <- function(ugly_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
-  if (ugly_specie %in% NAME_CONVERSION_ARG$Specie_pretty) return(usgly_specie)
+  if (ugly_specie %in% NAME_CONVERSION_ARG$Specie_pretty) return(ugly_specie)
   idx <- which(NAME_CONVERSION_ARG$Specie == ugly_specie)
   if (length(idx) == 0) return(ugly_specie)
   result <- NAME_CONVERSION_ARG$Specie_pretty[idx]
@@ -1362,4 +1396,13 @@ user_path <- function() {
     UserPath <- normalizePath(file.path(system('wslpath "$(wslvar USERPROFILE)"', intern = TRUE)))
   }
   return(UserPath)
+}
+
+# Function to generate a unique ID
+generate_unique_id <- function(used_ids_reactive, sample_space) {
+  id <- sample(sample_space, 1)
+  while (id %in% used_ids_reactive()) {
+    id <- sample(sample_space, 1)
+  }
+  return(id)
 }
