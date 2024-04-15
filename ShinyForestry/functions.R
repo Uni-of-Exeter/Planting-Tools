@@ -924,7 +924,7 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   for (ijj in 1:length(names(speciesMat)))
   {NM<-names(speciesMat)[ijj]
   NMSD<-names(speciesMatSD)[ijj]
-  bioMaxList[[ijj]]<-max(0,trunc(sqrt(SelectedSimMat2[[NMSD]][1]^2 + tolvec[1+ijj])*qtruncnorm(p=1-alpha,a=LimitsMat[1+ijj,1],b=Inf,mean=0,sd=1)+SelectedSimMat2[[NM]][1]))
+  bioMaxList[[ijj]]<-max(0,trunc(sqrt(SelectedSimMat2[[NMSD]][1]^2 + tolvec[1+ijj])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1+ijj],b=Inf,mean=0,sd=1)+SelectedSimMat2[[NM]][1]))
     
   }
   AreaMax<-max(0,trunc(sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]-1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Area[1]))
