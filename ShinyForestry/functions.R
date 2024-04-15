@@ -171,7 +171,119 @@ MultiImpl <- function(TargetsVec,EYMat,SDYMat,alpha,tolVec) {
 #    
 #  return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 #}
+####################
+ReturnNameConversion <- function()
+  {NAME_CONVERSION<-matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll",
+                                   "Birds", "Alauda arvensis", "Skylark",
+                                   "Birds", "Anthus trivialis", "Tree Pipit",
+                                   "Birds", "Botaurus stellaris", "Bittern",
+                                   "Birds", "Caprimulgus europaeus", "Nightjar",
+                                   "Birds", "Emberiza citrinella", "Yellowhammer",
+                                   "Birds", "Emberiza schoeniclus", "Reed Bunting",
+                                   "Birds", "Locustella naevia", "Grasshopper Warbler",
+                                   "Birds", "Lullula arborea", "Woodlark",
+                                   "Birds", "Motacilla flava subsp flavissima", "Yellow Wagtail",
+                                   "Birds", "Muscicapa striata", "Spotted Flycatcher",
+                                   "Birds", "Numenius arquata", "Curlew",
+                                   "Birds", "Perdix perdix", "Grey Partridge",
+                                   "Birds", "Phylloscopus sibilatrix", "Wood Warbler",
+                                   "Birds", "Streptopelia turtur", "Turtle Dove",
+                                   "Birds", "Turdus torquatus", "Ring Ouzel",
+                                   "Birds", "Vanellus vanellus", "Lapwing",
+                                   "Herptiles", "Vipera berus", "Adder",
+                                   "Invertebrate - bees", "Bombus monticola", "Mountain Bumblebee",
+                                   "Invertebrate - beetles", "Cercyon convexiusculus", "Water Beetle sp.",
+                                   "Invertebrate - beetles", "Gnorimus nobilis", "Noble Chafer",
+                                   "Invertebrate - beetles", "Liopterus haemorrhoidalis", "Water Beetle sp.",
+                                   "Invertebrate - beetles", "Lucanus cervus", "Stag Beetle",
+                                   "Invertebrate - butterflies", "Boloria selene", "Small Pearl-Bordered Fritillary",
+                                   "Invertebrate - butterflies", "Coenonympha pamphilus", "Small Heath",
+                                   "Invertebrate - butterflies", "Coenonympha tullia", "Large Heath",
+                                   "Invertebrate - butterflies", "Cupido minimus", "Small Blue",
+                                   "Invertebrate - butterflies", "Erebia epiphron", "Mountain Ringlet",
+                                   "Invertebrate - butterflies", "Erynnis tages", "Dingy Skipper",
+                                   "Invertebrate - butterflies", "Hipparchia semele", "Grayling",
+                                   "Invertebrate - butterflies", "Lasiommata megera", "Wall",
+                                   "Invertebrate - butterflies", "Limenitis camilla", "White Admiral",
+                                   "Invertebrate - butterflies", "Satyrium w-album", "White-Letter Hairstreak",
+                                   "Invertebrate - crickets", "Leptophyes punctatissima", "Speckled Bush Cricket",
+                                   "Invertebrate - crickets", "Metrioptera brachyptera", "Bog Bush Cricket",
+                                   "Invertebrate - moths", "Cossus cossus", "Goat Moth",
+                                   "Invertebrate - moths", "Acronicta psi", "Grey Dagger",
+                                   "Invertebrate - moths", "Allophyes oxyacanthae", "Green-brindled Crescent",
+                                   "Invertebrate - moths", "Dasypolia templi", "Brindled Ochre",
+                                   "Invertebrate - moths", "Xanthorhoe decoloraria", "Red Carpet",
+                                   "Invertebrate - snails", "Cochlodina laminata", "Plaited Door Snail",
+                                   "Invertebrate - snails", "Monacha cantiana", "Kentish Snail",
+                                   "Invertebrate - snails", "Zonitoides excavatus", "Hollowed Glass Snail",
+                                   "Lichens", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
+                                   "Lichens", "Leptogium brebissonii", "Lichen sp.",
+                                   "Lichens", "Parmeliella testacea", "Lichen sp.",
+                                   "Lichens", "Pseudocyphellaria intricata", "Lichen sp.",
+                                   "Lichens", "Usnea articulata", "String-Of-Sausage Lichen",
+                                   "Mammals", "Barbastella barbastellus", "Barbastelle bat",
+                                   "Mammals", "Felis silvestris", "Wildcat",
+                                   "Mammals", "Lepus europaeus", "European hare",
+                                   "Mammals", "Lepus timidus", "Mountain Hare",
+                                   "Mammals", "Martes martes", "Pine Marten",
+                                   "Mammals", "Micromys minutus", "Harvest Mouse",
+                                   "Mammals", "Muscardinus avellanarius", "Hazel Dormouse",
+                                   "Mammals", "Mustela putorius", "Polecat",
+                                   "Mammals", "Myotis bechsteinii", "Bechstein's bat",
+                                   "Mammals", "Nyctalus noctula", "Noctule Bat",
+                                   "Mammals", "Plecotus auritus", "Brown Long-eared Bat",
+                                   "Mammals", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
+                                   "Mammals", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
+                                   "Mammals", "Sciurus vulgaris", "Eurasian red squirrel",
+                                   "Vascular plants", "Anchusa arvensis", "Field bugloss",
+                                   "Vascular plants", "Andromeda polifolia", "Bog Rosemary",
+                                   "Vascular plants", "Arctostaphylos alpinus", "Mountain bearberry",
+                                   "Vascular plants", "Asplenium viride", "Green spleenwort",
+                                   "Vascular plants", "Atriplex laciniata", "Frosted Orache",
+                                   "Vascular plants", "Blysmus rufus", "Saltmarsh Flat-Sedge",
+                                   "Vascular plants", "Cakile maritima", "Sea Rocket",
+                                   "Vascular plants", "Campanula glomerata", "Clustered Bellflower",
+                                   "Vascular plants", "Carex extensa", "Long-Bracted Sedge",
+                                   "Vascular plants", "Carex magellanica", "Tall Bog-Sedge",
+                                   "Vascular plants", "Centaurium pulchellum", "Lesser Centaury",
+                                   "Vascular plants", "Cerastium arvense", "Field Mouse-Ear",
+                                   "Vascular plants", "Cirsium eriophorum", "Woolly Thistle",
+                                   "Vascular plants", "Daphne laureola", "Spurge-Laurel",
+                                   "Vascular plants", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
+                                   "Vascular plants", "Fumaria muralis", "Common Ramping-Fumitory",
+                                   "Vascular plants", "Genista anglica", "Petty Whin",
+                                   "Vascular plants", "Genista tinctoria", "Dyer's Greenweed",
+                                   "Vascular plants", "Gnaphalium supinum", "Dwarf Cudweed",
+                                   "Vascular plants", "Goodyera repens", "Creeping Lady's-Tresses",
+                                   "Vascular plants", "Hypericum elodes", "Marsh St John's-Wort",
+                                   "Vascular plants", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
+                                   "Vascular plants", "Leymus arenarius", "Lyme Grass",
+                                   "Vascular plants", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
+                                   "Vascular plants", "Neottia nidus-avis", "Bird's-Nest Orchid",
+                                   "Vascular plants", "Ornithopus perpusillus", "Bird's-Foot",
+                                   "Vascular plants", "Orthilia secunda", "Serrated Wintergreen",
+                                   "Vascular plants", "Oxyria digyna", "Mountain Sorrel",
+                                   "Vascular plants", "Pyrola media", "Intermediate Wintergreen",
+                                   "Vascular plants", "Radiola linoides", "Allseed",
+                                   "Vascular plants", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
+                                   "Vascular plants", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
+                                   "Vascular plants", "Silaum silaus", "Pepper-Saxifrage",
+                                   "Vascular plants", "Thymus pulegioides", "Large Thyme",
+                                   "Vascular plants", "Tilia cordata", "Small-Leaved Lime",
+                                   "Vascular plants", "Trifolium fragiferum", "Strawberry Clover",
+                                   "Vascular plants", "Trifolium striatum", "Knotted Clover",
+                                   "Vascular plants", "Vaccinium microcarpum", "Small Cranberry"),
+                          ncol = 3, byrow = TRUE)
+  
+  NAME_CONVERSION <- data.frame(Specie = NAME_CONVERSION[, 2],
+                                English_specie = add_suffix_to_duplicates(NAME_CONVERSION[, 3]),
+                                Group = NAME_CONVERSION[, 1])
+  
+  
+  return(NAME_CONVERSION)
+  }
 
+##################################
 
 
 BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
@@ -546,8 +658,8 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
 }
 
 outputmap_calculateMats <- function(input,
-                                    SavedVec,
-                                    simul636,
+                                    SavedVecLoc,
+                                    simul636Loc,
                                     AreaSelected,
                                     CarbonSelected,
                                     # RedSquirrelSelected,
@@ -559,38 +671,39 @@ outputmap_calculateMats <- function(input,
                                     VisitsSelectedSD,
                                     alphaLVL = alphaLVL,
                                     input_areaSlider_multiplicative_coefficient = TRUE) {
+
   # If only one element in SavedVec, select corresponding column in simul636
-  if (length(SavedVec) == 1) {
-    SelectedSimMat <- as.matrix(simul636[, 1:length(SavedVec)])
+  if (length(SavedVecLoc) == 1) {
+    SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecLoc)])
   } else {
-    SelectedSimMat <- simul636[, 1:length(SavedVec)]
+    SelectedSimMat <- simul636Loc[, 1:length(SavedVecLoc)]
   }
   
-  SVMAT <- t(matrix(SavedVec, length(SavedVec), dim(SelectedSimMat)[1]))
-  CarbonMAT <- t(matrix(CarbonSelected, length(SavedVec), dim(SelectedSimMat)[1]))
+  SVMAT <- t(matrix(SavedVecLoc, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  CarbonMAT <- t(matrix(CarbonSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
   # RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
   for (i in 1:length(SpeciesListSelected)) {
     specie_name <- names(SpeciesListSelected)[i]
     specie_value <- SpeciesListSelected[[i]]
     mat_name <- paste0(specie_name, "MAT")
     # specieSelected <- get(paste0(specie_name, "Selected"))
-    value <- t(matrix(as.numeric(specie_value), length(SavedVec), dim(SelectedSimMat)[1]))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
     assign(mat_name, value)
   }
-  AreaMAT <- t(matrix(AreaSelected, length(SavedVec), dim(SelectedSimMat)[1]))
-  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVecLoc), dim(SelectedSimMat)[1]))
   
-  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVec), dim(SelectedSimMat)[1]))
+  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVecLoc), dim(SelectedSimMat)[1]))
   # RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
   for (i in 1:length(SpeciesListSelectedSD)) {
     specie_name <- names(SpeciesListSelectedSD)[i]
     specie_value <- SpeciesListSelectedSD[[i]]
     mat_name <- paste0(specie_name, "MAT")
     # specieSelected <- get(paste0(specie_name, "SelectedSD"))
-    value <- t(matrix(as.numeric(specie_value), length(SavedVec), dim(SelectedSimMat)[1]))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
     assign(mat_name, value)
   }
-  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVecLoc), dim(SelectedSimMat)[1]))
   
   # Create a data frame representing the selected similarity matrix
   SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
@@ -614,7 +727,7 @@ outputmap_calculateMats <- function(input,
                                                       function(x) bquote(rowMeans(SelectedSimMat * get(paste0(.(x), "MAT"))))),
                                                names(SpeciesListSelected)))
   speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
-                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVec))))),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVecLoc))))),
                                                  names(SpeciesListSelectedSD)))
   SelectedSimMat2 <- data.frame(SelectedSimMat,
                                 Carbon = rowSums(SelectedSimMat * CarbonMAT),
@@ -625,7 +738,7 @@ outputmap_calculateMats <- function(input,
                                 CarbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
                                 # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
                                 speciesMatSD,
-                                VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVec))
+                                VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVecLoc))
   # for (specie_name in names(SpeciesListSelected)) {
   #   value <- rowMeans(SelectedSimMat * get(paste0(specie_name, "MAT")))
   #   SelectedSimMat2[specie_name] <- value
@@ -668,6 +781,148 @@ outputmap_calculateMats <- function(input,
               SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
            SelecTargetBioList))
 }
+###############################################################################################
+
+InitFindMaxSliderValues <- function(SavedVecLoc,
+                                    AreaSelected,
+                                    CarbonSelected,
+                                    # RedSquirrelSelected,
+                                    SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                    VisitsSelected,
+                                    CarbonSelectedSD,
+                                    # RedSquirrelSelectedSD,
+                                    SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                    VisitsSelectedSD,
+                                    input_areaSlider_multiplicative_coefficient = TRUE,
+                                    alpha) {
+  simul636Loc<-matrix(1,2,length(SavedVecLoc))
+  # If only one element in SavedVec, select corresponding column in simul636
+  if (length(SavedVecLoc) == 1) {
+    SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecLoc)])
+  } else {
+    SelectedSimMat <- simul636Loc[, 1:length(SavedVecLoc)]
+  }
+  
+  SVMAT <- t(matrix(SavedVecLoc, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  CarbonMAT <- t(matrix(CarbonSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  # RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelected)) {
+    specie_name <- names(SpeciesListSelected)[i]
+    specie_value <- SpeciesListSelected[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "Selected"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  
+  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  # RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelectedSD)) {
+    specie_name <- names(SpeciesListSelectedSD)[i]
+    specie_value <- SpeciesListSelectedSD[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "SelectedSD"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  
+  # Create a data frame representing the selected similarity matrix
+  SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
+  
+  #SelecTargetCarbon <- input$SliderMain
+  # SelecTargetBio <- input$BioSlider
+  #SelecTargetBioVector <- c()
+  #SelecTargetBioList <- list()
+  #for (x in names(SpeciesListSelected)) {
+  #  var_name <- paste0("SelecTargetBio", x)
+  #  # input[paste0("BioSlider", x)] bugs because it is a reactivevalue
+  #  value <- input[[paste0("BioSlider", x)]]
+  #  assign(var_name, value)
+  #  SelecTargetBioVector <- c(SelecTargetBioVector, value)
+  #  SelecTargetBioList[var_name] <- value
+  #}
+  #SelecTargetArea <- input$AreaSlider
+  #SelecTargetVisits <- input$VisitsSlider
+  
+  speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
+                                                      function(x) bquote(rowMeans(SelectedSimMat * get(paste0(.(x), "MAT"))))),
+                                               names(SpeciesListSelected)))
+  speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVecLoc))))),
+                                                 names(SpeciesListSelectedSD)))
+  SelectedSimMat2 <- data.frame(SelectedSimMat,
+                                Carbon = rowSums(SelectedSimMat * CarbonMAT),
+                                # redsquirrel = rowMeans(SelectedSimMat * RedSquirrelMAT),
+                                speciesMat,
+                                Area = rowSums(SelectedSimMat * AreaMAT),
+                                Visits = rowMeans(SelectedSimMat * (VisitsMAT)),
+                                CarbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+                                # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
+                                speciesMatSD,
+                                VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVecLoc))
+  # for (specie_name in names(SpeciesListSelected)) {
+  #   value <- rowMeans(SelectedSimMat * get(paste0(specie_name, "MAT")))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
+  # for (specie_name in names(SpeciesListSelectedSD)) {
+  #   value <- sqrt(rowSums(SelectedSimMat * (get(paste0(specie_name, "MAT"))^2) / length(SavedVec)))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
+  
+  tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
+              colMeans(speciesMat) / 50,
+              mean(SelectedSimMat2$Area) / 50,
+              mean(SelectedSimMat2$Visits) / 50)
+  for(i in 1:length(tolvec)) {
+    if (tolvec[i] == 0) {
+      tolvec[i] <- 0.1
+    }
+  }
+  # tolVec <- c(4, 0.05, 0.1, 2)
+#  Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
+ #   TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
+  #  EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+   # SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+  #  alpha = alpha, tolVec = tolvec)
+  
+  LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
+                            # SelectedSimMat2$redsquirrel,
+                            speciesMat,
+                            SelectedSimMat2$Area,
+                            # SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + 4^2, SelectedSimMat2$redsquirrelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + tolvec[1],
+                                                                       speciesMatSD^2 + tolvec[1 + (1:ncol(speciesMat))],
+                                                                       rep(0, length(SelectedSimMat2$Area)) + tolvec[length(tolvec) - 1],
+                                                                       SelectedSimMat2$VisitsSD^2 + tolvec[length(tolvec)]))
+  # we would want here the inverse truncated normal,
+  CarbonMax<-max(0,trunc(sqrt(SelectedSimMat2$CarbonSD[1]^2 + tolvec[1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Carbon[1]))
+  bioMaxList<-list()
+  for (ijj in 1:length(names(speciesMat)))
+  {NM<-names(speciesMat)[ijj]
+  NMSD<-names(speciesMatSD)[ijj]
+  bioMaxList[[ijj]]<-max(0,trunc(sqrt(SelectedSimMat2[[NMSD]][1]^2 + tolvec[1+ijj])*qtruncnorm(p=1-alpha,a=LimitsMat[1+ijj,1],b=Inf,mean=0,sd=1)+SelectedSimMat2[[NM]][1]))
+    
+  }
+  AreaMax<-max(0,trunc(sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]-1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Area[1]))
+  VisistMax<-max(0,trunc(sqrt( SelectedSimMat2$VisitsSD[1]^2+tolvec[dim(LimitsMat)[2]])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]],b=Inf,mean=0,sd=1)+SelectedSimMat2$Visits[1]))
+  
+  
+  return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,VisistMax=VisistMax))
+}
+
+
+
+
+
+
+
+
+################################################################################################
+
+
 
 outputmap_createResults <- function(map,
                                     map_number, # takes values 2, 3, 4, 5 in reference to "output$map2 <- renderLeaflet({...})" ... "output$map5 <- renderLeaflet({...})"
