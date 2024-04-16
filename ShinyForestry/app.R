@@ -1173,6 +1173,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                             
                             SubsetMeetTargetsReactive(SubsetMeetTargets)
                             SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
+
+                                   if(dim(unique(SubsetMeetTargets))[1]>0){
+                              LengthVec<-min(4,dim(unique(SubsetMeetTargets)[1]))
+                              FourUniqueRowsReactive(seq(1,LengthVec))
+                              PreviousFourUniqueRowsReactive(seq(1,LengthVec))
+                            }else{FourUniqueRowsReactive(NULL)
+                              PreviousFourUniqueRowsReactive(NULL)}
+                            
                             
                             #SubsetMeetTargets <- SelectedSimMat2[(SelectedSimMat2$Carbon >= SelecTargetCarbon) &
                              #                                      # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
