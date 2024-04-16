@@ -20,6 +20,7 @@ if (!grepl("ShinyForestry", FolderSource)) {
 }
 
 
+
 source(normalizePath(file.path(FolderSource, "functions.R")))
 
 # Load packages
@@ -118,8 +119,8 @@ JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 
 
-
 # Load Files
+### CHANGED!!!
 JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
 JulesSD <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
 SquaresLoad <- sf::st_read(normalizePath(file.path(JulesAppFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))
@@ -632,6 +633,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   SlidersHaveBeenInitialized<-reactiveVal(rep(0,length(SliderNames)))
   MapReactive<-reactiveVal(NULL)
   
+  ClickedMatrixTab2Reactive<-reactiveVal(NULL)
+  PreviousClickedMatrixTab2Reactive<-reactiveVal(NULL)
   
   #PreviousSelectedMatrixTab2<- reactiveVal(NULL)
   #SelectedMatrixTab2<-reactiveVal(NULL)
@@ -698,6 +701,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     ClickedVector(NULL)
     PreviousSelectedVector(NULL)
     SelectedVector(NULL)
+    ClickedMatrixTab2Reactive(NULL)
+    PreviousClickedMatrixTab2Reactive(NULL)
+    
     
     SelectedFullTableRow(NULL)
     
@@ -753,8 +759,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       
       PreviousSelectedVector(rep(0, dim(SelectedSquares)[1]))
       SelectedVector(rep(1, dim(SelectedSquares)[1]))
-      PreviousClickedVector(rep(0, dim(SelectedSquares)[1]))
       ClickedVector(rep(0, dim(SelectedSquares)[1]))
+      PreviousClickedVector(rep(-1, dim(SelectedSquares)[1]))
+      
+      ClickedMatrixTab2Reactive(matrix(0, 4,dim(SelectedSquares)[1]))
+      PreviousClickedMatrixTab2Reactive(matrix(-1, 4,dim(SelectedSquares)[1]))
+      
      # PreviousSelectedMatrixTab2(matrix(0, 4,dim(SelectedSquares)[1]))
     #  SelectedMatrixTab2(matrix(1, 4,dim(SelectedSquares)[1]))
      
@@ -939,10 +949,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
           }
           if(Consolitated[ijj]==1){
-              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],fillColor=FullColVec[ijj])
+              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
           }
           if(Consolitated[ijj]==2){
-              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],fillColor=ClickedCols[ijj])
+              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
           }
           
             
@@ -986,8 +996,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)&(input$tabs=="Exploration")) {
         SubsetMeetTargets<-SubsetMeetTargetsReactive()
         PreviousSubsetMeetTargets<-PreviousSubsetMeetTargetsReactive()
-        SavedVec<-ClickedVector()
-        PreviousSavedVec<-PreviousClickedVector()
+        SavedMat<-ClickedMatrixTab2Reactive()
+        PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
         FourUniqueRowsLoc<-FourUniqueRowsReactive()
         PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
        # if(is.null(dim(PreviousFourUniqueRowsLoc))){
@@ -1006,11 +1016,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         for(ii in seq(1,min(4,length(FourUniqueRowsLoc)))){
         
-        Consolitated<-2*SavedVec+1*((SelectedRows[ii,1:length(SavedVec)]==1)&(SavedVec==0))
+        Consolitated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
         
-        PreviousConsolitated<-2*PreviousSavedVec+1*((PrevSelectedRows[ii,1:length(SavedVec)]==1)&(PreviousSavedVec==0))
+        PreviousConsolitated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
         if(length(PreviousConsolitated)==0){PreviousConsolitated<-Consolitated+1}
-        if((CreatedBaseMap()==1)&(length(SavedVec)>0)){
+        if((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
           
           mapp<-leafletProxy(paste0("map",ii+1))
           for(ijj in 1:length(Consolitated)){
@@ -1023,10 +1033,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
               }
               if(Consolitated[ijj]==1){
-                mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],fillColor=FullColVec[ijj])
+                mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#,color=FullColVec[ijj]
               }
               if(Consolitated[ijj]==2){
-                mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],fillColor=ClickedCols[ijj])
+                mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
               }
               
               
@@ -1068,6 +1078,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
         PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
         
+        UpdatedRows<-ClickedMatrixTab2Reactive()
+        if(length(FourUniqueRowsLoc)<4){
+          UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
+          
+        }
+        PreviousClickedMatrixTab2Reactive(UpdatedRows)
         
         #  PreviousSubsetMeetTargetsReactive4Unique(SubsetMeetTargetsReactive4Unique())  
         #PreviousSelectedVector(SelectedVec)
@@ -1173,14 +1189,13 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                             
                             SubsetMeetTargetsReactive(SubsetMeetTargets)
                             SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
-
-                                   if(dim(unique(SubsetMeetTargets))[1]>0){
+                            
+                            if(dim(unique(SubsetMeetTargets))[1]>0){
                               LengthVec<-min(4,dim(unique(SubsetMeetTargets)[1]))
                               FourUniqueRowsReactive(seq(1,LengthVec))
                               PreviousFourUniqueRowsReactive(seq(1,LengthVec))
                             }else{FourUniqueRowsReactive(NULL)
                               PreviousFourUniqueRowsReactive(NULL)}
-                            
                             
                             #SubsetMeetTargets <- SelectedSimMat2[(SelectedSimMat2$Carbon >= SelecTargetCarbon) &
                              #                                      # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
@@ -1695,6 +1710,7 @@ observeEvent(input$map_shape_click, {
         if ((click$id == paste0("Square", iii))) {
           SavedVec[SelectedRowsUnits == SelectedRowsUnits[iii]] <- ifelse(SavedVec[iii] == 1, 0, 1);
           ClickedVector(SavedVec)
+          ClickedMatrixTab2Reactive(t(matrix(SavedVec,length(SavedVec),4)))
           ChangeDone <- TRUE
         }
         iii <- iii + 1
