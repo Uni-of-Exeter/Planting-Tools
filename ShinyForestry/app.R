@@ -117,6 +117,7 @@ ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 
+
 # Load Files
 JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
 JulesSD <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
@@ -393,7 +394,7 @@ N_TARGETS <- length(TARGETS)
 # )
 # Add sliderInput("BioSliderSPECIE", "Average SPECIE % increase:", min = 0, max = 36, value = 25) for each specie
 
-verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (tonnes of CO2):", min = 0, max = 870, value = 800)),
+verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
                            lapply(SPECIES, function(x, fulltable, NAME_CONVERSION_ARG) {
                              NAME_CONVERSION <- NAME_CONVERSION_ARG
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
@@ -505,7 +506,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
 
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Clustering")
- # browser()
+  browser()
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
@@ -809,7 +810,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       
      # updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)), value = trunc(sum(CarbonSelected)))
      # updateSliderInput(session, "SliderMain", max = MaxVals$CarbonMax, value = MaxVals$CarbonMax)
-      session$sendInputMessage("SliderMain", list(max = MaxVals$CarbonMax, value = MaxVals$CarbonMax))
+      session$sendInputMessage("SliderMain", list(min=0,max = MaxVals$CarbonMax, value = MaxVals$CarbonMax))
       
       # updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100, value = trunc(100*mean(RedSquirrelSelected))/100, step = 0.01)
       for (ijj in 1:length(SPECIES)) {
@@ -937,33 +938,35 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       ClickedCols <- ColObtained$ClickedCols
       
       
-      Consolitated<-2*SavedVec+1*((SelectedVec==1)&(SavedVec==0))
+      Consolidated<-2*SavedVec+1*((SelectedVec==1)&(SavedVec==0))
       
-      PreviousConsolitated<-2*PreviousSavedVec+1*((PreviousSelectedVec==1)&(PreviousSavedVec==0))
-      if(length(PreviousConsolitated)==0){PreviousConsolitated<-Consolitated+1}
+      PreviousConsolidated<-2*PreviousSavedVec+1*((PreviousSelectedVec==1)&(PreviousSavedVec==0))
+      if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
        if((CreatedBaseMap()==1)&(length(SavedVec)>0)){
       
-        mapp<-leafletProxy("map")
-       for(ijj in 1:length(SelectedVec)){
-        if(PreviousConsolitated[ijj]!=Consolitated[ijj])
+#        mapp<-leafletProxy("map")
+     #  for(ijj in 1:length(SelectedVec)){
+        if(prod(PreviousConsolidated==Consolidated)==0)
        {
         mapp<-leafletProxy("map")
-        removeShape(mapp,layerId=paste0("Square",ijj))
-          if(Consolitated[ijj]==0){
-            
-              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
-          }
-          if(Consolitated[ijj]==1){
-              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
-          }
-          if(Consolitated[ijj]==2){
-              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-          }
-          
-            
-        }
-       
-       }
+        removeShape(mapp,layerId=paste0("Square",1:length(SelectedVec)))
+        #  if(Consolitated[ijj]==0){
+        #    
+        #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
+        #  }
+        #  if(Consolitated[ijj]==1){
+        #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
+        #  }
+        #  if(Consolitated[ijj]==2){
+        #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
+        #  }
+        removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+        #if(Consolitated[ijj]==0){
+        COLOURS<-rep("transparent",length(Consolidated))
+        COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
+        COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
+        mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
+        
         removeControl(mapp,layerId="legend")
         
         SFTR<-SelectedFullTableRow()
@@ -977,21 +980,26 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                    round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
         }
         
-       mapp<-
+        mapp<-
           addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
-                                   # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-                                   addControlText,
-                                   "Area Planted: ", round(SFTR$Area, 2), "<br>",
-                                   "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
-                                   "</p>"), position = "topright",layerId="legend")
+                                        # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+                                        addControlText,
+                                        "Area Planted: ", round(SFTR$Area, 2), "<br>",
+                                        "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
+                                        "</p>"), position = "topright",layerId="legend")
         
+            
+        }
+       
+       }
+       
         
          PreviousClickedVector(SavedVec)  
           PreviousSelectedVector(SelectedVec)
       # replace the text
           
           
-       }
+       
      }
     })
   ##################################
@@ -1170,15 +1178,16 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   
   ############################### Check if the slider values have been updated after the initialization
-  lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
-       SliderNumber<-which(SliderNames==sl)
-       SHBICurrent<-SlidersHaveBeenInitialized()
+  #lapply(SliderNames, function(sl) {
+    observeEvent(input$SliderMain,{
+
+      SHBICurrent<-SlidersHaveBeenInitialized()
       if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
-        if(input[[sl]]==MaxValsReactiveVector()[SliderNumber]){SHBICurrent[SliderNumber]<-1
-        SlidersHaveBeenInitialized(SHBICurrent)}
-      
-    }
-  })
+     for (sl in SliderNames){
+        SliderNumber<-which(SliderNames==sl)        
+        if(input[[sl]]==MaxValsReactiveVector()[SliderNumber]){SHBICurrent[SliderNumber]<-1;SlidersHaveBeenInitialized(SHBICurrent)}
+                 }}
+  #})
   }
   )
   
