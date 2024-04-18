@@ -2,28 +2,55 @@
     "1": {
         "target": "No",
         "category": "Biodiversity",
-        "scale": "National",
-        "sub-category": "Pollinators",
-        "metric": "Species richness",
+        "scale": "Regional (GOR)",
+        "sub-category": "Tree Pipit",
+        "metric": "Prob. of appearance",
         "time-period": "Set year",
-        "year": "2060"
+        "year": "2027"
     },
     "2": {
         "target": "No",
         "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "Reed Bunting",
-        "metric": "Prob. of appearance",
+        "sub-category": "Lichens",
+        "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2060"
+        "year": "2027"
     },
     "3": {
         "target": "No",
         "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "Lapwing",
+        "sub-category": "Tree Pipit",
         "metric": "Prob. of appearance",
         "time-period": "Set year",
-        "year": "2060"
+        "year": "2029"
+    },
+    "4": {
+        "target": "No",
+        "category": "Biodiversity",
+        "scale": "Ward",
+        "sub-category": "Lichens",
+        "metric": "Species richness",
+        "time-period": "Set year",
+        "year": "2029"
+    },
+    "5": {
+        "target": "No",
+        "category": "Biodiversity",
+        "scale": "Regional (GOR)",
+        "sub-category": "Grey Dagger",
+        "metric": "Prob. of appearance",
+        "time-period": "Set year",
+        "year": "2032"
+    },
+    "6": {
+        "target": "No",
+        "category": "Biodiversity",
+        "scale": "Ward",
+        "sub-category": "Mammals",
+        "metric": "Species richness",
+        "time-period": "Set year",
+        "year": "2033"
     }
 }
