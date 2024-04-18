@@ -1130,9 +1130,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   
   # Check for changes in all the sliders
-  lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
+  #lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
     # if (input[[sl]]) {
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
+   observeEvent({input$map_shape_click
+    lapply(SliderNames, function(sl) {input[[sl]]})
+    },{ 
+  if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
       
       
       SavedVec <- ClickedVector()
@@ -1374,8 +1377,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     }
     #  }
   })
-  }
-  )
+ # }
+#  )
   
   observeEvent(input$tabs == "Clustering", {
     
