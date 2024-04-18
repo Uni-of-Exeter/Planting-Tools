@@ -15,7 +15,7 @@
 
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
-if (!grepl("ShinyForestry", FolderSource)) {
+if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
 }
 
@@ -64,40 +64,8 @@ while (error == TRUE && i <= length(libs)) {
   )
 }
 
-#  SavedVec <- rep(0, 47)
-#SelecTargetCarbon <- 240;      SelecTargetBio <- 19;SelecTargetArea <- 13890596;SelecTargetVisits <- 17
-#SelecTargetCarbon <- 1000;      SelecTargetBio <- 1100;SelecTargetArea <- 1000000000;SelecTargetVisits <- 1000000
-#SelectedDropdown <- "Ennerdale"
+NAME_CONVERSION <- ReturnNameConversion()
 
-# species_names <- colnames(read.csv(paste0(FolderSource, "Model Data/Biodiversity/JNCC/beta_JNCC100_interact_quad.csv")))[-1]
-# english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
-# english_species_names <- add_suffix_to_duplicates(english_species_names)
-
-NAME_CONVERSION<- ReturnNameConversion()
-
-# Replace Invertebrate - bees/beetles/butterflies/crickets/moths by Pollinators
-# Crashes on the server for some reason, so we use data.frames instead
-# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinators",
-# .default = Group)) %>%
-indices <- grep("bees|beetles|butterflys|crickets|moths", NAME_CONVERSION$Group)
-NAME_CONVERSION[indices, "Group"] <- "Pollinators"
-# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bees" ~ "Pollinators",
-#                                        Group == "Invertebrate - beetles" ~ "Pollinators",
-#                                        Group == "Invertebrate - butterflys" ~ "Pollinators",
-#                                        Group == "Invertebrate - crickets" ~ "Pollinators",
-#                                        Group == "Invertebrate - moths" ~ "Pollinators",
-#                                        .default = Group)) %>%
-# Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
-NAME_CONVERSION <- NAME_CONVERSION %>%
-  dplyr::mutate(Specie_pretty = Specie,
-                Group_pretty = Group,
-                English_specie_pretty = English_specie,
-                Specie = gsub(" |-", "_", Specie),
-                English_specie = gsub(" |-", "_", English_specie),
-                Group = gsub(" - ", "_", Group)) %>%
-  dplyr::mutate(Group = gsub(" ", "_", Group)) %>%
-  # Sort by Specie
-  dplyr::arrange(Specie)
 # Swap rows 83 and 84
 row83 <- NAME_CONVERSION[83, ]
 row84 <- NAME_CONVERSION[84, ]
@@ -423,7 +391,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                            list(sliderInput("VisitsSlider", "Recreation (average visits per month):", min = 0, max = 750, value = 400)))
 #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
 SliderNames<- c("SliderMain",
-                     paste0("BioSlider", SPECIES),
+                paste0("BioSlider", SPECIES),
                 "AreaSlider","VisitsSlider")
 
 
@@ -458,29 +426,29 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                           tabPanel("Exploration", id = "Exploration",verticalLayout(
                                             fluidPage(fluidRow(
                                               column(10,verbatimTextOutput("ZeroText"),column(2,)))),
-                                                   fluidPage(fluidRow(
-                                                     column(5,
-                                                            verticalLayout(verbatimTextOutput("FirstMapTxt"), jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
-                                                     ),
-                                                     column(5,
-                                                            verticalLayout(verbatimTextOutput("SecondMapTxt"), jqui_resizable(leafletOutput("map3", height = 400, width = "100%")))
-                                                     ),
-                                                     column(2, verticalLayout(verbatimTextOutput("TargetText"),
-                                                                              #  selectInput("chooseGrouping", "Grouping Type:", c("Carbon level"), "Carbon level"),
-                                                                              actionButton("random", "Randomize!"))
-                                                     )
-                                                   ),
-                                                   fluidRow(
-                                                     column(5,
-                                                            verticalLayout(verbatimTextOutput("ThirdMapTxt"), jqui_resizable(leafletOutput("map4", height = 400, width = "100%")))
-                                                     ),
-                                                     column(5,
-                                                            verticalLayout(verbatimTextOutput("FourthMapTxt"), jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
-                                                     ),
-                                                     column(2, "")
-                                                   )
-                                                   )
-                                                   )
+                                            fluidPage(fluidRow(
+                                              column(5,
+                                                     verticalLayout(verbatimTextOutput("FirstMapTxt"), jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
+                                              ),
+                                              column(5,
+                                                     verticalLayout(verbatimTextOutput("SecondMapTxt"), jqui_resizable(leafletOutput("map3", height = 400, width = "100%")))
+                                              ),
+                                              column(2, verticalLayout(verbatimTextOutput("TargetText"),
+                                                                       #  selectInput("chooseGrouping", "Grouping Type:", c("Carbon level"), "Carbon level"),
+                                                                       actionButton("random", "Randomize!"))
+                                              )
+                                            ),
+                                            fluidRow(
+                                              column(5,
+                                                     verticalLayout(verbatimTextOutput("ThirdMapTxt"), jqui_resizable(leafletOutput("map4", height = 400, width = "100%")))
+                                              ),
+                                              column(5,
+                                                     verticalLayout(verbatimTextOutput("FourthMapTxt"), jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
+                                              ),
+                                              column(2, "")
+                                            )
+                                            )
+                                          )
                                           ),
                                           tabPanel("Clustering", id = "Clustering",
                                                    fluidPage(
@@ -503,10 +471,9 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
 
 server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
-
+  
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Clustering")
-  browser()
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
@@ -594,37 +561,17 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$ThirdMapTxt <- renderText({Text3()})
   output$FourthMapTxt <- renderText({Text4()})
   
-  # We want to select unique strategies to display on maps, this stores them
-  SelectedLinesIndicesInExplorationMapsReactive <- reactiveVal(c())
-  
-  # The randomValue is there to reset the vector of selected strategies/maps in the Exploration tab
-  randomValueOnButton <- eventReactive({
+  # If we click random or open the Exploration tab then we pick 4 different scenarios
+  observeEvent({
     input$random
-  }, {
-    # When we randomize the Exploration tab, reset the vector of selected strategies/maps
-    SelectedLinesIndicesInExplorationMapsReactive(c())
-    return(runif(1))
-  },
-  # the action should be triggered (or value calculated, in the case of eventReactive) when the input event expression is NULL
-  ignoreNULL = FALSE)
-  
-  ######################################### If we click random then we pick 4 different scenarios
-  observeEvent({input$random
-                 input$tabs
-                },{
-                  if(input$tabs=="Exploration"){
-    SelectedSample<-sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
-                           min(4,dim(SubsetMeetTargetsReactiveUnique())[1]),replace=F)
-    FourUniqueRowsReactive(SelectedSample)
-                  }
+    input$tabs
+  },{
+    if (input$tabs == "Exploration"){
+      SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
+                               min(4, dim(SubsetMeetTargetsReactiveUnique())[1]), replace = FALSE)
+      FourUniqueRowsReactive(SelectedSample)
+    }
   })
-  
-  
-  
-  
-  
-  
-
   # Clicked Vector indicates the units that have been clicked
   # PreviousClickedVector records the previous version if there has been a change
   # SelectedVector is the vector of cells that are on
@@ -642,31 +589,27 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   ClickedMatrixTab2Reactive<-reactiveVal(NULL)
   PreviousClickedMatrixTab2Reactive<-reactiveVal(NULL)
   
-  #PreviousSelectedMatrixTab2<- reactiveVal(NULL)
-  #SelectedMatrixTab2<-reactiveVal(NULL)
   SubsetMeetTargetsReactive<-reactiveVal(NULL)
   SubsetMeetTargetsReactiveUnique<-reactiveVal(NULL)
   PreviousSubsetMeetTargetsReactive<-reactiveVal(NULL)
   PreviousSubsetMeetTargetsReactiveUnique<-reactiveVal(NULL)
-  #SubsetMeetTargetsReactive4Unique<-reactiveVal(NULL)
-  #PreviousSubsetMeetTargetsReactive4Unique<-reactiveVal(NULL)  
   FourUniqueRowsReactive<-reactiveVal(NULL)
   PreviousFourUniqueRowsReactive<-reactiveVal(NULL)
   
   
   AreaSelected0 <- reactiveVal(NULL)
   CarbonSelected0 <- reactiveVal(NULL)
-
- CreatedBaseMap<-reactiveVal(0)
- UpdatedExtent<-reactiveVal(0)
- 
+  
+  CreatedBaseMap<-reactiveVal(0)
+  UpdatedExtent<-reactiveVal(0)
+  
   for (x in SPECIES) {
     var_name <- paste0(x, "Selected0")
     assign(var_name, reactiveVal(NULL))
   }
   VisitsSelected0 <- reactiveVal(NULL)
   CarbonSelectedSD0 <- reactiveVal(NULL)
-
+  
   
   for (x in SPECIES) {
     var_name <- paste0(x, "SelectedSD0")
@@ -682,7 +625,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   VecNbMet0 <- reactiveVal(NULL)
   
   output$Trigger <- reactiveVal(TRUE)
-  #inputOptions(intput, 'Trigger', suspendWhenHidden = FALSE)
   
   observe({
     Uni <- unique(FullTable$extent)
@@ -696,10 +638,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       }
     }
   })
-  ####################################
-  ######################
+  
   # First we need to change this observeEvent inSelect
-  ######################
   observeEvent(input$inSelect, {
     UpdatedExtent(0)
     SelectedDropdown <- input$inSelect
@@ -771,10 +711,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       ClickedMatrixTab2Reactive(matrix(0, 4,dim(SelectedSquares)[1]))
       PreviousClickedMatrixTab2Reactive(matrix(-1, 4,dim(SelectedSquares)[1]))
       
-     # PreviousSelectedMatrixTab2(matrix(0, 4,dim(SelectedSquares)[1]))
-    #  SelectedMatrixTab2(matrix(1, 4,dim(SelectedSquares)[1]))
-     
-     
+      # PreviousSelectedMatrixTab2(matrix(0, 4,dim(SelectedSquares)[1]))
+      #  SelectedMatrixTab2(matrix(1, 4,dim(SelectedSquares)[1]))
+      
+      
       
       AreaSelected0(AreaSelected)
       CarbonSelected0(CarbonSelected)
@@ -794,22 +734,22 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         fun(arg)
       }
       VisitsSelectedSD0(VisitsSelectedSD)
-      ####### Here, the max of the slider is based on the Max possible level for each 
+      # Here, the max of the slider is based on the Max possible level for each 
       MaxVals<-InitFindMaxSliderValues(SelectedVector(),
-                              AreaSelected,
-                             CarbonSelected,
-                              SpeciesListSelected, 
-                              VisitsSelected,
-                              CarbonSelectedSD,
-                              SpeciesListSelectedSD, 
-                              VisitsSelectedSD,
-                              input_areaSlider_multiplicative_coefficient = TRUE,
-                              alpha=alphaLVL)
+                                       AreaSelected,
+                                       CarbonSelected,
+                                       SpeciesListSelected, 
+                                       VisitsSelected,
+                                       CarbonSelectedSD,
+                                       SpeciesListSelectedSD, 
+                                       VisitsSelectedSD,
+                                       input_areaSlider_multiplicative_coefficient = TRUE,
+                                       alpha=alphaLVL)
       MaxValsReactive(MaxVals)
       MaxValsReactiveVector(c(MaxVals$CarbonMax,unlist(MaxVals$bioMaxList),MaxVals$AreaMax,MaxVals$VisistMax))
       
-     # updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)), value = trunc(sum(CarbonSelected)))
-     # updateSliderInput(session, "SliderMain", max = MaxVals$CarbonMax, value = MaxVals$CarbonMax)
+      # updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)), value = trunc(sum(CarbonSelected)))
+      # updateSliderInput(session, "SliderMain", max = MaxVals$CarbonMax, value = MaxVals$CarbonMax)
       session$sendInputMessage("SliderMain", list(min=0,max = MaxVals$CarbonMax, value = MaxVals$CarbonMax))
       
       # updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100, value = trunc(100*mean(RedSquirrelSelected))/100, step = 0.01)
@@ -818,7 +758,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         bioslider <- paste0("BioSlider", x)
         specie_names <- paste0(x, "Selected")
         specie_selected <- get(specie_names)
-#        max_bioslider <- trunc(mean(specie_selected))
+        # max_bioslider <- trunc(mean(specie_selected))
         max_bioslider <- MaxVals$bioMaxList[[ijj]]
         if (is.nan(max_bioslider)) {
           max_bioslider <- 0
@@ -830,87 +770,87 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       if (is.nan(max_areaslider)) {
         max_areaslider <- 0
       }
-      #        max_visitsslider <- trunc(mean(VisitsSelected))
+      # max_visitsslider <- trunc(mean(VisitsSelected))
       max_visitsslider <- MaxVals$VisistMax
       if (is.nan(max_visitsslider)) {
         max_visitsslider <- 0
       }
       updateSliderInput(session, "AreaSlider", max = max_areaslider, value = max_areaslider, step = 0.5)
       updateSliderInput(session, "VisitsSlider", max = max_visitsslider, value = max_visitsslider)
-    
-    #### We now need to obtain the list of strategies from simul636 that meet the tragets with the right confidence.
-    tmp <- outputmap_calculateMats(input = input,
-                                   SavedVecLoc = ClickedVector(),
-                                   simul636Loc = simul636,
-                                   AreaSelected = AreaSelected,
-                                   CarbonSelected = CarbonSelected,
-     #                              # RedSquirrelSelected = RedSquirrelSelected,
-                                 SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                   VisitsSelected = VisitsSelected,
-                                   CarbonSelectedSD = CarbonSelectedSD,
-         #                          # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                   SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                   VisitsSelectedSD = VisitsSelectedSD,
-                                   alpha=alphaLVL,
-                ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider))
-    
-    SelectedSimMat2 <- tmp$SelectedSimMat2
-    Icalc <- tmp$Icalc
-    LimitsMat <- tmp$LimitsMat
-    SelecTargetCarbon <- MaxVals$CarbonMax
-    
-    condition<-TRUE
-    for (ijj in 1:length(SPECIES)) {
-      x<-SPECIES[ijj]
-      max_bioslider <- MaxVals$bioMaxList[[ijj]]
-      if (is.nan(max_bioslider)) {
-        max_bioslider <- 0
+      
+      # We now need to obtain the list of strategies from simul636 that meet the tragets with the right confidence.
+      tmp <- outputmap_calculateMats(input = input,
+                                     SavedVecLoc = ClickedVector(),
+                                     simul636Loc = simul636,
+                                     AreaSelected = AreaSelected,
+                                     CarbonSelected = CarbonSelected,
+                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                     VisitsSelected = VisitsSelected,
+                                     CarbonSelectedSD = CarbonSelectedSD,
+                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                     VisitsSelectedSD = VisitsSelectedSD,
+                                     alpha=alphaLVL,
+                                     ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider))
+      
+      SelectedSimMat2 <- tmp$SelectedSimMat2
+      Icalc <- tmp$Icalc
+      LimitsMat <- tmp$LimitsMat
+      SelecTargetCarbon <- MaxVals$CarbonMax
+      
+      condition<-TRUE
+      for (ijj in 1:length(SPECIES)) {
+        x<-SPECIES[ijj]
+        max_bioslider <- MaxVals$bioMaxList[[ijj]]
+        if (is.nan(max_bioslider)) {
+          max_bioslider <- 0
+        }
+        
+        condition <- condition & (SelectedSimMat2[[x]] >=max_bioslider)
       }
       
-      condition <- condition & (SelectedSimMat2[[x]] >=max_bioslider)
-    }
-    
-    
-    SelecTargetArea <- max_areaslider
-    SelecTargetVisits <- max_visitsslider
-    PROBAMAT <- Icalc$IVEC
-    for (abc in 1:dim(Icalc$IVEC)[2]) {
-      PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-    }
-    
-    condition <- TRUE
-    for (iii in 1:length(SPECIES)) {
-      x<-SPECIES[iii]
-      var_name <- paste0("SelecTargetBio", x)
-      value <- tmp[[var_name]]
-      assign(var_name, value)
       
-      condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
-    }
-    rm(tmp)
-    
-    SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
-                                           # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-                                           condition &
-                                           (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
-                                           (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL), ]
-    
-    
-    SubsetMeetTargetsReactive(SubsetMeetTargets)
-    SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
-    PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive()-1)
-    PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique()-1)
-    
-    if(dim(unique(SubsetMeetTargets))[1]>0){
-    LengthVec<-min(4,dim(unique(SubsetMeetTargets)[1]))
-    FourUniqueRowsReactive(seq(1,LengthVec))
-    PreviousFourUniqueRowsReactive(seq(1,LengthVec))
-    }else{FourUniqueRowsReactive(NULL)
-      PreviousFourUniqueRowsReactive(NULL)}
-    
-    
-    
-    
+      SelecTargetArea <- max_areaslider
+      SelecTargetVisits <- max_visitsslider
+      PROBAMAT <- Icalc$IVEC
+      for (abc in 1:dim(Icalc$IVEC)[2]) {
+        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      }
+      
+      condition <- TRUE
+      for (iii in 1:length(SPECIES)) {
+        x<-SPECIES[iii]
+        var_name <- paste0("SelecTargetBio", x)
+        value <- tmp[[var_name]]
+        assign(var_name, value)
+        
+        condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
+      }
+      rm(tmp)
+      
+      SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
+                                             # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
+                                             condition &
+                                             (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
+                                             (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL), ]
+      
+      
+      SubsetMeetTargetsReactive(SubsetMeetTargets)
+      SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
+      PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive()-1)
+      PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique()-1)
+      
+      if(dim(unique(SubsetMeetTargets))[1]>0){
+        LengthVec<-min(4,dim(unique(SubsetMeetTargets)[1]))
+        FourUniqueRowsReactive(seq(1,LengthVec))
+        PreviousFourUniqueRowsReactive(seq(1,LengthVec))
+      }else{FourUniqueRowsReactive(NULL)
+        PreviousFourUniqueRowsReactive(NULL)}
+      
+      
+      
+      
     }
     
     
@@ -919,95 +859,90 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     SlidersHaveBeenInitialized(rep(0,length(SliderNames)))
     
   })
-  #############################
-  ##################################
-  observe(#{list(ClickedVector(),SelectedVector())
-    #},
-    {
-     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-      SavedVec<-ClickedVector()
-      PreviousSavedVec<-PreviousClickedVector()
-      SelectedVec<-SelectedVector()
-      PreviousSelectedVec<-PreviousSelectedVector()
-      
-      
-      ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
-                             ColorLighteningFactor(), ColorDarkeningFactor())
-      
-      FullColVec <- ColObtained$FullColVec
-      ClickedCols <- ColObtained$ClickedCols
-      
-      
-      Consolidated<-2*SavedVec+1*((SelectedVec==1)&(SavedVec==0))
-      
-      PreviousConsolidated<-2*PreviousSavedVec+1*((PreviousSelectedVec==1)&(PreviousSavedVec==0))
-      if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
-       if((CreatedBaseMap()==1)&(length(SavedVec)>0)){
-      
-#        mapp<-leafletProxy("map")
-     #  for(ijj in 1:length(SelectedVec)){
-        if(prod(PreviousConsolidated==Consolidated)==0)
-       {
-        mapp<-leafletProxy("map")
-        removeShape(mapp,layerId=paste0("Square",1:length(SelectedVec)))
-        #  if(Consolitated[ijj]==0){
-        #    
-        #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
-        #  }
-        #  if(Consolitated[ijj]==1){
-        #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
-        #  }
-        #  if(Consolitated[ijj]==2){
-        #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-        #  }
-        removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-        #if(Consolitated[ijj]==0){
-        COLOURS<-rep("transparent",length(Consolidated))
-        COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
-        COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
-        mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
+
+  observe({
+    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
+        SavedVec<-ClickedVector()
+        PreviousSavedVec<-PreviousClickedVector()
+        SelectedVec<-SelectedVector()
+        PreviousSelectedVec<-PreviousSelectedVector()
         
-        removeControl(mapp,layerId="legend")
         
-        SFTR<-SelectedFullTableRow()
-        addControlText <- ""
-        for (i in 1:length(SPECIES)) {
-          specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLISH[i]
-          selectedBiospecie <- SFTR[[specie_latin]]
-          selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
-          addControlText <- paste0(addControlText, specie_english, ": ", 
-                                   round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-        }
+        ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
+                               ColorLighteningFactor(), ColorDarkeningFactor())
         
-        mapp<-
-          addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
-                                        # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-                                        addControlText,
-                                        "Area Planted: ", round(SFTR$Area, 2), "<br>",
-                                        "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
-                                        "</p>"), position = "topright",layerId="legend")
+        FullColVec <- ColObtained$FullColVec
+        ClickedCols <- ColObtained$ClickedCols
         
+        
+        Consolidated<-2*SavedVec+1*((SelectedVec==1)&(SavedVec==0))
+        
+        PreviousConsolidated<-2*PreviousSavedVec+1*((PreviousSelectedVec==1)&(PreviousSavedVec==0))
+        if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
+        if((CreatedBaseMap()==1)&(length(SavedVec)>0)){
+          
+          # mapp<-leafletProxy("map")
+          #  for(ijj in 1:length(SelectedVec)){
+          if(prod(PreviousConsolidated==Consolidated)==0)
+          {
+            mapp<-leafletProxy("map")
+            removeShape(mapp,layerId=paste0("Square",1:length(SelectedVec)))
+            #  if(Consolitated[ijj]==0){
+            #    
+            #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
+            #  }
+            #  if(Consolitated[ijj]==1){
+            #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
+            #  }
+            #  if(Consolitated[ijj]==2){
+            #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
+            #  }
+            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+            #if(Consolitated[ijj]==0){
+            COLOURS<-rep("transparent",length(Consolidated))
+            COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
+            COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
+            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
             
+            removeControl(mapp,layerId="legend")
+            
+            SFTR<-SelectedFullTableRow()
+            addControlText <- ""
+            for (i in 1:length(SPECIES)) {
+              specie_latin <- SPECIES[i]
+              specie_english <- SPECIES_ENGLISH[i]
+              selectedBiospecie <- SFTR[[specie_latin]]
+              selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
+              addControlText <- paste0(addControlText, specie_english, ": ", 
+                                       round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+            }
+            
+            mapp<-
+              addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
+                                            # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+                                            addControlText,
+                                            "Area Planted: ", round(SFTR$Area, 2), "<br>",
+                                            "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
+                                            "</p>"), position = "topright",layerId="legend")
+            
+            
+          }
+          
         }
-       
-       }
-       
         
-         PreviousClickedVector(SavedVec)  
-          PreviousSelectedVector(SelectedVec)
-      # replace the text
-          
-          
-       
-     }
+        
+        PreviousClickedVector(SavedVec)  
+        PreviousSelectedVector(SelectedVec)
+        # replace the text
+        
+        
+        
+      }
     })
-  ##################################
-  observe(#{list(ClickedVector(),SelectedVector())
-    #},
-    {
+  
+  observe({
       if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)&(input$tabs=="Exploration")
-         ) {
+      ) {
         SubsetMeetTargets<-SubsetMeetTargetsReactive()
         PreviousSubsetMeetTargets<-PreviousSubsetMeetTargetsReactive()
         SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
@@ -1017,7 +952,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
         FourUniqueRowsLoc<-FourUniqueRowsReactive()
         PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
-       # if(is.null(dim(PreviousFourUniqueRowsLoc))){
+        # if(is.null(dim(PreviousFourUniqueRowsLoc))){
         #  PreviousFourUniqueRowsLoc<-matrix(PreviousFourUniqueRowsLoc,1,length(PreviousFourUniqueRowsLoc))}
         
         SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
@@ -1032,34 +967,34 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         
         for(ii in seq(1,min(4,length(FourUniqueRowsLoc)))){
-        
-        Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
-        
-        PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
-        if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
-        if((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
           
-         # mapp<-leafletProxy(paste0("map",ii+1))
-         # for(ijj in 1:length(Consolitated)){
-           # if(PreviousConsolitated[ijj]!=Consolitated[ijj])
+          Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
+          
+          PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
+          if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
+          if((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
+            
+            # mapp<-leafletProxy(paste0("map",ii+1))
+            # for(ijj in 1:length(Consolitated)){
+            # if(PreviousConsolitated[ijj]!=Consolitated[ijj])
             #{
-              mapp<-leafletProxy(paste0("map",ii+1))
-              removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-              #if(Consolitated[ijj]==0){
-              COLOURS<-rep("transparent",length(Consolidated))
-              COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
-              COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
-              mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
-              #}
-#              if(Consolitated[ijj]==1){
- #               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#,color=FullColVec[ijj]
-  #            }
-   #           if(Consolitated[ijj]==2){
-    #            mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-     #         }
-              
-              
-          #  }
+            mapp<-leafletProxy(paste0("map",ii+1))
+            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+            #if(Consolitated[ijj]==0){
+            COLOURS<-rep("transparent",length(Consolidated))
+            COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
+            COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
+            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
+            #}
+            #              if(Consolitated[ijj]==1){
+            #               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#,color=FullColVec[ijj]
+            #            }
+            #           if(Consolitated[ijj]==2){
+            #            mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
+            #         }
+            
+            
+            #  }
             
           }
           removeControl(mapp,layerId="legend")
@@ -1084,8 +1019,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                           "</p>"), position = "topright",layerId="legend")
           
           
-         
-          }
+          
+        }
         #form0<-paste0('Text', ii,'("")')
         #eval(parse(text=form0))
         #cat(form0)
@@ -1097,353 +1032,347 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         #cat(form)
         #cat("\n")
         
-       
+        
         #eval(parse(text=form))
         
         #}
         if(length(FourUniqueRowsLoc)<4){
           #add here text to say that there are no more unique examples.
           for(ii in seq(length(FourUniqueRowsLoc)+1,4))
-                  {  #form2<-paste0('Text', ii ,
-                      #            '(paste0("Strategies that meet all ", N_TARGETS))')
-                  
-                  #eval(parse(text=form2))
-
-                  mapp<-leafletProxy(paste0("map",ii+1))
-                  removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-                  mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
-                                    color="transparent",fillColor="transparent")  
-                  removeControl(mapp,layerId="legend")
-                  mapp<-
-                    addControl(mapp,html = "", position = "topright",layerId="legend")
-                  
-                  
-        }
-        PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
-        PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
-        PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
-        
-        
-        UpdatedRows<-ClickedMatrixTab2Reactive()
-        if(length(FourUniqueRowsLoc)<4){
-          UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
+          {  #form2<-paste0('Text', ii ,
+            #            '(paste0("Strategies that meet all ", N_TARGETS))')
+            
+            #eval(parse(text=form2))
+            
+            mapp<-leafletProxy(paste0("map",ii+1))
+            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
+                              color="transparent",fillColor="transparent")  
+            removeControl(mapp,layerId="legend")
+            mapp<-
+              addControl(mapp,html = "", position = "topright",layerId="legend")
+            
+            
+          }
+          PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
+          PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
+          PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
           
-        }
-        PreviousClickedMatrixTab2Reactive(UpdatedRows)
-        
-        #Text1("")
-
-        
-        #  PreviousSubsetMeetTargetsReactive4Unique(SubsetMeetTargetsReactive4Unique())  
-        #PreviousSelectedVector(SelectedVec)
-        # replace the text
+          
+          UpdatedRows<-ClickedMatrixTab2Reactive()
+          if(length(FourUniqueRowsLoc)<4){
+            UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
+            
+          }
+          PreviousClickedMatrixTab2Reactive(UpdatedRows)
+          
+          #Text1("")
+          
+          
+          #  PreviousSubsetMeetTargetsReactive4Unique(SubsetMeetTargetsReactive4Unique())  
+          #PreviousSelectedVector(SelectedVec)
+          # replace the text
         }
       }
     })
   
-  ######################
-  observeEvent({input$random
-                input$tabs},
-               {FourUniqueRows<-FourUniqueRowsReactive()
-                 if(length(FourUniqueRows)>0){
-                 Text1(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[1]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text1("No Strategy that meet all the targets")
-                 }
-               if(length(FourUniqueRows)>1){
-                 Text2(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[2]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text2("No Second Strategy that meet all the targets")
-                 }
-               if(length(FourUniqueRows)>2){
-                 Text3(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[3]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text3("No Third Strategy that meet all the targets")
-                 }
-               if(length(FourUniqueRows)>3){
-                 Text4(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[4]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text4("No Fourth Strategy that meet all the targets")
-                 }
-               
-               Text0(paste0("Estimated percentage of strategies that meet all ", N_TARGETS," targets: ",
-                            round(dim(SubsetMeetTargetsReactiveUnique())[1] / dim(unique(simul636))[1] * 100, 2),"%"))
-               
-                              
-})
+  observeEvent({
+    input$random
+    input$tabs
+  }, {
+    FourUniqueRows<-FourUniqueRowsReactive()
+    if(length(FourUniqueRows)>0){
+      Text1(
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[1]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+      )}else{
+        Text1("No Strategy that meet all the targets")
+      }
+    if(length(FourUniqueRows)>1){
+      Text2(
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[2]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+      )}else{
+        Text2("No Second Strategy that meet all the targets")
+      }
+    if(length(FourUniqueRows)>2){
+      Text3(
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[3]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+      )}else{
+        Text3("No Third Strategy that meet all the targets")
+      }
+    if(length(FourUniqueRows)>3){
+      Text4(
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[4]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+      )}else{
+        Text4("No Fourth Strategy that meet all the targets")
+      }
+    
+    Text0(paste0("Estimated percentage of strategies that meet all ", N_TARGETS," targets: ",
+                 round(dim(SubsetMeetTargetsReactiveUnique())[1] / dim(unique(simul636))[1] * 100, 2),"%"))
+  })
   
   
-  ############################### Check if the slider values have been updated after the initialization
+  # Check if the slider values have been updated after the initialization
   #lapply(SliderNames, function(sl) {
-    observeEvent(input$SliderMain,{
-
-      SHBICurrent<-SlidersHaveBeenInitialized()
-      if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
-     for (sl in SliderNames){
+  observeEvent(input$SliderMain,{
+    
+    SHBICurrent<-SlidersHaveBeenInitialized()
+    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
+      for (sl in SliderNames){
         SliderNumber<-which(SliderNames==sl)        
         if(input[[sl]]==MaxValsReactiveVector()[SliderNumber]){SHBICurrent[SliderNumber]<-1;SlidersHaveBeenInitialized(SHBICurrent)}
-                 }}
-  #})
+      }}
+    #})
   }
   )
   
   
-  ############################### Check for changes in all the sliders
+  # Check for changes in all the sliders
   lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
-   # if (input[[sl]]) {
-      if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-                       
-
-                          SavedVec <- ClickedVector()
-                          SelectedVec<- SelectedVector()
-                          SelectedDropdown <- input$inSelect
-
-                          if (!is.null(SavedVec)) {
-                            
-                            AreaSelected <- AreaSelected0()
-                            CarbonSelected <- CarbonSelected0()
-                            SpeciesListSelected <- list()
-                            for (x in SPECIES) {
-                              value <- get(paste0(x, "Selected0"))
-                              SpeciesListSelected[x] <- list(value())
-                            }
-                            VisitsSelected <- VisitsSelected0()
-                            
-                            CarbonSelectedSD <- CarbonSelectedSD0()
-                            SpeciesListSelectedSD <- list()
-                            for (x in SPECIES) {
-                              value <- get(paste0(x, "SelectedSD0"))
-                              var_name <- paste0(x, "SD")
-                              SpeciesListSelectedSD[var_name] <- list(value())
-                            }
-                            VisitsSelectedSD <- VisitsSelectedSD0()
-                            
-                            tmp <- outputmap_calculateMats(input = input,
-                                                           SavedVecLoc = SavedVec,
-                                                           simul636Loc = simul636,
-                                                           AreaSelected = AreaSelected,
-                                                           CarbonSelected = CarbonSelected,
-                                                           # RedSquirrelSelected = RedSquirrelSelected,
-                                                           SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                                           VisitsSelected = VisitsSelected,
-                                                           CarbonSelectedSD = CarbonSelectedSD,
-                                                           # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                                           SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                                           VisitsSelectedSD = VisitsSelectedSD,
-                                                           alpha=alphaLVL)
-                            
-                            SelectedSimMat2 <- tmp$SelectedSimMat2
-                            Icalc <- tmp$Icalc
-                            LimitsMat <- tmp$LimitsMat
-                            SelecTargetCarbon <- tmp$SelecTargetCarbon
-                            # SelecTargetBio <- tmp$SelecTargetBio
-                           # condition <- TRUE
-                            #for (x in SPECIES) {
-                            #  var_name <- paste0("SelecTargetBio", x)
-                            #  value <- tmp[[var_name]]
-                            #  assign(var_name, value)
-                              
-                             # condition <- condition & (SelectedSimMat2[[x]] >= value)
-                            #}
-                            SelecTargetArea <- tmp$SelecTargetArea
-                            SelecTargetVisits <- tmp$SelecTargetVisits
-                            PROBAMAT <- Icalc$IVEC
-                            for (abc in 1:dim(Icalc$IVEC)[2]) {
-                              PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-                            }
-                            
-                            condition <- TRUE
-                            for (iii in 1:length(SPECIES)) {
-                              x<-SPECIES[iii]
-                              var_name <- paste0("SelecTargetBio", x)
-                              value <- tmp[[var_name]]
-                              assign(var_name, value)
-                              
-                              condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
-                            }
-                            rm(tmp)
-                            
-                            SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
-                                                                  # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-                                                                 condition &
-                                                                   (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
-                                                               (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL), ]
-                            
-                            SubsetMeetTargetsReactive(SubsetMeetTargets)
-                            SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
-                            
-                            if(dim(unique(SubsetMeetTargets))[1]>0){
-                              LengthVec<-min(4,dim(unique(SubsetMeetTargets)[1]))
-                              FourUniqueRowsReactive(seq(1,LengthVec))
-                              PreviousFourUniqueRowsReactive(seq(1,LengthVec))
-                            }else{FourUniqueRowsReactive(NULL)
-                              PreviousFourUniqueRowsReactive(NULL)}
-                            
-                            #SubsetMeetTargets <- SelectedSimMat2[(SelectedSimMat2$Carbon >= SelecTargetCarbon) &
-                             #                                      # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-                              #                                     condition &
-                               #                                    (SelectedSimMat2$Area >= SelecTargetArea) &
-                                #                                   (SelectedSimMat2$Visits >= SelecTargetVisits), ]
-                            
-                            #SubsetMeetTargets <- SelectedSimMat2[Icalc$NROYTotal, ]
-                            
-                            if (dim(SubsetMeetTargets)[1] > 0) {
-                              if (max(SelectedSimMat2$Carbon) != min(SelectedSimMat2$Carbon)) {
-                                DistSliderCarbon <- (SubsetMeetTargets$Carbon - SelecTargetCarbon) / (max(SelectedSimMat2$Carbon) - min(SelectedSimMat2$Carbon))
-                              } else {
-                                DistSliderCarbon <- (SubsetMeetTargets$Carbon - SelecTargetCarbon) / (max(SelectedSimMat2$Carbon))
-                              }
-                              # if (max(SelectedSimMat2$redsquirrel) != min(SelectedSimMat2$redsquirrel)) {
-                              #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel) - min(SelectedSimMat2$redsquirrel))
-                              # } else {
-                              #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel))
-                              # }
-                              DistSliderBioListDataframes <- list()
-                              for (x in SPECIES) {
-                                SelecTargetBiospecie <- get(paste0("SelecTargetBio", x))[[1]]
-                                var_name <- paste0("DistSliderBio", x)
-                                if (max(SelectedSimMat2[x]) != min(SelectedSimMat2[x])) {
-                                  value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
-                                } else {
-                                  if (max(SelectedSimMat2[x]) != 0) {
-                                    value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
-                                  } else {
-                                    value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
-                                  }
-                                }
-                                assign(var_name, value)
-                                DistSliderBioListDataframes[x] <- data.frame(x = value)
-                              }
-                              if (max(SelectedSimMat2$Area) != min(SelectedSimMat2$Area)) {
-                                DistSliderArea <- (SubsetMeetTargets$Area - SelecTargetArea) / (max(SelectedSimMat2$Area) - min(SelectedSimMat2$Area))
-                              } else {
-                                DistSliderArea <- (SubsetMeetTargets$Area - SelecTargetArea) / (max(SelectedSimMat2$Area))
-                              }
-                              if (max(SelectedSimMat2$Visits) != min(SelectedSimMat2$Visits)) {
-                                DistSliderVisits <- (SubsetMeetTargets$Visits - SelecTargetVisits) / (max(SelectedSimMat2$Visits) - min(SelectedSimMat2$Visits))
-                              } else {
-                                DistSliderVisits <- (SubsetMeetTargets$Visits - SelecTargetVisits) / (max(SelectedSimMat2$Visits))
-                              }
-                              
-                              # REMINDER TO SCALE VALUES
-                              DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
-                              # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
-                              # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits))
-                              #SelecdMinRows <- which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
-                              #SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
-                              #SelecRow <- which.min(rowSums(SelectedMins[1:length(SavedVec), ]))
-                              SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits
-                              SelecdMinRows <- which(SUMM == min(SUMM))
-                              SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
-                              
-                              # If it is a vector, i.e. only 1 unit is available
-                              if (length(SavedVec) == 1) {
-                                result <- SelectedMins[, 1]
-                              } else {
-                                # If it is a data frame
-                                result <- rowSums(SelectedMins[, 1:length(SavedVec)])
-                              }
-                              SelecRow <- which.min(result)
-                              
-                              SelectedFullTableRow(SelectedMins[SelecRow,])
-                              SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-                              #SwitchedOnCells <- SelectedMins[SelecRow, 1:length(SavedVec)]
-                              
-                              #SELL <- (FullTable$extent == SelectedDropdown)
-                              #if (!is.null(SELL)) {
-                                #SelectedTreeCarbon <- SelectedMins[SelecRow, ]$Carbon
-                                # SelectedBio <- SelectedMins[SelecRow, ]$redsquirrel
-                                #for (x in SPECIES) {
-                                #  var_name <- paste0("SelectedBio", x)
-                                #  value <- SelectedMins[SelecRow, x]
-                                #  assign(var_name, value)
-                                #}
-                                #SelectedArea <- SelectedMins[SelecRow, ]$Area
-                                #SelectedVisits <- SelectedMins[SelecRow, ]$Visits
-                                
-                                #SelectedTreeCarbonSD <- SelectedMins[SelecRow, ]$CarbonSD
-                                # SelectedBioSD <- SelectedMins[SelecRow, ]$redsquirrelSD
-                                #for (x in SPECIES) {
-                                #  var_name <- paste0("SelectedBioSD", x)
-                                #  value <- SelectedMins[SelecRow, paste0(x, "SD")]
-                                #  assign(var_name, value)
-                                #}
-                                #SelectedVisitsSD <- SelectedMins[SelecRow, ]$VisitsSD
-                                
-                                
-                                #SELGEOFull <- FullTable[SELL, ]
-                                #SELGEOFull$layerId <- paste0("Square", 1:dim(SELGEOFull)[1])
-                                #SELGEO <- FullTable$geometry[SELL]
-                                
-                                #ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units[SELL],
-                                 #                      ColorLighteningFactor(), ColorDarkeningFactor())
-                                
-                                #FullColVec <- ColObtained$FullColVec
-                                #ClickedCols <- ColObtained$ClickedCols
-                                #SELGEOFull$color <- ColObtained$FullColVec
-                                #SELGEOFull$color[SavedVec == 1] <- ColObtained$ClickedCols[SavedVec == 1]
-                                
-                                
-                                
-                                #SELGEOSavedVec <- SELGEOFull[, c("geometry", "layerId")]
-                                #SELGEOSwitched <- SELGEOFull[, c("geometry", "layerId")]
-                                
-                                #SELGEOSavedVec <- SELGEOSavedVec[SavedVec == 1, ]#;gpNamesSavedVec <- gpNamesSavedVec[SavedVec]
-                                #SELGEOSwitched <- SELGEOSwitched[(SwitchedOnCells == 1) & (SavedVec != 1), ]#;gpNamesSwitched <- gpNamesSwitched[SwitchedOnCells & (!SavedVec)]
-                                #SELGEORemaining <- SELGEOFull[(SavedVec == 1) | (SwitchedOnCells == 1), c("geometry", "layerId", "color")]
-                                
-                                
-                                
-                                #if (dim(SELGEORemaining)[1] > 0) {
-                                 # map <- addPolygons(map, data = SELGEORemaining, color = SELGEORemaining$color, layerId = SELGEORemaining$layerId, weight = UnitPolygonColours)
-                                #}
-                                
-                                #addControlText <- ""
-                                #for (i in 1:length(SPECIES)) {
-                                #  specie_latin <- SPECIES[i]
-                                  #specie_english <- SPECIES_ENGLISH[i]
-                                 # selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
-                                #  selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-                               #   addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-                              #  }
-                                
-                               # map <- map %>%
-                                #  addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2*SelectedTreeCarbonSD, 2), "<br>",
-                                  #                         addControlText,
-                                   #                        "Area Planted: ", round(SelectedArea, 2), "<br>",
-                                    #                       "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2*SelectedVisitsSD, 2),
-                                     #                      "</p>"), position = "topright")
-                                
-                             # }
-                            } else { ZeroSelected<-SelectedSimMat2[1,]
-                                    ZeroSelected<-rep(0,length(ZeroSelected))
-                                    SelectedFullTableRow(ZeroSelected)
-                                    SelectedVector(ZeroSelected[ 1:length(SavedVec)])
-                              #SelectedFullTableRow(SelectedMins[SelecRow,])
-                              #SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-                              #map <- map %>%
-                              #addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
-                            }
-                          }      
-                          
-                          
-                          
-                            
-         }
-     #  }
-      })
+    # if (input[[sl]]) {
+    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
+      
+      
+      SavedVec <- ClickedVector()
+      SelectedVec<- SelectedVector()
+      SelectedDropdown <- input$inSelect
+      
+      if (!is.null(SavedVec)) {
+        
+        AreaSelected <- AreaSelected0()
+        CarbonSelected <- CarbonSelected0()
+        SpeciesListSelected <- list()
+        for (x in SPECIES) {
+          value <- get(paste0(x, "Selected0"))
+          SpeciesListSelected[x] <- list(value())
+        }
+        VisitsSelected <- VisitsSelected0()
+        
+        CarbonSelectedSD <- CarbonSelectedSD0()
+        SpeciesListSelectedSD <- list()
+        for (x in SPECIES) {
+          value <- get(paste0(x, "SelectedSD0"))
+          var_name <- paste0(x, "SD")
+          SpeciesListSelectedSD[var_name] <- list(value())
+        }
+        VisitsSelectedSD <- VisitsSelectedSD0()
+        
+        tmp <- outputmap_calculateMats(input = input,
+                                       SavedVecLoc = SavedVec,
+                                       simul636Loc = simul636,
+                                       AreaSelected = AreaSelected,
+                                       CarbonSelected = CarbonSelected,
+                                       # RedSquirrelSelected = RedSquirrelSelected,
+                                       SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                       VisitsSelected = VisitsSelected,
+                                       CarbonSelectedSD = CarbonSelectedSD,
+                                       # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                       SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                       VisitsSelectedSD = VisitsSelectedSD,
+                                       alpha=alphaLVL)
+        
+        SelectedSimMat2 <- tmp$SelectedSimMat2
+        Icalc <- tmp$Icalc
+        LimitsMat <- tmp$LimitsMat
+        SelecTargetCarbon <- tmp$SelecTargetCarbon
+        # SelecTargetBio <- tmp$SelecTargetBio
+        # condition <- TRUE
+        #for (x in SPECIES) {
+        #  var_name <- paste0("SelecTargetBio", x)
+        #  value <- tmp[[var_name]]
+        #  assign(var_name, value)
+        
+        # condition <- condition & (SelectedSimMat2[[x]] >= value)
+        #}
+        SelecTargetArea <- tmp$SelecTargetArea
+        SelecTargetVisits <- tmp$SelecTargetVisits
+        PROBAMAT <- Icalc$IVEC
+        for (abc in 1:dim(Icalc$IVEC)[2]) {
+          PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+        }
+        
+        condition <- TRUE
+        for (iii in 1:length(SPECIES)) {
+          x<-SPECIES[iii]
+          var_name <- paste0("SelecTargetBio", x)
+          value <- tmp[[var_name]]
+          assign(var_name, value)
+          
+          condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
+        }
+        rm(tmp)
+        
+        SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
+                                               # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
+                                               condition &
+                                               (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
+                                               (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL), ]
+        
+        SubsetMeetTargetsReactive(SubsetMeetTargets)
+        SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
+        
+        if(dim(unique(SubsetMeetTargets))[1]>0){
+          LengthVec<-min(4,dim(unique(SubsetMeetTargets)[1]))
+          FourUniqueRowsReactive(seq(1,LengthVec))
+          PreviousFourUniqueRowsReactive(seq(1,LengthVec))
+        }else{FourUniqueRowsReactive(NULL)
+          PreviousFourUniqueRowsReactive(NULL)}
+        
+        #SubsetMeetTargets <- SelectedSimMat2[(SelectedSimMat2$Carbon >= SelecTargetCarbon) &
+        #                                      # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
+        #                                     condition &
+        #                                    (SelectedSimMat2$Area >= SelecTargetArea) &
+        #                                   (SelectedSimMat2$Visits >= SelecTargetVisits), ]
+        
+        #SubsetMeetTargets <- SelectedSimMat2[Icalc$NROYTotal, ]
+        
+        if (dim(SubsetMeetTargets)[1] > 0) {
+          if (max(SelectedSimMat2$Carbon) != min(SelectedSimMat2$Carbon)) {
+            DistSliderCarbon <- (SubsetMeetTargets$Carbon - SelecTargetCarbon) / (max(SelectedSimMat2$Carbon) - min(SelectedSimMat2$Carbon))
+          } else {
+            DistSliderCarbon <- (SubsetMeetTargets$Carbon - SelecTargetCarbon) / (max(SelectedSimMat2$Carbon))
+          }
+          # if (max(SelectedSimMat2$redsquirrel) != min(SelectedSimMat2$redsquirrel)) {
+          #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel) - min(SelectedSimMat2$redsquirrel))
+          # } else {
+          #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel))
+          # }
+          DistSliderBioListDataframes <- list()
+          for (x in SPECIES) {
+            SelecTargetBiospecie <- get(paste0("SelecTargetBio", x))[[1]]
+            var_name <- paste0("DistSliderBio", x)
+            if (max(SelectedSimMat2[x]) != min(SelectedSimMat2[x])) {
+              value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
+            } else {
+              if (max(SelectedSimMat2[x]) != 0) {
+                value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
+              } else {
+                value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
+              }
+            }
+            assign(var_name, value)
+            DistSliderBioListDataframes[x] <- data.frame(x = value)
+          }
+          if (max(SelectedSimMat2$Area) != min(SelectedSimMat2$Area)) {
+            DistSliderArea <- (SubsetMeetTargets$Area - SelecTargetArea) / (max(SelectedSimMat2$Area) - min(SelectedSimMat2$Area))
+          } else {
+            DistSliderArea <- (SubsetMeetTargets$Area - SelecTargetArea) / (max(SelectedSimMat2$Area))
+          }
+          if (max(SelectedSimMat2$Visits) != min(SelectedSimMat2$Visits)) {
+            DistSliderVisits <- (SubsetMeetTargets$Visits - SelecTargetVisits) / (max(SelectedSimMat2$Visits) - min(SelectedSimMat2$Visits))
+          } else {
+            DistSliderVisits <- (SubsetMeetTargets$Visits - SelecTargetVisits) / (max(SelectedSimMat2$Visits))
+          }
+          
+          # REMINDER TO SCALE VALUES
+          DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
+          # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
+          # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits))
+          #SelecdMinRows <- which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
+          #SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
+          #SelecRow <- which.min(rowSums(SelectedMins[1:length(SavedVec), ]))
+          SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits
+          SelecdMinRows <- which(SUMM == min(SUMM))
+          SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
+          
+          # If it is a vector, i.e. only 1 unit is available
+          if (length(SavedVec) == 1) {
+            result <- SelectedMins[, 1]
+          } else {
+            # If it is a data frame
+            result <- rowSums(SelectedMins[, 1:length(SavedVec)])
+          }
+          SelecRow <- which.min(result)
+          
+          SelectedFullTableRow(SelectedMins[SelecRow,])
+          SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+          #SwitchedOnCells <- SelectedMins[SelecRow, 1:length(SavedVec)]
+          
+          #SELL <- (FullTable$extent == SelectedDropdown)
+          #if (!is.null(SELL)) {
+          #SelectedTreeCarbon <- SelectedMins[SelecRow, ]$Carbon
+          # SelectedBio <- SelectedMins[SelecRow, ]$redsquirrel
+          #for (x in SPECIES) {
+          #  var_name <- paste0("SelectedBio", x)
+          #  value <- SelectedMins[SelecRow, x]
+          #  assign(var_name, value)
+          #}
+          #SelectedArea <- SelectedMins[SelecRow, ]$Area
+          #SelectedVisits <- SelectedMins[SelecRow, ]$Visits
+          
+          #SelectedTreeCarbonSD <- SelectedMins[SelecRow, ]$CarbonSD
+          # SelectedBioSD <- SelectedMins[SelecRow, ]$redsquirrelSD
+          #for (x in SPECIES) {
+          #  var_name <- paste0("SelectedBioSD", x)
+          #  value <- SelectedMins[SelecRow, paste0(x, "SD")]
+          #  assign(var_name, value)
+          #}
+          #SelectedVisitsSD <- SelectedMins[SelecRow, ]$VisitsSD
+          
+          
+          #SELGEOFull <- FullTable[SELL, ]
+          #SELGEOFull$layerId <- paste0("Square", 1:dim(SELGEOFull)[1])
+          #SELGEO <- FullTable$geometry[SELL]
+          
+          #ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units[SELL],
+          #                      ColorLighteningFactor(), ColorDarkeningFactor())
+          
+          #FullColVec <- ColObtained$FullColVec
+          #ClickedCols <- ColObtained$ClickedCols
+          #SELGEOFull$color <- ColObtained$FullColVec
+          #SELGEOFull$color[SavedVec == 1] <- ColObtained$ClickedCols[SavedVec == 1]
+          
+          
+          
+          #SELGEOSavedVec <- SELGEOFull[, c("geometry", "layerId")]
+          #SELGEOSwitched <- SELGEOFull[, c("geometry", "layerId")]
+          
+          #SELGEOSavedVec <- SELGEOSavedVec[SavedVec == 1, ]#;gpNamesSavedVec <- gpNamesSavedVec[SavedVec]
+          #SELGEOSwitched <- SELGEOSwitched[(SwitchedOnCells == 1) & (SavedVec != 1), ]#;gpNamesSwitched <- gpNamesSwitched[SwitchedOnCells & (!SavedVec)]
+          #SELGEORemaining <- SELGEOFull[(SavedVec == 1) | (SwitchedOnCells == 1), c("geometry", "layerId", "color")]
+          
+          
+          
+          #if (dim(SELGEORemaining)[1] > 0) {
+          # map <- addPolygons(map, data = SELGEORemaining, color = SELGEORemaining$color, layerId = SELGEORemaining$layerId, weight = UnitPolygonColours)
+          #}
+          
+          #addControlText <- ""
+          #for (i in 1:length(SPECIES)) {
+          #  specie_latin <- SPECIES[i]
+          #specie_english <- SPECIES_ENGLISH[i]
+          # selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+          #  selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+          #   addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          #  }
+          
+          # map <- map %>%
+          #  addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2*SelectedTreeCarbonSD, 2), "<br>",
+          #                         addControlText,
+          #                        "Area Planted: ", round(SelectedArea, 2), "<br>",
+          #                       "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2*SelectedVisitsSD, 2),
+          #                      "</p>"), position = "topright")
+          
+          # }
+        } else { ZeroSelected<-SelectedSimMat2[1,]
+        ZeroSelected<-rep(0,length(ZeroSelected))
+        SelectedFullTableRow(ZeroSelected)
+        SelectedVector(ZeroSelected[ 1:length(SavedVec)])
+        #SelectedFullTableRow(SelectedMins[SelecRow,])
+        #SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+        #map <- map %>%
+        #addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
+        }
+      }      
+      
+      
+      
+      
     }
+    #  }
+  })
+  }
   )
   
-  ######################
- 
-  
-  
-############################################################################  
   observeEvent(input$tabs == "Clustering", {
     
     SavedVec <- ClickedVector()
@@ -1590,14 +1519,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         NbRoundsMax(MaxRounds)
         
         LinesToCompare <- matrix(1, MaxRounds, 2)
-        #  indd <- 1
-        
-        #  for (iws in 1:(as.integer(trunc(length(UniqueBinCodes)/2)))) {
-        #  LinesToCompare[iws, 1] <- which(DatBinaryCode == UniqueBinCodes[indd])[1]
-        # indd <- indd + 1
-        # LinesToCompare[iws, 2] <- which(DatBinaryCode == UniqueBinCodes[indd])[1]
-        # indd <- indd + 1
-        #}
         LinesToCompare[1, ] <- sample(1:dim(datAll2)[1], 2, replace = F)
         CurrentRound(1)
         
@@ -1651,9 +1572,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             SELGEORemaining <- SELGEOFull[(SavedVec == 1) | (SwitchedOnCells == 1), c("geometry", "layerId", "color")]
             
             
-            SELGEOSavedVec <- SELGEOSavedVec[SavedVec == 1, ]#;gpNamesSavedVec <- gpNamesSavedVec[SavedVec]
-            SELGEOSwitched <- SELGEOSwitched[(SwitchedOnCells == 1) & (SavedVec != 1), ]#;gpNamesSwitched <- gpNamesSwitched[SwitchedOnCells & (!SavedVec)]
-            
+            SELGEOSavedVec <- SELGEOSavedVec[SavedVec == 1, ]
+            SELGEOSwitched <- SELGEOSwitched[(SwitchedOnCells == 1) & (SavedVec != 1), ]
             
             if (dim(SELGEORemaining)[1] > 0) {
               listMaps[[aai]] <- addPolygons(listMaps[[aai]], data = SELGEORemaining, color = SELGEORemaining$color, layerId = ~SELGEORemaining$layerId, weight = UnitPolygonColours)
@@ -1779,7 +1699,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   })
   
   
-observeEvent(input$map_shape_click, {
+  observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
     SelectedDropdown <- input$inSelect
     SelectedRowsUnits <- FullTable$units[FullTable$extent == SelectedDropdown]
@@ -1803,146 +1723,58 @@ observeEvent(input$map_shape_click, {
       }
     }
   })
- 
-  ##################################
+  
   output$map <- renderLeaflet({
     #  shinyjs::hide("tabs")
-    
     
     if((CreatedBaseMap()==0)&(UpdatedExtent()==1)){
       SavedVec <- ClickedVector()
       SelectedVec <- SelectedVector()
       SelectedDropdown <- input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
-    calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main", shconv, GreyPolygonWidth = GreyPolygonWidth)
-    map <- calcBaseMap$map
-    
-    
-    if (!is.null(SavedVec)) {
-      
-      AreaSelected <- AreaSelected0()
-      CarbonSelected <- CarbonSelected0()
-      # RedSquirrelSelected <- RedSquirrelSelected0()
-      SpeciesListSelected <- list()
-     for (x in SPECIES) {
-        value <- get(paste0(x, "Selected0"))
-        SpeciesListSelected[x] <- list(value())
-      }
-      VisitsSelected <- VisitsSelected0()
-      
-      CarbonSelectedSD <- CarbonSelectedSD0()
-      # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
-      SpeciesListSelectedSD <- list()
-      for (x in SPECIES) {
-        value <- get(paste0(x, "SelectedSD0"))
-        var_name <- paste0(x, "SD")
-        SpeciesListSelectedSD[var_name] <- list(value())
-      }
-      VisitsSelectedSD <- VisitsSelectedSD0()
+      calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main", shconv, GreyPolygonWidth = GreyPolygonWidth)
+      map <- calcBaseMap$map
       
       
-      TwoRows<-matrix(1,nrow=2,ncol=dim(FullTable)[1])
-      tmp <- outputmap_calculateMats(input = input,
-                                     SavedVecLoc = TwoRows[1,],
-                                     simul636Loc = TwoRows,
-                                     AreaSelected = AreaSelected,
-                                     CarbonSelected = CarbonSelected,
-                                     # RedSquirrelSelected = RedSquirrelSelected,
-                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                     VisitsSelected = VisitsSelected,
-                                     CarbonSelectedSD = CarbonSelectedSD,
-                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD,
-                                     alphaLVL = 0) # At the beginning we want to switch on all the sliders
-      
-      SelectedSimMat2 <- tmp$SelectedSimMat2
-  #    Icalc <- tmp$Icalc
-  #    LimitsMat <- tmp$LimitsMat
-#      SelecTargetCarbon <- tmp$SelecTargetCarbon
-   #   MaxVals<-MaxValsReactive()
-  #    SelecTargetCarbon <- MaxVals$CarbonMax
-      # SelecTargetBio <- tmp$SelecTargetBio
-  #    condition <- TRUE
-  #    for (iii in length(SPECIES)) {
-   #     x<-SPECIES[iii]
-    #    var_name <- paste0("SelecTargetBio", x)
-     #   #value <- tmp[[var_name]]
-     #   value <- MaxVals$bioMaxList[[iii]]
-      #  assign(var_name, value)
+      if (!is.null(SavedVec)) {
         
-    #    condition <- condition & (SelectedSimMat2[[x]] >= value)
-    #  }
-   #   SelecTargetArea <- tmp$SelecTargetArea
-    #  SelecTargetVisits <- tmp$SelecTargetVisits
-     # rm(tmp)
-    #  PROBAMAT <- Icalc$IVEC
-     # for (abc in 1:dim(Icalc$IVEC)[2]) {
-      #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-      #}#
-      
-      
-    #  SubsetMeetTargets <- SelectedSimMat2[(SelectedSimMat2$Carbon >= SelecTargetCarbon) &
-                                             # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-     #                                        condition &
-      #                                       (SelectedSimMat2$Area >= SelecTargetArea) &
-       #                                      (SelectedSimMat2$Visits >= SelecTargetVisits), ]
-      #
-      #SubsetMeetTargets <- SelectedSimMat2[Icalc$NROYTotal, ]
-      
-     # if (dim(SubsetMeetTargets)[1] > 0) {
-      #  if (max(SelectedSimMat2$Carbon) != min(SelectedSimMat2$Carbon)) {
-       #   DistSliderCarbon <- (SubsetMeetTargets$Carbon - SelecTargetCarbon) / (max(SelectedSimMat2$Carbon) - min(SelectedSimMat2$Carbon))
-       # } else {
-      #    DistSliderCarbon <- (SubsetMeetTargets$Carbon - SelecTargetCarbon) / (max(SelectedSimMat2$Carbon))
-       # }
-      #  DistSliderBioListDataframes <- list()
-      #  for (x in SPECIES) {
-      #    SelecTargetBiospecie <- get(paste0("SelecTargetBio", x))[[1]]
-      #    var_name <- paste0("DistSliderBio", x)
-      #    if (max(SelectedSimMat2[x]) != min(SelectedSimMat2[x])) {
-      #      value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]) - min(SelectedSimMat2[[x]]))
-      ##    } else {
-      #      if (max(SelectedSimMat2[x]) != 0) {
-      #        value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(SelectedSimMat2[[x]]))
-      #      } else {
-      #        value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
-      #      }
-      ##    }
-      #    assign(var_name, value)
-      #    DistSliderBioListDataframes[x] <- data.frame(x = value)
-      #  }
-      #  if (max(SelectedSimMat2$Area) != min(SelectedSimMat2$Area)) {
-      #    DistSliderArea <- (SubsetMeetTargets$Area - SelecTargetArea) / (max(SelectedSimMat2$Area) - min(SelectedSimMat2$Area))
-       # } else {
-        #  DistSliderArea <- (SubsetMeetTargets$Area - SelecTargetArea) / (max(SelectedSimMat2$Area))
-      #  }
-       # if (max(SelectedSimMat2$Visits) != min(SelectedSimMat2$Visits)) {
-        #  DistSliderVisits <- (SubsetMeetTargets$Visits - SelecTargetVisits) / (max(SelectedSimMat2$Visits) - min(SelectedSimMat2$Visits))
-        #} else {
-        #  DistSliderVisits <- (SubsetMeetTargets$Visits - SelecTargetVisits) / (max(SelectedSimMat2$Visits))
-        #}
+        AreaSelected <- AreaSelected0()
+        CarbonSelected <- CarbonSelected0()
+        # RedSquirrelSelected <- RedSquirrelSelected0()
+        SpeciesListSelected <- list()
+        for (x in SPECIES) {
+          value <- get(paste0(x, "Selected0"))
+          SpeciesListSelected[x] <- list(value())
+        }
+        VisitsSelected <- VisitsSelected0()
         
-  #      DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
-      #  # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
-      #  # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits))
-      #  #SelecdMinRows <- which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
-      #  #SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
-      #  #SelecRow <- which.min(rowSums(SelectedMins[1:length(SavedVec), ]))
-  #      SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits
-  #      SelecdMinRows <- which(SUMM == min(SUMM))
-  #      SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
+        CarbonSelectedSD <- CarbonSelectedSD0()
+        # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
+        SpeciesListSelectedSD <- list()
+        for (x in SPECIES) {
+          value <- get(paste0(x, "SelectedSD0"))
+          var_name <- paste0(x, "SD")
+          SpeciesListSelectedSD[var_name] <- list(value())
+        }
+        VisitsSelectedSD <- VisitsSelectedSD0()
         
-        # If it is a vector, i.e. only 1 unit is available
-   #     if (length(SavedVec) == 1) {
-    #      result <- SelectedMins[, 1]
-     #   } else {
-    #      # If it is a data frame
-     #     result <- rowSums(SelectedMins[, 1:length(SavedVec)])
-    #    }
-     #   SelecRow <- which.min(result)
+        
+        TwoRows<-matrix(1,nrow=2,ncol=dim(FullTable)[1])
+        tmp <- outputmap_calculateMats(input = input,
+                                       SavedVecLoc = TwoRows[1,],
+                                       simul636Loc = TwoRows,
+                                       AreaSelected = AreaSelected,
+                                       CarbonSelected = CarbonSelected,
+                                       # RedSquirrelSelected = RedSquirrelSelected,
+                                       SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                       VisitsSelected = VisitsSelected,
+                                       CarbonSelectedSD = CarbonSelectedSD,
+                                       # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                       SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                       VisitsSelectedSD = VisitsSelectedSD,
+                                       alphaLVL = 0) # At the beginning we want to switch on all the sliders
         
         SelecRow<-1
-        SelectedMins<-SelectedSimMat2
+        SelectedMins <- tmp$SelectedSimMat2
         SwitchedOnCells <- SelectedMins[SelecRow, 1:length(SavedVec)]
         
         SELL <- (FullTable$extent == SelectedDropdown)
@@ -2014,540 +1846,51 @@ observeEvent(input$map_shape_click, {
                                      "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2*SelectedVisitsSD, 2),
                                      "</p>"), position = "topright",layerId="legend")
         }
-      #} else { map <- map %>%
-      #  addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
-      #}
-    }
-    map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
-    CreatedBaseMap(1)
-    MapReactive(map)
-    MapReactive()}else{    MapReactive()
-     # if(CreatedBaseMap()==1){
-    #  mapp<-leafletProxy("map")
-    #mapp}
-    }
+        #} else { map <- map %>%
+        #  addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
+        #}
+      }
+      map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
+      CreatedBaseMap(1)
+      MapReactive(map)
+      MapReactive()}else{    MapReactive()
+        # if(CreatedBaseMap()==1){
+        #  mapp<-leafletProxy("map")
+        #mapp}
+      }
     # ChangeSliders(FALSE)
     # shinyjs::show("tabs")
-
+    
   })
   
   output$map2 <- renderLeaflet({
     
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)){ MapReactive()}else{}
-   #     SavedVec <- ClickedVector()
-  #  SelectedDropdown <- input$inSelect
-  #  calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main2", shconv, GreyPolygonWidth = GreyPolygonWidth)
-  #  map <- calcBaseMap$map
-    
-  #  if (!is.null(SavedVec)) {
-  #    
-   #   AreaSelected <- AreaSelected0()
-  #    CarbonSelected <- CarbonSelected0()
-   #   # RedSquirrelSelected <- RedSquirrelSelected0()
-    #  SpeciesListSelected <- list()
-    #  for (x in SPECIES) {
-    #    value <- get(paste0(x, "Selected0"))
-    #    SpeciesListSelected[x] <- list(value())
-    #  }
-    #  VisitsSelected <- VisitsSelected0()
-    #  
-    #  CarbonSelectedSD <- CarbonSelectedSD0()
-    #  # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
-    #  SpeciesListSelectedSD <- list()
-    #  for (x in SPECIES) {
-    #    value <- get(paste0(x, "SelectedSD0"))
-    #    var_name <- paste0(x, "SD")
-    #    SpeciesListSelectedSD[var_name] <- list(value())
-    #  }
-    #  VisitsSelectedSD <- VisitsSelectedSD0()
-    #  
-    #  tmp <- outputmap_calculateMats(input = input,
-    #                                 SavedVecLoc = SavedVec,
-    #                                 simul636Loc = simul636,
-    #                                 AreaSelected = AreaSelected,
-    #                                 CarbonSelected = CarbonSelected,
-    #                                 # RedSquirrelSelected = RedSquirrelSelected,
-    #                                 SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-    #                                 VisitsSelected = VisitsSelected,
-    #                                 CarbonSelectedSD = CarbonSelectedSD,
-    #                                 # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-    #                                 SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-     #                                VisitsSelectedSD = VisitsSelectedSD,
-    #                                 alphaLVL = alphaLVL)
-    #  
-    #  SelectedSimMat2 <- tmp$SelectedSimMat2
-    #  Icalc <- tmp$Icalc
-    #  LimitsMat <- tmp$LimitsMat
-    #  rm(tmp)
-    #  
-    #  # PROBAMAT <- 1 - pnorm(Icalc$IVEC)
-    #  PROBAMAT <- Icalc$IVEC
-    #  for (abc in 1:dim(Icalc$IVEC)[2]) {
-    #    PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-    #  }
-    #  
-    #  # CONDPROBA <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-    #  CONDPROBA <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
-    #  
-    #  SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
-    #  # SubsetMeetTargets <- SelectedSimMat2[CONDPROBA, ]
-    #  SubsetMeetTargets <- unique(SubsetMeetTargets)
-    #  # SelIMAT <- Icalc$IVEC[CONDPROBA, ]
-    #  
-    #  if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 1) {
-    #    mapresults <- outputmap_createResults(map = map,
-    #                                          map_number = 2,
-    #                                          SubsetMeetTargets = SubsetMeetTargets,
-    #                                          alphaLVL = alphaLVL,
-    #                                          FullTable = FullTable,
-    #                                          SavedVec = SavedVec,
-    #                                          SelectedDropdown = SelectedDropdown,
-    #                                          randomValueOnButton = randomValueOnButton,
-    #                                          SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
-    #                                          ColourScheme = ColourScheme(),
-    #                                          ColorLighteningFactor = ColorLighteningFactor(),
-    #                                          ColorDarkeningFactor = ColorDarkeningFactor(),
-    #                                          SPECIES_ARG2 = SPECIES,
-    #                                          SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
-    #                                          UnitPolygonColours = UnitPolygonColours)
-    #    # SavedRVs <- mapresults$SavedRVs
-    #    
-    #    strategy_idx <- mapresults$strategy_idx
-    #    # LSMT <- mapresults$LSMT
-    #    map <- mapresults$map
-    #    
-    #    addControlText <- ""
-    #    for (i in 1:length(SPECIES)) {
-    #      specie_latin <- SPECIES[i]
-    #      specie_english <- SPECIES_ENGLISH[i]
-    #      selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
-    #      selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
-    #      addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-    #    }
-    #    map <- with(mapresults, map %>%
-    #                  addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
-    #                                           # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
-     #                                          addControlText,
-      #                                         "Area Planted: ", round(SelectedArea, 2), "<br>",
-      #                                         "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
-      #                                         "</p>"), position = "topright"))
-      #  Text1(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
-      #} else {
-      #  Text1(paste("No strategy where all", N_TARGETS, "targets are met found"))
-      #}
-    #}
-    
-    #map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
-    #map
+    if((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)){
+      MapReactive()
+    }
   })
   
   output$map3 <- renderLeaflet({
     
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)){ MapReactive()}else{}
-    
-    
-    #SavedVec <- ClickedVector()
-    #SelectedDropdown <- input$inSelect
-    #calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main3", shconv, GreyPolygonWidth = GreyPolygonWidth)
-    #map <- calcBaseMap$map
-  #  
-  #  if (!is.null(SavedVec)) {
-  #    
-  #    AreaSelected <- AreaSelected0()
-  #    CarbonSelected <- CarbonSelected0()
-  #    # RedSquirrelSelected <- RedSquirrelSelected0()
-  #    SpeciesListSelected <- list()
-  #    for (x in SPECIES) {
-  #      value <- get(paste0(x, "Selected0"))
-  #      SpeciesListSelected[x] <- list(value())
-  #    }
-  #    VisitsSelected <- VisitsSelected0()
-  #    
-  #    CarbonSelectedSD <- CarbonSelectedSD0()
-  #    # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
-  #    SpeciesListSelectedSD <- list()
-  #    for (x in SPECIES) {
-  #      value <- get(paste0(x, "SelectedSD0"))
-  #      var_name <- paste0(x, "SD")
-  #      SpeciesListSelectedSD[var_name] <- list(value())
-  #    }
-  #    VisitsSelectedSD <- VisitsSelectedSD0()
-  #    
-  #    tmp <- outputmap_calculateMats(input = input,
-  #                                   SavedVecLoc = SavedVec,
-  #                                   simul636Loc = simul636,
-  #                                   AreaSelected = AreaSelected,
-  #                                   CarbonSelected = CarbonSelected,
-  #                                   # RedSquirrelSelected = RedSquirrelSelected,
-  #                                   SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-  #                                   VisitsSelected = VisitsSelected,
-  #                                   CarbonSelectedSD = CarbonSelectedSD,
-  #                                   # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-  #                                   SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-  #                                   VisitsSelectedSD = VisitsSelectedSD,
-  #                                   alphaLVL = alphaLVL)
-  #    
-  #    SelectedSimMat2 <- tmp$SelectedSimMat2
-  #    Icalc <- tmp$Icalc
-  #    LimitsMat <- tmp$LimitsMat
-  #    rm(tmp)
-  #    
-  #    # PROBAMAT <- 1 - pnorm(Icalc$IVEC)
-  #    PROBAMAT <- Icalc$IVEC
-  #    for (abc in 1:dim(Icalc$IVEC)[2]) {
-  #      PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-  #    }
-  #    
-  #    # CONDPROBA3PositiveLIST <- list()
-  #    # CONDPROBA3PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-  #    # CONDPROBA3PositiveLIST[[2]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-  #    # CONDPROBA3PositiveLIST[[3]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-  #    # CONDPROBA3PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-  #    CONDPROBA3PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
-  #    
-  #    # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[1]], ],
-  #    #                                 NotMet = rep("Carbon", sum(CONDPROBA3PositiveLIST[[1]])))
-  #    # # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[2]], ], NotMet = rep("redSquirrel", sum(CONDPROBA3PositiveLIST[[2]]))))
-  #    # for (i in 1:N_SPECIES) {
-  #    #   specie <- SPECIES[i]
-  #    #   SubsetMeetTargets <- rbind(SubsetMeetTargets,
-  #    #                              data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[i + 1]], ],
-  #    #                                         NotMet = rep(specie, sum(CONDPROBA3PositiveLIST[[i + 1]]))))
-  #    # }
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets,
-  #    #                            data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[N_SPECIES + 2]], ],
-  #    #                                       NotMet = rep("Area", sum(CONDPROBA3PositiveLIST[[N_SPECIES + 2]]))))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets,
-  #    #                            data.frame(SelectedSimMat2[CONDPROBA3PositiveLIST[[N_SPECIES + 3]], ],
-  #    #                                       NotMet = rep("NbVisits", sum(CONDPROBA3PositiveLIST[[N_SPECIES + 3]]))))
-  #    SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA3PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
-  #    SubsetMeetTargets <- unique(SubsetMeetTargets)
-  #    
-  #    if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 2) {
-  #      mapresults <- outputmap_createResults(map = map,
-  #                                            map_number = 3,
-  #                                            SubsetMeetTargets = SubsetMeetTargets,
-  #                                            alphaLVL = alphaLVL,
-  #                                            FullTable = FullTable,
-  #                                            SavedVec = SavedVec,
-  #                                            SelectedDropdown = SelectedDropdown,
-  #                                            randomValueOnButton = randomValueOnButton,
-  #                                            SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
-  #                                            ColourScheme = ColourScheme(),
-  #                                            ColorLighteningFactor = ColorLighteningFactor(),
-  #                                            ColorDarkeningFactor = ColorDarkeningFactor(),
-  #                                            SPECIES_ARG2 = SPECIES,
-  #                                            SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
-  #                                            UnitPolygonColours = UnitPolygonColours)
-  #      # SavedRVs <- mapresults$SavedRVs
-  #      strategy_idx <- mapresults$strategy_idx
-  #      # LSMT <- mapresults$LSMT
-  #      map <- mapresults$map
-  #      
-  #      addControlText <- ""
-  #      for (i in 1:length(SPECIES)) {
-  #        specie_latin <- SPECIES[i]
-  #        specie_english <- SPECIES_ENGLISH[i]
-  #        selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
-  #        selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
-  #        addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-  #      }
-  #      
-  #      # Replace species Latin names with English names, and keep everything else
-  #      targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ", ")
-  #      for (i in seq_along(targets_not_met)) {
-  #        target <- targets_not_met[i]
-  #        if (target %in% NAME_CONVERSION$Specie) {
-  #          idx <- NAME_CONVERSION$Specie == target
-  #          matching_english_specie <- NAME_CONVERSION[idx, "English_specie"]
-  #          targets_not_met[i] <- matching_english_specie
-  #        }
-  #      }
-  #      targets_not_met <- paste(targets_not_met, collapse = ", ")
-  #      
-  #      map <- with(mapresults, map %>%
-  #                    addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
-  #                                             # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
-  #                                             addControlText,
-  #                                             "Area Planted: ", round(SelectedArea, 2), "<br>",
-  #                                             "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
-  #                                             "</p>"), position = "topright"))
-  #      
-  #      # Text2(paste0("Strategies that meet exactly ", N_TARGETS - 1, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Not Met:", targets_not_met))
-  #      Text2(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
-  #    } else {
-  #      # Text2(paste("No strategy where exactly", N_TARGETS - 1, "targets are met found"))
-  #      Text2(paste("No strategy where all", N_TARGETS, "targets are met found"))
-  #    }
-  #  }
-  #  map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
-  #  map
+    if((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)){
+      MapReactive()
+    }
   })
   
   output$map4 <- renderLeaflet({
     
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)){ MapReactive()}else{}
+    if((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)){
+      MapReactive()
+    }
     
-  #  SavedVec <- ClickedVector()
-  #  SelectedDropdown <- input$inSelect
-  #  calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main4", shconv, GreyPolygonWidth = GreyPolygonWidth)
-  #  map <- calcBaseMap$map
-  #  
-  #  if (!is.null(SavedVec)) {
-  #    
-  #    AreaSelected <- AreaSelected0()
-  #    CarbonSelected <- CarbonSelected0()
-  #    # RedSquirrelSelected <- RedSquirrelSelected0()
-  #    SpeciesListSelected <- list()
-  #    for (x in SPECIES) {
-  #      value <- get(paste0(x, "Selected0"))
-  #      SpeciesListSelected[x] <- list(value())
-  #    }
-  #    VisitsSelected <- VisitsSelected0()
-  #    
-  #    CarbonSelectedSD <- CarbonSelectedSD0()
-  #    # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
-  #    SpeciesListSelectedSD <- list()
-  #    for (x in SPECIES) {
-  #      value <- get(paste0(x, "SelectedSD0"))
-  #      var_name <- paste0(x, "SD")
-  #      SpeciesListSelectedSD[var_name] <- list(value())
-  #    }
-  #    VisitsSelectedSD <- VisitsSelectedSD0()
-  #    
-  #    tmp <- outputmap_calculateMats(input = input,
-  #                                   SavedVecLoc = SavedVec,
-  #                                   simul636Loc = simul636,
-  #                                   AreaSelected = AreaSelected,
-  #                                   CarbonSelected = CarbonSelected,
-  #                                   # RedSquirrelSelected = RedSquirrelSelected,
-  #                                   SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-  #                                   VisitsSelected = VisitsSelected,
-  #                                   CarbonSelectedSD = CarbonSelectedSD,
-  #                                   # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-  #                                   SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-  #                                   VisitsSelectedSD = VisitsSelectedSD,
-  #                                   alphaLVL = alphaLVL)
-  #    SelectedSimMat2 <- tmp$SelectedSimMat2
-  #    Icalc <- tmp$Icalc
-  #    LimitsMat <- tmp$LimitsMat
-  #    rm(tmp)
-  #    
-  #    # PROBAMAT <- 1 - pnorm(Icalc$IVEC)
-  #    PROBAMAT <- Icalc$IVEC
-  #    for (abc in 1:dim(Icalc$IVEC)[2]) {
-  #      PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-  #    }
-  #    
-  #    # CONDPROBA2PositiveLIST <- list()
-  #    # CONDPROBA2PositiveLIST[[1]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-  #    # CONDPROBA2PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-  #    # CONDPROBA2PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-  #    # CONDPROBA2PositiveLIST[[4]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-  #    # CONDPROBA2PositiveLIST[[5]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-  #    # CONDPROBA2PositiveLIST[[6]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-  #    CONDPROBA2PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
-  #    
-  #    # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[1]], ], NotMet = rep("Carbon, redSquirrel", sum(CONDPROBA2PositiveLIST[[1]])))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[2]], ], NotMet = rep("Carbon, Area", sum(CONDPROBA2PositiveLIST[[2]]))))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[3]], ], NotMet = rep("Carbon, NbVisits", sum(CONDPROBA2PositiveLIST[[3]]))))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[4]], ], NotMet = rep("redSquirrel, Area", sum(CONDPROBA2PositiveLIST[[4]]))))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[5]], ], NotMet = rep("redSquirrel, NbVisits", sum(CONDPROBA2PositiveLIST[[5]]))))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA2PositiveLIST[[6]], ], NotMet = rep("Area, NbVisits", sum(CONDPROBA2PositiveLIST[[6]]))))
-  #    SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA2PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
-  #    SubsetMeetTargets <- unique(SubsetMeetTargets)
-  #    
-  #    if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 3) {
-  #      mapresults <- outputmap_createResults(map = map,
-  #                                            map_number = 4,
-  #                                            SubsetMeetTargets = SubsetMeetTargets,
-  #                                            alphaLVL = alphaLVL,
-  #                                            FullTable = FullTable,
-  #                                            SavedVec = SavedVec,
-  #                                            SelectedDropdown = SelectedDropdown,
-  #                                            randomValueOnButton = randomValueOnButton,
-  #                                            SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
-  #                                            ColourScheme = ColourScheme(),
-  #                                            ColorLighteningFactor = ColorLighteningFactor(),
-  #                                            ColorDarkeningFactor = ColorDarkeningFactor(),
-  #                                            SPECIES_ARG2 = SPECIES,
-  #                                            SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
-  #                                            UnitPolygonColours = UnitPolygonColours)
-  #      # SavedRVs <- mapresults$SavedRVs
-  #      strategy_idx <- mapresults$strategy_idx
-  #      # LSMT <- mapresults$LSMT
-  #      map <- mapresults$map
-  #      
-  #      addControlText <- ""
-  #      for (i in 1:length(SPECIES)) {
-  #        specie_latin <- SPECIES[i]
-  #        specie_english <- SPECIES_ENGLISH[i]
-  #        selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
-  #        selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
-  #        addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-  #      }
-  #      
-  #      # Replace species Latin names with English names, and keep everything else
-  #      targets_not_met <- str_split_1(mapresults$SelectedLine$NotMet, ", ")
-  #      for (i in seq_along(targets_not_met)) {
-  #        target <- targets_not_met[i]
-  #        if (target %in% NAME_CONVERSION$Specie) {
-  #          idx <- NAME_CONVERSION$Specie == target
-  #          matching_english_specie <- NAME_CONVERSION[idx, "English_specie"]
-  #          targets_not_met[i] <- matching_english_specie
-  #        }
-  #      }
-  #      targets_not_met <- paste(targets_not_met, collapse = ", ")
-  #      
-  #      map <- with(mapresults, map %>%
-  #                    addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
-  #                                             # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
-  #                                             addControlText,
-  #                                             "Area Planted: ", round(SelectedArea, 2), "<br>",
-  #                                             "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
-  #                                             "</p>"), position = "topright"))
-  #      
-  #      # Text3(paste0("Strategies that meet exactly ", N_TARGETS - 2, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Targets Not Met:", targets_not_met))
-  #      Text3(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
-  #    } else {
-  #      # Text3(paste("No strategy where exactly", N_TARGETS - 2, "targets are met found"))
-  #      Text3(paste("No strategy where all", N_TARGETS, "targets are met found"))
-  #    }
-  #  }
-  #  map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
-  #  map
   })
   
   output$map5 <- renderLeaflet({
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)){ MapReactive()}else{}
     
-  #  SavedVec <- ClickedVector()
-  #  SelectedDropdown <- input$inSelect
-  #  calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main5", shconv, GreyPolygonWidth = GreyPolygonWidth)
-  #  map <- calcBaseMap$map
-  #  
-  #  if (!is.null(SavedVec)) {
-  #    
-  #    AreaSelected <- AreaSelected0()
-  #    CarbonSelected <- CarbonSelected0()
-  #    # RedSquirrelSelected <- RedSquirrelSelected0()
-  #    SpeciesListSelected <- list()
-  #    for (x in SPECIES) {
-  #      value <- get(paste0(x, "Selected0"))
-  #      SpeciesListSelected[x] <- list(value())
-  #    }
-  #    VisitsSelected <- VisitsSelected0()
-  #    
-  #    CarbonSelectedSD <- CarbonSelectedSD0()
-  #    # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
-  #    SpeciesListSelectedSD <- list()
-  #    for (x in SPECIES) {
-  #      value <- get(paste0(x, "SelectedSD0"))
-  #      var_name <- paste0(x, "SD")
-  #      SpeciesListSelectedSD[var_name] <- list(value())
-  #    }
-  #    VisitsSelectedSD <- VisitsSelectedSD0()
-  #    
-  #    tmp <- outputmap_calculateMats(input = input,
-  #                                   SavedVecLoc = SavedVec,
-  #                                   simul636Loc = simul636,
-  #                                   AreaSelected = AreaSelected,
-  #                                   CarbonSelected = CarbonSelected,
-  #                                   # RedSquirrelSelected = RedSquirrelSelected,
-  #                                   SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-  #                                   VisitsSelected = VisitsSelected,
-  #                                   CarbonSelectedSD = CarbonSelectedSD,
-  #                                   # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-  #                                   SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-  #                                   VisitsSelectedSD = VisitsSelectedSD,
-  #                                   alphaLVL = alphaLVL)
-  #    
-  #    SelectedSimMat2 <- tmp$SelectedSimMat2
-  #    Icalc <- tmp$Icalc
-  #    LimitsMat <- tmp$LimitsMat
-  #    rm(tmp)
-  #    
-  #    # PROBAMAT <- 1 - pnorm(Icalc$IVEC)
-  #    PROBAMAT <- Icalc$IVEC
-  #    for (abc in 1:dim(Icalc$IVEC)[2]) {
-  #      PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-  #    }
-  #    
-  #    # CONDPROBA1PositiveLIST <- list()
-  #    # CONDPROBA1PositiveLIST[[1]] <- (PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-  #    # CONDPROBA1PositiveLIST[[2]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-  #    # CONDPROBA1PositiveLIST[[3]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)
-  #    # CONDPROBA1PositiveLIST[[4]] <- (PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)
-  #    CONDPROBA1PositiveLIST <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = N_TARGETS)
-  #    
-  #    # SubsetMeetTargets <- data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[1]], ], Met = rep("Carbon", sum(CONDPROBA1PositiveLIST[[1]])))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[2]], ], Met = rep("redSquirrel", sum(CONDPROBA1PositiveLIST[[2]]))))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[3]], ], Met = rep("Area", sum(CONDPROBA1PositiveLIST[[3]]))))
-  #    # SubsetMeetTargets <- rbind(SubsetMeetTargets, data.frame(SelectedSimMat2[CONDPROBA1PositiveLIST[[4]], ], Met = rep("NbVisits", sum(CONDPROBA1PositiveLIST[[4]]))))
-  #    SubsetMeetTargets <- subset_meet_targets(PROBAMAT = PROBAMAT, SelectedSimMat2 = SelectedSimMat2, CONDPROBAPositiveLIST = CONDPROBA1PositiveLIST, TARGETS = TARGETS, nb_targets_met = N_TARGETS)
-  #    SubsetMeetTargets <- unique(SubsetMeetTargets)
-  #    
-  #    if (dim(SubsetMeetTargets)[1] > 0 && dim(SubsetMeetTargets)[1] >= 4) {
-  #      mapresults <- outputmap_createResults(map = map,
-  #                                            map_number = 5,
-  #                                            SubsetMeetTargets = SubsetMeetTargets,
-  #                                            alphaLVL = alphaLVL,
-  #                                            FullTable = FullTable,
-  #                                            SavedVec = SavedVec,
-  #                                            SelectedDropdown = SelectedDropdown,
-  #                                            randomValueOnButton = randomValueOnButton,
-  #                                            SelectedLinesIndicesInExplorationMapsReactive = SelectedLinesIndicesInExplorationMapsReactive,
-  #                                            ColourScheme = ColourScheme(),
-  #                                            ColorLighteningFactor = ColorLighteningFactor(),
-  #                                            ColorDarkeningFactor = ColorDarkeningFactor(),
-  #                                            SPECIES_ARG2 = SPECIES,
-  #                                            SPECIES_ENGLISH_ARG2 = SPECIES_ENGLISH,
-  #                                            UnitPolygonColours = UnitPolygonColours)
-  #      # SavedRVs <- mapresults$SavedRVs
-  #      strategy_idx <- mapresults$strategy_idx
-  #      # LSMT <- mapresults$LSMT
-  #      map <- mapresults$map
-  #      
-  #      addControlText <- ""
-  #      for (i in 1:length(SPECIES)) {
-  #        specie_latin <- SPECIES[i]
-  #        specie_english <- SPECIES_ENGLISH[i]
-  #        selectedBiospecie <- mapresults[[paste0("SelectedBio", specie_latin)]]
-  #        selectedBioSDspecie <- mapresults[[paste0("SelectedBioSD", specie_latin)]]
-  #        addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-  #      }
-  #      
-  #      # Replace species Latin names with English names, and keep everything else
-  #      targets_met <- str_split_1(mapresults$SelectedLine$Met, ", ")
-  #      for (i in seq_along(targets_met)) {
-  #        target <- targets_met[i]
-  #        if (target %in% NAME_CONVERSION$Specie) {
-  #          idx <- NAME_CONVERSION$Specie == target
-  #          matching_english_specie <- NAME_CONVERSION[idx, "English_specie"]
-  #          targets_met[i] <- matching_english_specie
-  #        }
-  #      }
-  #      targets_met <- paste(targets_met, collapse = ", ")
-  #      
-  #      map <- with(mapresults, map %>%
-  #                    addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2 * SelectedTreeCarbonSD, 2), "<br>",
-  #                                             # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2 * SelectedBioSD, 2), "<br>",
-  #                                             addControlText,
-  #                                             "Area Planted: ", round(SelectedArea, 2), "<br>",
-  #                                             "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2 * SelectedVisitsSD, 2),
-  #                                             "</p>"), position = "topright"))
-  #      
-  #      # Text4(paste0("Strategies that meet only ", N_TARGETS - 3, " target:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", as.integer(trunc(mapresults$SavedRVs * mapresults$LSMT) + 1), "; Target Met:", targets_met))
-  #      Text4(paste0("Strategies that meet all ", N_TARGETS, " targets:", round(dim(SubsetMeetTargets)[1] / 5000 * 100, 2), "%\nDisplayed Strategy Nb:", strategy_idx))
-  #    } else {
-  #      # Text4(paste("No strategy where only", N_TARGETS - 3, "target is met found"))
-  #      Text4(paste("No strategy where all", N_TARGETS, "targets are met found"))
-  #    }
-  #  }
-  #  map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
-  #  map
+    if((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)){
+      MapReactive()
+    }
   })
-  
 }
 
 shinyApp(ui, server)
