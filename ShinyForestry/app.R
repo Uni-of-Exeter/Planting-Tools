@@ -20,6 +20,7 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
 }
 
 
+
 source(normalizePath(file.path(FolderSource, "functions.R")))
 
 # Load packages
@@ -83,7 +84,6 @@ USER_PATH <- user_path()
 ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
 # ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
-
 
 
 # Load Files
@@ -504,7 +504,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   VisitsSliderVal <- reactive({input$VisitsSlider})
   
   Text0 <- reactiveVal("")
-  Text1 <- reactiveVal('paste0("Strategy Displayed: ",FourUniqueRowsReactve()[1]," out of ",dim(SubsetMeetTargetsUniqueReactive()))')
+  Text1 <- reactiveVal("")
   Text2 <- reactiveVal("")
   Text3 <- reactiveVal("")
   Text4 <- reactiveVal("")
@@ -588,6 +588,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   ClickedMatrixTab2Reactive<-reactiveVal(NULL)
   PreviousClickedMatrixTab2Reactive<-reactiveVal(NULL)
+  
+  tolvecReactive<-reactiveVal(NULL)
   
   SubsetMeetTargetsReactive<-reactiveVal(NULL)
   SubsetMeetTargetsReactiveUnique<-reactiveVal(NULL)
@@ -747,7 +749,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                        alpha=alphaLVL)
       MaxValsReactive(MaxVals)
       MaxValsReactiveVector(c(MaxVals$CarbonMax,unlist(MaxVals$bioMaxList),MaxVals$AreaMax,MaxVals$VisistMax))
-      
+      tolvecReactive(MaxVals$tolvec)
       # updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)), value = trunc(sum(CarbonSelected)))
       # updateSliderInput(session, "SliderMain", max = MaxVals$CarbonMax, value = MaxVals$CarbonMax)
       session$sendInputMessage("SliderMain", list(min=0,max = MaxVals$CarbonMax, value = MaxVals$CarbonMax))
@@ -791,8 +793,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD,
-                                     alpha=alphaLVL,
-                                     ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider))
+                                     alphaLVL=alphaLVL,
+                                     ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider),
+                                     tolvec=tolvecReactive())
       
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1168,7 +1171,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                        # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                        SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                        VisitsSelectedSD = VisitsSelectedSD,
-                                       alpha=alphaLVL)
+                                       alphaLVL=alphaLVL,
+                                       tolvec=tolvecReactive())
         
         SelectedSimMat2 <- tmp$SelectedSimMat2
         Icalc <- tmp$Icalc
@@ -1428,7 +1432,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                      VisitsSelectedSD = VisitsSelectedSD,
                                      alphaLVL = alphaLVL,
-                                     input_areaSlider_multiplicative_coefficient = FALSE)
+                                     input_areaSlider_multiplicative_coefficient = FALSE,
+                                     tolvec=tolvecReactive())
       
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
@@ -1771,7 +1776,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                        # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
                                        SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                        VisitsSelectedSD = VisitsSelectedSD,
-                                       alphaLVL = 0) # At the beginning we want to switch on all the sliders
+                                       alphaLVL = 0,tolvec=tolvecReactive()) # At the beginning we want to switch on all the sliders
         
         SelecRow<-1
         SelectedMins <- tmp$SelectedSimMat2
