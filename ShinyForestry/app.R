@@ -117,6 +117,8 @@ ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 
+
+
 # Load Files
 JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
 JulesSD <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
@@ -454,9 +456,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                             ))
                                           )
                                           ),
-                                          tabPanel("Exploration", id = "Exploration",verticalLayout(
-                                            fluidPage(fluidRow(
-                                              column(10,verbatimTextOutput("ZeroText"),column(2,)))),
+                                          tabPanel("Exploration", id = "Exploration",
                                                    fluidPage(fluidRow(
                                                      column(5,
                                                             verticalLayout(verbatimTextOutput("FirstMapTxt"), jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
@@ -477,7 +477,6 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                                             verticalLayout(verbatimTextOutput("FourthMapTxt"), jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
                                                      ),
                                                      column(2, "")
-                                                   )
                                                    )
                                                    )
                                           ),
@@ -535,8 +534,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   AreaSliderVal <- reactive({input$AreaSlider})
   VisitsSliderVal <- reactive({input$VisitsSlider})
   
-  Text0 <- reactiveVal("")
-  Text1 <- reactiveVal('paste0("Strategy Displayed: ",FourUniqueRowsReactve()[1]," out of ",dim(SubsetMeetTargetsUniqueReactive()))')
+  Text1 <- reactiveVal("")
   Text2 <- reactiveVal("")
   Text3 <- reactiveVal("")
   Text4 <- reactiveVal("")
@@ -587,7 +585,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   #    ColorLighteningFactor(input$Lighten/100)
   #  })
   
-  output$ZeroText <- renderText({Text0()})
   output$FirstMapTxt <- renderText({Text1()})
   output$SecondMapTxt <- renderText({Text2()})
   output$ThirdMapTxt <- renderText({Text3()})
@@ -608,14 +605,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   ignoreNULL = FALSE)
   
   ######################################### If we click random then we pick 4 different scenarios
-  observeEvent({input$random
-                 input$tabs
-                },{
-                  if(input$tabs=="Exploration"){
-    SelectedSample<-sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
-                           min(4,dim(SubsetMeetTargetsReactiveUnique())[1]),replace=F)
+  observeEvent({input$random},{
+    SelectedSample<-sample(1:dim(SubsetMeetTargetsReactive())[1],
+                           min(4,dim(SubsetMeetTargetsReactive())[1]),replace=F)
     FourUniqueRowsReactive(SelectedSample)
-                  }
+    
   })
   
   
@@ -638,8 +632,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   SlidersHaveBeenInitialized<-reactiveVal(rep(0,length(SliderNames)))
   MapReactive<-reactiveVal(NULL)
   
-  ClickedMatrixTab2Reactive<-reactiveVal(NULL)
-  PreviousClickedMatrixTab2Reactive<-reactiveVal(NULL)
   
   #PreviousSelectedMatrixTab2<- reactiveVal(NULL)
   #SelectedMatrixTab2<-reactiveVal(NULL)
@@ -706,9 +698,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     ClickedVector(NULL)
     PreviousSelectedVector(NULL)
     SelectedVector(NULL)
-    ClickedMatrixTab2Reactive(NULL)
-    PreviousClickedMatrixTab2Reactive(NULL)
-    
     
     SelectedFullTableRow(NULL)
     
@@ -764,12 +753,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       
       PreviousSelectedVector(rep(0, dim(SelectedSquares)[1]))
       SelectedVector(rep(1, dim(SelectedSquares)[1]))
+      PreviousClickedVector(rep(0, dim(SelectedSquares)[1]))
       ClickedVector(rep(0, dim(SelectedSquares)[1]))
-      PreviousClickedVector(rep(-1, dim(SelectedSquares)[1]))
-      
-      ClickedMatrixTab2Reactive(matrix(0, 4,dim(SelectedSquares)[1]))
-      PreviousClickedMatrixTab2Reactive(matrix(-1, 4,dim(SelectedSquares)[1]))
-      
      # PreviousSelectedMatrixTab2(matrix(0, 4,dim(SelectedSquares)[1]))
     #  SelectedMatrixTab2(matrix(1, 4,dim(SelectedSquares)[1]))
      
@@ -954,10 +939,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
           }
           if(Consolitated[ijj]==1){
-              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
+              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],fillColor=FullColVec[ijj])
           }
           if(Consolitated[ijj]==2){
-              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
+              mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],fillColor=ClickedCols[ijj])
           }
           
             
@@ -998,22 +983,18 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   observe(#{list(ClickedVector(),SelectedVector())
     #},
     {
-      if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)&(input$tabs=="Exploration")
-         ) {
+      if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)&(input$tabs=="Exploration")) {
         SubsetMeetTargets<-SubsetMeetTargetsReactive()
         PreviousSubsetMeetTargets<-PreviousSubsetMeetTargetsReactive()
-        SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
-        PreviousSubsetMeetTargetsUnique<-PreviousSubsetMeetTargetsReactiveUnique()
-        
-        SavedMat<-ClickedMatrixTab2Reactive()
-        PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
+        SavedVec<-ClickedVector()
+        PreviousSavedVec<-PreviousClickedVector()
         FourUniqueRowsLoc<-FourUniqueRowsReactive()
         PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
        # if(is.null(dim(PreviousFourUniqueRowsLoc))){
         #  PreviousFourUniqueRowsLoc<-matrix(PreviousFourUniqueRowsLoc,1,length(PreviousFourUniqueRowsLoc))}
         
-        SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
-        PrevSelectedRows<-PreviousSubsetMeetTargetsUnique[PreviousFourUniqueRowsLoc,]
+        SelectedRows<-SubsetMeetTargets[FourUniqueRowsLoc,]
+        PrevSelectedRows<-PreviousSubsetMeetTargets[PreviousFourUniqueRowsLoc,]
         
         ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
                                ColorLighteningFactor(), ColorDarkeningFactor())
@@ -1025,33 +1006,31 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         for(ii in seq(1,min(4,length(FourUniqueRowsLoc)))){
         
-        Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
+        Consolitated<-2*SavedVec+1*((SelectedRows[ii,1:length(SavedVec)]==1)&(SavedVec==0))
         
-        PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
-        if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
-        if((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
+        PreviousConsolitated<-2*PreviousSavedVec+1*((PrevSelectedRows[ii,1:length(SavedVec)]==1)&(PreviousSavedVec==0))
+        if(length(PreviousConsolitated)==0){PreviousConsolitated<-Consolitated+1}
+        if((CreatedBaseMap()==1)&(length(SavedVec)>0)){
           
-         # mapp<-leafletProxy(paste0("map",ii+1))
-         # for(ijj in 1:length(Consolitated)){
-           # if(PreviousConsolitated[ijj]!=Consolitated[ijj])
-            #{
+          mapp<-leafletProxy(paste0("map",ii+1))
+          for(ijj in 1:length(Consolitated)){
+            if(PreviousConsolitated[ijj]!=Consolitated[ijj])
+            {
               mapp<-leafletProxy(paste0("map",ii+1))
-              removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-              #if(Consolitated[ijj]==0){
-              COLOURS<-rep("transparent",length(Consolidated))
-              COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
-              COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
-              mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
-              #}
-#              if(Consolitated[ijj]==1){
- #               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#,color=FullColVec[ijj]
-  #            }
-   #           if(Consolitated[ijj]==2){
-    #            mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-     #         }
+              removeShape(mapp,layerId=paste0("Square",ijj))
+              if(Consolitated[ijj]==0){
+                
+                mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
+              }
+              if(Consolitated[ijj]==1){
+                mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],fillColor=FullColVec[ijj])
+              }
+              if(Consolitated[ijj]==2){
+                mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],fillColor=ClickedCols[ijj])
+              }
               
               
-          #  }
+            }
             
           }
           removeControl(mapp,layerId="legend")
@@ -1078,95 +1057,23 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
          
           }
-        #form0<-paste0('Text', ii,'("")')
-        #eval(parse(text=form0))
-        #cat(form0)
-        #cat("\n")
-        #form<-paste0('Text', ii ,
-        #             '(paste0("Strategy Displayed: ",FourUniqueRowsLoc[ii]," out of ",dim(SubsetMeetTargetsUnique)
-        #             
-        #             ))')
-        #cat(form)
-        #cat("\n")
         
-       
-        #eval(parse(text=form))
+      
         
-        #}
+        }
         if(length(FourUniqueRowsLoc)<4){
           #add here text to say that there are no more unique examples.
-          for(ii in seq(length(FourUniqueRowsLoc)+1,4))
-                  {  #form2<-paste0('Text', ii ,
-                      #            '(paste0("Strategies that meet all ", N_TARGETS))')
-                  
-                  #eval(parse(text=form2))
-
-                  mapp<-leafletProxy(paste0("map",ii+1))
-                  removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-                  mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
-                                    color="transparent",fillColor="transparent")  
-                  removeControl(mapp,layerId="legend")
-                  mapp<-
-                    addControl(mapp,html = "", position = "topright",layerId="legend")
-                  
-                  
+          
         }
         PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
         PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
-        PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
         
-        
-        UpdatedRows<-ClickedMatrixTab2Reactive()
-        if(length(FourUniqueRowsLoc)<4){
-          UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
-          
-        }
-        PreviousClickedMatrixTab2Reactive(UpdatedRows)
-        
-        #Text1("")
-
         
         #  PreviousSubsetMeetTargetsReactive4Unique(SubsetMeetTargetsReactive4Unique())  
         #PreviousSelectedVector(SelectedVec)
         # replace the text
-        }
       }
     })
-  
-  ######################
-  observeEvent({input$random
-                input$tabs},
-               {FourUniqueRows<-FourUniqueRowsReactive()
-                 if(length(FourUniqueRows)>0){
-                 Text1(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[1]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text1("No Strategy that meet all the targets")
-                 }
-               if(length(FourUniqueRows)>1){
-                 Text2(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[2]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text2("No Second Strategy that meet all the targets")
-                 }
-               if(length(FourUniqueRows)>2){
-                 Text3(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[3]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text3("No Third Strategy that meet all the targets")
-                 }
-               if(length(FourUniqueRows)>3){
-                 Text4(
-                   paste0("Strategy Displayed: ",FourUniqueRowsReactive()[4]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
-                 )}else{
-                   Text4("No Fourth Strategy that meet all the targets")
-                 }
-               
-               Text0(paste0("Estimated percentage of strategies that meet all ", N_TARGETS," targets: ",
-                            round(dim(SubsetMeetTargetsReactiveUnique())[1] / dim(unique(simul636))[1] * 100, 2),"%"))
-               
-                              
-})
   
   
   ############################### Check if the slider values have been updated after the initialization
@@ -1266,13 +1173,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                             
                             SubsetMeetTargetsReactive(SubsetMeetTargets)
                             SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
-                            
-                            if(dim(unique(SubsetMeetTargets))[1]>0){
+
+                                   if(dim(unique(SubsetMeetTargets))[1]>0){
                               LengthVec<-min(4,dim(unique(SubsetMeetTargets)[1]))
                               FourUniqueRowsReactive(seq(1,LengthVec))
                               PreviousFourUniqueRowsReactive(seq(1,LengthVec))
                             }else{FourUniqueRowsReactive(NULL)
                               PreviousFourUniqueRowsReactive(NULL)}
+                            
                             
                             #SubsetMeetTargets <- SelectedSimMat2[(SelectedSimMat2$Carbon >= SelecTargetCarbon) &
                              #                                      # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
@@ -1787,7 +1695,6 @@ observeEvent(input$map_shape_click, {
         if ((click$id == paste0("Square", iii))) {
           SavedVec[SelectedRowsUnits == SelectedRowsUnits[iii]] <- ifelse(SavedVec[iii] == 1, 0, 1);
           ClickedVector(SavedVec)
-          ClickedMatrixTab2Reactive(t(matrix(SavedVec,length(SavedVec),4)))
           ChangeDone <- TRUE
         }
         iii <- iii + 1
