@@ -15,7 +15,7 @@
 
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
-if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
+if (!grepl("ShinyForestry", FolderSource)) {
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
 }
 
@@ -73,8 +73,31 @@ while (error == TRUE && i <= length(libs)) {
 # english_species_names <- c("Lesser Redpoll", "Skylark", "Tree Pipit", "Bittern", "Nightjar", "Yellowhammer", "Reed Bunting", "Grasshopper Warbler", "Woodlark", "Yellow Wagtail", "Spotted Flycatcher", "Curlew", "Grey Partridge", "Wood Warbler", "Turtle Dove", "Ring Ouzel", "Lapwing", "Adder", "Mountain Bumblebee", "Water Beetle sp.", "Noble Chafer", "Water Beetle sp.", "Stag Beetle", "Small Pearl-Bordered Fritillary", "Small Heath", "Large Heath", "Small Blue", "Mountain Ringlet", "Dingy Skipper", "Grayling", "Wall", "White Admiral", "White-Letter Hairstreak", "Speckled Bush Cricket", "Bog Bush Cricket", "Goat Moth", "Grey Dagger", "Green-brindled Crescent", "Brindled Ochre", "Red Carpet", "Plaited Door Snail", "Kentish Snail", "Hollowed Glass Snail", "Lichen subsp.", "Lichen sp.", "Lichen sp.", "Lichen sp.", "String-Of-Sausage Lichen", "Barbastelle bat", "Wildcat", "European hare", "Mountain Hare", "Pine Marten", "Harvest Mouse", "Hazel Dormouse", "Polecat", "Bechstein's bat", "Noctule Bat", "Brown Long-eared Bat", "Greater Horseshoe Bat", "Lesser Horseshoe Bat", "Eurasian red squirrel", "Field bugloss", "Bog Rosemary", "Mountain bearberry", "Green spleenwort", "Frosted Orache", "Saltmarsh Flat-Sedge", "Sea Rocket", "Clustered Bellflower", "Long-Bracted Sedge", "Tall Bog-Sedge", "Lesser Centaury", "Field Mouse-Ear", "Woolly Thistle", "Spurge-Laurel", "Broad-Leaved Cottongrass", "Common Ramping-Fumitory", "Petty Whin", "Dyer's Greenweed", "Dwarf Cudweed", "Creeping Lady's-Tresses", "Marsh St John's-Wort", "Cut-Leaved Dead-Nettle", "Lyme Grass", "Stag's-Horn Clubmoss", "Neottia nidus-avis Bird's-Nest Orchid", "Bird's-Foot", "Serrated Wintergreen", "Mountain Sorrel", "Intermediate Wintergreen", "Allseed", "Round-Leaved Crowfoot", "Rue-Leaved Saxifrage", "Pepper-Saxifrage", "Large Thyme", "Small-Leaved Lime", "Strawberry Clover", "Knotted Clover", "Small Cranberry")
 # english_species_names <- add_suffix_to_duplicates(english_species_names)
 
-NAME_CONVERSION <- ReturnNameConversion()
+NAME_CONVERSION<- ReturnNameConversion()
 
+# Replace Invertebrate - bees/beetles/butterflies/crickets/moths by Pollinators
+# Crashes on the server for some reason, so we use data.frames instead
+# dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinators",
+# .default = Group)) %>%
+indices <- grep("bees|beetles|butterflys|crickets|moths", NAME_CONVERSION$Group)
+NAME_CONVERSION[indices, "Group"] <- "Pollinators"
+# dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bees" ~ "Pollinators",
+#                                        Group == "Invertebrate - beetles" ~ "Pollinators",
+#                                        Group == "Invertebrate - butterflys" ~ "Pollinators",
+#                                        Group == "Invertebrate - crickets" ~ "Pollinators",
+#                                        Group == "Invertebrate - moths" ~ "Pollinators",
+#                                        .default = Group)) %>%
+# Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
+NAME_CONVERSION <- NAME_CONVERSION %>%
+  dplyr::mutate(Specie_pretty = Specie,
+                Group_pretty = Group,
+                English_specie_pretty = English_specie,
+                Specie = gsub(" |-", "_", Specie),
+                English_specie = gsub(" |-", "_", English_specie),
+                Group = gsub(" - ", "_", Group)) %>%
+  dplyr::mutate(Group = gsub(" ", "_", Group)) %>%
+  # Sort by Specie
+  dplyr::arrange(Specie)
 # Swap rows 83 and 84
 row83 <- NAME_CONVERSION[83, ]
 row84 <- NAME_CONVERSION[84, ]
@@ -1775,7 +1798,8 @@ observeEvent(input$map_shape_click, {
   ##################################
   output$map <- renderLeaflet({
     #  shinyjs::hide("tabs")
-
+    
+    
     if((CreatedBaseMap()==0)&(UpdatedExtent()==1)){
       SavedVec <- ClickedVector()
       SelectedVec <- SelectedVector()
