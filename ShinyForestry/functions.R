@@ -690,8 +690,9 @@ outputmap_calculateMats <- function(input,
                                     SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                     VisitsSelectedSD,
                                     alphaLVL = alphaLVL,
-                                    input_areaSlider_multiplicative_coefficient = TRUE) {
-  
+                                    input_areaSlider_multiplicative_coefficient = TRUE,
+                                    ManualTargets=NULL) {
+
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVecLoc) == 1) {
     SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecLoc)])
@@ -728,6 +729,7 @@ outputmap_calculateMats <- function(input,
   # Create a data frame representing the selected similarity matrix
   SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
   
+  if(is.null(ManualTargets)){
   SelecTargetCarbon <- input$SliderMain
   # SelecTargetBio <- input$BioSlider
   SelecTargetBioVector <- c()
@@ -741,7 +743,10 @@ outputmap_calculateMats <- function(input,
     SelecTargetBioList[var_name] <- value
   }
   SelecTargetArea <- input$AreaSlider
-  SelecTargetVisits <- input$VisitsSlider
+  SelecTargetVisits <- input$VisitsSlider}else{SelecTargetCarbon<-ManualTargets[[1]];SelecTargetBioVector<-unlist(ManualTargets[[2]]);
+  SelecTargetBioList<-ManualTargets[[2]];
+  SelecTargetArea<-ManualTargets[[3]];SelecTargetVisits<-ManualTargets[[4]]}
+
   
   speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
                                                       function(x) bquote(rowMeans(SelectedSimMat * get(paste0(.(x), "MAT"))))),
