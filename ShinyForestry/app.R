@@ -87,15 +87,19 @@ JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 
 # Load Files
-JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
-JulesSD <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
-SquaresLoad <- sf::st_read(normalizePath(file.path(JulesAppFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))
-Sqconv <- st_transform(SquaresLoad, crs = 4326)
-CorrespondenceJules <- read.csv(normalizePath(file.path(JulesAppFolder, "CorrespondanceSqToJules.csv")))[, -1]
-seer2km <- st_read(normalizePath(file.path(JulesAppFolder, "SEER_net2km.shp")))
-jncc100 <- read.csv(normalizePath(file.path(JulesAppFolder, "beta_JNCC100_interact_quad.csv")))
-speciesprob40 <-  read.csv(normalizePath(file.path(JulesAppFolder, "scenario_species_prob_40.csv")), header = FALSE)
-climatecells <- read.csv(normalizePath(file.path(JulesAppFolder, "climate_cells.csv")))
+if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson"))) ||
+    !file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson"))) ||
+    !file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))) {
+  JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
+  JulesSD <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
+  SquaresLoad <- sf::st_read(normalizePath(file.path(JulesAppFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))
+  Sqconv <- st_transform(SquaresLoad, crs = 4326)
+  CorrespondenceJules <- read.csv(normalizePath(file.path(JulesAppFolder, "CorrespondanceSqToJules.csv")))[, -1]
+  seer2km <- st_read(normalizePath(file.path(JulesAppFolder, "SEER_net2km.shp")))
+  jncc100 <- read.csv(normalizePath(file.path(JulesAppFolder, "beta_JNCC100_interact_quad.csv")))
+  speciesprob40 <-  read.csv(normalizePath(file.path(JulesAppFolder, "scenario_species_prob_40.csv")), header = FALSE)
+  climatecells <- read.csv(normalizePath(file.path(JulesAppFolder, "climate_cells.csv")))
+}
 
 cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "\n" ))
 
