@@ -691,7 +691,8 @@ outputmap_calculateMats <- function(input,
                                     VisitsSelectedSD,
                                     alphaLVL = alphaLVL,
                                     input_areaSlider_multiplicative_coefficient = TRUE,
-                                    ManualTargets=NULL) {
+                                    ManualTargets=NULL,
+                                    tolvec) {
   
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVecLoc) == 1) {
@@ -773,15 +774,15 @@ outputmap_calculateMats <- function(input,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
-              colMeans(speciesMat) / 50,
-              mean(SelectedSimMat2$Area) / 50,
-              mean(SelectedSimMat2$Visits) / 50)
-  for(i in 1:length(tolvec)) {
-    if (tolvec[i] == 0) {
-      tolvec[i] <- 0.1
-    }
-  }
+ # tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
+  #            colMeans(speciesMat) / 50,
+   #           mean(SelectedSimMat2$Area) / 50,
+    #          mean(SelectedSimMat2$Visits) / 50)
+#  for(i in 1:length(tolvec)) {
+ #   if (tolvec[i] == 0) {
+  #    tolvec[i] <- 0.1
+   # }
+  #}
   # tolVec <- c(4, 0.05, 0.1, 2)
   Icalc <- MultiImpl(
     # TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
@@ -898,10 +899,10 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
-              colMeans(speciesMat) / 50,
-              mean(SelectedSimMat2$Area) / 50,
-              mean(SelectedSimMat2$Visits) / 50)
+  tolvec <- c(mean(SelectedSimMat2$Carbon) / 150,
+              colMeans(speciesMat) / 150,
+              mean(SelectedSimMat2$Area) / 150,
+              mean(SelectedSimMat2$Visits) / 150)
   for(i in 1:length(tolvec)) {
     if (tolvec[i] == 0) {
       tolvec[i] <- 0.1
@@ -936,7 +937,7 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   VisistMax<-max(0,trunc(sqrt( SelectedSimMat2$VisitsSD[1]^2+tolvec[dim(LimitsMat)[2]])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]],b=Inf,mean=0,sd=1)+SelectedSimMat2$Visits[1]))
   
   
-  return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,VisistMax=VisistMax))
+  return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,VisistMax=VisistMax,tolvec=tolvec))
 }
 
 add_suffix_to_duplicates <- function(vec) {
