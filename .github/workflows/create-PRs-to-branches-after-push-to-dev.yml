@@ -19,7 +19,6 @@ jobs:
         id: triggering_branch
         run: |
           echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
-
       - name: Get branch list minus main and dev
         id: branches_minus_dev_main
         run: |
