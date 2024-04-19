@@ -19,17 +19,17 @@ jobs:
           echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
           # echo "branch=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
       
-      - name: Get branch list minus main and dev
-        id: branches_minus_dev_main
+      - name: Get branch list minus master and dev
+        id: branches_minus_dev_master
         run: |
           git fetch origin --prune
-          echo "branches=$(git branch -r | grep -Ev '.*main|dev.*' | sed 's|origin/||g' | sed 's| *||g' | tr '\n' ' ' | sed -E 's| $||')" >> "$GITHUB_OUTPUT"
+          echo "branches=$(git branch -r | grep -Ev '.*master|dev.*' | sed 's|origin/||g' | sed 's| *||g' | tr '\n' ' ' | sed -E 's| $||')" >> "$GITHUB_OUTPUT"
           
-      - name: Create PRs from dev to all branches except main & dev & the triggering branch, unless a PR already exists
+      - name: Create PRs from dev to all branches except master & dev & the triggering branch, unless a PR already exists
         env:
          GH_TOKEN: ${{ secrets.TIMOTHEE_GITHUB_ACTION_TOKEN }}
         run: |
-          for branch in ${{ steps.branches_minus_dev_main.outputs.branches }}; do
+          for branch in ${{ steps.branches_minus_dev_master.outputs.branches }}; do
           
             # Only proceed if this is not the triggering branch
             if [ "$branch" != "${{ steps.triggering_branch.outputs.branch }}" ]; then
