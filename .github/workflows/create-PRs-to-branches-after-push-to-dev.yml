@@ -1,0 +1,47 @@
+name: Create PRs from dev to feature branches after accepting a PR to dev
+
+on:
+  pull_request:
+    types: 
+      - closed
+
+jobs:
+  create-prs:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged && github.event.pull_request.base.ref == 'dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Get triggering branch
+        id: triggering_branch
+        run: |
+          echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
+          # echo "branch=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
+      
+      - name: Get branch list minus master and dev
+        id: branches_minus_dev_master
+        run: |
+          git fetch origin --prune
+          echo "branches=$(git branch -r | grep -Ev '.*master|dev.*' | sed 's|origin/||g' | sed 's| *||g' | tr '\n' ' ' | sed -E 's| $||')" >> "$GITHUB_OUTPUT"
+          
+      - name: Create PRs from dev to all branches except master & dev & the triggering branch, unless a PR already exists
+        env:
+         GH_TOKEN: ${{ secrets.TIMOTHEE_GITHUB_ACTION_TOKEN }}
+        run: |
+          for branch in ${{ steps.branches_minus_dev_master.outputs.branches }}; do
+          
+            # Only proceed if this is not the triggering branch
+            if [ "$branch" != "${{ steps.triggering_branch.outputs.branch }}" ]; then
+              
+              # Get changed files between dev and $branch, to avoid creating a PR for 0 updates
+              changed_files=$(git diff --name-only origin/dev origin/$branch)
+              
+              # Create a PR from dev to $branch unless one already exists or if the PR would not change any file
+              if [ -n "$changed_files" ] && ! gh pr list --state open --head dev --json author,number,headRefName,baseRefName,changedFiles | jq -r '.[].baseRefName' | grep -q $branch ; then                gh pr create --title "Merge dev into $branch" \
+                             --body "This PR was automatically created to propose changes from dev into $branch." \
+                             --base $branch \
+                             --head dev
+              fi
+            fi
+          done
