@@ -1306,82 +1306,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
           SelectedFullTableRow(SelectedMins[SelecRow,])
           SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-          #SwitchedOnCells <- SelectedMins[SelecRow, 1:length(SavedVec)]
-          
-          #SELL <- (FullTable$extent == SelectedDropdown)
-          #if (!is.null(SELL)) {
-          #SelectedTreeCarbon <- SelectedMins[SelecRow, ]$Carbon
-          # SelectedBio <- SelectedMins[SelecRow, ]$redsquirrel
-          #for (x in SPECIES) {
-          #  var_name <- paste0("SelectedBio", x)
-          #  value <- SelectedMins[SelecRow, x]
-          #  assign(var_name, value)
-          #}
-          #SelectedArea <- SelectedMins[SelecRow, ]$Area
-          #SelectedVisits <- SelectedMins[SelecRow, ]$Visits
-          
-          #SelectedTreeCarbonSD <- SelectedMins[SelecRow, ]$CarbonSD
-          # SelectedBioSD <- SelectedMins[SelecRow, ]$redsquirrelSD
-          #for (x in SPECIES) {
-          #  var_name <- paste0("SelectedBioSD", x)
-          #  value <- SelectedMins[SelecRow, paste0(x, "SD")]
-          #  assign(var_name, value)
-          #}
-          #SelectedVisitsSD <- SelectedMins[SelecRow, ]$VisitsSD
-          
-          
-          #SELGEOFull <- FullTable[SELL, ]
-          #SELGEOFull$layerId <- paste0("Square", 1:dim(SELGEOFull)[1])
-          #SELGEO <- FullTable$geometry[SELL]
-          
-          #ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units[SELL],
-          #                      ColorLighteningFactor(), ColorDarkeningFactor())
-          
-          #FullColVec <- ColObtained$FullColVec
-          #ClickedCols <- ColObtained$ClickedCols
-          #SELGEOFull$color <- ColObtained$FullColVec
-          #SELGEOFull$color[SavedVec == 1] <- ColObtained$ClickedCols[SavedVec == 1]
-          
-          
-          
-          #SELGEOSavedVec <- SELGEOFull[, c("geometry", "layerId")]
-          #SELGEOSwitched <- SELGEOFull[, c("geometry", "layerId")]
-          
-          #SELGEOSavedVec <- SELGEOSavedVec[SavedVec == 1, ]#;gpNamesSavedVec <- gpNamesSavedVec[SavedVec]
-          #SELGEOSwitched <- SELGEOSwitched[(SwitchedOnCells == 1) & (SavedVec != 1), ]#;gpNamesSwitched <- gpNamesSwitched[SwitchedOnCells & (!SavedVec)]
-          #SELGEORemaining <- SELGEOFull[(SavedVec == 1) | (SwitchedOnCells == 1), c("geometry", "layerId", "color")]
-          
-          
-          
-          #if (dim(SELGEORemaining)[1] > 0) {
-          # map <- addPolygons(map, data = SELGEORemaining, color = SELGEORemaining$color, layerId = SELGEORemaining$layerId, weight = UnitPolygonColours)
-          #}
-          
-          #addControlText <- ""
-          #for (i in 1:length(SPECIES)) {
-          #  specie_latin <- SPECIES[i]
-          #specie_english <- SPECIES_ENGLISH[i]
-          # selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
-          #  selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-          #   addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-          #  }
-          
-          # map <- map %>%
-          #  addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2*SelectedTreeCarbonSD, 2), "<br>",
-          #                         addControlText,
-          #                        "Area Planted: ", round(SelectedArea, 2), "<br>",
-          #                       "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2*SelectedVisitsSD, 2),
-          #                      "</p>"), position = "topright")
-          
-          # }
         } else { ZeroSelected<-SelectedSimMat2[1,]
         ZeroSelected<-rep(0,length(ZeroSelected))
         SelectedFullTableRow(ZeroSelected)
         SelectedVector(ZeroSelected[ 1:length(SavedVec)])
-        #SelectedFullTableRow(SelectedMins[SelecRow,])
-        #SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-        #map <- map %>%
-        #addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
         }
       }      
       
