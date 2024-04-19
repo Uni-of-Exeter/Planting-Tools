@@ -73,8 +73,8 @@ getCols<-function(ColourScheme,UnitsVec,ColorLighteningFactor,ColorDarkeningFact
 }
 
 normalize <- function(x) {
-    return(scale(x, center=TRUE, scale=TRUE)[,1])
-  }
+  return(scale(x, center=TRUE, scale=TRUE)[,1])
+}
 
 # Implausibility
 Impl <- function(Target,EY,SDY,alpha,tol) {
@@ -172,7 +172,139 @@ MultiImpl <- function(TargetsVec,EYMat,SDYMat,alpha,tolVec) {
 #  return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 #}
 
-
+ReturnNameConversion <- function() {
+  NAME_CONVERSION <- matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll",
+                                     "Birds", "Alauda arvensis", "Skylark",
+                                     "Birds", "Anthus trivialis", "Tree Pipit",
+                                     "Birds", "Botaurus stellaris", "Bittern",
+                                     "Birds", "Caprimulgus europaeus", "Nightjar",
+                                     "Birds", "Emberiza citrinella", "Yellowhammer",
+                                     "Birds", "Emberiza schoeniclus", "Reed Bunting",
+                                     "Birds", "Locustella naevia", "Grasshopper Warbler",
+                                     "Birds", "Lullula arborea", "Woodlark",
+                                     "Birds", "Motacilla flava subsp flavissima", "Yellow Wagtail",
+                                     "Birds", "Muscicapa striata", "Spotted Flycatcher",
+                                     "Birds", "Numenius arquata", "Curlew",
+                                     "Birds", "Perdix perdix", "Grey Partridge",
+                                     "Birds", "Phylloscopus sibilatrix", "Wood Warbler",
+                                     "Birds", "Streptopelia turtur", "Turtle Dove",
+                                     "Birds", "Turdus torquatus", "Ring Ouzel",
+                                     "Birds", "Vanellus vanellus", "Lapwing",
+                                     "Herptiles", "Vipera berus", "Adder",
+                                     "Invertebrate - bees", "Bombus monticola", "Mountain Bumblebee",
+                                     "Invertebrate - beetles", "Cercyon convexiusculus", "Water Beetle sp.",
+                                     "Invertebrate - beetles", "Gnorimus nobilis", "Noble Chafer",
+                                     "Invertebrate - beetles", "Liopterus haemorrhoidalis", "Water Beetle sp.",
+                                     "Invertebrate - beetles", "Lucanus cervus", "Stag Beetle",
+                                     "Invertebrate - butterflies", "Boloria selene", "Small Pearl-Bordered Fritillary",
+                                     "Invertebrate - butterflies", "Coenonympha pamphilus", "Small Heath",
+                                     "Invertebrate - butterflies", "Coenonympha tullia", "Large Heath",
+                                     "Invertebrate - butterflies", "Cupido minimus", "Small Blue",
+                                     "Invertebrate - butterflies", "Erebia epiphron", "Mountain Ringlet",
+                                     "Invertebrate - butterflies", "Erynnis tages", "Dingy Skipper",
+                                     "Invertebrate - butterflies", "Hipparchia semele", "Grayling",
+                                     "Invertebrate - butterflies", "Lasiommata megera", "Wall",
+                                     "Invertebrate - butterflies", "Limenitis camilla", "White Admiral",
+                                     "Invertebrate - butterflies", "Satyrium w-album", "White-Letter Hairstreak",
+                                     "Invertebrate - crickets", "Leptophyes punctatissima", "Speckled Bush Cricket",
+                                     "Invertebrate - crickets", "Metrioptera brachyptera", "Bog Bush Cricket",
+                                     "Invertebrate - moths", "Cossus cossus", "Goat Moth",
+                                     "Invertebrate - moths", "Acronicta psi", "Grey Dagger",
+                                     "Invertebrate - moths", "Allophyes oxyacanthae", "Green-brindled Crescent",
+                                     "Invertebrate - moths", "Dasypolia templi", "Brindled Ochre",
+                                     "Invertebrate - moths", "Xanthorhoe decoloraria", "Red Carpet",
+                                     "Invertebrate - snails", "Cochlodina laminata", "Plaited Door Snail",
+                                     "Invertebrate - snails", "Monacha cantiana", "Kentish Snail",
+                                     "Invertebrate - snails", "Zonitoides excavatus", "Hollowed Glass Snail",
+                                     "Lichens", "Anaptychia ciliaris subsp ciliaris", "Lichen subsp.",
+                                     "Lichens", "Leptogium brebissonii", "Lichen sp.",
+                                     "Lichens", "Parmeliella testacea", "Lichen sp.",
+                                     "Lichens", "Pseudocyphellaria intricata", "Lichen sp.",
+                                     "Lichens", "Usnea articulata", "String-Of-Sausage Lichen",
+                                     "Mammals", "Barbastella barbastellus", "Barbastelle bat",
+                                     "Mammals", "Felis silvestris", "Wildcat",
+                                     "Mammals", "Lepus europaeus", "European hare",
+                                     "Mammals", "Lepus timidus", "Mountain Hare",
+                                     "Mammals", "Martes martes", "Pine Marten",
+                                     "Mammals", "Micromys minutus", "Harvest Mouse",
+                                     "Mammals", "Muscardinus avellanarius", "Hazel Dormouse",
+                                     "Mammals", "Mustela putorius", "Polecat",
+                                     "Mammals", "Myotis bechsteinii", "Bechstein's bat",
+                                     "Mammals", "Nyctalus noctula", "Noctule Bat",
+                                     "Mammals", "Plecotus auritus", "Brown Long-eared Bat",
+                                     "Mammals", "Rhinolophus ferrumequinum", "Greater Horseshoe Bat",
+                                     "Mammals", "Rhinolophus hipposideros", "Lesser Horseshoe Bat",
+                                     "Mammals", "Sciurus vulgaris", "Eurasian red squirrel",
+                                     "Vascular plants", "Anchusa arvensis", "Field bugloss",
+                                     "Vascular plants", "Andromeda polifolia", "Bog Rosemary",
+                                     "Vascular plants", "Arctostaphylos alpinus", "Mountain bearberry",
+                                     "Vascular plants", "Asplenium viride", "Green spleenwort",
+                                     "Vascular plants", "Atriplex laciniata", "Frosted Orache",
+                                     "Vascular plants", "Blysmus rufus", "Saltmarsh Flat-Sedge",
+                                     "Vascular plants", "Cakile maritima", "Sea Rocket",
+                                     "Vascular plants", "Campanula glomerata", "Clustered Bellflower",
+                                     "Vascular plants", "Carex extensa", "Long-Bracted Sedge",
+                                     "Vascular plants", "Carex magellanica", "Tall Bog-Sedge",
+                                     "Vascular plants", "Centaurium pulchellum", "Lesser Centaury",
+                                     "Vascular plants", "Cerastium arvense", "Field Mouse-Ear",
+                                     "Vascular plants", "Cirsium eriophorum", "Woolly Thistle",
+                                     "Vascular plants", "Daphne laureola", "Spurge-Laurel",
+                                     "Vascular plants", "Eriophorum latifolium", "Broad-Leaved Cottongrass",
+                                     "Vascular plants", "Fumaria muralis", "Common Ramping-Fumitory",
+                                     "Vascular plants", "Genista anglica", "Petty Whin",
+                                     "Vascular plants", "Genista tinctoria", "Dyer's Greenweed",
+                                     "Vascular plants", "Gnaphalium supinum", "Dwarf Cudweed",
+                                     "Vascular plants", "Goodyera repens", "Creeping Lady's-Tresses",
+                                     "Vascular plants", "Hypericum elodes", "Marsh St John's-Wort",
+                                     "Vascular plants", "Lamium hybridum", "Cut-Leaved Dead-Nettle",
+                                     "Vascular plants", "Leymus arenarius", "Lyme Grass",
+                                     "Vascular plants", "Lycopodium clavatum", "Stag's-Horn Clubmoss",
+                                     "Vascular plants", "Neottia nidus-avis", "Bird's-Nest Orchid",
+                                     "Vascular plants", "Ornithopus perpusillus", "Bird's-Foot",
+                                     "Vascular plants", "Orthilia secunda", "Serrated Wintergreen",
+                                     "Vascular plants", "Oxyria digyna", "Mountain Sorrel",
+                                     "Vascular plants", "Pyrola media", "Intermediate Wintergreen",
+                                     "Vascular plants", "Radiola linoides", "Allseed",
+                                     "Vascular plants", "Ranunculus omiophyllus", "Round-Leaved Crowfoot",
+                                     "Vascular plants", "Saxifraga tridactylites", "Rue-Leaved Saxifrage",
+                                     "Vascular plants", "Silaum silaus", "Pepper-Saxifrage",
+                                     "Vascular plants", "Thymus pulegioides", "Large Thyme",
+                                     "Vascular plants", "Tilia cordata", "Small-Leaved Lime",
+                                     "Vascular plants", "Trifolium fragiferum", "Strawberry Clover",
+                                     "Vascular plants", "Trifolium striatum", "Knotted Clover",
+                                     "Vascular plants", "Vaccinium microcarpum", "Small Cranberry"),
+                            ncol = 3, byrow = TRUE)
+  
+  NAME_CONVERSION <- data.frame(Specie = NAME_CONVERSION[, 2],
+                                English_specie = add_suffix_to_duplicates(NAME_CONVERSION[, 3]),
+                                Group = NAME_CONVERSION[, 1])
+  
+  # Replace Invertebrate - bees/beetles/butterflies/crickets/moths by Pollinators
+  # Crashes on the server for some reason, so we use data.frames instead
+  # dplyr::mutate(Group = dplyr::case_when(grepl("bee|beetle|butterfly|cricket|moth", Group) ~ "Pollinators",
+  # .default = Group)) %>%
+  indices <- grep("bees|beetles|butterflys|crickets|moths", NAME_CONVERSION$Group)
+  NAME_CONVERSION[indices, "Group"] <- "Pollinators"
+  # dplyr::mutate(Group = dplyr::case_when(Group == "Invertebrate - bees" ~ "Pollinators",
+  #                                        Group == "Invertebrate - beetles" ~ "Pollinators",
+  #                                        Group == "Invertebrate - butterflys" ~ "Pollinators",
+  #                                        Group == "Invertebrate - crickets" ~ "Pollinators",
+  #                                        Group == "Invertebrate - moths" ~ "Pollinators",
+  #                                        .default = Group)) %>%
+  # Acanthis cabaret -> Acanthis_cabaret, and Neottia nidus-avis -> Neottia_nidus_avis
+  NAME_CONVERSION <- NAME_CONVERSION %>%
+    dplyr::mutate(Specie_pretty = Specie,
+                  Group_pretty = Group,
+                  English_specie_pretty = English_specie,
+                  Specie = gsub(" |-", "_", Specie),
+                  English_specie = gsub(" |-", "_", English_specie),
+                  Group = gsub(" - ", "_", Group)) %>%
+    dplyr::mutate(Group = gsub(" ", "_", Group)) %>%
+    # Sort by Specie
+    dplyr::arrange(Specie)
+  
+  return(NAME_CONVERSION)
+}
 
 BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
 {
@@ -183,22 +315,22 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
   max_x2<-(-Inf);min_x2<-(Inf);max_y2<-(-Inf);min_y2<-Inf;
   
   if(st_geometry_type(shconv)[1]=="POLYGON"){
-  
-  for(ii in 1: length(ListMaps)){
-    for(jj in 1: length(ListMaps[[ii]])){
-   
-      xvec<-ListMaps[[ii]][[jj]][,1]
-      yvec<-ListMaps[[ii]][[jj]][,2]
-      xvec<-xvec[!is.na(xvec)]
-      yvec<-yvec[!is.na(yvec)]
-      max_x2<-max(max_x2,xvec)
-      min_x2<-min(min_x2,xvec)
-      
-      max_y2<-max(max_y2,yvec)
-      min_y2<-min(min_y2,yvec)
+    
+    for(ii in 1: length(ListMaps)){
+      for(jj in 1: length(ListMaps[[ii]])){
+        
+        xvec<-ListMaps[[ii]][[jj]][,1]
+        yvec<-ListMaps[[ii]][[jj]][,2]
+        xvec<-xvec[!is.na(xvec)]
+        yvec<-yvec[!is.na(yvec)]
+        max_x2<-max(max_x2,xvec)
+        min_x2<-min(min_x2,xvec)
+        
+        max_y2<-max(max_y2,yvec)
+        min_y2<-min(min_y2,yvec)
       }
     }
-  
+    
     map<-leaflet() 
     map<-  addTiles(map) 
     map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
@@ -226,83 +358,91 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
                    lng2 = max_x2, lat2 =max_y2) 
     
   }  
-          map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
-    
+  map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
+  
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
 
+# When we worked on squares, it replaced unusable ones with squares.
+# Now we work with polygons and have not updated it.
+# If you uncomment it, you need to update it before actually using it.
 map_sell_not_avail <- function(FullTableNotAvail,
                                SelectedDropdown,
                                listMaps = NULL,
                                map = NULL) {
-  if(dim(FullTableNotAvail)[1]>0){  SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown}else{SELLNOTAVAIL<-NULL}
-  if(sum(SELLNOTAVAIL)>0){
-    # here we assume that not avail is only list of polygons
-    
-    #sellngNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
-    #sellatNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
-    
-    SELGEO<-FullTableNotAvail$geometry[SELLNOTAVAIL]
-    
-    
-    for (iii in 1:length(SELGEO)) {
-      if (is.null(map) && !is.null(listMaps)) {
-        listMaps[[1]] <- leaflet::addPolygons(listMaps[[1]],
-                                              lng = SELGEO[[iii]][[1]][,1],#as.numeric(sellngNotAvail[iii, ]),
-                                              lat = SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii, ]),
-                                              layerId = paste0("SquareNotAvail", iii),
-                                              color = "yellow")
-        listMaps[[2]] <- leaflet::addPolygons(listMaps[[2]],
-                                              lng = SELGEO[[iii]][[1]][,1],# as.numeric(sellngNotAvail[iii,]),
-                                              lat =  SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii,]),
-                                              layerId = paste0("SquareNotAvail",iii),
-                                              color ="yellow")
-        
-        midlng <- ( SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1]) / 2
-        midlat <- ( SELGEO[[iii]][[1]][1,2] +  SELGEO[[iii]][[1]][3,2]) / 2
-        
-        listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng - 0.004, midlng + 0.004),
-                                               color = "orange",
-                                               weight = 5)
-        listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng + 0.004, midlng - 0.004),
-                                               color = "orange",
-                                               weight = 5)
-        listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng - 0.004, midlng + 0.004),
-                                               color = "orange",
-                                               weight = 5)
-        listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
-                                               lat = c(midlat - 0.0025, midlat + 0.0025),
-                                               lng = c(midlng + 0.004, midlng - 0.004),
-                                               color = "orange",
-                                               weight = 5)
-      } else if (!is.null(map) && is.null(listMaps)) {
-        map <- leaflet::addPolygons(map,
-                                    lng = SELGEO[[iii]][[1]][,1],
-                                    lat = SELGEO[[iii]][[1]][,2],
-                                    layerId = paste0("SquareNotAvail", iii),
-                                    color = "yellow")
-        
-        midlng <- (SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1]) / 2
-        midlat <- (SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2]) / 2
-        
-        map <- leaflet::addPolylines(map,
-                                     lat = c(midlat - 0.0025, midlat + 0.0025),
-                                     lng = c(midlng - 0.004, midlng + 0.004),
-                                     color = "orange",
-                                     weight = 5)
-        map <- leaflet::addPolylines(map,
-                                     lat = c(midlat - 0.0025, midlat + 0.0025),
-                                     lng = c(midlng + 0.004, midlng - 0.004),
-                                     color = "orange",
-                                     weight = 5)
-      }
-    }}
+  # if (dim(FullTableNotAvail)[1]>0) { 
+  #   SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown
+  # } else {
+  #   SELLNOTAVAIL <- NULL
+  # }
+  # if (sum(SELLNOTAVAIL) > 0) {
+  #   # here we assume that not avail is only list of polygons
+  #   
+  #   #sellngNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
+  #   #sellatNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
+  #   
+  #   SELGEO <- FullTableNotAvail$geometry[SELLNOTAVAIL]
+  #   
+  #   
+  #   for (iii in 1:length(SELGEO)) {
+  #     if (is.null(map) && !is.null(listMaps)) {
+  #       listMaps[[1]] <- leaflet::addPolygons(listMaps[[1]],
+  #                                             lng = SELGEO[[iii]][[1]][,1],#as.numeric(sellngNotAvail[iii, ]),
+  #                                             lat = SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii, ]),
+  #                                             layerId = paste0("SquareNotAvail", iii),
+  #                                             color = "yellow")
+  #       listMaps[[2]] <- leaflet::addPolygons(listMaps[[2]],
+  #                                             lng = SELGEO[[iii]][[1]][,1],# as.numeric(sellngNotAvail[iii,]),
+  #                                             lat =  SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii,]),
+  #                                             layerId = paste0("SquareNotAvail",iii),
+  #                                             color ="yellow")
+  #       
+  #       midlng <- ( SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1] ) / 2
+  #       midlat <- ( SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2] ) / 2
+  #       
+  #       listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng - 0.004, midlng + 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #       listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng + 0.004, midlng - 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #       listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng - 0.004, midlng + 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #       listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
+  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                              lng = c(midlng + 0.004, midlng - 0.004),
+  #                                              color = "orange",
+  #                                              weight = 5)
+  #     } else if (!is.null(map) && is.null(listMaps)) {
+  #       map <- leaflet::addPolygons(map,
+  #                                   lng = SELGEO[[iii]][[1]][,1],
+  #                                   lat = SELGEO[[iii]][[1]][,2],
+  #                                   layerId = paste0("SquareNotAvail", iii),
+  #                                   color = "yellow")
+  #       
+  #       midlng <- (SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1]) / 2
+  #       midlat <- (SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2]) / 2
+  #       
+  #       map <- leaflet::addPolylines(map,
+  #                                    lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                    lng = c(midlng - 0.004, midlng + 0.004),
+  #                                    color = "orange",
+  #                                    weight = 5)
+  #       map <- leaflet::addPolylines(map,
+  #                                    lat = c(midlat - 0.0025, midlat + 0.0025),
+  #                                    lng = c(midlng + 0.004, midlng - 0.004),
+  #                                    color = "orange",
+  #                                    weight = 5)
+  #     }
+  #   }
+  # }
   if (is.null(map) && !is.null(listMaps)) {
     return(listMaps)
   } else if (!is.null(map) && is.null(listMaps)) {
@@ -405,14 +545,14 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
         SELL <- (FullTable$extent==SelectedDropdown)
         if(!is.null(SELL)){
           SELGEO<-FullTable$geometry[SELL]
-          ############
+          
           UnitsSel<-unique(FullTable$units[SELL])
           Cols<-rainbow(length(UnitsSel))
           FullColVec<-rep(0,dim(FullTable[SELL,])[1])
           for (iii in 1:length(Cols)){
             FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
           }
-          ############  
+          
           ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
           FullColVec<-darken(FullColVec,ColorDarkeningFactor)
           ClickedCols<-rep("red",length(ClickedCols))
@@ -429,7 +569,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
             if(SavedVec[iii]==1){
               
               if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-              listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii],weight=UnitPolygonColours)
+                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii],weight=UnitPolygonColours)
               }else{
                 for(kk in 1:length(SELGEO[[iii]])) {
                   listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii],weight=UnitPolygonColours)
@@ -437,11 +577,11 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                 
               }
               
-              }
+            }
             else{
               if(SwitchedOnCells[iii]==1){
                 if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii],weight=UnitPolygonColours)
+                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii],weight=UnitPolygonColours)
                 }else{
                   for(kk in 1:length(SELGEO[[iii]])) {
                     listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii],weight=UnitPolygonColours)
@@ -449,7 +589,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                   }
                   
                 }
-                }
+              }
             }
           }
         }
@@ -538,8 +678,8 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
 }
 
 outputmap_calculateMats <- function(input,
-                                    SavedVec,
-                                    simul636,
+                                    SavedVecLoc,
+                                    simul636Loc,
                                     AreaSelected,
                                     CarbonSelected,
                                     # RedSquirrelSelected,
@@ -549,43 +689,48 @@ outputmap_calculateMats <- function(input,
                                     # RedSquirrelSelectedSD,
                                     SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                     VisitsSelectedSD,
-                                    input_areaSlider_multiplicative_coefficient = TRUE) {
+                                    alphaLVL = alphaLVL,
+                                    input_areaSlider_multiplicative_coefficient = TRUE,
+                                    ManualTargets=NULL,
+                                    tolvec) {
+  
   # If only one element in SavedVec, select corresponding column in simul636
-  if (length(SavedVec) == 1) {
-    SelectedSimMat <- as.matrix(simul636[, 1:length(SavedVec)])
+  if (length(SavedVecLoc) == 1) {
+    SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecLoc)])
   } else {
-    SelectedSimMat <- simul636[, 1:length(SavedVec)]
+    SelectedSimMat <- simul636Loc[, 1:length(SavedVecLoc)]
   }
   
-  SVMAT <- t(matrix(SavedVec, length(SavedVec), dim(SelectedSimMat)[1]))
-  CarbonMAT <- t(matrix(CarbonSelected, length(SavedVec), dim(SelectedSimMat)[1]))
+  SVMAT <- t(matrix(SavedVecLoc, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  CarbonMAT <- t(matrix(CarbonSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
   # RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
   for (i in 1:length(SpeciesListSelected)) {
     specie_name <- names(SpeciesListSelected)[i]
     specie_value <- SpeciesListSelected[[i]]
     mat_name <- paste0(specie_name, "MAT")
     # specieSelected <- get(paste0(specie_name, "Selected"))
-    value <- t(matrix(as.numeric(specie_value), length(SavedVec), dim(SelectedSimMat)[1]))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
     assign(mat_name, value)
   }
-  AreaMAT <- t(matrix(AreaSelected, length(SavedVec), dim(SelectedSimMat)[1]))
-  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVecLoc), dim(SelectedSimMat)[1]))
   
-  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVec), dim(SelectedSimMat)[1]))
+  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVecLoc), dim(SelectedSimMat)[1]))
   # RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
   for (i in 1:length(SpeciesListSelectedSD)) {
     specie_name <- names(SpeciesListSelectedSD)[i]
     specie_value <- SpeciesListSelectedSD[[i]]
     mat_name <- paste0(specie_name, "MAT")
     # specieSelected <- get(paste0(specie_name, "SelectedSD"))
-    value <- t(matrix(as.numeric(specie_value), length(SavedVec), dim(SelectedSimMat)[1]))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
     assign(mat_name, value)
   }
-  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVecLoc), dim(SelectedSimMat)[1]))
   
   # Create a data frame representing the selected similarity matrix
   SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
   
+  if(is.null(ManualTargets)){
   SelecTargetCarbon <- input$SliderMain
   # SelecTargetBio <- input$BioSlider
   SelecTargetBioVector <- c()
@@ -599,13 +744,16 @@ outputmap_calculateMats <- function(input,
     SelecTargetBioList[var_name] <- value
   }
   SelecTargetArea <- input$AreaSlider
-  SelecTargetVisits <- input$VisitsSlider
+  SelecTargetVisits <- input$VisitsSlider}else{SelecTargetCarbon<-ManualTargets[[1]];SelecTargetBioVector<-unlist(ManualTargets[[2]]);
+  SelecTargetBioList<-ManualTargets[[2]];
+  SelecTargetArea<-ManualTargets[[3]];SelecTargetVisits<-ManualTargets[[4]]}
+
   
   speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
                                                       function(x) bquote(rowMeans(SelectedSimMat * get(paste0(.(x), "MAT"))))),
                                                names(SpeciesListSelected)))
   speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
-                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVec))))),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVecLoc))))),
                                                  names(SpeciesListSelectedSD)))
   SelectedSimMat2 <- data.frame(SelectedSimMat,
                                 Carbon = rowSums(SelectedSimMat * CarbonMAT),
@@ -616,7 +764,7 @@ outputmap_calculateMats <- function(input,
                                 CarbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
                                 # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
                                 speciesMatSD,
-                                VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVec))
+                                VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVecLoc))
   # for (specie_name in names(SpeciesListSelected)) {
   #   value <- rowMeans(SelectedSimMat * get(paste0(specie_name, "MAT")))
   #   SelectedSimMat2[specie_name] <- value
@@ -626,23 +774,25 @@ outputmap_calculateMats <- function(input,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
-              colMeans(speciesMat) / 50,
-              mean(SelectedSimMat2$Area) / 50,
-              mean(SelectedSimMat2$Visits) / 50)
-  for(i in 1:length(tolvec)) {
-    if (tolvec[i] == 0) {
-      tolvec[i] <- 0.1
-    }
-  }
+ # tolvec <- c(mean(SelectedSimMat2$Carbon) / 50,
+  #            colMeans(speciesMat) / 50,
+   #           mean(SelectedSimMat2$Area) / 50,
+    #          mean(SelectedSimMat2$Visits) / 50)
+#  for(i in 1:length(tolvec)) {
+ #   if (tolvec[i] == 0) {
+  #    tolvec[i] <- 0.1
+   # }
+  #}
   # tolVec <- c(4, 0.05, 0.1, 2)
-  Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
-                     TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
-                     # EYMat = data.frame(SelectedSimMat2$Carbon, SelectedSimMat2$redsquirrel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
-                     EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
-                     # SDYMat = data.frame(SelectedSimMat2$CarbonSD, SelectedSimMat2$redsquirrelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
-                     SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
-                     alpha = 0.05, tolVec = tolvec)
+  Icalc <- MultiImpl(
+    # TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
+    TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
+    # EYMat = data.frame(SelectedSimMat2$Carbon, SelectedSimMat2$redsquirrel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+    EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+    # SDYMat = data.frame(SelectedSimMat2$CarbonSD, SelectedSimMat2$redsquirrelSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+    SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+    alpha = alphaLVL, tolVec = tolvec
+  )
   
   LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
                             # SelectedSimMat2$redsquirrel,
@@ -655,118 +805,139 @@ outputmap_calculateMats <- function(input,
                                                                        SelectedSimMat2$VisitsSD^2 + tolvec[length(tolvec)]))
   
   return(c(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
-              # SelecTargetBio = SelecTargetBio, SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits))
-              SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
+                # SelecTargetBio = SelecTargetBio, SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits))
+                SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
            SelecTargetBioList))
 }
 
-outputmap_createResults <- function(map,
-                                    SubsetMeetTargets,
-                                    alphaLVL,
-                                    FullTable,
-                                    SavedVec,
-                                    SelectedDropdown,
-                                    randomValue,
-                                    ColourScheme,
-                                    ColorLighteningFactor,
-                                    ColorDarkeningFactor,
-                                    SPECIES_ARG2,
-                                    SPECIES_ENGLISH_ARG2,
-                                    UnitPolygonColours) {
-  SPECIES <- SPECIES_ARG2
-  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG2
-  SavedRVs <- randomValue()
-  LSMT <- dim(SubsetMeetTargets)[1]
-  SelectedLine <- SubsetMeetTargets[as.integer(trunc(SavedRVs * LSMT) + 1),]
-  
-  SwitchedOnCells <- SelectedLine[1:length(SavedVec)]
-  SelectedTreeCarbon <- SelectedLine$Carbon
-  # SelectedBio <- SelectedLine$redsquirrel
-  SelectedBioList <- list()
-  for (x in SPECIES) {
-    var_name <- paste0("SelectedBio", x)
-    value <- SelectedLine[[x]]
-    assign(var_name, value)
-    SelectedBioList[var_name] <- value
+InitFindMaxSliderValues <- function(SavedVecLoc,
+                                    AreaSelected,
+                                    CarbonSelected,
+                                    # RedSquirrelSelected,
+                                    SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                    VisitsSelected,
+                                    CarbonSelectedSD,
+                                    # RedSquirrelSelectedSD,
+                                    SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                    VisitsSelectedSD,
+                                    input_areaSlider_multiplicative_coefficient = TRUE,
+                                    alpha) {
+  simul636Loc <- matrix(1,2,length(SavedVecLoc))
+  # If only one element in SavedVec, select corresponding column in simul636
+  if (length(SavedVecLoc) == 1) {
+    SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecLoc)])
+  } else {
+    SelectedSimMat <- simul636Loc[, 1:length(SavedVecLoc)]
   }
-  SelectedArea <- SelectedLine$Area
-  SelectedVisits <- SelectedLine$Visits
   
-  SelectedTreeCarbonSD <- SelectedLine$CarbonSD
-  # SelectedBioSD <- SelectedLine$redsquirrelSD
-  SelectedBioSDList <- list()
-  for (x in SPECIES) {
-    var_name <- paste0("SelectedBioSD", x)
-    value <- SelectedLine[[paste0(x, "SD")]]
-    assign(var_name, value)
-    SelectedBioSDList[var_name] <- value
+  SVMAT <- t(matrix(SavedVecLoc, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  CarbonMAT <- t(matrix(CarbonSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  # RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelected)) {
+    specie_name <- names(SpeciesListSelected)[i]
+    specie_value <- SpeciesListSelected[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "Selected"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
   }
-  SelectedVisitsSD <- SelectedLine$VisitsSD
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVecLoc), dim(SelectedSimMat)[1]))
   
-  SELL <- (FullTable$extent == SelectedDropdown)
+  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  # RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelectedSD)) {
+    specie_name <- names(SpeciesListSelectedSD)[i]
+    specie_value <- SpeciesListSelectedSD[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "SelectedSD"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVecLoc), dim(SelectedSimMat)[1]))
   
-  if (!is.null(SELL)) {
-    # sellng <- FullTable[SELL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
-    #  sellat <- FullTable[SELL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
-    SELGEO<-  FullTable$geometry[SELL]
-    ############
-    UnitsSel<-unique(FullTable$units[SELL])
-    ColObtained<-getCols(ColourScheme,UnitsVec=FullTable$units[SELL],
-                         ColorLighteningFactor,ColorDarkeningFactor)
-    
-    #Cols<-rainbow(length(UnitsSel))
-    #FullColVec<-rep(0,dim(FullTable[SELL,])[1])
-    #for (iii in 1:length(Cols)){
-    #  FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
-    #}
-    #ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
-    FullColVec<-ColObtained$FullColVec#darken(FullColVec,ColorDarkeningFactor)
-    ClickedCols<-ColObtained$ClickedCols#rep("red",length(ClickedCols))
-    ############  
-    for (iii in 1:length(SwitchedOnCells)) {
-      if (SavedVec[iii] == 1) {
-        
-        if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-        map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii), color = ClickedCols[iii],weight=UnitPolygonColours)
-        }else{
-          for(kk in 1:length(SELGEO[[iii]])) {
-            map <- addPolygons(map, lng = as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk), color = ClickedCols[iii],weight=UnitPolygonColours)
-            
-          }
-          
-        }
-        
-      } else {
-        if (SwitchedOnCells[iii] == 1) {
-          if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-          
-          map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[1]][,2]), layerId = paste0("Square", iii),color=FullColVec[iii],weight=UnitPolygonColours)
-          }else{
-            for(kk in 1:length(SELGEO[[iii]])) {
-              map <- addPolygons(map, lng =as.numeric(SELGEO[[iii]][[kk]][[1]][,1]), lat = as.numeric(SELGEO[[iii]][[kk]][[1]][,2]), layerId = paste0("Square", iii,"_",kk),color=FullColVec[iii],weight=UnitPolygonColours)
-              
-            }
-            
-          }
-        }
-      }
+  # Create a data frame representing the selected similarity matrix
+  SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
+  
+  #SelecTargetCarbon <- input$SliderMain
+  # SelecTargetBio <- input$BioSlider
+  #SelecTargetBioVector <- c()
+  #SelecTargetBioList <- list()
+  #for (x in names(SpeciesListSelected)) {
+  #  var_name <- paste0("SelecTargetBio", x)
+  #  # input[paste0("BioSlider", x)] bugs because it is a reactivevalue
+  #  value <- input[[paste0("BioSlider", x)]]
+  #  assign(var_name, value)
+  #  SelecTargetBioVector <- c(SelecTargetBioVector, value)
+  #  SelecTargetBioList[var_name] <- value
+  #}
+  #SelecTargetArea <- input$AreaSlider
+  #SelecTargetVisits <- input$VisitsSlider
+  
+  speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
+                                                      function(x) bquote(rowMeans(SelectedSimMat * get(paste0(.(x), "MAT"))))),
+                                               names(SpeciesListSelected)))
+  speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVecLoc))))),
+                                                 names(SpeciesListSelectedSD)))
+  SelectedSimMat2 <- data.frame(SelectedSimMat,
+                                Carbon = rowSums(SelectedSimMat * CarbonMAT),
+                                # redsquirrel = rowMeans(SelectedSimMat * RedSquirrelMAT),
+                                speciesMat,
+                                Area = rowSums(SelectedSimMat * AreaMAT),
+                                Visits = rowMeans(SelectedSimMat * (VisitsMAT)),
+                                CarbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+                                # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
+                                speciesMatSD,
+                                VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVecLoc))
+  # for (specie_name in names(SpeciesListSelected)) {
+  #   value <- rowMeans(SelectedSimMat * get(paste0(specie_name, "MAT")))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
+  # for (specie_name in names(SpeciesListSelectedSD)) {
+  #   value <- sqrt(rowSums(SelectedSimMat * (get(paste0(specie_name, "MAT"))^2) / length(SavedVec)))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
+  
+  tolvec <- c(mean(SelectedSimMat2$Carbon) / 150,
+              colMeans(speciesMat) / 150,
+              mean(SelectedSimMat2$Area) / 150,
+              mean(SelectedSimMat2$Visits) / 150)
+  for(i in 1:length(tolvec)) {
+    if (tolvec[i] == 0) {
+      tolvec[i] <- 0.1
     }
   }
+  # tolVec <- c(4, 0.05, 0.1, 2)
+  #  Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
+  #   TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
+  #  EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+  # SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+  #  alpha = alpha, tolVec = tolvec)
   
-  return(c(list(map = map,
-                SelectedLine = SelectedLine,
-                SelectedTreeCarbon = SelectedTreeCarbon,
-                SelectedTreeCarbonSD = SelectedTreeCarbonSD,
-                # SelectedBio = SelectedBio,
-                # SelectedBioSD = SelectedBioSD,
-                SelectedArea = SelectedArea,
-                SelectedVisits = SelectedVisits,
-                SelectedVisitsSD = SelectedVisitsSD,
-                SubsetMeetTargets = SubsetMeetTargets,
-                SavedRVs = SavedRVs,
-                LSMT = LSMT),
-           SelectedBioList,
-           SelectedBioSDList))
+  LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
+                            # SelectedSimMat2$redsquirrel,
+                            speciesMat,
+                            SelectedSimMat2$Area,
+                            # SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + 4^2, SelectedSimMat2$redsquirrelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + tolvec[1],
+                                                                       speciesMatSD^2 + tolvec[1 + (1:ncol(speciesMat))],
+                                                                       rep(0, length(SelectedSimMat2$Area)) + tolvec[length(tolvec) - 1],
+                                                                       SelectedSimMat2$VisitsSD^2 + tolvec[length(tolvec)]))
+  # we would want here the inverse truncated normal,
+  CarbonMax<-max(0,trunc(sqrt(SelectedSimMat2$CarbonSD[1]^2 + tolvec[1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Carbon[1]))
+  bioMaxList<-list()
+  for (ijj in 1:length(names(speciesMat)))
+  {NM<-names(speciesMat)[ijj]
+  NMSD<-names(speciesMatSD)[ijj]
+  bioMaxList[[ijj]]<-max(0,trunc(sqrt(SelectedSimMat2[[NMSD]][1]^2 + tolvec[1+ijj])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1+ijj],b=Inf,mean=0,sd=1)+SelectedSimMat2[[NM]][1]))
+  
+  }
+  AreaMax<-max(0,trunc(sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]-1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Area[1]))
+  VisistMax<-max(0,trunc(sqrt( SelectedSimMat2$VisitsSD[1]^2+tolvec[dim(LimitsMat)[2]])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]],b=Inf,mean=0,sd=1)+SelectedSimMat2$Visits[1]))
+  
+  
+  return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,VisistMax=VisistMax,tolvec=tolvec))
 }
 
 add_suffix_to_duplicates <- function(vec) {
@@ -779,7 +950,7 @@ add_suffix_to_duplicates <- function(vec) {
       seen[[vec[i]]] <- 1
     }
   }
-  vec
+  return(vec)
 }
 
 check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
@@ -801,17 +972,15 @@ check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
     }
     prob_list[[i]] <- condition
   }
-  if (length(prob_list) == 1) {
-    prob_list <- unlist(prob_list)
-  }
-  # if(anyNA(condition, recursive = TRUE)) browser()
   return(prob_list)
 }
 
 subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST, TARGETS, nb_targets_met) {
   n_metrics <- ncol(PROBAMAT)
   targets_met <- t(combn(n_metrics, nb_targets_met))
-  targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
+  if (nb_targets_met != n_metrics) {
+    targets_met <- as.matrix(targets_met[nrow(targets_met):1, ])
+  }
   
   SubsetMeetTargets <- data.frame()
   for (i in 1:nrow(targets_met)) {
@@ -864,7 +1033,7 @@ add_richness_columns <- function(FullTable, NAME_CONVERSION) {
 convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob40,jncc100,climatecells) {
   # Take the Biodiversity probabilities from Matlab results/scenario_species_prob_40.csv
   # and merge them with BristolFullTableMerged.geojson
-    
+  
   # Load the shapefile mapping new2kid with Polygons
   id_polygons <- seer2km %>%dplyr::select(c(new2kid, geometry))
   
@@ -940,17 +1109,17 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     
     # Calculate the areas
     dplyr::mutate(area_bio = st_area(geometry_bio),
-           area_jules = st_area(geometry_jules),
-           area_intersection = st_area(geometry)) %>%
+                  area_jules = st_area(geometry_jules),
+                  area_intersection = st_area(geometry)) %>%
     
     # Calculate the ratio of areas
     dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
-           proportion_intersection_in_jules = area_intersection / area_jules) %>%
+                  proportion_intersection_in_jules = area_intersection / area_jules) %>%
     
     # Assume uniformity, multiply probability by proportion
     dplyr::mutate(dplyr::across(all_of(all_species_names),
-                  ~ .x * proportion_intersection_in_bio)) %>%
-  
+                                ~ .x * proportion_intersection_in_bio)) %>%
+    
     # Rename columns, add BioMean_ and BioSD_ to species
     dplyr::rename_with(.fn = ~ paste0("BioMean_", .x), .cols = all_of(all_species_names)) %>%
     
@@ -973,7 +1142,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
       
       polygon_id_jules = mean(polygon_id_jules)
     ) %>%
-  
+    
     dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
     
     # Remove useless columns
@@ -984,7 +1153,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     left_join(polygons_jules, by = "polygon_id_jules") %>%
     
     dplyr::select(-c(polygon_id_jules, starts_with("geometry_")))
-    
+  
   rm(polygons_bio, polygons_jules)
   
   if (any(FullTable$area_diff >= 1)) {
@@ -993,12 +1162,12 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   rm(df0)
   
   FullTable <- FullTable %>% dplyr::select(-area_diff) %>% st_as_sf()
-
+  
   return(FullTable)
 }
 
 get_pretty_specie <- function(ugly_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
-  if (ugly_specie %in% NAME_CONVERSION_ARG$Specie_pretty) return(usgly_specie)
+  if (ugly_specie %in% NAME_CONVERSION_ARG$Specie_pretty) return(ugly_specie)
   idx <- which(NAME_CONVERSION_ARG$Specie == ugly_specie)
   if (length(idx) == 0) return(ugly_specie)
   result <- NAME_CONVERSION_ARG$Specie_pretty[idx]
@@ -1028,7 +1197,7 @@ get_ugly_group <- function(pretty_group, NAME_CONVERSION_ARG = NAME_CONVERSION) 
   result <- NAME_CONVERSION_ARG$Group[idx[1]]
   return(result)
 }
- 
+
 get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
   if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
   idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
@@ -1066,4 +1235,83 @@ get_group_from_specie <- function(specie, NAME_CONVERSION_ARG = NAME_CONVERSION)
   if (length(idx) == 0) return(specie)
   result <- NAME_CONVERSION_ARG$Group[idx]
   return(result)
+}
+
+normalizePath <- function(path) {
+  return(base::normalizePath(path, mustWork = FALSE))
+}
+
+user_path <- function() {
+  # Determine the OS
+  sysinf <- Sys.info()
+  if (!is.null(sysinf)){
+    os <- sysinf['sysname']
+    if (os == 'Darwin')
+      os <- "osx"
+  } else { ## mystery machine
+    os <- .Platform$OS.type
+    if (grepl("^darwin", R.version$os))
+      os <- "osx"
+    if (grepl("linux-gnu", R.version$os))
+      os <- "linux"
+  }
+  
+  if (Sys.info()['sysname'] == "Windows") {
+    
+    # Windows
+    OS <- "Windows"
+    
+  } else if (.Platform$OS.type == "unix") {
+    
+    # if (grepl("Microsoft", readLines("/proc/version"), ignore.case = TRUE))
+    if (grepl("WSL", Sys.info()["release"], ignore.case = TRUE)) {
+      
+      # Windows Subsystem for Linux
+      OS <- "WSL"
+      
+    } else {
+      
+      # Linux
+      OS <- "Linux"
+      
+    }
+  }
+  
+  
+  if (OS == "Windows") {
+    
+    # Pure Windows
+    UserPath <- normalizePath(file.path(Sys.getenv("USERPROFILE")))
+    
+  } else if (OS == "Linux") {
+    
+    # Pure Linux
+    UserPath <- normalizePath(file.path(Sys.getenv("HOME")))
+    
+  } else if (OS == "WSL") {
+    
+    # https://stackoverflow.com/questions/23513045/how-to-check-if-a-process-is-running-inside-docker-container
+    if (any(grepl("docker", readLines("/proc/1/cgroup")))) {
+      
+      # DOCKER
+      UserPath <- normalizePath(file.path(Sys.getenv("R_HOME")))
+      
+    } else {
+      
+      # Pure WSL
+      # https://superuser.com/a/1568668
+      UserPath <- normalizePath(file.path(system('wslpath "$(wslvar USERPROFILE)"', intern = TRUE)))
+      
+    }
+  }
+  return(UserPath)
+}
+
+# Function to generate a unique ID
+generate_unique_id <- function(used_ids_reactive, sample_space) {
+  id <- sample(sample_space, 1)
+  while (id %in% used_ids_reactive()) {
+    id <- sample(sample_space, 1)
+  }
+  return(id)
 }
