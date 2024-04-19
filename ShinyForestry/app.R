@@ -866,147 +866,54 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     SlidersHaveBeenInitialized(rep(0,length(SliderNames)))
     
   })
-
-  observe({
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-        SavedVec<-ClickedVector()
-        PreviousSavedVec<-PreviousClickedVector()
-        SelectedVec<-SelectedVector()
-        PreviousSelectedVec<-PreviousSelectedVector()
-        
-        
-        ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
-                               ColorLighteningFactor(), ColorDarkeningFactor())
-        
-        FullColVec <- ColObtained$FullColVec
-        ClickedCols <- ColObtained$ClickedCols
-        
-        
-        Consolidated<-2*SavedVec+1*((SelectedVec==1)&(SavedVec==0))
-        
-        PreviousConsolidated<-2*PreviousSavedVec+1*((PreviousSelectedVec==1)&(PreviousSavedVec==0))
-        if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
-        if((CreatedBaseMap()==1)&(length(SavedVec)>0)){
-          
-          # mapp<-leafletProxy("map")
-          #  for(ijj in 1:length(SelectedVec)){
-          if(prod(PreviousConsolidated==Consolidated)==0)
-          {
-            mapp<-leafletProxy("map")
-            removeShape(mapp,layerId=paste0("Square",1:length(SelectedVec)))
-            #  if(Consolitated[ijj]==0){
-            #    
-            #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
-            #  }
-            #  if(Consolitated[ijj]==1){
-            #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
-            #  }
-            #  if(Consolitated[ijj]==2){
-            #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-            #  }
-            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-            #if(Consolitated[ijj]==0){
-            COLOURS<-rep("transparent",length(Consolidated))
-            COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
-            COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
-            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
-            
-            removeControl(mapp,layerId="legend")
-            
-            SFTR<-SelectedFullTableRow()
-            addControlText <- ""
-            for (i in 1:length(SPECIES)) {
-              specie_latin <- SPECIES[i]
-              specie_english <- SPECIES_ENGLISH[i]
-              selectedBiospecie <- SFTR[[specie_latin]]
-              selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
-              addControlText <- paste0(addControlText, specie_english, ": ", 
-                                       round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-            }
-            
-            mapp<-
-              addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
-                                            # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-                                            addControlText,
-                                            "Area Planted: ", round(SFTR$Area, 2), "<br>",
-                                            "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
-                                            "</p>"), position = "topright",layerId="legend")
-            
-            
-          }
-          
-        }
-        
-        
-        PreviousClickedVector(SavedVec)  
-        PreviousSelectedVector(SelectedVec)
-        # replace the text
-        
-        
-        
-      }
-    })
   
   observe({
-      if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)&(input$tabs=="Exploration")
-      ) {
-        SubsetMeetTargets<-SubsetMeetTargetsReactive()
-        PreviousSubsetMeetTargets<-PreviousSubsetMeetTargetsReactive()
-        SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
-        PreviousSubsetMeetTargetsUnique<-PreviousSubsetMeetTargetsReactiveUnique()
+    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
+      SavedVec<-ClickedVector()
+      PreviousSavedVec<-PreviousClickedVector()
+      SelectedVec<-SelectedVector()
+      PreviousSelectedVec<-PreviousSelectedVector()
+      
+      
+      ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
+                             ColorLighteningFactor(), ColorDarkeningFactor())
+      
+      FullColVec <- ColObtained$FullColVec
+      ClickedCols <- ColObtained$ClickedCols
+      
+      
+      Consolidated<-2*SavedVec+1*((SelectedVec==1)&(SavedVec==0))
+      
+      PreviousConsolidated<-2*PreviousSavedVec+1*((PreviousSelectedVec==1)&(PreviousSavedVec==0))
+      if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
+      if((CreatedBaseMap()==1)&(length(SavedVec)>0)){
         
-        SavedMat<-ClickedMatrixTab2Reactive()
-        PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
-        FourUniqueRowsLoc<-FourUniqueRowsReactive()
-        PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
-        # if(is.null(dim(PreviousFourUniqueRowsLoc))){
-        #  PreviousFourUniqueRowsLoc<-matrix(PreviousFourUniqueRowsLoc,1,length(PreviousFourUniqueRowsLoc))}
-        
-        SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
-        PrevSelectedRows<-PreviousSubsetMeetTargetsUnique[PreviousFourUniqueRowsLoc,]
-        
-        ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
-                               ColorLighteningFactor(), ColorDarkeningFactor())
-        
-        FullColVec <- ColObtained$FullColVec
-        ClickedCols <- ColObtained$ClickedCols
-        if(dim(PrevSelectedRows)[1]<dim(SelectedRows)[1]){PrevSelectedRows=SelectedRows+1}
-        
-        
-        for(ii in seq(1,min(4,length(FourUniqueRowsLoc)))){
+        # mapp<-leafletProxy("map")
+        #  for(ijj in 1:length(SelectedVec)){
+        if(prod(PreviousConsolidated==Consolidated)==0)
+        {
+          mapp<-leafletProxy("map")
+          removeShape(mapp,layerId=paste0("Square",1:length(SelectedVec)))
+          #  if(Consolitated[ijj]==0){
+          #    
+          #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
+          #  }
+          #  if(Consolitated[ijj]==1){
+          #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
+          #  }
+          #  if(Consolitated[ijj]==2){
+          #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
+          #  }
+          removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+          #if(Consolitated[ijj]==0){
+          COLOURS<-rep("transparent",length(Consolidated))
+          COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
+          COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
+          mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
           
-          Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
-          
-          PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
-          if(length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
-          if((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
-            
-            # mapp<-leafletProxy(paste0("map",ii+1))
-            # for(ijj in 1:length(Consolitated)){
-            # if(PreviousConsolitated[ijj]!=Consolitated[ijj])
-            #{
-            mapp<-leafletProxy(paste0("map",ii+1))
-            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-            #if(Consolitated[ijj]==0){
-            COLOURS<-rep("transparent",length(Consolidated))
-            COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
-            COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
-            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
-            #}
-            #              if(Consolitated[ijj]==1){
-            #               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#,color=FullColVec[ijj]
-            #            }
-            #           if(Consolitated[ijj]==2){
-            #            mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-            #         }
-            
-            
-            #  }
-            
-          }
           removeControl(mapp,layerId="legend")
           
-          SFTR<-SelectedRows[ii,]
+          SFTR<-SelectedFullTableRow()
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
@@ -1026,62 +933,154 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                           "</p>"), position = "topright",layerId="legend")
           
           
-          
         }
-        #form0<-paste0('Text', ii,'("")')
-        #eval(parse(text=form0))
-        #cat(form0)
-        #cat("\n")
-        #form<-paste0('Text', ii ,
-        #             '(paste0("Strategy Displayed: ",FourUniqueRowsLoc[ii]," out of ",dim(SubsetMeetTargetsUnique)
-        #             
-        #             ))')
-        #cat(form)
-        #cat("\n")
         
-        
-        #eval(parse(text=form))
-        
-        #}
-        if(length(FourUniqueRowsLoc)<4){
-          #add here text to say that there are no more unique examples.
-          for(ii in seq(length(FourUniqueRowsLoc)+1,4))
-          {  #form2<-paste0('Text', ii ,
-            #            '(paste0("Strategies that meet all ", N_TARGETS))')
-            
-            #eval(parse(text=form2))
-            
-            mapp<-leafletProxy(paste0("map",ii+1))
-            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
-                              color="transparent",fillColor="transparent")  
-            removeControl(mapp,layerId="legend")
-            mapp<-
-              addControl(mapp,html = "", position = "topright",layerId="legend")
-            
-            
-          }
-          PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
-          PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
-          PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
-          
-          
-          UpdatedRows<-ClickedMatrixTab2Reactive()
-          if(length(FourUniqueRowsLoc)<4){
-            UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
-            
-          }
-          PreviousClickedMatrixTab2Reactive(UpdatedRows)
-          
-          #Text1("")
-          
-          
-          #  PreviousSubsetMeetTargetsReactive4Unique(SubsetMeetTargetsReactive4Unique())  
-          #PreviousSelectedVector(SelectedVec)
-          # replace the text
-        }
       }
-    })
+      
+      
+      PreviousClickedVector(SavedVec)  
+      PreviousSelectedVector(SelectedVec)
+      # replace the text
+      
+      
+      
+    }
+  })
+  
+  observe({
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")) {
+      SubsetMeetTargets<-SubsetMeetTargetsReactive()
+      PreviousSubsetMeetTargets<-PreviousSubsetMeetTargetsReactive()
+      SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
+      PreviousSubsetMeetTargetsUnique<-PreviousSubsetMeetTargetsReactiveUnique()
+      
+      SavedMat<-ClickedMatrixTab2Reactive()
+      PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
+      FourUniqueRowsLoc<-FourUniqueRowsReactive()
+      PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
+      # if(is.null(dim(PreviousFourUniqueRowsLoc))){
+      #  PreviousFourUniqueRowsLoc<-matrix(PreviousFourUniqueRowsLoc,1,length(PreviousFourUniqueRowsLoc))}
+      
+      SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
+      PrevSelectedRows<-PreviousSubsetMeetTargetsUnique[PreviousFourUniqueRowsLoc,]
+      
+      ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
+                             ColorLighteningFactor(), ColorDarkeningFactor())
+      
+      FullColVec <- ColObtained$FullColVec
+      ClickedCols <- ColObtained$ClickedCols
+      if (dim(PrevSelectedRows)[1] < dim(SelectedRows)[1]) { PrevSelectedRows=SelectedRows+1 }
+      
+      
+      for (ii in seq(1,min(4,length(FourUniqueRowsLoc)))) {
+        
+        Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
+        
+        PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
+        if (length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
+        if ((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
+          
+          # mapp<-leafletProxy(paste0("map",ii+1))
+          # for(ijj in 1:length(Consolitated)){
+          # if(PreviousConsolitated[ijj]!=Consolitated[ijj])
+          #{
+          mapp<-leafletProxy(paste0("map",ii+1))
+          removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+          #if(Consolitated[ijj]==0){
+          COLOURS<-rep("transparent",length(Consolidated))
+          COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
+          COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
+          mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
+          #}
+          #              if(Consolitated[ijj]==1){
+          #               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#,color=FullColVec[ijj]
+          #            }
+          #           if(Consolitated[ijj]==2){
+          #            mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
+          #         }
+          
+          
+          #  }
+          
+        }
+        removeControl(mapp,layerId="legend")
+        
+        SFTR<-SelectedRows[ii,]
+        addControlText <- ""
+        for (i in 1:length(SPECIES)) {
+          specie_latin <- SPECIES[i]
+          specie_english <- SPECIES_ENGLISH[i]
+          selectedBiospecie <- SFTR[[specie_latin]]
+          selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
+          addControlText <- paste0(addControlText, specie_english, ": ", 
+                                   round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        }
+        
+        mapp<-
+          addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
+                                        # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+                                        addControlText,
+                                        "Area Planted: ", round(SFTR$Area, 2), "<br>",
+                                        "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
+                                        "</p>"), position = "topright",layerId="legend")
+        
+        
+        
+      }
+      #form0<-paste0('Text', ii,'("")')
+      #eval(parse(text=form0))
+      #cat(form0)
+      #cat("\n")
+      #form<-paste0('Text', ii ,
+      #             '(paste0("Strategy Displayed: ",FourUniqueRowsLoc[ii]," out of ",dim(SubsetMeetTargetsUnique)
+      #             
+      #             ))')
+      #cat(form)
+      #cat("\n")
+      
+      
+      #eval(parse(text=form))
+      
+      #}
+      if(length(FourUniqueRowsLoc)<4){
+        #add here text to say that there are no more unique examples.
+        for(ii in seq(length(FourUniqueRowsLoc)+1,4))
+        {  #form2<-paste0('Text', ii ,
+          #            '(paste0("Strategies that meet all ", N_TARGETS))')
+          
+          #eval(parse(text=form2))
+          
+          mapp<-leafletProxy(paste0("map",ii+1))
+          removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+          mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
+                            color="transparent",fillColor="transparent")  
+          removeControl(mapp,layerId="legend")
+          mapp<-
+            addControl(mapp,html = "", position = "topright",layerId="legend")
+          
+          
+        }
+        PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
+        PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
+        PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
+        
+        
+        UpdatedRows<-ClickedMatrixTab2Reactive()
+        if(length(FourUniqueRowsLoc)<4){
+          UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
+          
+        }
+        PreviousClickedMatrixTab2Reactive(UpdatedRows)
+        
+        #Text1("")
+        
+        
+        #  PreviousSubsetMeetTargetsReactive4Unique(SubsetMeetTargetsReactive4Unique())  
+        #PreviousSelectedVector(SelectedVec)
+        # replace the text
+      }
+    }
+  })
   
   observeEvent({
     input$random
@@ -1135,11 +1134,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   # Check for changes in all the sliders
   #lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
-    # if (input[[sl]]) {
-   observeEvent({input$map_shape_click
+  # if (input[[sl]]) {
+  observeEvent({input$map_shape_click
     lapply(SliderNames, function(sl) {input[[sl]]})
-    },{ 
-  if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
+  },{ 
+    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
       
       
       SavedVec <- ClickedVector()
@@ -1381,8 +1380,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     }
     #  }
   })
- # }
-#  )
+  # }
+  #  )
   
   observeEvent(input$tabs == "Clustering", {
     
