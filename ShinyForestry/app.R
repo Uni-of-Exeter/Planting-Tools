@@ -565,16 +565,27 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   output$ThirdMapTxt <- renderText({Text3()})
   output$FourthMapTxt <- renderText({Text4()})
   
+  first_time_open_exploration_reactive <- reactiveVal(TRUE)
+  
   # If we click random or open the Exploration tab then we pick 4 different scenarios
   observeEvent({
-    input$random
     input$tabs
   },{
     if (input$tabs == "Exploration"){
-      SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
-                               min(4, dim(SubsetMeetTargetsReactiveUnique())[1]), replace = FALSE)
-      FourUniqueRowsReactive(SelectedSample)
+      if (first_time_open_exploration_reactive() == TRUE) {
+        SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
+                                 min(4, dim(SubsetMeetTargetsReactiveUnique())[1]), replace = FALSE)
+        FourUniqueRowsReactive(SelectedSample)
+        first_time_open_exploration_reactive(FALSE)
+      }
     }
+  })
+  observeEvent({
+    input$random
+  },{
+    SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
+                             min(4, dim(SubsetMeetTargetsReactiveUnique())[1]), replace = FALSE)
+    FourUniqueRowsReactive(SelectedSample)
   })
   # Clicked Vector indicates the units that have been clicked
   # PreviousClickedVector records the previous version if there has been a change
