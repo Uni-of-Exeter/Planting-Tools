@@ -1752,7 +1752,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     if((CreatedBaseMap()==0)&(UpdatedExtent()==1)){
       SavedVec <- ClickedVector()
       SelectedVec <- SelectedVector()
-      SelectedDropdown <- input$inSelect#"Ennerdale"#input$inSelect#"Abbeyford"#"Ennerdale"#
+      SelectedDropdown <- input$inSelect
       calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main", shconv, GreyPolygonWidth = GreyPolygonWidth)
       map <- calcBaseMap$map
       
