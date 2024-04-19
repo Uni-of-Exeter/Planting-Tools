@@ -34,9 +34,11 @@ jobs:
             # Only proceed if this is not the triggering branch
             if [ "$branch" != "${{ steps.triggering_branch.outputs.branch }}" ]; then
               
-              # Create a PR from dev to $branch unless one already exists
-              if ! gh pr list --state open --head dev --json author,number,headRefName,baseRefName,changedFiles | jq -r '.[].baseRefName' | grep -q $branch ; then
-                gh pr create --title "Merge dev into $branch" \
+              # Get changed files between dev and $branch, to avoid creating a PR for 0 updates
+              changed_files=$(git diff --name-only origin/dev origin/$branch)
+              
+              # Create a PR from dev to $branch unless one already exists or if the PR would not change any file
+              if [ -n "$changed_files" ] && ! gh pr list --state open --head dev --json author,number,headRefName,baseRefName,changedFiles | jq -r '.[].baseRefName' | grep -q $branch ; then                gh pr create --title "Merge dev into $branch" \
                              --body "This PR was automatically created to propose changes from dev into $branch." \
                              --base $branch \
                              --head dev
