@@ -275,7 +275,7 @@ while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normaliz
                 "try-error")) {
   Sys.sleep(1)
 }
-cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing... \n" ))
+message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
 
 outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
 SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
