@@ -172,7 +172,7 @@ MultiImpl <- function(TargetsVec,EYMat,SDYMat,alpha,tolVec) {
 #  return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 #}
 
-ReturnNameConversion <- function() {
+get_name_conversion <- function() {
   NAME_CONVERSION <- matrix(data = c("Birds", "Acanthis cabaret", "Lesser Redpoll",
                                      "Birds", "Alauda arvensis", "Skylark",
                                      "Birds", "Anthus trivialis", "Tree Pipit",
