@@ -1,3 +1,18 @@
+########################
+CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
+{
+  PROBAMATloc <- IVECloc
+  for (abc in 1:dim(IVECloc)[2]) {
+    if(Above[abc]){
+    PROBAMATloc[, abc] <- 1 - ptruncnorm(IVECloc[, abc], a = LimitsMatloc[, abc], b = Inf)}else{
+      PROBAMATloc[, abc] <-  ptruncnorm(IVECloc[, abc], a = LimitsMatloc[, abc], b = Inf)
+    }
+  }
+  return(PROBAMATloc)
+}
+
+######################
+
 getCols<-function(ColourScheme,UnitsVec,ColorLighteningFactor,ColorDarkeningFactor)
 {
   LL<-length(UnitsVec)
