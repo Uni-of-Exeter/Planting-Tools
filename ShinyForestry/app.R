@@ -1306,10 +1306,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
           SelectedFullTableRow(SelectedMins[SelecRow,])
           SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-        } else { ZeroSelected<-SelectedSimMat2[1,]
-        ZeroSelected<-rep(0,length(ZeroSelected))
-        SelectedFullTableRow(ZeroSelected)
-        SelectedVector(ZeroSelected[ 1:length(SavedVec)])
+        } else {
+          ZeroSelected<-SelectedSimMat2[1,]
+          ZeroSelected<-replace(ZeroSelected,1:length(ZeroSelected),0)
+          SelectedFullTableRow(ZeroSelected)
+          SelectedVector(ZeroSelected[ 1:length(SavedVec)])
         }
       }      
       
