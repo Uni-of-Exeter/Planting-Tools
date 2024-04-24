@@ -361,6 +361,10 @@ N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
 
+#Indicates if the quantity must be above (TRUE) or below the target (FALSE)
+AboveTargets<-rep(TRUE,N_TARGETS)
+#AboveTargets[N_TARGETS-1]<-FALSE
+
 # slider_list <- list(
 #   sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25)
 # )
@@ -831,10 +835,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       
       SelecTargetArea <- max_areaslider
       SelecTargetVisits <- max_visitsslider
-      PROBAMAT <- Icalc$IVEC
-      for (abc in 1:dim(Icalc$IVEC)[2]) {
-        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-      }
+      #PROBAMAT <- Icalc$IVEC
+      #for (abc in 1:dim(Icalc$IVEC)[2]) {
+      #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      #}
+      PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
       
       condition <- TRUE
       for (iii in 1:length(SPECIES)) {
@@ -1206,10 +1211,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         #}
         SelecTargetArea <- tmp$SelecTargetArea
         SelecTargetVisits <- tmp$SelecTargetVisits
-        PROBAMAT <- Icalc$IVEC
-        for (abc in 1:dim(Icalc$IVEC)[2]) {
-          PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-        }
+        #PROBAMAT <- Icalc$IVEC
+        #for (abc in 1:dim(Icalc$IVEC)[2]) {
+        #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+        #}
+        PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
         
         condition <- TRUE
         for (iii in 1:length(SPECIES)) {
@@ -1388,10 +1394,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       
       SelectedSimMatGlobal <<- SelectedSimMat2
       
-      PROBAMAT <- Icalc$IVEC
-      for (abc in 1:dim(Icalc$IVEC)[2]) {
-        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-      }
+      #PROBAMAT <- Icalc$IVEC
+      #for (abc in 1:dim(Icalc$IVEC)[2]) {
+      #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      #}
+      PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
       
       # CONDPROB_AtLeast1 <- (PROBAMAT[, 1] >= alphaLVL) | (PROBAMAT[, 2] >= alphaLVL) | (PROBAMAT[, 3] >= alphaLVL) | (PROBAMAT[, 4] >= alphaLVL)
       CONDPROB_AtLeast1 <- FALSE
