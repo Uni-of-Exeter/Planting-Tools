@@ -101,11 +101,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   climatecells <- read.csv(normalizePath(file.path(JulesAppFolder, "climate_cells.csv")))
 }
 
-cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "\n" ))
-
+message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")))) {
   Sys.sleep(5)
 }
+message(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to unzip and load files..."))
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))) {
   cat(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to load file \n"))
@@ -114,14 +114,13 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
                                 nchar(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))) - 4)
   )
   dir.create(UnZipDirName)
-  
   while (inherits(suppressWarnings(try(unzip(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), exdir = UnZipDirName),
                                        silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "unzipped, processing... \n" ))
   
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "unzipped. Loading files..." ))
   shconv <- sf::st_read(normalizePath(file.path(UnZipDirName, "land_parcels.shp")))
   if (is.null(shconv$extent)) {
     shconv$extent <- "NoExtent"
@@ -132,22 +131,22 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   shconv <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
 }
 
-cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "\n" ))
+message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))) {
   Sys.sleep(5)
 }
+message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file if FullTableMerged.geojson does not exist..."))
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))) {
   sf_use_s2(FALSE)
   lsh <- dim(shconv)[1]
-  cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file \n"))
   
   while (inherits(suppressWarnings(try(AllUnits <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))$decision_unit_ids,
                                        silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing... \n" ))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ))
   
   Uni <- unique(AllUnits)
   # units is the list of decision units
@@ -263,11 +262,10 @@ for (aaa in 1:NSamp) {
   }
 }
 
-cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "\n" ))
+message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
   Sys.sleep(5)
 }
-cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file \n"))
 
 
 # # Move rows from FullTableNotAvail to FullTable with blank data
@@ -300,6 +298,7 @@ cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. 
 # FullTableNotAvail <- data.frame(0)
 # FullTableNotAvail[, old_cols] <- 0
 # FullTableNotAvail <- FullTableNotAvail[, -1]
+message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
 
 alphaLVL <- 0.9
 MaxRounds <- 5
@@ -1040,14 +1039,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       }
       #form0<-paste0('Text', ii,'("")')
       #eval(parse(text=form0))
-      #cat(form0)
-      #cat("\n")
+      #message(form0)
       #form<-paste0('Text', ii ,
       #             '(paste0("Strategy Displayed: ",FourUniqueRowsLoc[ii]," out of ",dim(SubsetMeetTargetsUnique)
       #             
       #             ))')
-      #cat(form)
-      #cat("\n")
+      #message(form)
       
       
       #eval(parse(text=form))
