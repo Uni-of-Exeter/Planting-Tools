@@ -19,8 +19,6 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
 }
 
-
-
 source(normalizePath(file.path(FolderSource, "functions.R")))
 
 # Load packages
@@ -65,7 +63,7 @@ while (error == TRUE && i <= length(libs)) {
   )
 }
 
-NAME_CONVERSION <- ReturnNameConversion()
+NAME_CONVERSION <- get_name_conversion()
 
 # Swap rows 83 and 84
 row83 <- NAME_CONVERSION[83, ]
@@ -86,11 +84,12 @@ ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 
-
-# Load Files
+# Load files if any are missing
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson"))) ||
     !file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson"))) ||
     !file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))) {
+  # 337th month
+  # mean1 month corresponds to (maybe) January 2022
   JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
   JulesSD <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
   SquaresLoad <- sf::st_read(normalizePath(file.path(JulesAppFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))
@@ -102,27 +101,22 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   climatecells <- read.csv(normalizePath(file.path(JulesAppFolder, "climate_cells.csv")))
 }
 
-cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "\n" ))
-
+message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")))) {
   Sys.sleep(5)
 }
+message(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to unzip and load files..."))
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))) {
-  cat(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to load file \n"))
-  UnZipDirName <- paste0(substr(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")),
-                                1,
-                                nchar(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))) - 4)
-  )
+  UnZipDirName <- normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp"))
   dir.create(UnZipDirName)
-  
   while (inherits(suppressWarnings(try(unzip(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), exdir = UnZipDirName),
                                        silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "unzipped, processing... \n" ))
   
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "unzipped. Loading files..." ))
   shconv <- sf::st_read(normalizePath(file.path(UnZipDirName, "land_parcels.shp")))
   if (is.null(shconv$extent)) {
     shconv$extent <- "NoExtent"
@@ -133,22 +127,22 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   shconv <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
 }
 
-cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "\n" ))
+message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))) {
   Sys.sleep(5)
 }
+message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file if FullTableMerged.geojson does not exist..."))
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))) {
   sf_use_s2(FALSE)
   lsh <- dim(shconv)[1]
-  cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file \n"))
   
   while (inherits(suppressWarnings(try(AllUnits <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))$decision_unit_ids,
                                        silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  cat(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing... \n" ))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ))
   
   Uni <- unique(AllUnits)
   # units is the list of decision units
@@ -173,7 +167,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   SELECTEDSquaresconv <- Sqconv$geometry[keptLines]
   LinesJules <- CorrespondenceJules[keptLines]
-  # Find lines where Jules is not available
+  # Find lines where Jules is not available, it means there are no trees, so replace by 0
   LinesJulesNoMinus1 <- which(LinesJules == (-1))
   LinesJules[LinesJulesNoMinus1] <- 1
   SelectedJulesMeanSq <- JulesMean[CorrespondenceJules[keptLines], ]
@@ -194,6 +188,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   INTT <- st_intersection(st_make_valid(SELECTEDSquaresconvTab), st_make_valid(FullTableCopy))
   INTT$area <- st_area(INTT) / 1e6
   
+  # Bootstrap means and standard deviations (to avoid assumptions of independence)
   NBSIMS <- 500
   for (ii in 1:length(FullTableCopy$geometry)) {
     SELLLines <- INTT$idPoly == ii
@@ -264,43 +259,11 @@ for (aaa in 1:NSamp) {
   }
 }
 
-cat(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "\n" ))
+message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
   Sys.sleep(5)
 }
-cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file \n"))
-
-
-# # Move rows from FullTableNotAvail to FullTable with blank data
-# FullTableAdd <- with(FullTableNotAvail, data.frame("extent" = extent,
-# "id" = id,
-# "area" = 1,
-# x = lgn.1,
-# y = lat.1,
-# xbgn = 0,
-# ybgn = 0,
-# lgn.1 = lgn.1, lgn.2 = lgn.2, lgn.3 = lgn.3, lgn.4 = lgn.4, lgn.5 = lgn.5, lat.1 = lat.1, lat.2 = lat.2, lat.3 = lat.3, lat.4 = lat.4, lat.5 = lat.5,
-# JulesMean = 0, JulesSD = 0,
-# VisitsMean = 0, VisitsSD = 0)) %>%
-# mutate(across(x:lat.5, as.numeric)) %>%
-# mutate(across(c(id, VisitsMean), as.integer)) %>% as_tibble()
-
-# cols <- colnames(FullTable)
-# FullTableAdd <- merge(FullTable, FullTableAdd, all = TRUE)
-# FullTableAdd <- FullTableAdd[, cols]
-# FullTableAdd$xybgn <- 1
-# rows_na <- which(is.na(FullTableAdd[, paste0("BioMean_", NAME_CONVERSION[1, "Specie"])]))
-# # Check which columns contain NA values
-# columns_with_na <- colSums(is.na(FullTableAdd))
-# colnames_with_na <- colnames(FullTableAdd)[columns_with_na > 0]
-# # Replace NA with 0
-# FullTableAdd[rows_na, colnames_with_na] <- 0
-# FullTable <- FullTableAdd
-
-# old_cols <- colnames(FullTableNotAvail)
-# FullTableNotAvail <- data.frame(0)
-# FullTableNotAvail[, old_cols] <- 0
-# FullTableNotAvail <- FullTableNotAvail[, -1]
+message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
 
 alphaLVL <- 0.9
 MaxRounds <- 5
@@ -312,7 +275,7 @@ while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normaliz
                 "try-error")) {
   Sys.sleep(1)
 }
-cat(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing... \n" ))
+message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
 
 outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
 SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
@@ -348,13 +311,6 @@ for (i in 1:length(SPECIES_ENGLISH)) {
     SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
   }
 }
-
-# indices_groups_english_in_NAME_CONVERSION <- which(SPECIES_ENGLISH %in% c(unique(NAME_CONVERSION$Group), "All"))
-# indices_species_in_NAME_CONVERSION <- which(SPECIES_ENGLISH %in% NAME_CONVERSION$English_specie)
-# indices_NAME_CONVERSION_in_species_english <- which(NAME_CONVERSION$English_specie %in% SPECIES_ENGLISH)
-# SPECIES <- SPECIES_ENGLISH
-# SPECIES[indices_species_in_NAME_CONVERSION] <- NAME_CONVERSION[indices_NAME_CONVERSION_in_species_english, "Specie"]
-
 
 # SPECIES <- c(NAME_CONVERSION[1:2, "Specie"], "Pollinators", "All")
 # SPECIES_ENGLISH <- c(NAME_CONVERSION[1:2, "English_specie"], "Pollinators", "All")
@@ -410,16 +366,7 @@ gc()
 ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(fluidRow(
                                             column(9,
-                                                   #  tags$head(tags$style(HTML("#map {pointer-events: none;}"))),
-                                                   #tags$style("#inSelect {color: white; background-color: transparent; border: white;}"),
                                                    selectInput("inSelect", "area", sort(unique(c(FullTable$extent, FullTableNotAvail$extent))), FullTable$extent[1]),
-                                                   #fluidRow(column(4, selectInput("ColourScheme", "Colour Scheme", c("blue/red", "rainbow dark/light",
-                                                   #                                                              "rainbow dark/red",
-                                                   #                                                             "Terrain darkened/lightened",
-                                                   #                                                            "Terrain darkened/red",
-                                                   #                                                           "Viridis darkened/red"))),
-                                                   #column(4, sliderInput("Darken", "Darkening Factor:", min = -100, max = 100, value = 70)),
-                                                   #column(4, sliderInput("Lighten", "Lightening Factor:", min = -100, max = 100, value = 50))),
                                                    jqui_resizable(leafletOutput("map", height = 800, width = "100%"))
                                             ),
                                             column(3,
@@ -462,7 +409,8 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                           tabPanel("Clustering", id = "Clustering",
                                                    fluidPage(
                                                      shinyjs::hidden(
-                                                       fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))),
+                                                       fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))
+                                                     ),
                                                      conditionalPanel(
                                                        condition = "input.Trigger == true",
                                                        fluidRow(
@@ -472,8 +420,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                                          )
                                                        )),
                                                      conditionalPanel(
-                                                       condition = "input.Trigger == false", fluidRow(
-                                                         column(12, jqui_resizable(plotOutput("plotOP1"))))
+                                                       condition = "input.Trigger == false", fluidRow(column(12, jqui_resizable(plotOutput("plotOP1"))))
                                                      )
                                                    ))
 ))
@@ -772,7 +719,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       tolvecReactive(MaxVals$tolvec)
       # updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)), value = trunc(sum(CarbonSelected)))
       # updateSliderInput(session, "SliderMain", max = MaxVals$CarbonMax, value = MaxVals$CarbonMax)
-      session$sendInputMessage("SliderMain", list(min=0,max = MaxVals$CarbonMax, value = MaxVals$CarbonMax))
+      session$sendInputMessage("SliderMain", list(min=0, max = MaxVals$CarbonMax, value = MaxVals$CarbonMax))
       
       # updateSliderInput(session, "BioSlider", max = trunc(100*mean(RedSquirrelSelected))/100, value = trunc(100*mean(RedSquirrelSelected))/100, step = 0.01)
       for (ijj in 1:length(SPECIES)) {
@@ -832,7 +779,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         condition <- condition & (SelectedSimMat2[[x]] >=max_bioslider)
       }
-      
       
       SelecTargetArea <- max_areaslider
       SelecTargetVisits <- max_visitsslider
@@ -1046,14 +992,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       }
       #form0<-paste0('Text', ii,'("")')
       #eval(parse(text=form0))
-      #cat(form0)
-      #cat("\n")
+      #message(form0)
       #form<-paste0('Text', ii ,
       #             '(paste0("Strategy Displayed: ",FourUniqueRowsLoc[ii]," out of ",dim(SubsetMeetTargetsUnique)
       #             
       #             ))')
-      #cat(form)
-      #cat("\n")
+      #message(form)
       
       
       #eval(parse(text=form))
@@ -1140,7 +1084,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   # Check if the slider values have been updated after the initialization
   #lapply(SliderNames, function(sl) {
   observeEvent(input$SliderMain,{
-    
     SHBICurrent<-SlidersHaveBeenInitialized()
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
       for (sl in SliderNames){
@@ -1160,7 +1103,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   # if (input[[sl]]) {
   observeEvent({input$map_shape_click
     lapply(SliderNames, function(sl) {input[[sl]]})
-  },{ 
+  },{
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
       
       
