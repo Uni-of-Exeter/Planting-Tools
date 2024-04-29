@@ -8,7 +8,6 @@ on:
 jobs:
   you-are-not-up-to-date-with-dev:
     runs-on: ubuntu-latest
-    # if: github.event.pull_request.base.ref == 'dev'
     
     env:
       branch_from: "${{ github.event.pull_request.head.ref }}"
@@ -17,20 +16,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Fetch latest changes
+      
+      - name: Fetch latest changes and go to the right branch instead of the merge commit
         run: |
           git fetch origin $branch_to
           git fetch origin $branch_from
           git checkout $branch_from
-          
+        
       - name: Check that it has synced with dev
         run: |
           # Get the commit hash of the latest commit in the dev branch
           latest_commit=$(git rev-parse "origin/$branch_to")
-          
-          git branch --contains $latest_commmit
-          git branch --contains $latest_commmit | grep -c "$branch_from"
           
           # Check if the head branch of the PR contains the latest commit from the dev branch
           if ! git branch --contains $latest_commmit | grep -q "$branch_from"; then
