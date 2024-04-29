@@ -22,7 +22,7 @@ jobs:
         run: |
           git fetch origin $branch_to
           git fetch origin $branch_from
-          git checkout $branch_to
+          git checkout $branch_from
           
       - name: Check that it has synced with dev
         run: |
