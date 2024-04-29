@@ -25,5 +25,11 @@ jobs:
           
       - name: Check that it has synced with dev
         run: |
-          # Exits with error if there are differences
-          git diff --exit-code origin/$branch_to origin/$branch_from
+          # Get the commit hash of the latest commit in the dev branch
+          latest_commit=$(git rev-parse "origin/$branch_to")
+          
+          # Check if the head branch of the PR contains the latest commit from the dev branch
+          if ! git branch --contains $latest_commmit | grep -q "$branch_from"; then
+            echo "Your branch is not up-to-date with dev (does not contain its latest commit)."
+            exit 1
+          fi
