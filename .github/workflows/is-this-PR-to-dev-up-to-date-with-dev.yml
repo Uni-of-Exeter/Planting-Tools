@@ -28,9 +28,9 @@ jobs:
           # Get the commit hash of the latest commit in the dev branch
           latest_commit=$(git rev-parse "origin/$branch_to")
           
-          echo "$latest_commit"
-          git branch --contains $latest_commmit
-          git branch --contains $latest_commmit | grep -q "$branch_from"
+          echo "latest commit: $latest_commit"
+          echo "branches containing it: $(git branch --contains $latest_commmit)"
+          echo "is it there? $(git branch --contains $latest_commmit | grep -c '$branch_from')"
           
           # Check if the head branch of the PR contains the latest commit from the dev branch
           if ! git branch --contains $latest_commmit | grep -q "$branch_from"; then
