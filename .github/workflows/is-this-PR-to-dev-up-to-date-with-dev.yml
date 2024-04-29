@@ -22,4 +22,4 @@ jobs:
           branch_to="${{ github.event.pull_request.base.ref }}" # = 'dev'
 
           # Exits with error if there are differences
-          git diff --exit-code origin/$branch_to $branch_from
+          git diff --exit-code origin/$branch_to origin/$branch_from
