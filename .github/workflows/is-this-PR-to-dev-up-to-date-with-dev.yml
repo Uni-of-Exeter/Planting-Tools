@@ -9,17 +9,21 @@ jobs:
   you-are-not-up-to-date-with-dev:
     runs-on: ubuntu-latest
     # if: github.event.pull_request.base.ref == 'dev'
+    
+    env:
+      branch_from: "${{ github.event.pull_request.head.ref }}"
+      branch_to: "${{ github.event.pull_request.base.ref }}" # = 'dev'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Fetch latest changes from dev branch
-        run: git fetch origin dev
+      - name: Fetch latest changes
+        run: |
+          git fetch origin $branch_to
+          git fetch origin $branch_from
           
       - name: Check that it has synced with dev
         run: |
-          branch_from="${{ github.event.pull_request.head.ref }}"
-          branch_to="${{ github.event.pull_request.base.ref }}" # = 'dev'
-
           # Exits with error if there are differences
-          git diff --exit-code origin/$branch_to...origin/$branch_from
+          git diff --exit-code origin/$branch_to origin/$branch_from
