@@ -28,6 +28,10 @@ jobs:
           # Get the commit hash of the latest commit in the dev branch
           latest_commit=$(git rev-parse "origin/$branch_to")
           
+          echo "$latest_commit"
+          git branch --contains $latest_commmit
+          git branch --contains $latest_commmit | grep -q "$branch_from"
+          
           # Check if the head branch of the PR contains the latest commit from the dev branch
           if ! git branch --contains $latest_commmit | grep -q "$branch_from"; then
             echo "Your branch is not up-to-date with dev (does not contain its latest commit)."

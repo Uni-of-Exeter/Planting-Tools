@@ -1,9 +1,10 @@
 name: Create PRs from dev to feature branches after accepting a PR to dev
 
 on:
-  pull_request:
-    types: 
-      - closed
+  #pull_request:
+  #  types: 
+  #    - closed
+  workflow_dispatch:
 
 jobs:
   create-prs:
