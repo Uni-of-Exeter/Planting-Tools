@@ -11,8 +11,9 @@ CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
   return(PROBAMATloc)
 }
 
-######################
 
+
+########################
 getCols<-function(ColourScheme,UnitsVec,ColorLighteningFactor,ColorDarkeningFactor)
 {
   LL<-length(UnitsVec)
@@ -948,11 +949,12 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   bioMaxList[[ijj]]<-max(0,trunc(sqrt(SelectedSimMat2[[NMSD]][1]^2 + tolvec[1+ijj])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1+ijj],b=Inf,mean=0,sd=1)+SelectedSimMat2[[NM]][1]))
   
   }
-  AreaMax<-max(0,trunc(sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]-1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Area[1]))
+  AreaMax<-max(0,trunc(1+sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=alpha,a=LimitsMat[1,dim(LimitsMat)[2]-1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Area[1]))
+  AreaMin<-max(0,trunc(1+sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=alpha,a=0,b=Inf,mean=0,sd=1)))
   VisistMax<-max(0,trunc(sqrt( SelectedSimMat2$VisitsSD[1]^2+tolvec[dim(LimitsMat)[2]])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]],b=Inf,mean=0,sd=1)+SelectedSimMat2$Visits[1]))
   
   
-  return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,VisistMax=VisistMax,tolvec=tolvec))
+  return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,AreaMin=AreaMin,VisistMax=VisistMax,tolvec=tolvec))
 }
 
 add_suffix_to_duplicates <- function(vec) {
