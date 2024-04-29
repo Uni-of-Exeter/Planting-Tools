@@ -318,6 +318,10 @@ N_SPECIES <- length(SPECIES)
 TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
 N_TARGETS <- length(TARGETS)
 
+#Indicates if the quantity must be above (TRUE) or below the target (FALSE)
+AboveTargets<-rep(TRUE,N_TARGETS)
+AboveTargets[N_TARGETS-1]<-FALSE
+
 # slider_list <- list(
 #   sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25)
 # )
@@ -544,8 +548,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   SelectedVector<- reactiveVal(NULL)
   PreviousSelectedVector<-reactiveVal(NULL)
   SelectedFullTableRow<-reactiveVal(NULL)
-  MaxValsReactive<-reactiveVal(0)
-  MaxValsReactiveVector<-reactiveVal(0)
+#  MaxValsReactive<-reactiveVal(0)
+  MaxMinValsReactiveVector<-reactiveVal(0)
   SlidersHaveBeenInitialized<-reactiveVal(rep(0,length(SliderNames)))
   MapReactive<-reactiveVal(NULL)
   
@@ -710,8 +714,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                        VisitsSelectedSD,
                                        input_areaSlider_multiplicative_coefficient = TRUE,
                                        alpha=alphaLVL)
-      MaxValsReactive(MaxVals)
-      MaxValsReactiveVector(c(MaxVals$CarbonMax,unlist(MaxVals$bioMaxList),MaxVals$AreaMax,MaxVals$VisistMax))
+      #MaxValsReactive(MaxVals)
+      MaxMinValsReactiveVector(c(MaxVals$CarbonMax,unlist(MaxVals$bioMaxList),MaxVals$AreaMax,MaxVals$VisistMax))
       tolvecReactive(MaxVals$tolvec)
       # updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)), value = trunc(sum(CarbonSelected)))
       # updateSliderInput(session, "SliderMain", max = MaxVals$CarbonMax, value = MaxVals$CarbonMax)
@@ -740,7 +744,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       if (is.nan(max_visitsslider)) {
         max_visitsslider <- 0
       }
-      updateSliderInput(session, "AreaSlider", max = max_areaslider, value = max_areaslider, step = 0.5)
+      updateSliderInput(session, "AreaSlider", min=MaxVals$AreaMin,max = max_areaslider, value = MaxVals$AreaMax, step = 0.5)
       updateSliderInput(session, "VisitsSlider", max = max_visitsslider, value = max_visitsslider)
       
       # We now need to obtain the list of strategies from simul636 that meet the tragets with the right confidence.
@@ -778,10 +782,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       
       SelecTargetArea <- max_areaslider
       SelecTargetVisits <- max_visitsslider
-      PROBAMAT <- Icalc$IVEC
-      for (abc in 1:dim(Icalc$IVEC)[2]) {
-        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-      }
+      #PROBAMAT <- Icalc$IVEC
+      #for (abc in 1:dim(Icalc$IVEC)[2]) {
+      #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      #}
+      PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
       
       condition <- TRUE
       for (iii in 1:length(SPECIES)) {
@@ -916,9 +921,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
       FourUniqueRowsLoc<-FourUniqueRowsReactive()
       PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
-      # if(is.null(dim(PreviousFourUniqueRowsLoc))){
+       #if(is.null(dim(PreviousFourUniqueRowsLoc))){
       #  PreviousFourUniqueRowsLoc<-matrix(PreviousFourUniqueRowsLoc,1,length(PreviousFourUniqueRowsLoc))}
-      
+      if(length(FourUniqueRowsLoc)>0){
       SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
       PrevSelectedRows<-PreviousSubsetMeetTargetsUnique[PreviousFourUniqueRowsLoc,]
       
@@ -1035,6 +1040,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         #PreviousSelectedVector(SelectedVec)
         # replace the text
       }
+      
+    }else{}
+      
     }
   })
   
@@ -1079,12 +1087,16 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     SHBICurrent<-SlidersHaveBeenInitialized()
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
       for (sl in SliderNames){
-        SliderNumber<-which(SliderNames==sl)
-        if(input[[sl]]==MaxValsReactiveVector()[SliderNumber]){SHBICurrent[SliderNumber]<-1;SlidersHaveBeenInitialized(SHBICurrent)}
+        SliderNumber<-which(SliderNames==sl)        
+        if(input[[sl]]==MaxMinValsReactiveVector()[SliderNumber]){SHBICurrent[SliderNumber]<-1;SlidersHaveBeenInitialized(SHBICurrent)}
       }}
     #})
   }
   )
+  
+  
+  
+  
   
   # Check for changes in all the sliders
   #lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
@@ -1149,10 +1161,13 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         #}
         SelecTargetArea <- tmp$SelecTargetArea
         SelecTargetVisits <- tmp$SelecTargetVisits
-        PROBAMAT <- Icalc$IVEC
-        for (abc in 1:dim(Icalc$IVEC)[2]) {
-          PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-        }
+        #PROBAMAT <- Icalc$IVEC
+        #for (abc in 1:dim(Icalc$IVEC)[2]) {
+        #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+        #}
+        PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
+
+        
         
         condition <- TRUE
         for (iii in 1:length(SPECIES)) {
@@ -1164,7 +1179,24 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
         }
         rm(tmp)
+        ############# Change the min of Area bar 
+        #SubsetMeetTargetsWithoutArea <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
+                                               # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
+        #                                       condition &
+        #                                       (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL), ]
+        #LimMatMeetTargetsWithoutArea<-LimitsMat[(PROBAMAT[,1] >= alphaLVL) &
+          # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
+         # condition &
+        #  (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL),]
         
+        #MinAreaLocIndex<-which.min(SubsetMeetTargetsWithoutArea$Area)
+        #MinAreaLoc<-SubsetMeetTargetsWithoutArea$Area[MinAreaLocIndex]
+        #LimAreaLoc<-LimMatMeetTargetsWithoutArea$SelectedSimMat2.Area[MinAreaLocIndex]
+        #CalcNewMin<-max(0,trunc(1+MinAreaLoc+sqrt( tolvecReactive()[dim(LimitsMat)[2]-1])*qtruncnorm(p=alphaLVL,a=LimAreaLoc,b=Inf,mean=0,sd=1)))
+        #if(CalcNewMin)
+        
+        #################
+                
         SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
                                                # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
                                                condition &
@@ -1331,10 +1363,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       
       SelectedSimMatGlobal <<- SelectedSimMat2
       
-      PROBAMAT <- Icalc$IVEC
-      for (abc in 1:dim(Icalc$IVEC)[2]) {
-        PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-      }
+      #PROBAMAT <- Icalc$IVEC
+      #for (abc in 1:dim(Icalc$IVEC)[2]) {
+      #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      #}
+      PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
       
       # CONDPROB_AtLeast1 <- (PROBAMAT[, 1] >= alphaLVL) | (PROBAMAT[, 2] >= alphaLVL) | (PROBAMAT[, 3] >= alphaLVL) | (PROBAMAT[, 4] >= alphaLVL)
       CONDPROB_AtLeast1 <- FALSE
