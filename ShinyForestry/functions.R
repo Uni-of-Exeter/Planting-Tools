@@ -1,4 +1,3 @@
-########################
 CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
 {
   PROBAMATloc <- IVECloc
@@ -11,9 +10,6 @@ CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
   return(PROBAMATloc)
 }
 
-
-
-########################
 getCols<-function(ColourScheme,UnitsVec,ColorLighteningFactor,ColorDarkeningFactor)
 {
   LL<-length(UnitsVec)
@@ -1331,4 +1327,51 @@ generate_unique_id <- function(used_ids_reactive, sample_space) {
     id <- sample(sample_space, 1)
   }
   return(id)
+}
+
+install_and_load_packages <- function(packages) {
+  # Load packages
+  libs <- unique(c(normalizePath(.libPaths()),
+                   normalizePath(Sys.getenv("R_LIBS_USER")),
+                   normalizePath(file.path(getwd(), "myRlibrary"))))
+  repo <- "https://cran.rstudio.com/"
+  
+  # Loop through libraries until one is writable
+  error_happened <- TRUE
+  i <- 1
+  while (error_happened == TRUE && i <= length(libs)) {
+    lib <- libs[i]
+    tryCatch({
+      # update.packages(lib.loc = lib, repos = repo)
+      
+      # Only load prefeR namespace
+      if (!require("prefeR")) {
+        install.packages("prefeR", lib = lib, repos = repo)
+      }
+      loadNamespace("prefeR")
+      
+      # Load the packages already installed
+      packages_status <- sapply(packages, require, character.only = TRUE, quietly = TRUE)
+      
+      # Other packages to install
+      packages_to_install <- packages[packages_status == FALSE]
+      
+      # Remove packages that failed to load if they are already available
+      tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {})
+      
+      # Install packages
+      install.packages(packages_to_install, lib = lib, repos = repo)
+      
+      # Load packages
+      sapply(packages, library, character.only = TRUE, quietly = TRUE)
+      
+      # Stop the loop if we reach here
+      error_happened <- FALSE
+    },
+    error = function(e) {},
+    finally = {
+      i <- i + 1
+    })
+  }
+  return(error_happened)
 }
