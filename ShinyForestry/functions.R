@@ -1133,9 +1133,14 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
                   proportion_intersection_in_jules = area_intersection / area_jules) %>%
     
-    # Assume uniformity, multiply probability by proportion, up to 100%
+    # Assume uniformity, multiply probability by proportion
     dplyr::mutate(dplyr::across(all_of(all_species_names),
-                                ~ min(.x * proportion_intersection_in_bio, 100))) %>%
+                                ~ .x * proportion_intersection_in_bio)) %>%
+    
+    # Reduce to 100(%) if value is above
+    # 100 and the columns need to be in the same unit
+    dplyr::mutate(dplyr::across(all_of(all_species_names),
+                                ~ pmin(.x, units::as_units(100, units(.x))))) %>%
     
     # Rename columns, add BioMean_ and BioSD_ to species
     dplyr::rename_with(.fn = ~ paste0("BioMean_", .x), .cols = all_of(all_species_names)) %>%
