@@ -109,6 +109,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   }
   message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ))
   
+  # Turn decision units to individual parcels, by making all valid ones (i.e. that are != -1) get a unique id instead
+  indices <- which(AllUnits != -1)
+  AllUnits[indices] <- seq_along(indices)
+  
   Uni <- unique(AllUnits)
   # units is the list of decision units
   FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
