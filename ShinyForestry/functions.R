@@ -1358,7 +1358,7 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       loadNamespace("prefeR")
       
       # Load the packages already installed
-      packages_status <- sapply(packages, require, character.only = TRUE, quietly = TRUE)
+      packages_status <- sapply(packages, require, character.only = TRUE, quietly = quiet)
       
       # Other packages to install
       packages_to_install <- packages[packages_status == FALSE]
@@ -1370,7 +1370,7 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       install.packages(packages_to_install, lib = lib, repos = repo, quiet = quiet)
       
       # Load packages
-      sapply(packages, library, character.only = TRUE, quietly = TRUE)
+      sapply(packages, library, character.only = TRUE, quietly = quiet)
       
       # Stop the loop if we reach here
       error_happened <- FALSE
