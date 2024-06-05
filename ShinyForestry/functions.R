@@ -1334,7 +1334,7 @@ generate_unique_id <- function(used_ids_reactive, sample_space) {
   return(id)
 }
 
-install_and_load_packages <- function(packages, update = FALSE) {
+install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
   # Load packages
   libs <- unique(c(normalizePath(.libPaths()),
                    normalizePath(Sys.getenv("R_LIBS_USER")),
@@ -1348,12 +1348,12 @@ install_and_load_packages <- function(packages, update = FALSE) {
     lib <- libs[i]
     tryCatch({
       if (update) {
-        update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE)
+        update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = quiet)
       }
       
       # Only load prefeR namespace
       if ("prefeR" %in% packages && !require("prefeR")) {
-        install.packages("prefeR", lib = lib, repos = repo)
+        install.packages("prefeR", lib = lib, repos = repo, quiet = quiet)
       }
       loadNamespace("prefeR")
       
@@ -1367,7 +1367,7 @@ install_and_load_packages <- function(packages, update = FALSE) {
       tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {})
       
       # Install packages
-      install.packages(packages_to_install, lib = lib, repos = repo)
+      install.packages(packages_to_install, lib = lib, repos = repo, quiet = quiet)
       
       # Load packages
       sapply(packages, library, character.only = TRUE, quietly = TRUE)
