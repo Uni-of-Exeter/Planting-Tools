@@ -140,9 +140,9 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   LinesJulesNoMinus1 <- which(LinesJules == (-1))
   LinesJules[LinesJulesNoMinus1] <- 1
   SelectedJulesMeanSq <- JulesMean[LinesJules, ]
-  SelectedJulesMeanSq[LinesJulesNoMinus1] <- 0
+  SelectedJulesMeanSq[LinesJulesNoMinus1, ] <- 0
   SelectedJulesSDSq <- JulesSD[LinesJules, ]
-  SelectedJulesSDSq[LinesJulesNoMinus1] <- 0
+  SelectedJulesSDSq[LinesJulesNoMinus1, ] <- 0
   
   SELECTEDSquaresconvTab <- data.frame(idSq = seq_along(SELECTEDSquaresconv))
   SELECTEDSquaresconvTab <- st_sf(SELECTEDSquaresconvTab, geometry = SELECTEDSquaresconv, crs = 4326)
