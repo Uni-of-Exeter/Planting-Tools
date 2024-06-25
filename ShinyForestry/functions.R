@@ -1051,7 +1051,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   id_polygons <- seer2km %>% dplyr::select(c(new2kid, geometry))
   
   # Load the biodiversity results from Matlab
-  biodiversity <-speciesprob40
+  biodiversity <- speciesprob40
   
   # Replace NAs with column mean
   biodiversity <- biodiversity %>%
@@ -1138,7 +1138,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     dplyr::mutate(dplyr::across(all_of(all_species_names),
                                 ~ pmin(.x, units::as_units(100, units(.x))))) %>%
     
-    # Rename columns, add BioMean_ and BioSD_ to species
+    # Rename columns, add BioMean_ to species
     dplyr::rename_with(.fn = ~ paste0("BioMean_", .x), .cols = all_of(all_species_names)) %>%
     
     # Add empty SD columns for species
@@ -1149,8 +1149,10 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     # Group by polygon_id_jules
     group_by(polygon_id_jules) %>%
     summarize(
+      # For each polygon from Jules, sum over (pre-weighted) probabilities from areas that
+      # intersect and divide by the sum of proportions, to get a weighted average
       across(paste0("BioMean_", all_species_names),
-             ~ mean(.x * area_jules / area_intersection)),
+             ~ sum(.x) / sum(proportion_intersection_in_bio)),
       
       across(paste0("BioSD_", all_species_names),
              ~ 0),
@@ -1380,5 +1382,5 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       i <- i + 1
     })
   }
-  return(error_happened)
+  return(!error_happened)
 }
