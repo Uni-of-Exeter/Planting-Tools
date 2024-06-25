@@ -1048,7 +1048,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   # and merge them with BristolFullTableMerged.geojson
   
   # Load the shapefile mapping new2kid with Polygons
-  id_polygons <- seer2km %>%dplyr::select(c(new2kid, geometry))
+  id_polygons <- seer2km %>% dplyr::select(c(new2kid, geometry))
   
   # Load the biodiversity results from Matlab
   biodiversity <-speciesprob40
