@@ -446,7 +446,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
     # }
     for (i in 1:length(SPECIES)) {
-      specie_english <- SPECIES_ENGLISH[i]
+      specie_english <- if (SPECIES[i] == "All") "All Species Richness" else SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
       text <- paste0(text, "\n", get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", as.numeric(BioSliderValSpecie()))
     }
@@ -803,7 +803,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLISH[i]
+            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- SFTR[[specie_latin]]
             selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
             addControlText <- paste0(addControlText, specie_english, ": ", 
@@ -878,7 +878,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLISH[i]
+            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- SFTR[[specie_latin]]
             selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
             addControlText <- paste0(addControlText, specie_english, ": ", 
@@ -1356,7 +1356,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- get_ugly_specie(SPECIES[i], NAME_CONVERSION)
-            specie_english <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
+            specie_english <- if (specie_latin == "All") "All Species Richness" else get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1579,7 +1579,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLISH[i]
+            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             if (SPECIES[i] == "All") {
