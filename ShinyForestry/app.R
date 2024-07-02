@@ -13,6 +13,9 @@
 # sudo apt-get -y --no-install-recommends install libharfbuzz-dev
 # sudo apt-get -y --no-install-recommends install libfribidi-dev
 
+# options(warn=2, error=recover)
+# options(warn=0) # default
+
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
 if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
