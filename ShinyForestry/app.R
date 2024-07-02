@@ -675,19 +675,19 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         specie_selected <- get(specie_names)
         # max_bioslider <- trunc(mean(specie_selected))
         max_bioslider <- MaxVals$bioMaxList[[ijj]]
-        if (is.nan(max_bioslider)) {
+        if (is.nan(max_bioslider) || is.na(max_bioslider)) {
           max_bioslider <- 0
         }
         updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 0.5)
       }
       # max_areaslider <- trunc(100*sum(AreaSelected))/100
       max_areaslider <- MaxVals$AreaMax
-      if (is.nan(max_areaslider)) {
+      if (is.nan(max_areaslider) || is.na(max_areaslider)) {
         max_areaslider <- 0
       }
       # max_visitsslider <- trunc(mean(VisitsSelected))
       max_visitsslider <- MaxVals$VisistMax
-      if (is.nan(max_visitsslider)) {
+      if (is.nan(max_visitsslider) || is.na(max_visitsslider)) {
         max_visitsslider <- 0
       }
       updateSliderInput(session, "AreaSlider", min=MaxVals$AreaMin,max = max_areaslider, value = MaxVals$AreaMax, step = 0.5)

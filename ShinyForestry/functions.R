@@ -91,7 +91,7 @@ normalize <- function(x) {
 # Implausibility
 Impl <- function(Target,EY,SDY,alpha,tol) {
   # Avoid division by 0
-  if (0 %in% SDY^2+tol) {
+  if (0 %in% (SDY^2+tol)) {
     idx <- which(SDY^2+tol == 0)
     tol[idx] <- 0.1
   }
@@ -742,7 +742,7 @@ outputmap_calculateMats <- function(input,
   # Create a data frame representing the selected similarity matrix
   SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
   
-  if(is.null(ManualTargets)){
+  if (is.null(ManualTargets)){
   SelecTargetCarbon <- input$SliderMain
   # SelecTargetBio <- input$BioSlider
   SelecTargetBioVector <- c()
@@ -916,7 +916,9 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
               mean(SelectedSimMat2$Area) / 150,
               mean(SelectedSimMat2$Visits) / 150)
   for(i in 1:length(tolvec)) {
-    if (tolvec[i] == 0) {
+    # tolvec is a named vector, so tolvec[i] == 0 produces a named vector with the value, not the value directly
+    # this causes a bug, isTRUE returns the boolean only
+    if (isTRUE(tolvec[i] == 0)) {
       tolvec[i] <- 0.1
     }
   }
