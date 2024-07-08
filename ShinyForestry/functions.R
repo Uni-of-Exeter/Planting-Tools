@@ -1356,10 +1356,11 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       }
       
       # Only load prefeR namespace
-      if ("prefeR" %in% packages && !require("prefeR")) {
-        install.packages("prefeR", lib = lib, repos = repo, quiet = quiet)
+      if ("prefeR" %in% packages && !requireNamespace("prefeR")) {
+        install.packages("prefeR", lib = lib, repos = repo, type = type, quiet = quiet)
+        packages <- packages[packages != "prefeR"]
+        loadNamespace("prefeR")
       }
-      loadNamespace("prefeR")
       
       # Load the packages already installed
       packages_status <- sapply(packages, require, character.only = TRUE, quietly = quiet)
