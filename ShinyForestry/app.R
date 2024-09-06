@@ -21,47 +21,12 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
 
 source(normalizePath(file.path(FolderSource, "functions.R")))
 
-# Load packages
-libs <- unique(c(normalizePath(.libPaths()),
-                 normalizePath(Sys.getenv("R_LIBS_USER")),
-                 normalizePath(file.path(getwd(), "myRlibrary"))))
-packages <- c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
-              "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-              "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-              "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
-              "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-              "mvtnorm", "dplyr")
-repo <- "https://cran.rstudio.com/"
-
-# Loop through libraries until one is writable
-error <- TRUE
-i <- 1
-while (error == TRUE && i <= length(libs)) {
-  lib <- libs[i]
-  tryCatch({
-    # update.packages(lib.loc = lib, repos = repo)
-    if (!require("prefeR")) {
-      install.packages("prefeR", lib = lib, repos = repo)
-    }
-    loadNamespace("prefeR")
-    # Load the packages already installed
-    packages_status <- sapply(packages, require, character.only = TRUE, quietly = TRUE)
-    packages_to_install <- packages[packages_status == FALSE]
-    # Remove packages that failed to load if they are already there
-    tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {})
-    # Install packages
-    install.packages(packages_to_install, lib = lib, repos = repo)
-    # Load packages
-    sapply(packages, library, character.only = TRUE, quietly = TRUE)
-    # Stop the loop
-    error <- FALSE
-  },
-  error = function(e) {},
-  finally = {
-    i <- i + 1
-  }
-  )
-}
+install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
+                                       "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+                                       "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+                                       "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
+                                       "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+                                       "mvtnorm", "prefeR", "dplyr", "magrittr"))
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -144,6 +109,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   }
   message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ))
   
+  # Turn decision units to individual parcels, by making all valid ones (i.e. that are != -1) get a unique id instead
+  indices <- which(AllUnits != -1)
+  AllUnits[indices] <- seq_along(indices)
+  
   Uni <- unique(AllUnits)
   # units is the list of decision units
   FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
@@ -170,10 +139,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   # Find lines where Jules is not available, it means there are no trees, so replace by 0
   LinesJulesNoMinus1 <- which(LinesJules == (-1))
   LinesJules[LinesJulesNoMinus1] <- 1
-  SelectedJulesMeanSq <- JulesMean[CorrespondenceJules[keptLines], ]
-  SelectedJulesMeanSq[LinesJulesNoMinus1] <- 0
-  SelectedJulesSDSq <- JulesSD[CorrespondenceJules[keptLines], ]
-  SelectedJulesSDSq[LinesJulesNoMinus1] <- 0
+  SelectedJulesMeanSq <- JulesMean[LinesJules, ]
+  SelectedJulesMeanSq[LinesJulesNoMinus1, ] <- 0
+  SelectedJulesSDSq <- JulesSD[LinesJules, ]
+  SelectedJulesSDSq[LinesJulesNoMinus1, ] <- 0
   
   SELECTEDSquaresconvTab <- data.frame(idSq = seq_along(SELECTEDSquaresconv))
   SELECTEDSquaresconvTab <- st_sf(SELECTEDSquaresconvTab, geometry = SELECTEDSquaresconv, crs = 4326)
@@ -289,17 +258,6 @@ if (length(SPECIES_ENGLISH) == 0) {
   SPECIES_ENGLISH <- "All"
 }
 # Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
-#groups <- base::intersect(SPECIES_ENGLISH, c(unique(NAME_CONVERSION$Group), "All"))
-#indices_species_english_in_NAME_CONVERSION <- which(NAME_CONVERSION$English_specie %in% SPECIES_ENGLISH)
-#SPECIES <- c(NAME_CONVERSION[indices_species_english_in_NAME_CONVERSION, "Specie"],
-#            groups)
-
-# indices_groups_english_in_name_conversion <- which(SPECIES_ENGLISH %in%  c(unique(name_conversion$Group), "All"))
-# indices_species_in_vec <- which(SPECIES_ENGLISH %in% name_conversion$English_specie )
-# indices_species_english_in_name_conversion <- which(name_conversion$English_specie %in% SPECIES_ENGLISH)
-# SPECIES <- SPECIES_ENGLISH
-# SPECIES[indices_species_in_vec] <- name_conversion[indices_species_english_in_name_conversion, "Specie"]
-
 SPECIES <- SPECIES_ENGLISH
 for (i in 1:length(SPECIES_ENGLISH)) {
   ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
@@ -503,13 +461,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   ColorDarkeningFactor <- reactiveVal(0.5)
   
   ColourScheme <- reactiveVal("blue/red")
-  #  ColourScheme <- reactiveVal("Viridis darkened/red")
-  # observeEvent(input$Darken, {
-  #    ColorDarkeningFactor(input$Darken/100)
-  #  })
-  # observeEvent(input$Lighten, {
-  #    ColorLighteningFactor(input$Lighten/100)
-  #  })
   
   output$ZeroText <- renderText({Text0()})
   output$FirstMapTxt <- renderText({Text1()})
@@ -548,7 +499,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   SelectedVector<- reactiveVal(NULL)
   PreviousSelectedVector<-reactiveVal(NULL)
   SelectedFullTableRow<-reactiveVal(NULL)
-#  MaxValsReactive<-reactiveVal(0)
+  #  MaxValsReactive<-reactiveVal(0)
   MaxMinValsReactiveVector<-reactiveVal(0)
   SlidersHaveBeenInitialized<-reactiveVal(rep(0,length(SliderNames)))
   MapReactive<-reactiveVal(NULL)
@@ -680,11 +631,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       ClickedMatrixTab2Reactive(matrix(0, 4,dim(SelectedSquares)[1]))
       PreviousClickedMatrixTab2Reactive(matrix(-1, 4,dim(SelectedSquares)[1]))
       
-      # PreviousSelectedMatrixTab2(matrix(0, 4,dim(SelectedSquares)[1]))
-      #  SelectedMatrixTab2(matrix(1, 4,dim(SelectedSquares)[1]))
-      
-      
-      
       AreaSelected0(AreaSelected)
       CarbonSelected0(CarbonSelected)
       # RedSquirrelSelected0(RedSquirrelSelected)
@@ -747,7 +693,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       updateSliderInput(session, "AreaSlider", min=MaxVals$AreaMin,max = max_areaslider, value = MaxVals$AreaMax, step = 0.5)
       updateSliderInput(session, "VisitsSlider", max = max_visitsslider, value = max_visitsslider)
       
-      # We now need to obtain the list of strategies from simul636 that meet the tragets with the right confidence.
+      # We now need to obtain the list of strategies from simul636 that meet the targets with the right confidence.
       tmp <- outputmap_calculateMats(input = input,
                                      SavedVecLoc = ClickedVector(),
                                      simul636Loc = simul636,
@@ -768,18 +714,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
       SelecTargetCarbon <- MaxVals$CarbonMax
-      
-      condition<-TRUE
-      for (ijj in 1:length(SPECIES)) {
-        x<-SPECIES[ijj]
-        max_bioslider <- MaxVals$bioMaxList[[ijj]]
-        if (is.nan(max_bioslider)) {
-          max_bioslider <- 0
-        }
-        
-        condition <- condition & (SelectedSimMat2[[x]] >=max_bioslider)
-      }
-      
       SelecTargetArea <- max_areaslider
       SelecTargetVisits <- max_visitsslider
       #PROBAMAT <- Icalc$IVEC
@@ -857,18 +791,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         {
           mapp<-leafletProxy("map")
           removeShape(mapp,layerId=paste0("Square",1:length(SelectedVec)))
-          #  if(Consolitated[ijj]==0){
-          #    
-          #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color="transparent",fillColor="transparent")
-          #  }
-          #  if(Consolitated[ijj]==1){
-          #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#color=FullColVec[ijj],fillColor
-          #  }
-          #  if(Consolitated[ijj]==2){
-          #      mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-          #  }
           removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-          #if(Consolitated[ijj]==0){
           COLOURS<-rep("transparent",length(Consolidated))
           COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
           COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
@@ -921,127 +844,89 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
       FourUniqueRowsLoc<-FourUniqueRowsReactive()
       PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
-       #if(is.null(dim(PreviousFourUniqueRowsLoc))){
-      #  PreviousFourUniqueRowsLoc<-matrix(PreviousFourUniqueRowsLoc,1,length(PreviousFourUniqueRowsLoc))}
       if(length(FourUniqueRowsLoc)>0){
-      SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
-      PrevSelectedRows<-PreviousSubsetMeetTargetsUnique[PreviousFourUniqueRowsLoc,]
-      
-      ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
-                             ColorLighteningFactor(), ColorDarkeningFactor())
-      
-      FullColVec <- ColObtained$FullColVec
-      ClickedCols <- ColObtained$ClickedCols
-      if (dim(PrevSelectedRows)[1] < dim(SelectedRows)[1]) { PrevSelectedRows=SelectedRows+1 }
-      
-      
-      for (ii in seq(1,min(4,length(FourUniqueRowsLoc)))) {
+        SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
+        PrevSelectedRows<-PreviousSubsetMeetTargetsUnique[PreviousFourUniqueRowsLoc,]
         
-        Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
+        ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
+                               ColorLighteningFactor(), ColorDarkeningFactor())
         
-        PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
-        if (length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
-        if ((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
+        FullColVec <- ColObtained$FullColVec
+        ClickedCols <- ColObtained$ClickedCols
+        if (dim(PrevSelectedRows)[1] < dim(SelectedRows)[1]) { PrevSelectedRows=SelectedRows+1 }
+        
+        
+        for (ii in seq(1,min(4,length(FourUniqueRowsLoc)))) {
           
-          # mapp<-leafletProxy(paste0("map",ii+1))
-          # for(ijj in 1:length(Consolitated)){
-          # if(PreviousConsolitated[ijj]!=Consolitated[ijj])
-          #{
-          mapp<-leafletProxy(paste0("map",ii+1))
-          removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-          #if(Consolitated[ijj]==0){
-          COLOURS<-rep("transparent",length(Consolidated))
-          COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
-          COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
-          mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
-          #}
-          #              if(Consolitated[ijj]==1){
-          #               mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=FullColVec[ijj],weight=1)#,color=FullColVec[ijj]
-          #            }
-          #           if(Consolitated[ijj]==2){
-          #            mapp<-addPolygons(mapp,data=FullTable$geometry[ijj],layerId=paste0("Square",ijj),color=ClickedCols[ijj],weight=1)#,color=ClickedCols[ijj]
-          #         }
+          Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
           
-          
-          #  }
-          
-        }
-        removeControl(mapp,layerId="legend")
-        
-        SFTR<-SelectedRows[ii,]
-        addControlText <- ""
-        for (i in 1:length(SPECIES)) {
-          specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLISH[i]
-          selectedBiospecie <- SFTR[[specie_latin]]
-          selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
-          addControlText <- paste0(addControlText, specie_english, ": ", 
-                                   round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-        }
-        
-        mapp<-
-          addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
-                                        # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-                                        addControlText,
-                                        "Area Planted: ", round(SFTR$Area, 2), "<br>",
-                                        "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
-                                        "</p>"), position = "topright",layerId="legend")
-        
-        
-        
-      }
-      #form0<-paste0('Text', ii,'("")')
-      #eval(parse(text=form0))
-      #message(form0)
-      #form<-paste0('Text', ii ,
-      #             '(paste0("Strategy Displayed: ",FourUniqueRowsLoc[ii]," out of ",dim(SubsetMeetTargetsUnique)
-      #             
-      #             ))')
-      #message(form)
-      
-      
-      #eval(parse(text=form))
-      
-      #}
-      if(length(FourUniqueRowsLoc)<4){
-        #add here text to say that there are no more unique examples.
-        for(ii in seq(length(FourUniqueRowsLoc)+1,4))
-        {  #form2<-paste0('Text', ii ,
-          #            '(paste0("Strategies that meet all ", N_TARGETS))')
-          
-          #eval(parse(text=form2))
-          
-          mapp<-leafletProxy(paste0("map",ii+1))
-          removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-          mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
-                            color="transparent",fillColor="transparent")  
+          PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
+          if (length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
+          if ((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
+            
+            mapp<-leafletProxy(paste0("map",ii+1))
+            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+            COLOURS<-rep("transparent",length(Consolidated))
+            COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
+            COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
+            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
+            
+          }
           removeControl(mapp,layerId="legend")
+          
+          SFTR<-SelectedRows[ii,]
+          addControlText <- ""
+          for (i in 1:length(SPECIES)) {
+            specie_latin <- SPECIES[i]
+            specie_english <- SPECIES_ENGLISH[i]
+            selectedBiospecie <- SFTR[[specie_latin]]
+            selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
+            addControlText <- paste0(addControlText, specie_english, ": ", 
+                                     round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          }
+          
           mapp<-
-            addControl(mapp,html = "", position = "topright",layerId="legend")
+            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
+                                          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+                                          addControlText,
+                                          "Area Planted: ", round(SFTR$Area, 2), "<br>",
+                                          "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
+                                          "</p>"), position = "topright",layerId="legend")
+          
           
           
         }
-        PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
-        PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
-        PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
         
-        
-        UpdatedRows<-ClickedMatrixTab2Reactive()
+        #}
         if(length(FourUniqueRowsLoc)<4){
-          UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
+          #add here text to say that there are no more unique examples.
+          for(ii in seq(length(FourUniqueRowsLoc)+1,4))
+          {
+            
+            mapp<-leafletProxy(paste0("map",ii+1))
+            removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
+                              color="transparent",fillColor="transparent")  
+            removeControl(mapp,layerId="legend")
+            mapp<-
+              addControl(mapp,html = "", position = "topright",layerId="legend")
+            
+            
+          }
+          PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
+          PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
+          PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
           
+          
+          UpdatedRows<-ClickedMatrixTab2Reactive()
+          if(length(FourUniqueRowsLoc)<4){
+            UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
+            
+          }
+          PreviousClickedMatrixTab2Reactive(UpdatedRows)
         }
-        PreviousClickedMatrixTab2Reactive(UpdatedRows)
         
-        #Text1("")
-        
-        
-        #  PreviousSubsetMeetTargetsReactive4Unique(SubsetMeetTargetsReactive4Unique())  
-        #PreviousSelectedVector(SelectedVec)
-        # replace the text
-      }
-      
-    }else{}
+      }else{}
       
     }
   })
@@ -1082,7 +967,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   
   # Check if the slider values have been updated after the initialization
-  #lapply(SliderNames, function(sl) {
   observeEvent(input$SliderMain,{
     SHBICurrent<-SlidersHaveBeenInitialized()
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
@@ -1090,7 +974,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         SliderNumber<-which(SliderNames==sl)        
         if(input[[sl]]==MaxMinValsReactiveVector()[SliderNumber]){SHBICurrent[SliderNumber]<-1;SlidersHaveBeenInitialized(SHBICurrent)}
       }}
-    #})
   }
   )
   
@@ -1150,24 +1033,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         Icalc <- tmp$Icalc
         LimitsMat <- tmp$LimitsMat
         SelecTargetCarbon <- tmp$SelecTargetCarbon
-        # SelecTargetBio <- tmp$SelecTargetBio
-        # condition <- TRUE
-        #for (x in SPECIES) {
-        #  var_name <- paste0("SelecTargetBio", x)
-        #  value <- tmp[[var_name]]
-        #  assign(var_name, value)
-        
-        # condition <- condition & (SelectedSimMat2[[x]] >= value)
-        #}
         SelecTargetArea <- tmp$SelecTargetArea
         SelecTargetVisits <- tmp$SelecTargetVisits
-        #PROBAMAT <- Icalc$IVEC
-        #for (abc in 1:dim(Icalc$IVEC)[2]) {
-        #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
-        #}
         PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
-
-        
         
         condition <- TRUE
         for (iii in 1:length(SPECIES)) {
@@ -1179,24 +1047,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
         }
         rm(tmp)
-        ############# Change the min of Area bar 
-        #SubsetMeetTargetsWithoutArea <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
-                                               # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-        #                                       condition &
-        #                                       (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL), ]
-        #LimMatMeetTargetsWithoutArea<-LimitsMat[(PROBAMAT[,1] >= alphaLVL) &
-          # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-         # condition &
-        #  (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL),]
         
-        #MinAreaLocIndex<-which.min(SubsetMeetTargetsWithoutArea$Area)
-        #MinAreaLoc<-SubsetMeetTargetsWithoutArea$Area[MinAreaLocIndex]
-        #LimAreaLoc<-LimMatMeetTargetsWithoutArea$SelectedSimMat2.Area[MinAreaLocIndex]
-        #CalcNewMin<-max(0,trunc(1+MinAreaLoc+sqrt( tolvecReactive()[dim(LimitsMat)[2]-1])*qtruncnorm(p=alphaLVL,a=LimAreaLoc,b=Inf,mean=0,sd=1)))
-        #if(CalcNewMin)
-        
-        #################
-                
         SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
                                                # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
                                                condition &
@@ -1212,14 +1063,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           PreviousFourUniqueRowsReactive(seq(1,LengthVec))
         }else{FourUniqueRowsReactive(NULL)
           PreviousFourUniqueRowsReactive(NULL)}
-        
-        #SubsetMeetTargets <- SelectedSimMat2[(SelectedSimMat2$Carbon >= SelecTargetCarbon) &
-        #                                      # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-        #                                     condition &
-        #                                    (SelectedSimMat2$Area >= SelecTargetArea) &
-        #                                   (SelectedSimMat2$Visits >= SelecTargetVisits), ]
-        
-        #SubsetMeetTargets <- SelectedSimMat2[Icalc$NROYTotal, ]
         
         if (dim(SubsetMeetTargets)[1] > 0) {
           if (max(SelectedSimMat2$Carbon) != min(SelectedSimMat2$Carbon)) {
@@ -1561,16 +1404,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
-                           # AreaSelected0 = AreaSelected0,
-                           # CarbonSelected0 = CarbonSelected0,
-                           # RedSquirrelSelected0 = RedSquirrelSelected0,
-                           # SpeciesListSelected0 = SpeciesListSelected, # list(Acanthis_cabaret = Acanthis_cabaretSelected0, ...)
-                           # VisitsSelected0 = VisitsSelected0,
-                           # CarbonSelectedSD0 = CarbonSelectedSD0,
-                           # RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
-                           # SpeciesListSelectedSD0 = SpeciesListSelectedSD, # list(Acanthis_cabaretSD0 = Acanthis_cabaretSelectedSD0, ...)
-                           # VisitsSelectedSD0 = VisitsSelectedSD0,
-                           # DatBinaryCode0 = DatBinaryCode0,
                            NbRoundsMax = NbRoundsMax,
                            CurrentRound = CurrentRound,
                            FullTable = FullTable,
@@ -1597,16 +1430,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
-                           # AreaSelected0 = AreaSelected0,
-                           # CarbonSelected0 = CarbonSelected0,
-                           # RedSquirrelSelected0 = RedSquirrelSelected0,
-                           # SpeciesListSelected0 = SpeciesListSelected, # list(Acanthis_cabaret = Acanthis_cabaretSelected0, ...)
-                           # VisitsSelected0 = VisitsSelected0,
-                           # CarbonSelectedSD0 = CarbonSelectedSD0,
-                           # RedSquirrelSelectedSD0 = RedSquirrelSelectedSD0,
-                           # SpeciesListSelectedSD0 = SpeciesListSelectedSD, # list(Acanthis_cabaretSD0 = Acanthis_cabaretSelectedSD0, ...)
-                           # VisitsSelectedSD0 = VisitsSelectedSD0,
-                           # DatBinaryCode0 = DatBinaryCode0,
                            NbRoundsMax = NbRoundsMax,
                            CurrentRound = CurrentRound,
                            FullTable = FullTable,
@@ -1781,9 +1604,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       CreatedBaseMap(1)
       MapReactive(map)
       MapReactive()}else{    MapReactive()
-        # if(CreatedBaseMap()==1){
-        #  mapp<-leafletProxy("map")
-        #mapp}
       }
     # ChangeSliders(FALSE)
     # shinyjs::show("tabs")

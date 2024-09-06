@@ -1,4 +1,3 @@
-########################
 CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
 {
   PROBAMATloc <- IVECloc
@@ -11,9 +10,6 @@ CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
   return(PROBAMATloc)
 }
 
-
-
-########################
 getCols<-function(ColourScheme,UnitsVec,ColorLighteningFactor,ColorDarkeningFactor)
 {
   LL<-length(UnitsVec)
@@ -1055,7 +1051,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   id_polygons <- seer2km %>%dplyr::select(c(new2kid, geometry))
   
   # Load the biodiversity results from Matlab
-  biodiversity <-speciesprob40
+  biodiversity <- speciesprob40
   
   # Replace NAs with column mean
   biodiversity <- biodiversity %>%
@@ -1142,7 +1138,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     dplyr::mutate(dplyr::across(all_of(all_species_names),
                                 ~ pmin(.x, units::as_units(100, units(.x))))) %>%
     
-    # Rename columns, add BioMean_ and BioSD_ to species
+    # Rename columns, add BioMean_ to species
     dplyr::rename_with(.fn = ~ paste0("BioMean_", .x), .cols = all_of(all_species_names)) %>%
     
     # Add empty SD columns for species
@@ -1153,8 +1149,10 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     # Group by polygon_id_jules
     group_by(polygon_id_jules) %>%
     summarize(
+      # For each polygon from Jules, sum over (pre-weighted) probabilities from areas that
+      # intersect and divide by the sum of proportions, to get a weighted average
       across(paste0("BioMean_", all_species_names),
-             ~ mean(.x * area_jules / area_intersection)),
+             ~ sum(.x) / sum(proportion_intersection_in_bio)),
       
       across(paste0("BioSD_", all_species_names),
              ~ 0),
@@ -1336,4 +1334,53 @@ generate_unique_id <- function(used_ids_reactive, sample_space) {
     id <- sample(sample_space, 1)
   }
   return(id)
+}
+
+install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
+  # Load packages
+  libs <- unique(c(normalizePath(.libPaths()),
+                   normalizePath(Sys.getenv("R_LIBS_USER")),
+                   normalizePath(file.path(getwd(), "myRlibrary"))))
+  repo <- "https://cran.rstudio.com/"
+  
+  # Loop through libraries until one is writable
+  error_happened <- TRUE
+  i <- 1
+  while (error_happened == TRUE && i <= length(libs)) {
+    lib <- libs[i]
+    tryCatch({
+      if (update) {
+        update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = quiet)
+      }
+      
+      # Only load prefeR namespace
+      if ("prefeR" %in% packages && !require("prefeR")) {
+        install.packages("prefeR", lib = lib, repos = repo, quiet = quiet)
+      }
+      loadNamespace("prefeR")
+      
+      # Load the packages already installed
+      packages_status <- sapply(packages, require, character.only = TRUE, quietly = quiet)
+      
+      # Other packages to install
+      packages_to_install <- packages[packages_status == FALSE]
+      
+      # Remove packages that failed to load if they are already available
+      tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {})
+      
+      # Install packages
+      install.packages(packages_to_install, lib = lib, repos = repo, quiet = quiet)
+      
+      # Load packages
+      sapply(packages, library, character.only = TRUE, quietly = quiet)
+      
+      # Stop the loop if we reach here
+      error_happened <- FALSE
+    },
+    error = function(e) {},
+    finally = {
+      i <- i + 1
+    })
+  }
+  return(!error_happened)
 }
