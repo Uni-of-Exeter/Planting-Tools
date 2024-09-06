@@ -29,7 +29,7 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "dplyr"))
+                                       "mvtnorm", "prefeR", "dplyr", "magrittr"))
 
 NAME_CONVERSION <- get_name_conversion()
 
