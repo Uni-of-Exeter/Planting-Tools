@@ -13,6 +13,9 @@
 # sudo apt-get -y --no-install-recommends install libharfbuzz-dev
 # sudo apt-get -y --no-install-recommends install libfribidi-dev
 
+# options(warn=2, error=recover)
+# options(warn=0) # default
+
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
 if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
@@ -26,7 +29,7 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "dplyr"))
+                                       "mvtnorm", "prefeR", "dplyr", "magrittr"))
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -446,7 +449,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
     # }
     for (i in 1:length(SPECIES)) {
-      specie_english <- SPECIES_ENGLISH[i]
+      specie_english <- if (SPECIES[i] == "All") "All Species Richness" else SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
       text <- paste0(text, "\n", get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", as.numeric(BioSliderValSpecie()))
     }
@@ -675,19 +678,19 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         specie_selected <- get(specie_names)
         # max_bioslider <- trunc(mean(specie_selected))
         max_bioslider <- MaxVals$bioMaxList[[ijj]]
-        if (is.nan(max_bioslider)) {
+        if (is.nan(max_bioslider) || is.na(max_bioslider)) {
           max_bioslider <- 0
         }
         updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 0.5)
       }
       # max_areaslider <- trunc(100*sum(AreaSelected))/100
       max_areaslider <- MaxVals$AreaMax
-      if (is.nan(max_areaslider)) {
+      if (is.nan(max_areaslider) || is.na(max_areaslider)) {
         max_areaslider <- 0
       }
       # max_visitsslider <- trunc(mean(VisitsSelected))
       max_visitsslider <- MaxVals$VisistMax
-      if (is.nan(max_visitsslider)) {
+      if (is.nan(max_visitsslider) || is.na(max_visitsslider)) {
         max_visitsslider <- 0
       }
       updateSliderInput(session, "AreaSlider", min=MaxVals$AreaMin,max = max_areaslider, value = MaxVals$AreaMax, step = 0.5)
@@ -803,7 +806,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLISH[i]
+            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- SFTR[[specie_latin]]
             selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
             addControlText <- paste0(addControlText, specie_english, ": ", 
@@ -878,7 +881,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLISH[i]
+            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- SFTR[[specie_latin]]
             selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
             addControlText <- paste0(addControlText, specie_english, ": ", 
@@ -1356,7 +1359,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- get_ugly_specie(SPECIES[i], NAME_CONVERSION)
-            specie_english <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
+            specie_english <- if (specie_latin == "All") "All Species Richness" else get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
@@ -1579,7 +1582,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- SPECIES_ENGLISH[i]
+            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
             if (SPECIES[i] == "All") {
