@@ -91,7 +91,7 @@ normalize <- function(x) {
 # Implausibility
 Impl <- function(Target,EY,SDY,alpha,tol) {
   # Avoid division by 0
-  if (0 %in% SDY^2+tol) {
+  if (0 %in% (SDY^2+tol)) {
     idx <- which(SDY^2+tol == 0)
     tol[idx] <- 0.1
   }
@@ -742,7 +742,7 @@ outputmap_calculateMats <- function(input,
   # Create a data frame representing the selected similarity matrix
   SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
   
-  if(is.null(ManualTargets)){
+  if (is.null(ManualTargets)){
   SelecTargetCarbon <- input$SliderMain
   # SelecTargetBio <- input$BioSlider
   SelecTargetBioVector <- c()
@@ -916,7 +916,9 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
               mean(SelectedSimMat2$Area) / 150,
               mean(SelectedSimMat2$Visits) / 150)
   for(i in 1:length(tolvec)) {
-    if (tolvec[i] == 0) {
+    # tolvec is a named vector, so tolvec[i] == 0 produces a named vector with the value, not the value directly
+    # this causes a bug, isTRUE returns the boolean only
+    if (isTRUE(tolvec[i] == 0)) {
       tolvec[i] <- 0.1
     }
   }
@@ -1048,7 +1050,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   # and merge them with BristolFullTableMerged.geojson
   
   # Load the shapefile mapping new2kid with Polygons
-  id_polygons <- seer2km %>%dplyr::select(c(new2kid, geometry))
+  id_polygons <- seer2km %>% dplyr::select(c(new2kid, geometry))
   
   # Load the biodiversity results from Matlab
   biodiversity <- speciesprob40
@@ -1354,10 +1356,11 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       }
       
       # Only load prefeR namespace
-      if ("prefeR" %in% packages && !require("prefeR")) {
-        install.packages("prefeR", lib = lib, repos = repo, quiet = quiet)
+      if ("prefeR" %in% packages && !requireNamespace("prefeR")) {
+        install.packages("prefeR", lib = lib, repos = repo, type = type, quiet = quiet)
+        packages <- packages[packages != "prefeR"]
+        loadNamespace("prefeR")
       }
-      loadNamespace("prefeR")
       
       # Load the packages already installed
       packages_status <- sapply(packages, require, character.only = TRUE, quietly = quiet)
