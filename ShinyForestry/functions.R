@@ -375,86 +375,28 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
 
-# When we worked on squares, it replaced unusable ones with squares.
-# Now we work with polygons and have not updated it.
-# If you uncomment it, you need to update it before actually using it.
+# Cells that cannot be planted are in green
 map_sell_not_avail <- function(FullTableNotAvail,
                                SelectedDropdown,
                                listMaps = NULL,
                                map = NULL) {
-  # if (dim(FullTableNotAvail)[1]>0) { 
-  #   SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown
-  # } else {
-  #   SELLNOTAVAIL <- NULL
-  # }
-  # if (sum(SELLNOTAVAIL) > 0) {
-  #   # here we assume that not avail is only list of polygons
-  #   
-  #   #sellngNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lgn.1", "lgn.2", "lgn.3", "lgn.4", "lgn.5")]
-  #   #sellatNotAvail <- FullTableNotAvail[SELLNOTAVAIL, c("lat.1", "lat.2", "lat.3", "lat.4", "lat.5")]
-  #   
-  #   SELGEO <- FullTableNotAvail$geometry[SELLNOTAVAIL]
-  #   
-  #   
-  #   for (iii in 1:length(SELGEO)) {
-  #     if (is.null(map) && !is.null(listMaps)) {
-  #       listMaps[[1]] <- leaflet::addPolygons(listMaps[[1]],
-  #                                             lng = SELGEO[[iii]][[1]][,1],#as.numeric(sellngNotAvail[iii, ]),
-  #                                             lat = SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii, ]),
-  #                                             layerId = paste0("SquareNotAvail", iii),
-  #                                             color = "yellow")
-  #       listMaps[[2]] <- leaflet::addPolygons(listMaps[[2]],
-  #                                             lng = SELGEO[[iii]][[1]][,1],# as.numeric(sellngNotAvail[iii,]),
-  #                                             lat =  SELGEO[[iii]][[1]][,2],#as.numeric(sellatNotAvail[iii,]),
-  #                                             layerId = paste0("SquareNotAvail",iii),
-  #                                             color ="yellow")
-  #       
-  #       midlng <- ( SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1] ) / 2
-  #       midlat <- ( SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2] ) / 2
-  #       
-  #       listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
-  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
-  #                                              lng = c(midlng - 0.004, midlng + 0.004),
-  #                                              color = "orange",
-  #                                              weight = 5)
-  #       listMaps[[1]] <- leaflet::addPolylines(listMaps[[1]],
-  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
-  #                                              lng = c(midlng + 0.004, midlng - 0.004),
-  #                                              color = "orange",
-  #                                              weight = 5)
-  #       listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
-  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
-  #                                              lng = c(midlng - 0.004, midlng + 0.004),
-  #                                              color = "orange",
-  #                                              weight = 5)
-  #       listMaps[[2]] <- leaflet::addPolylines(listMaps[[2]],
-  #                                              lat = c(midlat - 0.0025, midlat + 0.0025),
-  #                                              lng = c(midlng + 0.004, midlng - 0.004),
-  #                                              color = "orange",
-  #                                              weight = 5)
-  #     } else if (!is.null(map) && is.null(listMaps)) {
-  #       map <- leaflet::addPolygons(map,
-  #                                   lng = SELGEO[[iii]][[1]][,1],
-  #                                   lat = SELGEO[[iii]][[1]][,2],
-  #                                   layerId = paste0("SquareNotAvail", iii),
-  #                                   color = "yellow")
-  #       
-  #       midlng <- (SELGEO[[iii]][[1]][1,1] + SELGEO[[iii]][[1]][3,1]) / 2
-  #       midlat <- (SELGEO[[iii]][[1]][1,2] + SELGEO[[iii]][[1]][3,2]) / 2
-  #       
-  #       map <- leaflet::addPolylines(map,
-  #                                    lat = c(midlat - 0.0025, midlat + 0.0025),
-  #                                    lng = c(midlng - 0.004, midlng + 0.004),
-  #                                    color = "orange",
-  #                                    weight = 5)
-  #       map <- leaflet::addPolylines(map,
-  #                                    lat = c(midlat - 0.0025, midlat + 0.0025),
-  #                                    lng = c(midlng + 0.004, midlng - 0.004),
-  #                                    color = "orange",
-  #                                    weight = 5)
-  #     }
-  #   }
-  # }
+   if (dim(FullTableNotAvail)[1]>0) { 
+     SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown
+   } else {
+     SELLNOTAVAIL <- NULL
+   }
+   if (sum(SELLNOTAVAIL) > 0) {
+     SELGEO <- FullTableNotAvail$geometry[SELLNOTAVAIL]
+     for (iii in 1:length(SELGEO)) {
+       if (is.null(map) && !is.null(listMaps)) {
+         listMaps[[1]]<-addPolygons(listMaps[[1]],data=SELGEO,layerId=paste0("NotAvail"),color="green",fillColor="green",weight=1)
+        listMaps[[2]]<-addPolygons(listMaps[[2]],data=SELGEO,layerId=paste0("NotAvail"),color="green",fillColor="green",weight=1)
+         
+       } else if (!is.null(map) && is.null(listMaps)) {
+         map<-addPolygons(map,data=SELGEO,layerId=paste0("NotAvail"),color="green",fillColor="green",weight=1)
+       }
+     }
+   }
   if (is.null(map) && !is.null(listMaps)) {
     return(listMaps)
   } else if (!is.null(map) && is.null(listMaps)) {
