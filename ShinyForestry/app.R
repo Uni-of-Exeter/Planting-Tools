@@ -14,6 +14,7 @@
 # sudo apt-get -y --no-install-recommends install libfribidi-dev
 
 # options(warn=2, error=recover)
+# options(warn=2)
 # options(warn=0) # default
 
 # FolderSource <- "ShinyForestry/"
@@ -23,13 +24,30 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
 }
 
 source(normalizePath(file.path(FolderSource, "functions.R")))
+source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
 
 install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
                                        "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "prefeR", "dplyr", "magrittr"))
+                                       "mvtnorm", "prefeR", "dplyr", "magrittr",
+                                       "lhs", "sensitivity",
+                                       "devtools",
+                                       "progressr",
+                                       # # Active subspace method
+                                       "concordance", "BASS", "zipfR",
+                                       # To plot the best map, and save it to a file
+                                       "mapview", "webshot"))
+if (!require(dgpsi)) {
+  devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
+  library("dgpsi")
+}
+if (!require(RRembo)) {
+  devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
+  library("RRembo")
+}
+dgpsi::init_py()
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -47,8 +65,8 @@ UnitPolygonColours <- 1
 
 USER_PATH <- user_path()
 
-ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
-# ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
+# ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
+ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 
@@ -213,7 +231,26 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
 FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 
+VERBOSE = FALSE
+RREMBO_CONTROL <- list(
+  # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
+  designtype = "LHS",
+  # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
+  reverse = FALSE)
+RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
+                                          init = list(n = 10 * nrow(FullTable)), budget = 100,
+                                          control = RREMBO_CONTROL,
+                                          verbose = VERBOSE)
 
+handlers(global = TRUE)
+handlers(
+  list(
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    ),
+    handler_shiny()
+  )
+)
 
 
 STDMEAN <- 0.05
@@ -1125,19 +1162,86 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           }
           SelecRow <- which.min(result)
           
-          SelectedFullTableRow(SelectedMins[SelecRow,])
-          SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+          SelecTargetBioVector <- c()
+          for (x in names(SpeciesListSelected)) {
+            var_name <- paste0("SelecTargetBio", x)
+            # input[paste0("BioSlider", x)] bugs because it is a reactivevalue
+            value <- input[[paste0("BioSlider", x)]]
+            assign(var_name, value)
+            SelecTargetBioVector <- c(SelecTargetBioVector, setNames(value, x))
+          }
+          
+          names(SelecTargetCarbon) <- "Carbon"
+          names(SelecTargetVisits) <- "Visits"
+          
+          # browser()
+          bo_results <- bayesian_optimization(
+            seed = 1,
+            FullTable,
+            area_sum_threshold = SelecTargetArea,
+            outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
+            # outcomes_to_minimize_sum_threshold_vector = NULL,
+            VERBOSE = VERBOSE,
+            NOTIFICATIONS = FALSE,
+            PLOT = FALSE,
+
+            BAYESIAN_OPTIMIZATION_ITERATIONS = 8,
+            BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
+            PENALTY_COEFFICIENT = 500,
+            EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
+            EXPLORATION_COEFFICIENT = 0,
+
+            SCALE = FALSE,
+
+            CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
+            DESIGN_POINTS_STRATEGY = "expected improvement",
+
+            CONSTRAINED_INPUTS = TRUE,
+
+            RREMBO_CONTROL = RREMBO_CONTROL,
+            RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+            RREMBO_SMART = FALSE,
+
+            # GP
+            KERNEL = "matern2.5", # matern2.5 or sexp
+            NUMBER_OF_VECCHIA_NEIGHBOURS = 20
+          )
+          
+          area_sum <- sum(bo_results$area_vector)
+          parcels_activation <- bo_results$area_vector
+          parcels_activation[parcels_activation != 0] <- 1
+          names(parcels_activation) <- NULL
+          
+          last_col <- ncol(bo_results$outcomes_to_maximize)
+          number_of_rows <- nrow(bo_results$outcomes_to_maximize)
+          col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("JulesMean")),
+                        colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"JulesMean")))
+          col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
+                           sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
+          
+          selectedfulltablerowvalue <- c(parcels_activation,
+                                         # CarbonMean, BioMeans, Area, VisitsMean
+                                         col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
+                                         # CarbonSD, BioSD, VisitsSD
+                                         col_sums_SD)
+          selectedvectorvalue <- parcels_activation
+          
+          names(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow,])
+          names(selectedvectorvalue) <- names(SelectedMins[SelecRow, 1:length(SavedVec)])
+          
+          browser()
+          # SelectedFullTableRow(SelectedMins[SelecRow,])
+          # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+          SelectedFullTableRow(selectedfulltablerowvalue)
+          SelectedVector(selectedvectorvalue)
+          
         } else {
           ZeroSelected<-SelectedSimMat2[1,]
           ZeroSelected<-replace(ZeroSelected,1:length(ZeroSelected),0)
           SelectedFullTableRow(ZeroSelected)
           SelectedVector(ZeroSelected[ 1:length(SavedVec)])
         }
-      }      
-      
-      
-      
-      
+      }
     }
     #  }
   })
