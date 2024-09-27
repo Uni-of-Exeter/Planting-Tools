@@ -1351,13 +1351,16 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
   while (error_happened == TRUE && i <= length(libs)) {
     lib <- libs[i]
     tryCatch({
+      # Unload packages
+      sapply(packages, function(x) {tryCatch(detach(paste0("package:", pkg), unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
+      
       if (update) {
         update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = quiet)
       }
       
       # Only load prefeR namespace
-      if ("prefeR" %in% packages && !requireNamespace("prefeR")) {
-        install.packages("prefeR", lib = lib, repos = repo, type = type, quiet = quiet)
+      if ("prefeR" %in% packages && !requireNamespace("prefeR", quietly = TRUE)) {
+        install.packages("prefeR", lib = lib, repos = repo, quiet = quiet)
         packages <- packages[packages != "prefeR"]
         loadNamespace("prefeR")
       }
@@ -1368,8 +1371,11 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       # Other packages to install
       packages_to_install <- packages[packages_status == FALSE]
       
+      # Unload packages
+      sapply(packages, function(x) {tryCatch(detach(paste0("package:", pkg), unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
+      
       # Remove packages that failed to load if they are already available
-      tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {})
+      tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {}, warning = function(w) {})
       
       # Install packages
       install.packages(packages_to_install, lib = lib, repos = repo, quiet = quiet)
