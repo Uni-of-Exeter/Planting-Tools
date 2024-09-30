@@ -563,7 +563,6 @@ EI_Rembo <- function(x, model, mval = -10, RRembo_hyper_parameters = NULL,
   # }
   res <- rep(NA, nrow(x))
   if (any(inDomain)) {
-    # browser()
     xtmp <- map(x[inDomain, ], A)
     # Prevention of numerical instability for a new observation
     # tmp <- GPareto::checkPredict(xtmp, list(model), control$tcheckP, 
@@ -1325,6 +1324,8 @@ bayesian_optimization <- function(
              error = function(e) {warning(e);stop(reticulate::py_last_error())})
   }
   
+  shiny::showNotification("Starting a search for the best strategy ...", duration = 10)
+  
   # Setup parameters ----
   set.seed(seed)
   # Number of locations/dimensions
@@ -1455,7 +1456,6 @@ bayesian_optimization <- function(
       }
     }
   }
-  # browser()
   carbon_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select(JulesMean) %>% unlist(use.names = FALSE)
   
   # Generate inputs + outputs ----
@@ -1485,7 +1485,6 @@ bayesian_optimization <- function(
                                                                obj_inputs_full_unconstrained$valid_samples_high_dimension))
   
   obj_inputs <- obj_inputs_full$valid_samples_high_dimension_categorical
-  # browser()
   obj_outputs <- apply(obj_inputs, 1, objective_function,
                        area_sum_threshold = area_sum_threshold,
                        area_possible_non_zero_values = area_possible_non_zero_values,

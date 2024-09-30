@@ -1174,7 +1174,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           names(SelecTargetCarbon) <- "Carbon"
           names(SelecTargetVisits) <- "Visits"
           
-          # browser()
           bo_results <- bayesian_optimization(
             seed = 1,
             FullTable,
@@ -1219,18 +1218,16 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
                            sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
           
-          selectedfulltablerowvalue <- c(parcels_activation,
-                                         # CarbonMean, BioMeans, Area, VisitsMean
-                                         col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
-                                         # CarbonSD, BioSD, VisitsSD
-                                         col_sums_SD)
-          selectedvectorvalue <- parcels_activation
+          selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
+                                                              # CarbonMean, BioMeans, Area, VisitsMean
+                                                              col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
+                                                              # CarbonSD, BioSD, VisitsSD
+                                                              col_sums_SD), nrow = 1))
           
-          names(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow,])
-          names(selectedvectorvalue) <- names(SelectedMins[SelecRow, 1:length(SavedVec)])
+          colnames(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow, ])
+          selectedvectorvalue <- selectedfulltablerowvalue[, 1:length(parcels_activation)]
           
-          browser()
-          # SelectedFullTableRow(SelectedMins[SelecRow,])
+          # SelectedFullTableRow(SelectedMins[SelecRow, ])
           # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
           SelectedFullTableRow(selectedfulltablerowvalue)
           SelectedVector(selectedvectorvalue)
