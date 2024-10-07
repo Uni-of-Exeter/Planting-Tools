@@ -1,3 +1,4 @@
+
 # Generate unconstrained legal inputs
 generate_legal_samples <- function(n, k, legal_non_zero_values, random_or_maximin_lhs) {
   # maximinLHS takes too long when n and k are too large, randomLHS is almost instantaneous
@@ -22,6 +23,8 @@ generate_legal_unique_samples <- function(n, k,
                                           RRembo = FALSE,
                                           RRembo_hyper_parameters = NULL,
                                           RRembo_smart = FALSE,
+                                          # current_task_id,
+                                          # task_id_reactive,
                                           verbose = FALSE) {
   
   if (isTRUE(RRembo) && is.null(RRembo_hyper_parameters)) {
@@ -44,6 +47,9 @@ generate_legal_unique_samples <- function(n, k,
   if (isTRUE(RRembo)) use_dplyr <- FALSE
   
   while (nrow(valid_samples) < n && attempts <= max_attempts) {
+    # if (current_task_id != task_id_reactive()) {
+    #   return(FALSE)
+    # }
     if (isTRUE(verbose)) message("[DEBUG] Attempt ", attempts, "/", max_attempts, " at generating inputs (", nrow(valid_samples), "/", n, " so far)... ", appendLF = FALSE)
     # Keep old rows if they were really random
     if (random_or_maximin_lhs == "random" && nrow(valid_samples) > 0) {
@@ -72,6 +78,9 @@ generate_legal_unique_samples <- function(n, k,
     # TODO REMBO with dplyr
     if (isTRUE(RRembo)) use_dplyr <- FALSE
     
+    # if (current_task_id != task_id_reactive()) {
+    #   return(FALSE)
+    # }
     if (isTRUE(RRembo)) {
       
       if (isTRUE(RRembo_smart)) {
@@ -104,6 +113,9 @@ generate_legal_unique_samples <- function(n, k,
       if (isTRUE(verbose)) message("[DEBUG] generate_legal_unique_samples() -> generate_legal_samples() done")
       
     }
+    # if (current_task_id != task_id_reactive()) {
+    #   return(FALSE)
+    # }
     
     # Add samples to valid_samples, and filter on the threshold if isTRUE(constrained)
     if (isTRUE(constrained)) {
@@ -588,20 +600,6 @@ EI_Rembo <- function(x, model, mval = -10, RRembo_hyper_parameters = NULL,
 # https://github.com/mbinois/RRembo/blob/f679110d45cc31ca336a61ddf84c8ff4fa738fde/R/warpings.R#L149
 distance <- function(x1, x2){
   return(sqrt(sum((x1-x2)^2)))
-}
-
-myobjREMBO <- function(input_matrix,
-                       objective_function,
-                       area_sum_threshold,
-                       area_possible_non_zero_values,
-                       outcomes_to_maximize_matrix,
-                       outcomes_to_maximize_sum_threshold_vector) {
-  result <- apply(input_matrix, 1, objective_function,
-                  area_sum_threshold = area_sum_threshold,
-                  area_possible_non_zero_values = area_possible_non_zero_values,
-                  outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
-                  outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector)
-  return(result)
 }
 
 # Replacement of GPareto::checkPredict, for RRembo with dgpsi::gp
@@ -1099,12 +1097,19 @@ objective_function <- function(inputs, # c(area_vector)
                                area_sum_threshold, # number
                                area_possible_non_zero_values, # vector
                                outcomes_to_minimize_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
+                               outcomes_to_minimize_SD_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
                                outcomes_to_minimize_sum_threshold_vector = NULL, # vector
                                outcomes_to_maximize_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
+                               outcomes_to_maximize_SD_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
                                outcomes_to_maximize_sum_threshold_vector = NULL, # vector
                                penalty_coefficient_arg = PENALTY_COEFFICIENT,
+                               preference_weight_area = 1,
+                               preference_weights_minimize = NULL,
+                               preference_weights_maximize = NULL,
                                exploration = FALSE, # vector, 1 value per outcome
                                scale = FALSE,
+                               tol = 0.1,
+                               alpha = 0.9,
                                multi_objectives = FALSE) {
   
   number_of_locations <- length(inputs)
@@ -1120,6 +1125,7 @@ objective_function <- function(inputs, # c(area_vector)
   
   objectives <- c()
   result <- 0
+  cantelli_threshold <- - sqrt(alpha / (1 - alpha))
   
   ## Penalties to make the variables binary instead of continuous
   
@@ -1136,11 +1142,15 @@ objective_function <- function(inputs, # c(area_vector)
   if (is.null(outcomes_to_maximize_matrix) == FALSE) {
     outcomes_to_maximize_matrix <- outcomes_to_maximize_matrix %>%
       dplyr::slice(indices_of_non_zero_area)
+    outcomes_to_maximize_SD_matrix <- outcomes_to_maximize_SD_matrix %>%
+      dplyr::slice(indices_of_non_zero_area)
     # dplyr::mutate(across(everything(), ~ (.x - min(.x)) / (max(.x) - min(.x))))
   }
   # Other outsomes to minimize + scale (x-min)/(max-min)
   if (is.null(outcomes_to_minimize_matrix) == FALSE) {
     outcomes_to_minimize_matrix <- outcomes_to_minimize_matrix %>%
+      dplyr::slice(indices_of_non_zero_area)
+    outcomes_to_minimize_SD_matrix <- outcomes_to_minimize_SD_matrix %>%
       dplyr::slice(indices_of_non_zero_area)
     # dplyr::mutate(across(everything(), ~ (.x - min(.x)) / (max(.x) - min(.x))))
   }
@@ -1162,24 +1172,64 @@ objective_function <- function(inputs, # c(area_vector)
   vector_sum <- sum(area_vector)
   threshold <- area_sum_threshold
   penalty <- penalty_coefficient * max(0, vector_sum - threshold)
+  preference_weight <- preference_weight_area
   if (exploration == FALSE) {
     objectives[1] <- vector_sum + penalty
-    result <- result + vector_sum + penalty
+    result <- result + preference_weight * vector_sum + penalty
   } else {
     objectives[1] <- penalty
     result <- result + penalty
   }
   
   
+  # # Do something similar for other outcomes (minimize, avoid going above the threshold)
+  # if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) > 0) {
+  #   for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
+  #     vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
+  #     threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
+  #     penalty <- penalty_coefficient * max(0, vector_sum - threshold)
+  #     if (exploration == FALSE) {
+  #       objectives <- c(objectives, vector_sum + penalty)
+  #       result <- result + vector_sum + penalty
+  #     } else {
+  #       objectives <- c(objectives, penalty)
+  #       result <- result + penalty
+  #     }
+  #   }
+  # }
+  # # Do something similar for other outcomes (maximize, avoid going below the threshold)
+  # if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) > 0) {
+  #   for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
+  #     vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
+  #     threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
+  #     penalty <- penalty_coefficient * min(0, vector_sum - threshold)
+  #     if (exploration == FALSE) {
+  #       objectives <- c(objectives, - vector_sum - penalty)
+  #       result <- result - vector_sum - penalty
+  #     } else {
+  #       objectives <- c(objectives, - penalty)
+  #       result <- result - penalty
+  #     }
+  #   }
+  # }
   # Do something similar for other outcomes (minimize, avoid going above the threshold)
-  if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) > 0) {
+  if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) &&
+      is.null(outcomes_to_minimize_SD_matrix) == FALSE && nrow(outcomes_to_minimize_SD_matrix)> 0) {
     for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
       vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
+      vector_sum_sd <- sqrt(sum((outcomes_to_minimize_SD_matrix[, outcome_idx])^2))
       threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-      penalty <- penalty_coefficient * max(0, vector_sum - threshold)
+      preference_weight <- preference_weights_minimize[outcome_idx]
+      # minus outcome and threshold, because the standard formula handles the case of maximizing the outcome, but here we minimize
+      implausibility <- Impl(Target = - threshold,
+                             EY = - vector_sum,
+                             SDY = vector_sum_sd,
+                             alpha = alpha,
+                             tol = tol)$Im
+      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
       if (exploration == FALSE) {
         objectives <- c(objectives, vector_sum + penalty)
-        result <- result + vector_sum + penalty
+        result <- result + preference_weight * vector_sum + penalty
       } else {
         objectives <- c(objectives, penalty)
         result <- result + penalty
@@ -1187,17 +1237,29 @@ objective_function <- function(inputs, # c(area_vector)
     }
   }
   # Do something similar for other outcomes (maximize, avoid going below the threshold)
-  if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) > 0) {
+  if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) &&
+      is.null(outcomes_to_maximize_SD_matrix) == FALSE && nrow(outcomes_to_maximize_SD_matrix) > 0) {
     for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
       vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
+      vector_sum_sd <- sqrt(sum((outcomes_to_maximize_SD_matrix[, outcome_idx])^2))
       threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-      penalty <- penalty_coefficient * min(0, vector_sum - threshold)
+      preference_weight <- preference_weights_maximize[outcome_idx]
+      implausibility <- Impl(Target = threshold,
+                             EY = vector_sum,
+                             SDY = vector_sum_sd,
+                             alpha = alpha,
+                             tol = tol)$Im
+      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
       if (exploration == FALSE) {
-        objectives <- c(objectives, - vector_sum - penalty)
-        result <- result - vector_sum - penalty
+        # objectives <- c(objectives, - vector_sum - penalty)
+        # result <- result - vector_sum - penalty
+        objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+        result <- result - preference_weight * vector_sum + penalty
       } else {
-        objectives <- c(objectives, - penalty)
-        result <- result - penalty
+        # objectives <- c(objectives, - penalty)
+        # result <- result - penalty
+        objectives <- c(objectives, + penalty)
+        result <- result + penalty
       }
     }
   }
@@ -1284,6 +1346,10 @@ bayesian_optimization <- function(
     NOTIFICATIONS = FALSE,
     PLOT = FALSE,
     
+    # We track the task ID. If it changes, this gets cancelled.
+    current_task_id,
+    task_id_reactive,
+    
     BAYESIAN_OPTIMIZATION_ITERATIONS = 10,
     BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
     PENALTY_COEFFICIENT = 100,
@@ -1291,6 +1357,9 @@ bayesian_optimization <- function(
     EXPLORATION_COEFFICIENT = 0,
     
     SCALE = FALSE,
+    
+    preference_weight_area = 1,
+    preference_weights_maximize = NULL,
     
     CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
     DESIGN_POINTS_STRATEGY = "expected improvement",
@@ -1459,6 +1528,9 @@ bayesian_optimization <- function(
   carbon_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select(JulesMean) %>% unlist(use.names = FALSE)
   
   # Generate inputs + outputs ----
+  if (current_task_id != task_id_reactive()) {
+    return(FALSE)
+  }
   message("[INFO] Generating initial inputs and outputs...")
   obj_inputs_full_constrained <- generate_legal_unique_samples(round(n/2), k,
                                                                legal_non_zero_values = area_possible_non_zero_values,
@@ -1467,7 +1539,12 @@ bayesian_optimization <- function(
                                                                RRembo = TRUE,
                                                                RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                RRembo_smart = RREMBO_SMART,
+                                                               # current_task_id,
+                                                               # task_id_reactive,
                                                                verbose = VERBOSE)
+  if (current_task_id != task_id_reactive()) {
+    return(FALSE)
+  }
   obj_inputs_full_unconstrained <- generate_legal_unique_samples(round(n/2), k,
                                                                  legal_non_zero_values = area_possible_non_zero_values,
                                                                  max_threshold = area_sum_threshold,
@@ -1475,6 +1552,8 @@ bayesian_optimization <- function(
                                                                  RRembo = TRUE,
                                                                  RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                  RRembo_smart = RREMBO_SMART,
+                                                                 # current_task_id,
+                                                                 # task_id_reactive,
                                                                  verbose = VERBOSE)
   
   obj_inputs_full <- list(valid_samples_high_dimension_categorical = rbind(obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
@@ -1489,11 +1568,17 @@ bayesian_optimization <- function(
                        area_sum_threshold = area_sum_threshold,
                        area_possible_non_zero_values = area_possible_non_zero_values,
                        outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
+                       outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
                        outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
                        exploration = EXPLORATION,
                        penalty_coefficient_arg = PENALTY_COEFFICIENT,
+                       preference_weight_area = 1,
+                       preference_weights_maximize = preference_weights_maximize,
                        scale = SCALE)
   message("[INFO] ...Generating initial inputs and outputs done")
+  if (current_task_id != task_id_reactive()) {
+    return(FALSE)
+  }
   
   obj_inputs_for_gp <- obj_inputs_full$valid_samples_low_dimension
   
@@ -1505,6 +1590,9 @@ bayesian_optimization <- function(
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                         verb = FALSE)
   message("[INFO] ...Fitting GP done")
+  if (current_task_id != task_id_reactive()) {
+    return(FALSE)
+  }
   
   time <- data.frame()
   gp_metric <- c()
@@ -1523,6 +1611,9 @@ bayesian_optimization <- function(
       pb_amount <- 0
       for (i in 1:BAYESIAN_OPTIMIZATION_ITERATIONS) {
         
+        if (current_task_id != task_id_reactive()) {
+          return(FALSE)
+        }
         set.seed(i)
         
         ## Candidate set ----
@@ -1533,6 +1624,9 @@ bayesian_optimization <- function(
           message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Generating candidate set... ")
         }
         begin_inside <- Sys.time()
+        if (current_task_id != task_id_reactive()) {
+          return(FALSE)
+        }
         new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(1e4 / 2, k,
                                                                                     legal_non_zero_values = area_possible_non_zero_values,
                                                                                     max_threshold = area_sum_threshold,
@@ -1540,7 +1634,12 @@ bayesian_optimization <- function(
                                                                                     RRembo = TRUE,
                                                                                     RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                                     RRembo_smart = RREMBO_SMART,
+                                                                                    # current_task_id,
+                                                                                    # task_id_reactive,
                                                                                     verbose = VERBOSE)
+        if (current_task_id != task_id_reactive()) {
+          return(FALSE)
+        }
         new_candidates_obj_inputs_full_unconstrained <- generate_legal_unique_samples(1e4 / 2, k,
                                                                                       legal_non_zero_values = area_possible_non_zero_values,
                                                                                       max_threshold = area_sum_threshold,
@@ -1548,7 +1647,12 @@ bayesian_optimization <- function(
                                                                                       RRembo = TRUE,
                                                                                       RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                                       RRembo_smart = RREMBO_SMART,
+                                                                                      # current_task_id,
+                                                                                      # task_id_reactive,
                                                                                       verbose = VERBOSE)
+        if (current_task_id != task_id_reactive()) {
+          return(FALSE)
+        }
         new_candidates_obj_inputs_full <- list(valid_samples_high_dimension_categorical = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
                                                                                                           new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical)),
                                                valid_samples_low_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension,
@@ -1556,7 +1660,7 @@ bayesian_optimization <- function(
                                                valid_samples_high_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension,
                                                                                               new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension)))
         if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Generating candidate set done ")
+          message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Generating candidate set done")
         }
         time_sample <- Sys.time() - begin_inside
         
@@ -1673,9 +1777,12 @@ bayesian_optimization <- function(
                               area_sum_threshold = area_sum_threshold,
                               area_possible_non_zero_values = area_possible_non_zero_values,
                               outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
+                              outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
                               outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
                               exploration = EXPLORATION,
                               penalty_coefficient_arg = PENALTY_COEFFICIENT,
+                              preference_weight_area = 1,
+                              preference_weights_maximize = preference_weights_maximize,
                               scale = SCALE)
         time_obj_function <- Sys.time() - begin_inside
         if (rstudioapi::isBackgroundJob()) {
@@ -1699,6 +1806,9 @@ bayesian_optimization <- function(
         obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
         obj_outputs <- c(obj_outputs, best_outputs)
         
+        if (current_task_id != task_id_reactive()) {
+          return(FALSE)
+        }
         begin_inside <- Sys.time()
         gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs, verb = VERBOSE)
         time_update_gp <- Sys.time() - begin_inside

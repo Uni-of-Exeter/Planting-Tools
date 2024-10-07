@@ -34,7 +34,7 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "mvtnorm", "prefeR", "dplyr", "magrittr",
                                        "lhs", "sensitivity",
                                        "devtools",
-                                       "progressr",
+                                       "progressr", "doFuture", "promises",
                                        # # Active subspace method
                                        "concordance", "BASS", "zipfR",
                                        # To plot the best map, and save it to a file
@@ -48,6 +48,7 @@ if (!require(RRembo)) {
   library("RRembo")
 }
 dgpsi::init_py()
+plan(sequential)
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -457,6 +458,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   AreaSliderVal <- reactive({input$AreaSlider})
   VisitsSliderVal <- reactive({input$VisitsSlider})
   
+  # Reactive value to control the long-running task (Bayesian optimization)
+  # We track the task ID. If it changes, the previous long-running task gets cancelled.
+  task_id_reactive <- reactiveVal(0)
+  bayesian_optimization_finished_reactive <- reactiveVal(FALSE)
+  
   Text0 <- reactiveVal("")
   Text1 <- reactiveVal("")
   Text2 <- reactiveVal("")
@@ -791,12 +797,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         PreviousFourUniqueRowsReactive(seq(1,LengthVec))
       }else{FourUniqueRowsReactive(NULL)
         PreviousFourUniqueRowsReactive(NULL)}
-      
-      
-      
-      
     }
-    
     
     CreatedBaseMap(0)
     UpdatedExtent(1)
@@ -1020,7 +1021,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   
   
-  
   # Check for changes in all the sliders
   #lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
   # if (input[[sl]]) {
@@ -1029,6 +1029,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   },{
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
       
+      # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
+      current_task_id <- task_id_reactive() + 1
+      task_id_reactive(current_task_id)
       
       SavedVec <- ClickedVector()
       SelectedVec<- SelectedVector()
@@ -1174,63 +1177,92 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           names(SelecTargetCarbon) <- "Carbon"
           names(SelecTargetVisits) <- "Visits"
           
-          bo_results <- bayesian_optimization(
-            seed = 1,
-            FullTable,
-            area_sum_threshold = SelecTargetArea,
-            outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
-            # outcomes_to_minimize_sum_threshold_vector = NULL,
-            VERBOSE = VERBOSE,
-            NOTIFICATIONS = FALSE,
-            PLOT = FALSE,
-
-            BAYESIAN_OPTIMIZATION_ITERATIONS = 8,
-            BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
-            PENALTY_COEFFICIENT = 500,
-            EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
-            EXPLORATION_COEFFICIENT = 0,
-
-            SCALE = FALSE,
-
-            CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
-            DESIGN_POINTS_STRATEGY = "expected improvement",
-
-            CONSTRAINED_INPUTS = TRUE,
-
-            RREMBO_CONTROL = RREMBO_CONTROL,
-            RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
-            RREMBO_SMART = FALSE,
-
-            # GP
-            KERNEL = "matern2.5", # matern2.5 or sexp
-            NUMBER_OF_VECCHIA_NEIGHBOURS = 20
-          )
+          SelectedFullTableRow(SelectedMins[SelecRow, ])
+          SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
           
-          area_sum <- sum(bo_results$area_vector)
-          parcels_activation <- bo_results$area_vector
-          parcels_activation[parcels_activation != 0] <- 1
-          names(parcels_activation) <- NULL
-          
-          last_col <- ncol(bo_results$outcomes_to_maximize)
-          number_of_rows <- nrow(bo_results$outcomes_to_maximize)
-          col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("JulesMean")),
-                        colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"JulesMean")))
-          col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
-                           sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
-          
-          selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
-                                                              # CarbonMean, BioMeans, Area, VisitsMean
-                                                              col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
-                                                              # CarbonSD, BioSD, VisitsSD
-                                                              col_sums_SD), nrow = 1))
-          
-          colnames(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow, ])
-          selectedvectorvalue <- selectedfulltablerowvalue[, 1:length(parcels_activation)]
-          
-          # SelectedFullTableRow(SelectedMins[SelecRow, ])
-          # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-          SelectedFullTableRow(selectedfulltablerowvalue)
-          SelectedVector(selectedvectorvalue)
+          browser()
+          reactive({
+          future_promise(expr = {
+            bayesian_optimization_finished_reactive(FALSE)
+            bo_results <- bayesian_optimization(
+              seed = 1,
+              FullTable,
+              area_sum_threshold = SelecTargetArea,
+              outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
+              # outcomes_to_minimize_sum_threshold_vector = NULL,
+              VERBOSE = VERBOSE,
+              NOTIFICATIONS = FALSE,
+              PLOT = FALSE,
+              
+              BAYESIAN_OPTIMIZATION_ITERATIONS = 10,
+              BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
+              PENALTY_COEFFICIENT = 500,
+              # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
+              EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
+              EXPLORATION_COEFFICIENT = 0,
+              
+              SCALE = FALSE,
+              
+              preference_weight_area = 1,
+              preference_weights_maximize = rep(1, length(c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits))),
+              # preference_weights_minimize = rep(1, length(c())),
+              
+              current_task_id = current_task_id,
+              task_id_reactive = task_id_reactive,
+              
+              CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
+              DESIGN_POINTS_STRATEGY = "expected improvement",
+              
+              CONSTRAINED_INPUTS = TRUE,
+              
+              RREMBO_CONTROL = RREMBO_CONTROL,
+              RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+              RREMBO_SMART = FALSE,
+              
+              # GP
+              KERNEL = "matern2.5", # matern2.5 or sexp
+              NUMBER_OF_VECCHIA_NEIGHBOURS = 20
+            )
+            return(bo_results)
+          }, seed = NULL) %...>% (function(bo_results) {
+            # Check if this result is invalid (i.e. a newer task has started)
+            if (isFALSE(bo_results) || current_task_id != task_id_reactive()) {
+              message("[INFO] The Bayesian optimization has been cancelled.")
+              showNotification("The previous Bayesian optimization has been cancelled.")
+              return()
+            } else { # If the result is valid (i.e. there are no new tasks started)
+              area_sum <- sum(bo_results$area_vector)
+              parcels_activation <- bo_results$area_vector
+              parcels_activation[parcels_activation != 0] <- 1
+              names(parcels_activation) <- NULL
+              
+              last_col <- ncol(bo_results$outcomes_to_maximize)
+              number_of_rows <- nrow(bo_results$outcomes_to_maximize)
+              col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("JulesMean")),
+                            colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"JulesMean")))
+              col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
+                               sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
+              
+              selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
+                                                                  # CarbonMean, BioMeans, Area, VisitsMean
+                                                                  col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
+                                                                  # CarbonSD, BioSD, VisitsSD
+                                                                  col_sums_SD), nrow = 1))
+              
+              colnames(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow, ])
+              selectedvectorvalue <- selectedfulltablerowvalue[, 1:length(parcels_activation)]
+              
+              # SelectedFullTableRow(SelectedMins[SelecRow, ])
+              # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+              SelectedFullTableRow(selectedfulltablerowvalue)
+              SelectedVector(selectedvectorvalue)
+              
+              showNotification("Bayesian optimization finished successfully.")
+              
+              bayesian_optimization_finished_reactive(TRUE)
+            }
+          })
+          })
           
         } else {
           ZeroSelected<-SelectedSimMat2[1,]
