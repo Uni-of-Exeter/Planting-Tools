@@ -38,7 +38,9 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        # # Active subspace method
                                        "concordance", "BASS", "zipfR",
                                        # To plot the best map, and save it to a file
-                                       "mapview", "webshot"))
+                                       "mapview", "webshot",
+                                       # File-locking, for multi-process
+                                       "flock"))
 if (!require(dgpsi)) {
   devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
   library("dgpsi")
@@ -48,7 +50,11 @@ if (!require(RRembo)) {
   library("RRembo")
 }
 dgpsi::init_py()
-plan(sequential)
+plan(multisession, workers = 2)
+
+# Value to control the long-running task (Bayesian optimization in Tab 1)
+# We track the task ID. If it changes, the previous long-running task gets cancelled.
+set_latest_task_id(0)
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -246,10 +252,10 @@ RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
 handlers(global = TRUE)
 handlers(
   list(
+    handler_shiny(),
     handler_progress(
       format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    ),
-    handler_shiny()
+    )
   )
 )
 
@@ -435,6 +441,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   N_TARGETS <- N_TARGETS_ARG1
   NAME_CONVERSION <- NAME_CONVERSION_ARG1
   
+  bayesian_optimization_finished <- reactiveVal(TRUE)
+  
   CarbonSliderVal <- reactive({input$SliderMain})
   
   # bioSliderVal <- reactive({input$BioSlider})
@@ -457,11 +465,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   })
   AreaSliderVal <- reactive({input$AreaSlider})
   VisitsSliderVal <- reactive({input$VisitsSlider})
-  
-  # Reactive value to control the long-running task (Bayesian optimization)
-  # We track the task ID. If it changes, the previous long-running task gets cancelled.
-  task_id_reactive <- reactiveVal(0)
-  bayesian_optimization_finished_reactive <- reactiveVal(FALSE)
   
   Text0 <- reactiveVal("")
   Text1 <- reactiveVal("")
@@ -840,6 +843,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
           removeControl(mapp,layerId="legend")
           
+          # If the bayesian optimization is not finished, SelectedFullTableRow() is NULL, so try again 2 seconds later
+          # while (isFALSE(bayesian_optimization_finished())) {
+          if (is.null(SelectedFullTableRow())) {
+            invalidateLater(2000)
+          }
           SFTR<-SelectedFullTableRow()
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
@@ -1027,11 +1035,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   observeEvent({input$map_shape_click
     lapply(SliderNames, function(sl) {input[[sl]]})
   },{
+    message("Slider changed")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
       
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
-      current_task_id <- task_id_reactive() + 1
-      task_id_reactive(current_task_id)
+      current_task_id <- get_latest_task_id() + 1
+      set_latest_task_id(current_task_id)
       
       SavedVec <- ClickedVector()
       SelectedVec<- SelectedVector()
@@ -1056,6 +1065,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           SpeciesListSelectedSD[var_name] <- list(value())
         }
         VisitsSelectedSD <- VisitsSelectedSD0()
+        
+        if (current_task_id != get_latest_task_id()) {
+          notif(paste("Task", current_task_id, "cancelled."))
+          return()
+        }
         
         tmp <- outputmap_calculateMats(input = input,
                                        SavedVecLoc = SavedVec,
@@ -1090,6 +1104,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
         }
         rm(tmp)
+        
+        if (current_task_id != get_latest_task_id()) {
+          notif(paste("Task", current_task_id, "cancelled."))
+          return()
+        }
         
         SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
                                                # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
@@ -1145,6 +1164,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             DistSliderVisits <- (SubsetMeetTargets$Visits - SelecTargetVisits) / (max(SelectedSimMat2$Visits))
           }
           
+          if (current_task_id != get_latest_task_id()) {
+            notif(paste("Task", current_task_id, "cancelled."))
+            return()
+          }
+          
           # REMINDER TO SCALE VALUES
           DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
           # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
@@ -1165,6 +1189,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           }
           SelecRow <- which.min(result)
           
+          if (current_task_id != get_latest_task_id()) {
+            notif(paste("Task", current_task_id, "cancelled."))
+            return()
+          }
+          
           SelecTargetBioVector <- c()
           for (x in names(SpeciesListSelected)) {
             var_name <- paste0("SelecTargetBio", x)
@@ -1177,93 +1206,215 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           names(SelecTargetCarbon) <- "Carbon"
           names(SelecTargetVisits) <- "Visits"
           
+          if (current_task_id != get_latest_task_id()) {
+            notif(paste("Task", current_task_id, "cancelled."))
+            return()
+          }
+          
+          message("Updating SelectedFullTableRow before BO ...")
           SelectedFullTableRow(SelectedMins[SelecRow, ])
           SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+          message("Updated SelectedFullTableRow before BO done")
           
-          browser()
-          reactive({
-          future_promise(expr = {
-            bayesian_optimization_finished_reactive(FALSE)
-            bo_results <- bayesian_optimization(
-              seed = 1,
-              FullTable,
-              area_sum_threshold = SelecTargetArea,
-              outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
-              # outcomes_to_minimize_sum_threshold_vector = NULL,
-              VERBOSE = VERBOSE,
-              NOTIFICATIONS = FALSE,
-              PLOT = FALSE,
-              
-              BAYESIAN_OPTIMIZATION_ITERATIONS = 10,
-              BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
-              PENALTY_COEFFICIENT = 500,
-              # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
-              EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
-              EXPLORATION_COEFFICIENT = 0,
-              
-              SCALE = FALSE,
-              
-              preference_weight_area = 1,
-              preference_weights_maximize = rep(1, length(c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits))),
-              # preference_weights_minimize = rep(1, length(c())),
-              
-              current_task_id = current_task_id,
-              task_id_reactive = task_id_reactive,
-              
-              CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
-              DESIGN_POINTS_STRATEGY = "expected improvement",
-              
-              CONSTRAINED_INPUTS = TRUE,
-              
-              RREMBO_CONTROL = RREMBO_CONTROL,
-              RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
-              RREMBO_SMART = FALSE,
-              
-              # GP
-              KERNEL = "matern2.5", # matern2.5 or sexp
-              NUMBER_OF_VECCHIA_NEIGHBOURS = 20
-            )
-            return(bo_results)
-          }, seed = NULL) %...>% (function(bo_results) {
-            # Check if this result is invalid (i.e. a newer task has started)
-            if (isFALSE(bo_results) || current_task_id != task_id_reactive()) {
-              message("[INFO] The Bayesian optimization has been cancelled.")
-              showNotification("The previous Bayesian optimization has been cancelled.")
-              return()
-            } else { # If the result is valid (i.e. there are no new tasks started)
-              area_sum <- sum(bo_results$area_vector)
-              parcels_activation <- bo_results$area_vector
-              parcels_activation[parcels_activation != 0] <- 1
-              names(parcels_activation) <- NULL
-              
-              last_col <- ncol(bo_results$outcomes_to_maximize)
-              number_of_rows <- nrow(bo_results$outcomes_to_maximize)
-              col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("JulesMean")),
-                            colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"JulesMean")))
-              col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
-                               sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
-              
-              selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
-                                                                  # CarbonMean, BioMeans, Area, VisitsMean
-                                                                  col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
-                                                                  # CarbonSD, BioSD, VisitsSD
-                                                                  col_sums_SD), nrow = 1))
-              
-              colnames(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow, ])
-              selectedvectorvalue <- selectedfulltablerowvalue[, 1:length(parcels_activation)]
-              
-              # SelectedFullTableRow(SelectedMins[SelecRow, ])
-              # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-              SelectedFullTableRow(selectedfulltablerowvalue)
-              SelectedVector(selectedvectorvalue)
-              
-              showNotification("Bayesian optimization finished successfully.")
-              
-              bayesian_optimization_finished_reactive(TRUE)
+          if (current_task_id != get_latest_task_id()) {
+            notif(paste("Task", current_task_id, "cancelled."))
+            return()
+          }
+          
+          message("BO future start")
+          bayesian_optimization_finished(FALSE)
+          
+          if (exists("infpref")) {
+            # Order is c("Carbon", SPECIES, "Area","Visits")
+            len <- length(infpref)
+            preference_weight_area <- infpref[len - 1]
+            mypref <- infpref[c(1:(len - 2), len)]
+          } else {
+            preference_weight_area <- 1
+            mypref <- rep(1, length(c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits)))
+          }
+          # https://shiny.posit.co/r/articles/improve/nonblocking/index.html
+          bayesian_optimization_extendedtask <- ExtendedTask$new(function(
+            seed,
+            FullTable,
+            area_sum_threshold,
+            outcomes_to_maximize_sum_threshold_vector,
+            # outcomes_to_minimize_sum_threshold_vector = NULL,
+            VERBOSE,
+            NOTIFICATIONS,
+            PLOT,
+            
+            BAYESIAN_OPTIMIZATION_ITERATIONS,
+            # progressr_object_arg,
+            # progressr_object = progressor(steps = max_loop_progress_bar, message = "Bayesian optimization"),
+            BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+            PENALTY_COEFFICIENT,
+            EXPLORATION,
+            EXPLORATION_COEFFICIENT,
+            
+            SCALE,
+            
+            preference_weight_area,
+            preference_weights_maximize,
+            # preference_weights_minimize = rep(1, length(c())),
+            
+            current_task_id,
+            
+            CUSTOM_DESIGN_POINTS_STRATEGIES,
+            DESIGN_POINTS_STRATEGY,
+            
+            CONSTRAINED_INPUTS,
+            
+            RREMBO_CONTROL,
+            RREMBO_HYPER_PARAMETERS,
+            RREMBO_SMART,
+            
+            # GP
+            KERNEL, # matern2.5 or sexp
+            NUMBER_OF_VECCHIA_NEIGHBOURS
+          ) {
+            future_promise(expr = {
+              bo_results <- bayesian_optimization(
+                # session = session,
+                seed = seed,
+                FullTable = FullTable,
+                area_sum_threshold = area_sum_threshold,
+                outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
+                # outcomes_to_minimize_sum_threshold_vector = NULL,
+                VERBOSE = VERBOSE,
+                NOTIFICATIONS = NOTIFICATIONS,
+                PLOT = PLOT,
+                
+                BAYESIAN_OPTIMIZATION_ITERATIONS = BAYESIAN_OPTIMIZATION_ITERATIONS,
+                # progressr_object = progressr_object_arg,
+                # progressr_object = progressor(steps = max_loop_progress_bar, message = "Bayesian optimization"),
+                BAYESIAN_OPTIMIZATION_BATCH_SIZE = BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+                PENALTY_COEFFICIENT = PENALTY_COEFFICIENT,
+                # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
+                EXPLORATION = EXPLORATION, # FALSE for tab 1, TRUE for tab 2
+                EXPLORATION_COEFFICIENT = EXPLORATION_COEFFICIENT,
+                
+                SCALE = SCALE,
+                
+                preference_weight_area = preference_weight_area,
+                preference_weights_maximize = preference_weights_maximize,
+                # preference_weights_minimize = rep(1, length(c())),
+                
+                current_task_id = current_task_id,
+                
+                CUSTOM_DESIGN_POINTS_STRATEGIES = CUSTOM_DESIGN_POINTS_STRATEGIES,
+                DESIGN_POINTS_STRATEGY = DESIGN_POINTS_STRATEGY,
+                
+                CONSTRAINED_INPUTS = CONSTRAINED_INPUTS,
+                
+                RREMBO_CONTROL = RREMBO_CONTROL,
+                RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+                RREMBO_SMART = RREMBO_SMART,
+                
+                # GP
+                KERNEL = KERNEL, # matern2.5 or sexp
+                NUMBER_OF_VECCHIA_NEIGHBOURS = NUMBER_OF_VECCHIA_NEIGHBOURS
+              )
+              return(bo_results)
+            }, seed = NULL) %...>% {
+              bo_results <- value(.)
+              # Check if this result is invalid (i.e. a newer task has started)
+              if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
+                message("The previous Bayesian optimization has been cancelled.")
+                showNotification("The previous Bayesian optimization has been cancelled.")
+                return()
+              } else { # If the result is valid (i.e. there are no new tasks started)
+                area_sum <- sum(bo_results$area_vector)
+                parcels_activation <- bo_results$area_vector
+                parcels_activation[parcels_activation != 0] <- 1
+                names(parcels_activation) <- NULL
+                
+                last_col <- ncol(bo_results$outcomes_to_maximize)
+                number_of_rows <- nrow(bo_results$outcomes_to_maximize)
+                col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("JulesMean")),
+                              colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"JulesMean")))
+                col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
+                                 sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
+                
+                selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
+                                                                    # CarbonMean, BioMeans, Area, VisitsMean
+                                                                    col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
+                                                                    # CarbonSD, BioSD, VisitsSD
+                                                                    col_sums_SD), nrow = 1))
+                
+                colnames(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow, ])
+                selectedvectorvalue <- selectedfulltablerowvalue[, 1:length(parcels_activation)]
+                
+                # SelectedFullTableRow(SelectedMins[SelecRow, ])
+                # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+                SelectedFullTableRow(selectedfulltablerowvalue)
+                SelectedVector(selectedvectorvalue)
+                
+                message("Bayesian optimization finished successfully.")
+                showNotification("Bayesian optimization finished successfully.")
+                
+              }
+              bayesian_optimization_finished(TRUE)
+            } %...!% {
+              error <- .
+              message("[ERROR] future_promise resulted in the error:")
+              message(error)
+              notif(paste("[ERROR] future_promise resulted in the error:", error), rbind = FALSE)
             }
           })
-          })
           
+          # # shiny::withProgress(
+          # progressr::withProgressShiny(
+          #   # progressr::with_progress(
+          #   message = "Finding strategy",
+          #   value = 0,
+          #   # session = session,
+          #   # min = 0,
+          #   # max = BAYESIAN_OPTIMIZATION_ITERATIONS * 3,
+          #   expr = {
+              # my_progressr_object <- progressor(steps = 5 * 3, message = "Bayesian optimization")
+              bayesian_optimization_extendedtask$invoke(
+                seed = 1,
+                FullTable = FullTable,
+                area_sum_threshold = SelecTargetArea,
+                outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
+                # outcomes_to_minimize_sum_threshold_vector = NULL,
+                VERBOSE = FALSE,
+                NOTIFICATIONS = TRUE,
+                PLOT = FALSE,
+                
+                BAYESIAN_OPTIMIZATION_ITERATIONS = 5,
+                # progressr_object = function(amount = 0, message = "") {},
+                # progressr_object_arg = my_progressr_object,
+                BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
+                PENALTY_COEFFICIENT = 5000,
+                # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
+                EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
+                EXPLORATION_COEFFICIENT = 0,
+                
+                SCALE = FALSE,
+                
+                preference_weight_area = preference_weight_area,
+                preference_weights_maximize = mypref,
+                # preference_weights_minimize = rep(1, length(c())),
+                
+                current_task_id = current_task_id,
+                
+                CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
+                DESIGN_POINTS_STRATEGY = "expected improvement",
+                
+                CONSTRAINED_INPUTS = TRUE,
+                
+                RREMBO_CONTROL = RREMBO_CONTROL,
+                RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+                RREMBO_SMART = FALSE,
+                
+                # GP
+                KERNEL = "matern2.5", # matern2.5 or sexp
+                NUMBER_OF_VECCHIA_NEIGHBOURS = 20
+              )
+              message("BO future end")
+            # })
         } else {
           ZeroSelected<-SelectedSimMat2[1,]
           ZeroSelected<-replace(ZeroSelected,1:length(ZeroSelected),0)

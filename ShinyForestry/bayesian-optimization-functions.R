@@ -24,7 +24,6 @@ generate_legal_unique_samples <- function(n, k,
                                           RRembo_hyper_parameters = NULL,
                                           RRembo_smart = FALSE,
                                           # current_task_id,
-                                          # task_id_reactive,
                                           verbose = FALSE) {
   
   if (isTRUE(RRembo) && is.null(RRembo_hyper_parameters)) {
@@ -47,7 +46,7 @@ generate_legal_unique_samples <- function(n, k,
   if (isTRUE(RRembo)) use_dplyr <- FALSE
   
   while (nrow(valid_samples) < n && attempts <= max_attempts) {
-    # if (current_task_id != task_id_reactive()) {
+    # if (current_task_id != get_latest_task_id()) {
     #   return(FALSE)
     # }
     if (isTRUE(verbose)) message("[DEBUG] Attempt ", attempts, "/", max_attempts, " at generating inputs (", nrow(valid_samples), "/", n, " so far)... ", appendLF = FALSE)
@@ -78,7 +77,7 @@ generate_legal_unique_samples <- function(n, k,
     # TODO REMBO with dplyr
     if (isTRUE(RRembo)) use_dplyr <- FALSE
     
-    # if (current_task_id != task_id_reactive()) {
+    # if (current_task_id != get_latest_task_id()) {
     #   return(FALSE)
     # }
     if (isTRUE(RRembo)) {
@@ -113,7 +112,7 @@ generate_legal_unique_samples <- function(n, k,
       if (isTRUE(verbose)) message("[DEBUG] generate_legal_unique_samples() -> generate_legal_samples() done")
       
     }
-    # if (current_task_id != task_id_reactive()) {
+    # if (current_task_id != get_latest_task_id()) {
     #   return(FALSE)
     # }
     
@@ -1336,6 +1335,86 @@ theme_Publication <- function(base_size = 10) {
     )
 }
 
+# https://ntfy.sh/uoerstudioserver
+notif <- function(msg, quiet = TRUE, curl_flags = NULL, priority = "default", rbind = TRUE, pad_character = "_") {
+  pad_notif_message <- function(msg, pad_character = "_") {
+    max_key_width <- max(nchar(rownames(msg)))
+    padded_notif_msg <- sapply(1:nrow(msg), function(i, max_key_width, msg) {
+      key <- rownames(msg)[i]
+      value <- msg[i]
+      # result <- sprintf("%-*s  %s", max_key_width, key, value)
+      pad_length <- max_key_width - nchar(key)
+      formatted_key <- paste0(key, strrep(pad_character, pad_length))
+      result <- paste0(formatted_key, pad_character, pad_character, value)
+      return(result)
+    }, max_key_width = max_key_width, msg = msg)
+    padded_notif_msg <- paste(padded_notif_msg, collapse = "\n")
+    return(padded_notif_msg)
+  }
+  
+  if (isTRUE(rbind)) {
+    # Convert the message to a string without column names like "[,1]"
+    if (isTRUE(dim(msg)[2] > 0) && is.null(colnames(msg))) {
+      colnames(msg) <- ""
+    }
+    # # gsub in case msg contains strings that get quoted with \"
+    # msg <- paste(gsub('\"', '', capture.output(msg)), collapse = "\n")
+    
+    msg <- pad_notif_message(msg, pad_character = pad_character)
+  }
+  
+  # Construct the curl command
+  command <- paste0(
+    'curl --silent --show-error ',
+    # Priority (https://docs.ntfy.sh/publish/?h=priority#message-priority)
+    '-H "Priority: ', priority, '"',
+    curl_flags,
+    ' --data "', 
+    msg,
+    '" ntfy.sh/uoerstudioserver'
+  )
+  
+  # Execute the command
+  system(command, ignore.stdout = quiet, ignore.stderr = quiet)
+}
+
+get_foldersource <- function() {
+  FolderSource <- normalizePath(getwd())
+  if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
+    FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
+  }
+  return(FolderSource)
+}
+
+get_latest_task_id <- function() {
+  FolderSource <- get_foldersource()
+  task_id_filename <- normalizePath(file.path(FolderSource, "task_id.txt"))
+  lockfile_name <- normalizePath(file.path(FolderSource, "task_id_lockfile"))
+  
+  if (isFALSE(file.exists(task_id_filename))) {
+    stop("[ERROR] get_latest_task_id() is trying to read the file task_id.txt but it does not exist.")
+  }
+  mylock <- flock::lock(lockfile_name)
+  latest_task_id <- as.integer(readLines(task_id_filename))
+  flock::unlock(mylock)
+  file.remove(lockfile_name)
+  return(latest_task_id)
+}
+
+set_latest_task_id <- function(task_id) {
+  FolderSource <- get_foldersource()
+  task_id_filename <- normalizePath(file.path(FolderSource, "task_id.txt"))
+  lockfile_name <- normalizePath(file.path(FolderSource, "task_id_lockfile"))
+  
+  if (isFALSE(file.exists(task_id_filename))) {
+    file.create(task_id_filename)
+  }
+  mylock <- flock::lock(lockfile_name)
+  base::write(x = task_id, file = task_id_filename)
+  flock::unlock(mylock)
+  file.remove(lockfile_name)
+}
+
 bayesian_optimization <- function(
     seed = 1,
     FullTable,
@@ -1346,13 +1425,13 @@ bayesian_optimization <- function(
     NOTIFICATIONS = FALSE,
     PLOT = FALSE,
     
-    # We track the task ID. If it changes, this gets cancelled.
+    # We track the task ID. If it changes from get_latest_task_id(), this gets cancelled.
     current_task_id,
-    task_id_reactive,
     
     BAYESIAN_OPTIMIZATION_ITERATIONS = 10,
+    progressr_object = function(amount = 0, message = "") {},
     BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
-    PENALTY_COEFFICIENT = 100,
+    PENALTY_COEFFICIENT,
     EXPLORATION = TRUE, # FALSE for tab 1, TRUE for tab 2
     EXPLORATION_COEFFICIENT = 0,
     
@@ -1385,15 +1464,14 @@ bayesian_optimization <- function(
     KERNEL = "matern2.5", # matern2.5 or sexp
     NUMBER_OF_VECCHIA_NEIGHBOURS = 20
 ) {
-  
   message("[INFO] Starting a Bayesian Optimization ...")
-  
-  if (isFALSE(reticulate::py_module_available("dgpsi"))) {
-    tryCatch({dgpsi::init_py(verb = VERBOSE)},
-             error = function(e) {warning(e);stop(reticulate::py_last_error())})
-  }
-  
-  shiny::showNotification("Starting a search for the best strategy ...", duration = 10)
+  pb <- progressr_object
+  notif(paste0("[INFO] Starting a Bayesian Optimization ..."), rbind = FALSE)
+  # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
+  #   tryCatch({dgpsi::init_py(verb = VERBOSE)},
+  #            error = function(e) {warning(e);stop(reticulate::py_last_error())})
+  # }
+  # shiny::showNotification("Starting a search for the best strategy ...", duration = 10)
   
   # Setup parameters ----
   set.seed(seed)
@@ -1402,53 +1480,9 @@ bayesian_optimization <- function(
   # Number of sample points
   # Generate 10 * the dimension of the input
   n <- 10 * k
-  
   begin <- Sys.time()
   
-  if (isTRUE(NOTIFICATIONS)) {
-    # https://ntfy.sh/uoerstudioserver
-    notif <- function(msg, quiet = TRUE, curl_flags = NULL, priority = "default", rbind = TRUE, pad_character = "_") {
-      pad_notif_message <- function(msg, pad_character = "_") {
-        max_key_width <- max(nchar(rownames(msg)))
-        padded_notif_msg <- sapply(1:nrow(msg), function(i, max_key_width, msg) {
-          key <- rownames(msg)[i]
-          value <- msg[i]
-          # result <- sprintf("%-*s  %s", max_key_width, key, value)
-          pad_length <- max_key_width - nchar(key)
-          formatted_key <- paste0(key, strrep(pad_character, pad_length))
-          result <- paste0(formatted_key, pad_character, pad_character, value)
-          return(result)
-        }, max_key_width = max_key_width, msg = msg)
-        padded_notif_msg <- paste(padded_notif_msg, collapse = "\n")
-        return(padded_notif_msg)
-      }
-      
-      if (rbind == TRUE) {
-        # Convert the message to a string without column names like "[,1]"
-        if (isTRUE(dim(msg)[2] > 0) && is.null(colnames(msg))) {
-          colnames(msg) <- ""
-        }
-        # # gsub in case msg contains strings that get quoted with \"
-        # msg <- paste(gsub('\"', '', capture.output(msg)), collapse = "\n")
-        
-        msg <- pad_notif_message(msg, pad_character = pad_character)
-      }
-      
-      # Construct the curl command
-      command <- paste0(
-        'curl --silent --show-error ',
-        # Priority (https://docs.ntfy.sh/publish/?h=priority#message-priority)
-        '-H "Priority: ', priority, '"',
-        curl_flags,
-        ' --data "', 
-        msg,
-        '" ntfy.sh/uoerstudioserver'
-      )
-      
-      # Execute the command
-      system(command, ignore.stdout = quiet, ignore.stderr = quiet)
-    }
-  } else {
+  if (isFALSE(NOTIFICATIONS)) {
     notif <- function(msg, quiet = TRUE, curl_flags = NULL, priority = "default", rbind = TRUE, pad_character = "_") {}
   }
   area_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select(area) %>% unlist(use.names = FALSE)
@@ -1528,10 +1562,11 @@ bayesian_optimization <- function(
   carbon_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select(JulesMean) %>% unlist(use.names = FALSE)
   
   # Generate inputs + outputs ----
-  if (current_task_id != task_id_reactive()) {
+  if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
   message("[INFO] Generating initial inputs and outputs...")
+  notif(paste0("[INFO] Generating initial inputs and outputs..."), rbind = FALSE)
   obj_inputs_full_constrained <- generate_legal_unique_samples(round(n/2), k,
                                                                legal_non_zero_values = area_possible_non_zero_values,
                                                                max_threshold = area_sum_threshold,
@@ -1540,9 +1575,8 @@ bayesian_optimization <- function(
                                                                RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                RRembo_smart = RREMBO_SMART,
                                                                # current_task_id,
-                                                               # task_id_reactive,
                                                                verbose = VERBOSE)
-  if (current_task_id != task_id_reactive()) {
+  if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
   obj_inputs_full_unconstrained <- generate_legal_unique_samples(round(n/2), k,
@@ -1553,8 +1587,12 @@ bayesian_optimization <- function(
                                                                  RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                  RRembo_smart = RREMBO_SMART,
                                                                  # current_task_id,
-                                                                 # task_id_reactive,
                                                                  verbose = VERBOSE)
+  
+  # Add a strategy that plants everywhere, and one that plants nowhere, to handle the case when the user has some extreme thresholds
+  obj_inputs_full_maximum_planting_high_dim_categorical <- area_possible_non_zero_values
+  obj_inputs_full_maximum_planting_high_dim <- area_possible_non_zero_values
+  obj_inputs_full_maximum_planting_low_dim <- area_possible_non_zero_values
   
   obj_inputs_full <- list(valid_samples_high_dimension_categorical = rbind(obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
                                                                            obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical),
@@ -1576,7 +1614,8 @@ bayesian_optimization <- function(
                        preference_weights_maximize = preference_weights_maximize,
                        scale = SCALE)
   message("[INFO] ...Generating initial inputs and outputs done")
-  if (current_task_id != task_id_reactive()) {
+  notif(paste0("[INFO] Generating initial inputs and outputs done"), rbind = FALSE)
+  if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
   
@@ -1584,13 +1623,15 @@ bayesian_optimization <- function(
   
   # Fitting GP ----
   message("[INFO] Fitting GP...")
+  notif(paste0("[INFO] Fitting GP..."), rbind = FALSE)
   gp_model <- dgpsi::gp(obj_inputs_for_gp, obj_outputs,
                         name = KERNEL,
                         vecchia = TRUE,
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                         verb = FALSE)
   message("[INFO] ...Fitting GP done")
-  if (current_task_id != task_id_reactive()) {
+  notif(paste0("[INFO] Generating initial inputs and outputs done"), rbind = FALSE)
+  if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
   
@@ -1598,235 +1639,229 @@ bayesian_optimization <- function(
   gp_metric <- c()
   
   # Bayesian optimization loop ----
-  handlers(global = TRUE)
-  # with_progress({
-  withProgressShiny(
-    message = "Finding strategy",
-    value = 0,
-    min = 0,
-    max = BAYESIAN_OPTIMIZATION_ITERATIONS * 3,
-    expr = {
-      max_loop_progress_bar <- BAYESIAN_OPTIMIZATION_ITERATIONS * 3
-      pb <- progressor(steps = max_loop_progress_bar, message = "Bayesian optimization")
-      pb_amount <- 0
-      for (i in 1:BAYESIAN_OPTIMIZATION_ITERATIONS) {
-        
-        if (current_task_id != task_id_reactive()) {
-          return(FALSE)
-        }
-        set.seed(i)
-        
-        ## Candidate set ----
-        pb_amount <- pb_amount + 1
-        pb(message = paste0(pb_amount, "/", max_loop_progress_bar, " Generating candidate set..."))
-        
-        if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Generating candidate set... ")
-        }
-        begin_inside <- Sys.time()
-        if (current_task_id != task_id_reactive()) {
-          return(FALSE)
-        }
-        new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(1e4 / 2, k,
-                                                                                    legal_non_zero_values = area_possible_non_zero_values,
-                                                                                    max_threshold = area_sum_threshold,
-                                                                                    constrained = CONSTRAINED_INPUTS,
-                                                                                    RRembo = TRUE,
-                                                                                    RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
-                                                                                    RRembo_smart = RREMBO_SMART,
-                                                                                    # current_task_id,
-                                                                                    # task_id_reactive,
-                                                                                    verbose = VERBOSE)
-        if (current_task_id != task_id_reactive()) {
-          return(FALSE)
-        }
-        new_candidates_obj_inputs_full_unconstrained <- generate_legal_unique_samples(1e4 / 2, k,
-                                                                                      legal_non_zero_values = area_possible_non_zero_values,
-                                                                                      max_threshold = area_sum_threshold,
-                                                                                      constrained = FALSE,
-                                                                                      RRembo = TRUE,
-                                                                                      RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
-                                                                                      RRembo_smart = RREMBO_SMART,
-                                                                                      # current_task_id,
-                                                                                      # task_id_reactive,
-                                                                                      verbose = VERBOSE)
-        if (current_task_id != task_id_reactive()) {
-          return(FALSE)
-        }
-        new_candidates_obj_inputs_full <- list(valid_samples_high_dimension_categorical = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
-                                                                                                          new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical)),
-                                               valid_samples_low_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension,
-                                                                                             new_candidates_obj_inputs_full_unconstrained$valid_samples_low_dimension)),
-                                               valid_samples_high_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension,
-                                                                                              new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension)))
-        if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Generating candidate set done")
-        }
-        time_sample <- Sys.time() - begin_inside
-        
-        new_candidates_obj_inputs <- new_candidates_obj_inputs_full$valid_samples_high_dimension_categorical
-        new_candidates_obj_inputs_for_gp <- new_candidates_obj_inputs_full$valid_samples_low_dimension
-        
-        ## Generate acquisition values ----
-        # pb_amount <- pb_amount + 1
-        # pb(message = paste0(pb_amount, "/", max_loop_progress_bar, " Calculating acquisition values ..."))
-        if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Calculating acquisition values ...", appendLF = FALSE)
-        }
-        
-        begin_inside <- Sys.time()
-        
-        if (isTRUE(RREMBO_SMART) && isTRUE(RREMBO_HYPER_PARAMETERS$control$reverse)) {
-          acquisition_values <- EI_Rembo(x = new_candidates_obj_inputs_for_gp,
-                                         model = gp_model,
-                                         RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
-                                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
-                                         type = DESIGN_POINTS_STRATEGY,
-                                         minimize_objective_function = TRUE)
-        } else {
-          # Use a custom acquisition function and selection method
-          acquisition_values <- acquisition_function_dgpsi(data_points = new_candidates_obj_inputs_for_gp,
-                                                           gp_object = gp_model,
-                                                           coefficient = EXPLORATION_COEFFICIENT,
-                                                           type = DESIGN_POINTS_STRATEGY,
-                                                           M = NUMBER_OF_VECCHIA_NEIGHBOURS)
-        }
-        new_input_indices <- batch_selection(acquisition_values, batch_size = 1)
-        
-        best_initial_acquisition_value_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.max(acquisition_values), ]
-        time_batch_trick <- Sys.time() - begin_inside
-        if (rstudioapi::isBackgroundJob()) {
-          message("done")
-        }
-        
-        ## Optimization of acquisition function ----
-        pb_amount <- pb_amount + 1
-        pb(message = paste0(pb_amount, "/", max_loop_progress_bar, " Optimizing acquisition function ..."))
-        if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, "Optimizing acquisition function ... ", appendLF = FALSE)
-        }
-        if (isTRUE(RREMBO_SMART)) {
-          if (RREMBO_HYPER_PARAMETERS$control$reverse) {
-            boundsEIopt <- rowSums(abs(RREMBO_HYPER_PARAMETERS$tA))
-          } else {
-            boundsEIopt <- rep(RREMBO_HYPER_PARAMETERS$bxsize, RREMBO_HYPER_PARAMETERS$d)
-          }
-          spartan <- pmin(boundsEIopt, pmax(-boundsEIopt, best_initial_acquisition_value_obj_input_for_gp +
-                                              rnorm(RREMBO_HYPER_PARAMETERS$d, sd = 0.05)))
-        } else {
-          spartan <- best_initial_acquisition_value_obj_input_for_gp
-        }
-        spartan <- matrix(spartan, nrow = 1)
-        
-        # Optimize low dimensional acquisition function parameters
-        optimum <- nlminb(start = spartan,
-                          objective = acquisition_function_dgpsi,
-                          # model = gp_model,
-                          # RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
-                          # type = DESIGN_POINTS_STRATEGY,
-                          # minimize_objective_function = TRUE,
-                          gp_object = gp_model,
-                          M = NUMBER_OF_VECCHIA_NEIGHBOURS,
-                          return_negative = TRUE)
-        # gradient = ,
-        # hessian = ,
-        # control = list(trace = VERBOSE))
-        
-        if (optimum$convergence != 0) {
-          warning("[WARNING] In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
-        }
-        
-        best_inputs_for_gp <- matrix(optimum$par, ncol = 6)
-        
-        if (isTRUE(RREMBO_SMART)) {
-          if (isTRUE(RREMBO_HYPER_PARAMETERS$control$reverse)) {
-            best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_zonotope(DoE_low_dimension = best_inputs_for_gp,
-                                                                                              A = RREMBO_HYPER_PARAMETERS$A,
-                                                                                              Amat = RREMBO_HYPER_PARAMETERS$Amat,
-                                                                                              Aind = RREMBO_HYPER_PARAMETERS$Aind,
-                                                                                              upper = rep(1, k),
-                                                                                              lower = rep(0, k))
-          } else {
-            best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_original(DoE_low_dimension = best_inputs_for_gp,
-                                                                                              A = RREMBO_HYPER_PARAMETERS$A,
-                                                                                              Amat = RREMBO_HYPER_PARAMETERS$Amat,
-                                                                                              Aind = RREMBO_HYPER_PARAMETERS$Aind,
-                                                                                              upper = rep(1, k),
-                                                                                              lower = rep(0, k))
-          }
-        } else {
-          best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = best_inputs_for_gp,
-                                                                                         A = RREMBO_HYPER_PARAMETERS$A)
-        }
-        best_inputs <- continuous_to_categorical(values = best_inputs_continuous,
-                                                 legal_non_zero_values = area_possible_non_zero_values)
-        best_inputs <- matrix(best_inputs, ncol = k)
-        
-        if (rstudioapi::isBackgroundJob()) {
-          message("done")
-        }
-        
-        ## Objective function on the new inputs ----
-        # pb_amount <- pb_amount + 1
-        # pb(message = paste0(pb_amount, "/", max_loop_progress_bar, " Computing true outputs ..."))
-        if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Computing true outputs ... ", appendLF = FALSE)
-        }
-        begin_inside <- Sys.time()
-        best_outputs <- apply(best_inputs, 1, objective_function,
-                              area_sum_threshold = area_sum_threshold,
-                              area_possible_non_zero_values = area_possible_non_zero_values,
-                              outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
-                              outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
-                              outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
-                              exploration = EXPLORATION,
-                              penalty_coefficient_arg = PENALTY_COEFFICIENT,
-                              preference_weight_area = 1,
-                              preference_weights_maximize = preference_weights_maximize,
-                              scale = SCALE)
-        time_obj_function <- Sys.time() - begin_inside
-        if (rstudioapi::isBackgroundJob()) {
-          message("done")
-        }
-        
-        ## Diagnostics GP ----
-        gp_means <- as.vector(predict(gp_model, best_inputs_for_gp)$results$mean)
-        gp_metric[i] <- gp_performance(gp_means = gp_means,
-                                       type = "RMSE",
-                                       test_inputs = best_inputs_for_gp,
-                                       true_outputs = best_outputs)
-        
-        ## Update samples for GP ----
-        pb_amount <- pb_amount + 1
-        pb(message = paste0(pb_amount, "/", max_loop_progress_bar, " Updating GP... "))
-        if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP ...")
-        }
-        obj_inputs <- rbind(obj_inputs, best_inputs)
-        obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
-        obj_outputs <- c(obj_outputs, best_outputs)
-        
-        if (current_task_id != task_id_reactive()) {
-          return(FALSE)
-        }
-        begin_inside <- Sys.time()
-        gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs, verb = VERBOSE)
-        time_update_gp <- Sys.time() - begin_inside
-        if (rstudioapi::isBackgroundJob()) {
-          message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP done")
-        }
-        
-        ## See what takes time ----
-        time <- rbind(time,
-                      cbind(candidate_sample = if (exists("time_sample")) time_sample else 0,
-                            batch_trick = if (exists("time_batch_trick")) time_batch_trick else 0,
-                            obj_fun = time_obj_function,
-                            update_gp = time_update_gp))
+  max_loop_progress_bar <- BAYESIAN_OPTIMIZATION_ITERATIONS * 3
+  # pb <- progressor(steps = max_loop_progress_bar, message = "Bayesian optimization")
+  pb_amount <- 0
+  for (i in 1:BAYESIAN_OPTIMIZATION_ITERATIONS) {
+    
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
+    set.seed(i)
+    
+    ## Candidate set ----
+    pb_amount <- pb_amount + 1 / max_loop_progress_bar
+    pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set..."))
+    notif(paste0("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... "), rbind = FALSE)
+    
+    if (rstudioapi::isBackgroundJob()) {
+      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
+    }
+    begin_inside <- Sys.time()
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
+    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(1e4 / 2, k,
+                                                                                legal_non_zero_values = area_possible_non_zero_values,
+                                                                                max_threshold = area_sum_threshold,
+                                                                                constrained = CONSTRAINED_INPUTS,
+                                                                                RRembo = TRUE,
+                                                                                RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                                                RRembo_smart = RREMBO_SMART,
+                                                                                # current_task_id,
+                                                                                verbose = VERBOSE)
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
+    new_candidates_obj_inputs_full_unconstrained <- generate_legal_unique_samples(1e4 / 2, k,
+                                                                                  legal_non_zero_values = area_possible_non_zero_values,
+                                                                                  max_threshold = area_sum_threshold,
+                                                                                  constrained = FALSE,
+                                                                                  RRembo = TRUE,
+                                                                                  RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                                                  RRembo_smart = RREMBO_SMART,
+                                                                                  # current_task_id,
+                                                                                  verbose = VERBOSE)
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
+    new_candidates_obj_inputs_full <- list(valid_samples_high_dimension_categorical = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
+                                                                                                      new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical)),
+                                           valid_samples_low_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension,
+                                                                                         new_candidates_obj_inputs_full_unconstrained$valid_samples_low_dimension)),
+                                           valid_samples_high_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension,
+                                                                                          new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension)))
+    # if (rstudioapi::isBackgroundJob()) {
+    #   message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Generating candidate set done")
+    # }
+    time_sample <- Sys.time() - begin_inside
+    
+    new_candidates_obj_inputs <- new_candidates_obj_inputs_full$valid_samples_high_dimension_categorical
+    new_candidates_obj_inputs_for_gp <- new_candidates_obj_inputs_full$valid_samples_low_dimension
+    
+    ## Generate acquisition values ----
+    # pb_amount <- pb_amount + 1 / max_loop_progress_bar
+    # pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Calculating acquisition values ..."))
+    # if (rstudioapi::isBackgroundJob()) {
+    #   message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Calculating acquisition values ...", appendLF = FALSE)
+    # }
+    
+    begin_inside <- Sys.time()
+    
+    if (isTRUE(RREMBO_SMART) && isTRUE(RREMBO_HYPER_PARAMETERS$control$reverse)) {
+      acquisition_values <- EI_Rembo(x = new_candidates_obj_inputs_for_gp,
+                                     model = gp_model,
+                                     RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                     M = NUMBER_OF_VECCHIA_NEIGHBOURS,
+                                     type = DESIGN_POINTS_STRATEGY,
+                                     minimize_objective_function = TRUE)
+    } else {
+      # Use a custom acquisition function and selection method
+      acquisition_values <- acquisition_function_dgpsi(data_points = new_candidates_obj_inputs_for_gp,
+                                                       gp_object = gp_model,
+                                                       coefficient = EXPLORATION_COEFFICIENT,
+                                                       type = DESIGN_POINTS_STRATEGY,
+                                                       M = NUMBER_OF_VECCHIA_NEIGHBOURS)
+    }
+    new_input_indices <- batch_selection(acquisition_values, batch_size = 1)
+    
+    best_initial_acquisition_value_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.max(acquisition_values), ]
+    time_batch_trick <- Sys.time() - begin_inside
+    # if (rstudioapi::isBackgroundJob()) {
+    #   message("done")
+    # }
+    notif(paste0("[INFO] task=", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done"), rbind = FALSE)
+    
+    ## Optimization of acquisition function ----
+    pb_amount <- pb_amount + 1 / max_loop_progress_bar
+    pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ..."))
+    if (rstudioapi::isBackgroundJob()) {
+      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... ", appendLF = FALSE)
+    }
+    notif(paste0("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... "), rbind = FALSE)
+    if (isTRUE(RREMBO_SMART)) {
+      if (RREMBO_HYPER_PARAMETERS$control$reverse) {
+        boundsEIopt <- rowSums(abs(RREMBO_HYPER_PARAMETERS$tA))
+      } else {
+        boundsEIopt <- rep(RREMBO_HYPER_PARAMETERS$bxsize, RREMBO_HYPER_PARAMETERS$d)
       }
-      # Avoid warning message from progressor function
-      pb(amount = 0)
-    })
-  
+      spartan <- pmin(boundsEIopt, pmax(-boundsEIopt, best_initial_acquisition_value_obj_input_for_gp +
+                                          rnorm(RREMBO_HYPER_PARAMETERS$d, sd = 0.05)))
+    } else {
+      spartan <- best_initial_acquisition_value_obj_input_for_gp
+    }
+    spartan <- matrix(spartan, nrow = 1)
+    
+    # Optimize low dimensional acquisition function parameters
+    optimum <- nlminb(start = spartan,
+                      objective = acquisition_function_dgpsi,
+                      # model = gp_model,
+                      # RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                      # type = DESIGN_POINTS_STRATEGY,
+                      # minimize_objective_function = TRUE,
+                      gp_object = gp_model,
+                      M = NUMBER_OF_VECCHIA_NEIGHBOURS,
+                      return_negative = TRUE)
+    # gradient = ,
+    # hessian = ,
+    # control = list(trace = VERBOSE))
+    
+    if (optimum$convergence != 0) {
+      warning("[WARNING] In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
+    }
+    
+    best_inputs_for_gp <- matrix(optimum$par, ncol = 6)
+    
+    if (isTRUE(RREMBO_SMART)) {
+      if (isTRUE(RREMBO_HYPER_PARAMETERS$control$reverse)) {
+        best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_zonotope(DoE_low_dimension = best_inputs_for_gp,
+                                                                                          A = RREMBO_HYPER_PARAMETERS$A,
+                                                                                          Amat = RREMBO_HYPER_PARAMETERS$Amat,
+                                                                                          Aind = RREMBO_HYPER_PARAMETERS$Aind,
+                                                                                          upper = rep(1, k),
+                                                                                          lower = rep(0, k))
+      } else {
+        best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_original(DoE_low_dimension = best_inputs_for_gp,
+                                                                                          A = RREMBO_HYPER_PARAMETERS$A,
+                                                                                          Amat = RREMBO_HYPER_PARAMETERS$Amat,
+                                                                                          Aind = RREMBO_HYPER_PARAMETERS$Aind,
+                                                                                          upper = rep(1, k),
+                                                                                          lower = rep(0, k))
+      }
+    } else {
+      best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = best_inputs_for_gp,
+                                                                                     A = RREMBO_HYPER_PARAMETERS$A)
+    }
+    best_inputs <- continuous_to_categorical(values = best_inputs_continuous,
+                                             legal_non_zero_values = area_possible_non_zero_values)
+    best_inputs <- matrix(best_inputs, ncol = k)
+    
+    if (rstudioapi::isBackgroundJob()) {
+      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... done")
+    }
+    notif(paste0("done"), rbind = FALSE)
+    
+    ## Objective function on the new inputs ----
+    # pb_amount <- pb_amount + 1 / max_loop_progress_bar
+    # pb(message = paste0(pb_amount, "/", max_loop_progress_bar, " Computing true outputs ..."))
+    # if (rstudioapi::isBackgroundJob()) {
+    #   message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Computing true outputs ... ", appendLF = FALSE)
+    # }
+    begin_inside <- Sys.time()
+    best_outputs <- apply(best_inputs, 1, objective_function,
+                          area_sum_threshold = area_sum_threshold,
+                          area_possible_non_zero_values = area_possible_non_zero_values,
+                          outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
+                          outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
+                          outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
+                          exploration = EXPLORATION,
+                          penalty_coefficient_arg = PENALTY_COEFFICIENT,
+                          preference_weight_area = 1,
+                          preference_weights_maximize = preference_weights_maximize,
+                          scale = SCALE)
+    time_obj_function <- Sys.time() - begin_inside
+    # if (rstudioapi::isBackgroundJob()) {
+    #   message("done")
+    # }
+    
+    ## Diagnostics GP ----
+    gp_means <- as.vector(predict(gp_model, best_inputs_for_gp)$results$mean)
+    gp_metric[i] <- gp_performance(gp_means = gp_means,
+                                   type = "RMSE",
+                                   test_inputs = best_inputs_for_gp,
+                                   true_outputs = best_outputs)
+    
+    ## Update samples for GP ----
+    pb_amount <- pb_amount + 1 / max_loop_progress_bar
+    pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP... "))
+    if (rstudioapi::isBackgroundJob()) {
+      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP ...")
+    }
+    notif(paste0("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP ..."), rbind = FALSE)
+    obj_inputs <- rbind(obj_inputs, best_inputs)
+    obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
+    obj_outputs <- c(obj_outputs, best_outputs)
+    
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
+    begin_inside <- Sys.time()
+    gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs, verb = VERBOSE)
+    time_update_gp <- Sys.time() - begin_inside
+    if (rstudioapi::isBackgroundJob()) {
+      message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP done")
+    }
+    notif(paste0("done"), rbind = FALSE)
+    
+    ## See what takes time ----
+    time <- rbind(time,
+                  cbind(candidate_sample = if (exists("time_sample")) time_sample else 0,
+                        batch_trick = if (exists("time_batch_trick")) time_batch_trick else 0,
+                        obj_fun = time_obj_function,
+                        update_gp = time_update_gp))
+  }
+  # Avoid warning message from progressor function
+  pb(amount = 0)
   
   end <- Sys.time()
   
@@ -2256,3 +2291,50 @@ bayesian_optimization <- function(
               time = time,
               gp_metrics = gp_metric))
 }
+# server(...){
+#   plan(multisession, workers = 5)
+#   
+#   observeEvent({input$slider}, {
+#     task <- ExtendedTask$new(function(progressr_object) {
+#       future_promise({
+#         for (i in 1:10) {
+#           Sys.sleep(5)
+#           progressr_object(1/10)
+#         }
+#       })
+#     })
+#     
+#     progressr::withProgressShiny(
+#       message = "Finding strategy",
+#       value = 0,
+#       expr = {
+#         progressr_object <- progressor(steps = 10)
+#         task$invoke(progressr_object)
+#       }
+#     )
+#   })
+# }
+# 
+# server(...){
+#   plan(multisession, workers = 5)
+#   
+#   observeEvent({input$slider}, {
+#     task <- ExtendedTask$new(function() {
+#       progressr::withProgressShiny(
+#         message = "Finding strategy",
+#         value = 0,
+#         expr = {
+#           progressr_object <- progressor(steps = 10)
+#           future_promise({
+#             for (i in 1:10) {
+#               Sys.sleep(5)
+#               progressr_object(1/10)
+#             }
+#           })
+#         }
+#       )
+#     })
+#     task$invoke()
+#   })
+# }
+
