@@ -24,6 +24,12 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
 }
 
+# Delete log file
+log_filename <- base::normalizePath(file.path(FolderSource, "log.txt"), mustWork = FALSE)
+if (file.exists(log_filename)) {
+  file.remove(log_filename)
+}
+
 source(normalizePath(file.path(FolderSource, "functions.R")))
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
 install_and_load_packages("devtools", quiet = TRUE)
@@ -1221,7 +1227,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             return()
           }
           
-          message("BO future start")
+          message(current_task_id, " [INFO] BO future start")
           bayesian_optimization_finished(FALSE)
           
           if (exists("infpref")) {
@@ -1322,8 +1328,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               
               # Check if this result is invalid (i.e. a newer task has started)
               if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
-                message("The previous Bayesian optimization has been cancelled.")
-                showNotification("The previous Bayesian optimization has been cancelled.")
+                message(current_task_id, " The previous Bayesian optimization has been cancelled.")
+                showNotification(current_task_id, " The previous Bayesian optimization has been cancelled.")
                 return()
               } else { # If the result is valid (i.e. there are no new tasks started)
                 area_sum <- sum(bo_results$area_vector)
@@ -1352,15 +1358,17 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 SelectedFullTableRow(selectedfulltablerowvalue)
                 SelectedVector(selectedvectorvalue)
                 
-                message("Bayesian optimization finished successfully.")
-                showNotification("Bayesian optimization finished successfully.")
+                message(current_task_id, " [INFO] Bayesian optimization finished successfully.")
+                showNotification(current_task_id, " [INFO] Bayesian optimization finished successfully.")
+                message(current_task_id, " [INFO] sum_carbon=", col_sums[1])
                 
               }
               bayesian_optimization_finished(TRUE)
             } %...!% {
               error <- .
-              message("[ERROR] future_promise resulted in the error: ", error)
-              notif(paste("[ERROR] future_promise resulted in the error:", error), rbind = FALSE)
+              message(current_task_id, " [ERROR] future_promise resulted in the error: ", error)
+              showNotification(paste0(current_task_id, " [ERROR] future_promise resulted in the error: ", error))
+              notif(paste(current_task_id, " [ERROR] future_promise resulted in the error:", error), rbind = FALSE)
             }
           })
           
@@ -1384,7 +1392,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 NOTIFICATIONS = TRUE,
                 PLOT = FALSE,
                 
-                BAYESIAN_OPTIMIZATION_ITERATIONS = 5,
+                BAYESIAN_OPTIMIZATION_ITERATIONS = 10,
                 # progressr_object = function(amount = 0, message = "") {},
                 # progressr_object_arg = my_progressr_object,
                 BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,

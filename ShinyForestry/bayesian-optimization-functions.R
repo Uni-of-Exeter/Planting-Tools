@@ -1376,6 +1376,20 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, priority = "default", rb
   
   # Execute the command
   system(command, ignore.stdout = quiet, ignore.stderr = quiet)
+  
+  # Also log to file, because ntfy has a quota
+  FolderSource <- get_foldersource()
+  log_filename <- normalizePath(file.path(FolderSource, "log.txt"))
+  lockfile_name <- normalizePath(file.path(FolderSource, "log_lockfile"))
+  
+  if (isFALSE(file.exists(log_filename))) {
+    file.create(log_filename)
+  }
+  
+  mylock <- flock::lock(lockfile_name)
+  base::write(x = msg, file = log_filename, append = TRUE)
+  flock::unlock(mylock)
+  file.remove(lockfile_name)
 }
 
 get_foldersource <- function() {
@@ -1730,15 +1744,15 @@ bayesian_optimization <- function(
     # if (rstudioapi::isBackgroundJob()) {
     #   message("done")
     # }
-    notif(paste0(current_task_id, " [INFO] task=", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done"))
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done"))
     
     ## Optimization of acquisition function ----
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ..."))
     if (rstudioapi::isBackgroundJob()) {
-      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... ", appendLF = FALSE)
+      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... ", appendLF = FALSE)
     }
-    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... "))
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... "))
     if (isTRUE(RREMBO_SMART)) {
       if (RREMBO_HYPER_PARAMETERS$control$reverse) {
         boundsEIopt <- rowSums(abs(RREMBO_HYPER_PARAMETERS$tA))
@@ -1767,7 +1781,7 @@ bayesian_optimization <- function(
     # control = list(trace = VERBOSE))
     
     if (optimum$convergence != 0) {
-      warning("[WARNING] In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
+      warning(current_task_id, " [WARNING] ", "In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
     }
     
     best_inputs_for_gp <- matrix(optimum$par, ncol = 6)
@@ -1797,9 +1811,9 @@ bayesian_optimization <- function(
     best_inputs <- matrix(best_inputs, ncol = k)
     
     if (rstudioapi::isBackgroundJob()) {
-      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... done")
+      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
     }
-    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... done"))
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done"))
     
     ## Objective function on the new inputs ----
     # pb_amount <- pb_amount + 1 / max_loop_progress_bar
@@ -1849,9 +1863,9 @@ bayesian_optimization <- function(
     gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs, verb = VERBOSE)
     time_update_gp <- Sys.time() - begin_inside
     if (rstudioapi::isBackgroundJob()) {
-      message(current_task_id, " [INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP done")
+      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP done")
     }
-    notif(paste0(current_task_id, " [INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP done"))
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP done"))
     
     ## See what takes time ----
     time <- rbind(time,
