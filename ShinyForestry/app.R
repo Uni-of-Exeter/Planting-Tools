@@ -1317,7 +1317,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               )
               return(bo_results)
             }, seed = NULL) %...>% {
-              bo_results <- value(.)
+              
+              bo_results <- .
+              
               # Check if this result is invalid (i.e. a newer task has started)
               if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
                 message("The previous Bayesian optimization has been cancelled.")
