@@ -26,22 +26,7 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
 
 source(normalizePath(file.path(FolderSource, "functions.R")))
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
-
-install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
-                                       "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-                                       "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-                                       "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
-                                       "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "prefeR", "dplyr", "magrittr",
-                                       "lhs", "sensitivity",
-                                       "devtools",
-                                       "progressr", "doFuture", "promises",
-                                       # # Active subspace method
-                                       "concordance", "BASS", "zipfR",
-                                       # To plot the best map, and save it to a file
-                                       "mapview", "webshot",
-                                       # File-locking, for multi-process
-                                       "flock"))
+install_and_load_packages("devtools", quiet = TRUE)
 if (!require(dgpsi)) {
   devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
   library("dgpsi")
@@ -50,6 +35,20 @@ if (!require(RRembo)) {
   devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
   library("RRembo")
 }
+install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
+                                       "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+                                       "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+                                       "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
+                                       "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+                                       "mvtnorm", "prefeR", "dplyr", "magrittr",
+                                       "lhs", "sensitivity",
+                                       "progressr", "doFuture", "promises",
+                                       # # Active subspace method
+                                       "concordance", "BASS", "zipfR",
+                                       # To plot the best map, and save it to a file
+                                       "mapview", "webshot",
+                                       # File-locking, for multi-process
+                                       "flock"))
 dgpsi::init_py()
 plan(multisession, workers = 2)
 
