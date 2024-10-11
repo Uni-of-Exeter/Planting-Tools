@@ -16,6 +16,7 @@
 # options(warn=2, error=recover)
 # options(warn=2)
 # options(warn=0) # default
+options(shiny.error = browser)
 
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
