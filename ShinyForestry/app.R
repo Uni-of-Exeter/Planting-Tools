@@ -1359,8 +1359,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               bayesian_optimization_finished(TRUE)
             } %...!% {
               error <- .
-              message("[ERROR] future_promise resulted in the error:")
-              message(error)
+              message("[ERROR] future_promise resulted in the error: ", error)
               notif(paste("[ERROR] future_promise resulted in the error:", error), rbind = FALSE)
             }
           })
@@ -1375,7 +1374,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           #   # max = BAYESIAN_OPTIMIZATION_ITERATIONS * 3,
           #   expr = {
               # my_progressr_object <- progressor(steps = 5 * 3, message = "Bayesian optimization")
-              bayesian_optimization_extendedtask$invoke(
+          bayesian_optimization_extendedtask$invoke(
                 seed = 1,
                 FullTable = FullTable,
                 area_sum_threshold = SelecTargetArea,
@@ -1415,7 +1414,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 KERNEL = "matern2.5", # matern2.5 or sexp
                 NUMBER_OF_VECCHIA_NEIGHBOURS = 20
               )
-              message("BO future end")
             # })
         } else {
           ZeroSelected<-SelectedSimMat2[1,]

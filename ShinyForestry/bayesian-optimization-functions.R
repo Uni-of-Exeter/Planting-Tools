@@ -1336,7 +1336,7 @@ theme_Publication <- function(base_size = 10) {
 }
 
 # https://ntfy.sh/uoerstudioserver
-notif <- function(msg, quiet = TRUE, curl_flags = NULL, priority = "default", rbind = TRUE, pad_character = "_") {
+notif <- function(msg, quiet = TRUE, curl_flags = NULL, priority = "default", rbind = FALSE, pad_character = "_") {
   pad_notif_message <- function(msg, pad_character = "_") {
     max_key_width <- max(nchar(rownames(msg)))
     padded_notif_msg <- sapply(1:nrow(msg), function(i, max_key_width, msg) {
@@ -1464,9 +1464,9 @@ bayesian_optimization <- function(
     KERNEL = "matern2.5", # matern2.5 or sexp
     NUMBER_OF_VECCHIA_NEIGHBOURS = 20
 ) {
-  message("[INFO] Starting a Bayesian Optimization ...")
+  message(current_task_id, " [INFO] Starting a Bayesian Optimization ...")
   pb <- progressr_object
-  notif(paste0("[INFO] Starting a Bayesian Optimization ..."), rbind = FALSE)
+  notif(paste0(current_task_id, " [INFO] Starting a Bayesian Optimization ..."))
   # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
   #   tryCatch({dgpsi::init_py(verb = VERBOSE)},
   #            error = function(e) {warning(e);stop(reticulate::py_last_error())})
@@ -1565,8 +1565,8 @@ bayesian_optimization <- function(
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
-  message("[INFO] Generating initial inputs and outputs...")
-  notif(paste0("[INFO] Generating initial inputs and outputs..."), rbind = FALSE)
+  message(current_task_id, " [INFO] Generating initial inputs and outputs...")
+  notif(paste0(current_task_id, " [INFO] Generating initial inputs and outputs..."))
   obj_inputs_full_constrained <- generate_legal_unique_samples(round(n/2), k,
                                                                legal_non_zero_values = area_possible_non_zero_values,
                                                                max_threshold = area_sum_threshold,
@@ -1613,8 +1613,8 @@ bayesian_optimization <- function(
                        preference_weight_area = 1,
                        preference_weights_maximize = preference_weights_maximize,
                        scale = SCALE)
-  message("[INFO] ...Generating initial inputs and outputs done")
-  notif(paste0("[INFO] Generating initial inputs and outputs done"), rbind = FALSE)
+  message(current_task_id, " [INFO] ...Generating initial inputs and outputs done")
+  notif(paste0(current_task_id, " [INFO] Generating initial inputs and outputs done"))
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
@@ -1622,15 +1622,15 @@ bayesian_optimization <- function(
   obj_inputs_for_gp <- obj_inputs_full$valid_samples_low_dimension
   
   # Fitting GP ----
-  message("[INFO] Fitting GP...")
-  notif(paste0("[INFO] Fitting GP..."), rbind = FALSE)
+  message(current_task_id, " [INFO] Fitting GP...")
+  notif(paste0(current_task_id, " [INFO] Fitting GP..."))
   gp_model <- dgpsi::gp(obj_inputs_for_gp, obj_outputs,
                         name = KERNEL,
                         vecchia = TRUE,
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                         verb = FALSE)
-  message("[INFO] ...Fitting GP done")
-  notif(paste0("[INFO] Generating initial inputs and outputs done"), rbind = FALSE)
+  message(current_task_id, " [INFO] ...Fitting GP done")
+  notif(paste0(current_task_id, " [INFO] ...Fitting GP done"))
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
@@ -1652,7 +1652,7 @@ bayesian_optimization <- function(
     ## Candidate set ----
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set..."))
-    notif(paste0("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... "), rbind = FALSE)
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... "))
     
     if (rstudioapi::isBackgroundJob()) {
       message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
@@ -1730,15 +1730,15 @@ bayesian_optimization <- function(
     # if (rstudioapi::isBackgroundJob()) {
     #   message("done")
     # }
-    notif(paste0("[INFO] task=", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done"), rbind = FALSE)
+    notif(paste0(current_task_id, " [INFO] task=", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done"))
     
     ## Optimization of acquisition function ----
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ..."))
     if (rstudioapi::isBackgroundJob()) {
-      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... ", appendLF = FALSE)
+      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... ", appendLF = FALSE)
     }
-    notif(paste0("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... "), rbind = FALSE)
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... "))
     if (isTRUE(RREMBO_SMART)) {
       if (RREMBO_HYPER_PARAMETERS$control$reverse) {
         boundsEIopt <- rowSums(abs(RREMBO_HYPER_PARAMETERS$tA))
@@ -1797,9 +1797,9 @@ bayesian_optimization <- function(
     best_inputs <- matrix(best_inputs, ncol = k)
     
     if (rstudioapi::isBackgroundJob()) {
-      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... done")
+      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... done")
     }
-    notif(paste0("done"), rbind = FALSE)
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, "Optimizing acquisition function ... done"))
     
     ## Objective function on the new inputs ----
     # pb_amount <- pb_amount + 1 / max_loop_progress_bar
@@ -1835,9 +1835,9 @@ bayesian_optimization <- function(
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     pb(message = paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP... "))
     if (rstudioapi::isBackgroundJob()) {
-      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP ...")
+      message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP ...")
     }
-    notif(paste0("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP ..."), rbind = FALSE)
+    notif(paste0(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP ..."))
     obj_inputs <- rbind(obj_inputs, best_inputs)
     obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
     obj_outputs <- c(obj_outputs, best_outputs)
@@ -1849,9 +1849,9 @@ bayesian_optimization <- function(
     gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs, verb = VERBOSE)
     time_update_gp <- Sys.time() - begin_inside
     if (rstudioapi::isBackgroundJob()) {
-      message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP done")
+      message(current_task_id, " [INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP done")
     }
-    notif(paste0("done"), rbind = FALSE)
+    notif(paste0(current_task_id, " [INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Updating GP done"))
     
     ## See what takes time ----
     time <- rbind(time,
@@ -1938,7 +1938,7 @@ bayesian_optimization <- function(
       "time per solution" = paste(time_per_solution, unit_time_per_solution)
     )
     # print(notif_msg)
-    notif(notif_msg)
+    notif(notif_msg, rbind  = TRUE)
     
     # Sum area / Sum carbon
     if (isTRUE(PLOT)) {
@@ -2253,7 +2253,7 @@ bayesian_optimization <- function(
     )
     rownames(notif_msg1) <- rep("", nrow(notif_msg1))
     # print(notif_msg1)
-    # notif(notif_msg1, quiet = FALSE)
+    # notif(notif_msg1, quiet = FALSE, rbind  = TRUE)
     
     notif_msg2 <- rbind(
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
@@ -2279,7 +2279,7 @@ bayesian_optimization <- function(
       "total time" = paste(round(end - begin, 1), units(end - begin))
     )
     # print(notif_msg2)
-    notif(notif_msg2)
+    notif(notif_msg2, rbind  = TRUE)
   }
   
   # End the function ----
