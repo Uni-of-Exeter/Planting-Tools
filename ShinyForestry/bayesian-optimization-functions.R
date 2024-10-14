@@ -1581,7 +1581,7 @@ bayesian_optimization <- function(
   }
   message(current_task_id, " [INFO] Generating initial inputs and outputs...")
   notif(paste0(current_task_id, " [INFO] Generating initial inputs and outputs..."))
-  obj_inputs_full_constrained <- generate_legal_unique_samples(round(n/2), k,
+  obj_inputs_full_constrained <- generate_legal_unique_samples(10 * 6, k,
                                                                legal_non_zero_values = area_possible_non_zero_values,
                                                                max_threshold = area_sum_threshold,
                                                                constrained = CONSTRAINED_INPUTS,
@@ -1593,7 +1593,7 @@ bayesian_optimization <- function(
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
-  obj_inputs_full_unconstrained <- generate_legal_unique_samples(round(n/2), k,
+  obj_inputs_full_unconstrained <- generate_legal_unique_samples(10 * 6, k,
                                                                  legal_non_zero_values = area_possible_non_zero_values,
                                                                  max_threshold = area_sum_threshold,
                                                                  constrained = FALSE,
@@ -1675,7 +1675,7 @@ bayesian_optimization <- function(
     if (current_task_id != get_latest_task_id()) {
       return(FALSE)
     }
-    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(1e4 / 2, k,
+    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(50, k,
                                                                                 legal_non_zero_values = area_possible_non_zero_values,
                                                                                 max_threshold = area_sum_threshold,
                                                                                 constrained = CONSTRAINED_INPUTS,
