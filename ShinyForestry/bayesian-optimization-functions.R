@@ -1687,31 +1687,13 @@ bayesian_optimization <- function(
     if (current_task_id != get_latest_task_id()) {
       return(FALSE)
     }
-    new_candidates_obj_inputs_full_unconstrained <- generate_legal_unique_samples(1e4 / 2, k,
-                                                                                  legal_non_zero_values = area_possible_non_zero_values,
-                                                                                  max_threshold = area_sum_threshold,
-                                                                                  constrained = FALSE,
-                                                                                  RRembo = TRUE,
-                                                                                  RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
-                                                                                  RRembo_smart = RREMBO_SMART,
-                                                                                  # current_task_id,
-                                                                                  verbose = VERBOSE)
-    if (current_task_id != get_latest_task_id()) {
-      return(FALSE)
-    }
-    new_candidates_obj_inputs_full <- list(valid_samples_high_dimension_categorical = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
-                                                                                                      new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical)),
-                                           valid_samples_low_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension,
-                                                                                         new_candidates_obj_inputs_full_unconstrained$valid_samples_low_dimension)),
-                                           valid_samples_high_dimension = as.matrix(rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension,
-                                                                                          new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension)))
     # if (rstudioapi::isBackgroundJob()) {
     #   message("[INFO] ...", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Generating candidate set done")
     # }
     time_sample <- Sys.time() - begin_inside
     
-    new_candidates_obj_inputs <- new_candidates_obj_inputs_full$valid_samples_high_dimension_categorical
-    new_candidates_obj_inputs_for_gp <- new_candidates_obj_inputs_full$valid_samples_low_dimension
+    new_candidates_obj_inputs <- new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical
+    new_candidates_obj_inputs_for_gp <- new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension
     
     ## Generate acquisition values ----
     # pb_amount <- pb_amount + 1 / max_loop_progress_bar
