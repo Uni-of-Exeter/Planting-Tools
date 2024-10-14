@@ -1227,11 +1227,11 @@ objective_function <- function(inputs, # c(area_vector)
                              tol = tol)$Im
       penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
       if (exploration == FALSE) {
-        objectives <- c(objectives, vector_sum + penalty)
-        result <- result + preference_weight * vector_sum + penalty
+        objectives <- c(objectives, vector_sum - penalty)
+        result <- result + preference_weight * vector_sum - penalty
       } else {
         objectives <- c(objectives, penalty)
-        result <- result + penalty
+        result <- result - penalty
       }
     }
   }
@@ -1252,12 +1252,12 @@ objective_function <- function(inputs, # c(area_vector)
       if (exploration == FALSE) {
         # objectives <- c(objectives, - vector_sum - penalty)
         # result <- result - vector_sum - penalty
-        objectives <- c(objectives, - preference_weight * vector_sum + penalty)
-        result <- result - preference_weight * vector_sum + penalty
+        objectives <- c(objectives, - preference_weight * vector_sum - penalty)
+        result <- result - preference_weight * vector_sum - penalty
       } else {
         # objectives <- c(objectives, - penalty)
         # result <- result - penalty
-        objectives <- c(objectives, + penalty)
+        objectives <- c(objectives, - penalty)
         result <- result + penalty
       }
     }
