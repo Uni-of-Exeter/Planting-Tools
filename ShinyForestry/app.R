@@ -36,6 +36,7 @@ install_and_load_packages("devtools", quiet = TRUE)
 if (!require(dgpsi)) {
   devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
   library("dgpsi")
+  dgpsi::init_py()
 }
 if (!require(RRembo)) {
   devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
@@ -55,7 +56,6 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "mapview", "webshot",
                                        # File-locking, for multi-process
                                        "flock"))
-dgpsi::init_py()
 plan(multisession, workers = 2)
 
 # Value to control the long-running task (Bayesian optimization in Tab 1)
