@@ -1842,7 +1842,12 @@ bayesian_optimization <- function(
       return(FALSE)
     }
     begin_inside <- Sys.time()
-    gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs, verb = VERBOSE)
+    gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs,
+                              verb = VERBOSE,
+                              # Refit every 2 loop iterations
+                              refit = isTRUE(i %% 2 == 0),
+                              # Retrain every 15 loop iterations
+                              reset = isTRUE(i %% 15 == 0))
     time_update_gp <- Sys.time() - begin_inside
     if (rstudioapi::isBackgroundJob()) {
       message(current_task_id, " [INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP done")
