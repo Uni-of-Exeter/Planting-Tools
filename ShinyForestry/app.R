@@ -1035,7 +1035,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   
   
-  # Check for changes in all the sliders
+  # Check for changes in all the sliders, except on app launch
   #lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
   # if (input[[sl]]) {
   observeEvent({input$map_shape_click
@@ -1432,7 +1432,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       }
     }
     #  }
-  })
+  }, ignoreInit = TRUE)
   # }
   #  )
   
