@@ -1801,7 +1801,21 @@ bayesian_optimization <- function(
     }
     new_input_indices <- batch_selection(acquisition_values, batch_size = 1)
     
+    # Consider max(acquisition) and min(GP_predicted_means)
     best_initial_acquisition_value_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.max(acquisition_values), ]
+    
+    if (is.vector(new_candidates_obj_inputs_for_gp)) {
+      gp_data <- gp_object$data$X
+      temp <- matrix(new_candidates_obj_inputs_for_gp, ncol = ncol(gp_data))
+    } else {
+      temp <- new_candidates_obj_inputs_for_gp
+    }
+    gp_means <- dgpsi:::predict.gp(object = gp_model, x = temp, M = M)
+    lowest_gp_mean_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[whici.min(gp_means)]
+    
+    optimization_inital_values <- rbind(best_initial_acquisition_value_obj_input_for_gp,
+                                        lowest_gp_mean_obj_input_for_gp)
+    
     time_batch_trick <- Sys.time() - begin_inside
     # if (rstudioapi::isBackgroundJob()) {
     #   message("done")
@@ -1809,46 +1823,49 @@ bayesian_optimization <- function(
     msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
     notif(msg, global_log_level = global_log_level)
     
-    ## Optimization of acquisition function ----
+    ## Optimization of acquisition function around its max and the lowest GP mean ----
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
-    if (isTRUE(RREMBO_SMART)) {
-      if (RREMBO_HYPER_PARAMETERS$control$reverse) {
-        boundsEIopt <- rowSums(abs(RREMBO_HYPER_PARAMETERS$tA))
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function at max(EI) and min(GP_mean) ...")
     pb(message = msg)
     notif(paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), global_log_level = global_log_level)
     
+    best_inputs_for_gp <- matrix(NA, ncol = 6)
+    for (i in 1:nrow(optimization_inital_values)) {
+      optimization_inital_value <- optimization_inital_values[i, ]
+      if (isTRUE(RREMBO_SMART)) {
+        if (RREMBO_HYPER_PARAMETERS$control$reverse) {
+          boundsEIopt <- rowSums(abs(RREMBO_HYPER_PARAMETERS$tA))
+        } else {
+          boundsEIopt <- rep(RREMBO_HYPER_PARAMETERS$bxsize, RREMBO_HYPER_PARAMETERS$d)
+        }
+        spartan <- pmin(boundsEIopt, pmax(-boundsEIopt, optimization_inital_value +
+                                            rnorm(RREMBO_HYPER_PARAMETERS$d, sd = 0.05)))
       } else {
-        boundsEIopt <- rep(RREMBO_HYPER_PARAMETERS$bxsize, RREMBO_HYPER_PARAMETERS$d)
+        spartan <- optimization_inital_value
       }
-      spartan <- pmin(boundsEIopt, pmax(-boundsEIopt, best_initial_acquisition_value_obj_input_for_gp +
-                                          rnorm(RREMBO_HYPER_PARAMETERS$d, sd = 0.05)))
-    } else {
-      spartan <- best_initial_acquisition_value_obj_input_for_gp
-    }
-    spartan <- matrix(spartan, nrow = 1)
-    
-    # Optimize low dimensional acquisition function parameters
-    optimum <- nlminb(start = spartan,
-                      objective = acquisition_function_dgpsi,
-                      # model = gp_model,
-                      # RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
-                      # type = DESIGN_POINTS_STRATEGY,
-                      # minimize_objective_function = TRUE,
-                      gp_object = gp_model,
-                      M = NUMBER_OF_VECCHIA_NEIGHBOURS,
-                      return_negative = TRUE)
-    # gradient = ,
-    # hessian = ,
-    # control = list(trace = VERBOSE))
+      spartan <- matrix(spartan, nrow = 1)
+      
+      # Optimize low dimensional acquisition function parameters
+      optimum <- nlminb(start = spartan,
+                        objective = acquisition_function_dgpsi,
+                        lower = rep(0, RREMBO_HYPER_PARAMETERS$d),
+                        upper = boundsEIopt,
+                        # minimize_objective_function = TRUE,
+                        gp_object = gp_model,
+                        M = NUMBER_OF_VECCHIA_NEIGHBOURS,
+                        return_negative = TRUE)
+      # gradient = ,
+      # hessian = ,
+      # control = list(trace = VERBOSE))
+      
       if (optimum$convergence != 0) {
         msg <- paste0("task ", current_task_id, ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
         warning(paste("[WARNING]", msg))
         notif(msg, log_level = "warning", global_log_level = global_log_level)
       }
+      
+      best_inputs_for_gp[i, ] <- optimum$par
     }
-    
-    best_inputs_for_gp <- matrix(optimum$par, ncol = 6)
     
     if (isTRUE(RREMBO_SMART)) {
       if (isTRUE(RREMBO_HYPER_PARAMETERS$control$reverse)) {
