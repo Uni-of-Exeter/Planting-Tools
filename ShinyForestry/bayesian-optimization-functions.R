@@ -1841,6 +1841,11 @@ bayesian_optimization <- function(
     # gradient = ,
     # hessian = ,
     # control = list(trace = VERBOSE))
+      if (optimum$convergence != 0) {
+        msg <- paste0("task ", current_task_id, ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
+        warning(paste("[WARNING]", msg))
+        notif(msg, log_level = "warning", global_log_level = global_log_level)
+      }
     }
     
     best_inputs_for_gp <- matrix(optimum$par, ncol = 6)
