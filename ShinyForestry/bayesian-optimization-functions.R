@@ -1704,7 +1704,7 @@ bayesian_optimization <- function(
                        outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
                        exploration = EXPLORATION,
                        penalty_coefficient_arg = PENALTY_COEFFICIENT,
-                       preference_weight_area = 1,
+                       preference_weight_area = preference_weight_area,
                        preference_weights_maximize = preference_weights_maximize,
                        scale = SCALE)
   notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs done"), global_log_level = global_log_level)
@@ -2337,6 +2337,8 @@ bayesian_optimization <- function(
       "carbon min" = outcomes_to_maximize_sum_threshold_vector[1],
       # "sum area_invalidness" = sum(diff_area_possible, na.rm = TRUE),
       "obj_value" = min(obj_outputs),
+      "preference weight area" = preference_weight_area,
+      "preference weight outcomes to maximize" = toString(preference_weights_maximize),
       "# initial design points" = n,
       "smart REMBO" = RREMBO_SMART,
       "reduced REMBO dimension" = ncol(obj_inputs_for_gp),
