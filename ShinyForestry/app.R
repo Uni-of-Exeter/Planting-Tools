@@ -18,6 +18,9 @@
 # options(warn=0) # default
 options(shiny.error = browser)
 
+# more --> less: debug / info / warning / error / none
+LOG_LEVEL <- "warning"
+
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
 if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
@@ -224,7 +227,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                                                                               speciesprob40 = speciesprob40,
                                                                               seer2km = seer2km,
                                                                               jncc100 = jncc100,
-                                                                              climatecells = climatecells)
+                                                                              climatecells = climatecells,
+                                                                              global_log_level = LOG_LEVEL)
   # Add richness columns
   FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
@@ -244,7 +248,6 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
 FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 
-VERBOSE = FALSE
 RREMBO_CONTROL <- list(
   # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
   designtype = "LHS",
@@ -253,7 +256,7 @@ RREMBO_CONTROL <- list(
 RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
                                           init = list(n = 10 * nrow(FullTable)), budget = 100,
                                           control = RREMBO_CONTROL,
-                                          verbose = VERBOSE)
+                                          global_log_level = LOG_LEVEL)
 
 handlers(global = TRUE)
 handlers(
@@ -1073,7 +1076,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         VisitsSelectedSD <- VisitsSelectedSD0()
         
         if (current_task_id != get_latest_task_id()) {
-          notif(paste("Task", current_task_id, "cancelled."))
+          notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
           return()
         }
         
@@ -1112,7 +1115,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         rm(tmp)
         
         if (current_task_id != get_latest_task_id()) {
-          notif(paste("Task", current_task_id, "cancelled."))
+          notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
           return()
         }
         
@@ -1171,7 +1174,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           }
           
           if (current_task_id != get_latest_task_id()) {
-            notif(paste("Task", current_task_id, "cancelled."))
+            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
             return()
           }
           
@@ -1196,7 +1199,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           SelecRow <- which.min(result)
           
           if (current_task_id != get_latest_task_id()) {
-            notif(paste("Task", current_task_id, "cancelled."))
+            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
             return()
           }
           
@@ -1213,7 +1216,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           names(SelecTargetVisits) <- "Visits"
           
           if (current_task_id != get_latest_task_id()) {
-            notif(paste("Task", current_task_id, "cancelled."))
+            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
             return()
           }
           
@@ -1223,7 +1226,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           message("Updated SelectedFullTableRow before BO done")
           
           if (current_task_id != get_latest_task_id()) {
-            notif(paste("Task", current_task_id, "cancelled."))
+            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
             return()
           }
           
@@ -1246,8 +1249,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             area_sum_threshold,
             outcomes_to_maximize_sum_threshold_vector,
             # outcomes_to_minimize_sum_threshold_vector = NULL,
-            VERBOSE,
-            NOTIFICATIONS,
+            global_log_level,
             PLOT,
             
             BAYESIAN_OPTIMIZATION_ITERATIONS,
@@ -1287,8 +1289,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 area_sum_threshold = area_sum_threshold,
                 outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
                 # outcomes_to_minimize_sum_threshold_vector = NULL,
-                VERBOSE = VERBOSE,
-                NOTIFICATIONS = NOTIFICATIONS,
+                global_log_level = global_log_level,
                 PLOT = PLOT,
                 
                 BAYESIAN_OPTIMIZATION_ITERATIONS = BAYESIAN_OPTIMIZATION_ITERATIONS,
@@ -1366,9 +1367,9 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               bayesian_optimization_finished(TRUE)
             } %...!% {
               error <- .
-              message(current_task_id, " [ERROR] future_promise resulted in the error: ", error)
-              showNotification(paste0(current_task_id, " [ERROR] future_promise resulted in the error: ", error))
-              notif(paste(current_task_id, " [ERROR] future_promise resulted in the error:", error), rbind = FALSE)
+              msg <- paste0("task ", current_task_id, " future_promise resulted in the error: ", error)
+              showNotification(paste("[ERROR]", msg))
+              notif(msg, log_level = "error", global_log_level = global_log_level)
             }
           })
           
@@ -1388,8 +1389,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 area_sum_threshold = SelecTargetArea,
                 outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
                 # outcomes_to_minimize_sum_threshold_vector = NULL,
-                VERBOSE = FALSE,
-                NOTIFICATIONS = TRUE,
+                global_log_level = LOG_LEVEL,
                 PLOT = FALSE,
                 
                 BAYESIAN_OPTIMIZATION_ITERATIONS = 10,

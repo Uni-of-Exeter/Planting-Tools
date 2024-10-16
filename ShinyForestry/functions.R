@@ -1103,7 +1103,10 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   polygons_bio$polygon_id_bio <- seq_along(polygons_bio$geometry)
   polygons_jules$polygon_id_jules <- seq_along(polygons_jules$geometry)
   # TODO: parallelize? Filter -> check how Bertrand does it
+  msg <- "Intersecting biodiversity square cells and the shapefile's polygons"
+  notif(msg, global_log_level = global_log_level)
   intersection <- st_intersection(polygons_bio, polygons_jules)
+  notif(paste(msg, "done"), global_log_level = global_log_level)
   
   # data.frame with SD = 0 for species
   df0 <- as.data.frame(matrix(0, ncol = length(all_species_names)))
