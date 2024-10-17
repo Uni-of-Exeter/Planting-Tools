@@ -245,6 +245,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 }
 
+message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ...")))
 FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 
@@ -257,8 +258,10 @@ RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
                                           init = list(n = 10 * nrow(FullTable)), budget = 100,
                                           control = RREMBO_CONTROL,
                                           global_log_level = LOG_LEVEL)
+message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done")))
 
 handlers(global = TRUE)
+message("Sampling ", NSamp, " random strategies ...")
 handlers(
   list(
     handler_shiny(),
@@ -283,6 +286,7 @@ for (aaa in 1:NSamp) {
     simul636[aaa, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
   }
 }
+message("Sampling ", NSamp, " random strategies done")
 
 message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {

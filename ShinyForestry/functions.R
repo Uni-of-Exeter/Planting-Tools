@@ -1045,7 +1045,7 @@ add_richness_columns <- function(FullTable, NAME_CONVERSION) {
   return(FullTable2)
 }
 
-convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob40,jncc100,climatecells) {
+convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob40,jncc100,climatecells,global_log_level=LOG_LEVEL) {
   # Take the Biodiversity probabilities from Matlab results/scenario_species_prob_40.csv
   # and merge them with BristolFullTableMerged.geojson
   
@@ -1182,7 +1182,9 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   rm(polygons_bio, polygons_jules)
   
   if (any(FullTable$area_diff >= 1)) {
-    warning("The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference")
+    msg <- "The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference"
+    warning(msg)
+    notif(msg, log_level = "warning", global_log_level = global_log_level)
   }
   rm(df0)
   
