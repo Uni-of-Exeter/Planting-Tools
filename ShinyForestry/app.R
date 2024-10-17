@@ -331,7 +331,7 @@ message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "fou
 
 alphaLVL <- 0.9
 MaxRounds <- 5
-ConvertSample <- sample(1:5000, 200)
+ConvertSample <- sample(1:NSamp, 200)
 
 # Read the outcomes from the Elicitor app
 while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
