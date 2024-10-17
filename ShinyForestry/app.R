@@ -414,7 +414,6 @@ SliderNames<- c("SliderMain",
 
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
-gc()
 
 ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(fluidRow(
