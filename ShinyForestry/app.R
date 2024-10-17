@@ -248,6 +248,60 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
 message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ...")))
 FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
+message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done")))
+
+handlers(global = TRUE)
+
+STDMEAN <- 0.05
+STDSTD <- 0.01
+
+# Random sampling
+message("Sampling ", NSamp, " random strategies ...")
+simul636 <- matrix(0, NSamp, dim(FullTable)[1])
+Uniqunits <- unique(FullTable$units)
+handlers(
+  list(
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    )
+  ),
+  on_missing = "ignore"
+)
+plan(multisession, workers = future::availableCores() - 2)
+simul636 <- with_progress({
+  pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
+  foreach(
+    aaa = 1:NSamp,
+    .combine = rbind,
+    .inorder = TRUE,
+    .options.future = list(seed = TRUE)
+  ) %dofuture% {
+    
+    pp <- runif(1)
+    RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
+    
+    result <- matrix(NA, nrow = 1, ncol = dim(FullTable)[1])
+    for (bbb in 1:length(Uniqunits)) {
+      result[1, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
+    }
+    
+    pb()
+    return(result)
+  }
+  # Avoid warning message from progressor function
+  pb(amount = 0)
+})
+plan(multisession, workers = 2)
+
+handlers(
+  list(
+    handler_shiny(),
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    )
+  ),
+  on_missing = "ignore"
+)
 
 RREMBO_CONTROL <- list(
   # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
@@ -255,37 +309,18 @@ RREMBO_CONTROL <- list(
   # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
   reverse = FALSE)
 RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
-                                          init = list(n = 10 * nrow(FullTable)), budget = 100,
+                                          init = list(n = NSamp), budget = 100,
                                           control = RREMBO_CONTROL,
                                           global_log_level = LOG_LEVEL)
-message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done")))
 
-handlers(global = TRUE)
-message("Sampling ", NSamp, " random strategies ...")
-handlers(
-  list(
-    handler_shiny(),
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  )
-)
-
-
-STDMEAN <- 0.05
-STDSTD <- 0.01
-
-# Random sampling
 NSamp <- 5000
-simul636 <- matrix(0, NSamp, dim(FullTable)[1])
-for (aaa in 1:NSamp) {
-  Uniqunits <- unique(FullTable$units)
-  pp <- runif(1)
-  RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
-  for (bbb in 1:length(Uniqunits)) {
-    simul636[aaa, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
-  }
-}
+# for (aaa in 1:NSamp) {
+#   pp <- runif(1)
+#   RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
+#   for (bbb in 1:length(Uniqunits)) {
+#     simul636[aaa, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
+#   }
+# }
 message("Sampling ", NSamp, " random strategies done")
 
 message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
