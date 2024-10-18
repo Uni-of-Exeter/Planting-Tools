@@ -268,7 +268,7 @@ handlers(
   ),
   on_missing = "ignore"
 )
-plan(multisession, workers = future::availableCores() - 1)
+plan(multisession, workers = future::availableCores() - 2)
 with_progress({
   pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
   simul636 <- foreach(
