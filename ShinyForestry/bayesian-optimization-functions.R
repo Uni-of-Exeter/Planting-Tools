@@ -1412,7 +1412,6 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
   if (isFALSE(rbind)) {
     msg <- paste0("[", log_level_msg, "] ", msg)
   }
-  
   if (isTRUE(ntfy)) {
     pad_notif_message <- function(msg, pad_character = "_") {
       max_key_width <- max(nchar(rownames(msg)))
@@ -1440,19 +1439,48 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
       msg <- pad_notif_message(msg, pad_character = pad_character)
     }
     
+    # Windows curl has problems with my ntfy server. I install the new curl in C:/curl and search for it if it exists
+    # Otherwise, I use the official ntfy.sh, but it has a daily free limit that I hit quickly.
+    search_directory <- "C:/curl"
+    curl_binary <- Sys.which("curl")
+    if (dir.exists(search_directory)) {
+      # Use list.files to find all instances of curl.exe recursively
+      curl_binary <- list.files(path = search_directory, pattern = "curl\\.exe$", full.names = TRUE, recursive = TRUE)
+    }
+    
     # Construct the curl command
+    url <- "https://ntfysenate.uboracle1.freeddns.org/uoerstudioserver"
     command <- paste0(
-      'curl --silent --show-error ',
+      curl_binary,
+      ' --silent --show-error ',
       # Priority (https://docs.ntfy.sh/publish/?h=priority#message-priority)
       '-H "Priority: ', ntfy_priority, '"',
       curl_flags,
       ' --data "', 
       msg,
-      '" ntfy.sh/uoerstudioserver'
+      '" "', url, '"'
     )
     
     # Execute the command
-    system(command, ignore.stdout = quiet, ignore.stderr = quiet)
+    result <- system(command, ignore.stdout = quiet, timeout = 5)
+    # If there was a curl error
+    if (result != 0) {
+      url <- "https://ntfy.sh/uoerstudioserver"
+      command <- paste0(
+        'curl --silent --show-error ',
+        # Priority (https://docs.ntfy.sh/publish/?h=priority#message-priority)
+        '-H "Priority: ', ntfy_priority, '"',
+        curl_flags,
+        ' --data "', 
+        msg,
+        '" "', url, '"'
+      )
+      result <- system(command, ignore.stdout = quiet, timeout = 5)
+      if (result != 0) {
+        warning("[ERROR] notification cannot be sent to ntfy.sh/uoerstudioserver. You should disable notifications to that website by changing the default argument (ntfy) of notif to FALSE.")
+      }
+    }
+    
   }
   
   if (isTRUE(file)) {
