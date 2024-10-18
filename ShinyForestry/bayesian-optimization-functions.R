@@ -1839,7 +1839,7 @@ bayesian_optimization <- function(
       temp <- new_candidates_obj_inputs_for_gp
     }
     gp_means <- dgpsi:::predict.gp(object = gp_model, x = temp, M = NUMBER_OF_VECCHIA_NEIGHBOURS)$results$mean
-    lowest_gp_mean_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.min(gp_means)]
+    lowest_gp_mean_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.min(gp_means), ]
     
     optimization_inital_values <- rbind(best_initial_acquisition_value_obj_input_for_gp,
                                         lowest_gp_mean_obj_input_for_gp)
@@ -1857,7 +1857,7 @@ bayesian_optimization <- function(
     pb(message = msg)
     notif(paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), global_log_level = global_log_level)
     
-    best_inputs_for_gp <- matrix(NA, ncol = 6)
+    best_inputs_for_gp <- matrix(NA, nrow = 2, ncol = 6)
     for (i in 1:nrow(optimization_inital_values)) {
       optimization_inital_value <- optimization_inital_values[i, ]
       if (isTRUE(RREMBO_SMART)) {
@@ -1872,7 +1872,7 @@ bayesian_optimization <- function(
         spartan <- optimization_inital_value
       }
       spartan <- matrix(spartan, nrow = 1)
-      
+      boundsEIopt <- rep(RREMBO_HYPER_PARAMETERS$bxsize, RREMBO_HYPER_PARAMETERS$d)
       # Optimize low dimensional acquisition function parameters
       optimum <- nlminb(start = spartan,
                         objective = acquisition_function_dgpsi,
@@ -1973,7 +1973,7 @@ bayesian_optimization <- function(
                               # Retrain every 15 loop iterations
                               reset = isTRUE(i %% 15 == 0))
     time_update_gp <- Sys.time() - begin_inside
-    notif(paste(msg, "done"))
+    notif(paste(msg, "done"), global_log_level = global_log_level)
     
     ## See what takes time ----
     time <- rbind(time,
