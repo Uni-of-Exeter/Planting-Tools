@@ -256,6 +256,7 @@ STDMEAN <- 0.05
 STDSTD <- 0.01
 
 # Random sampling
+NSamp <- 5000
 message("Sampling ", NSamp, " random strategies ...")
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 Uniqunits <- unique(FullTable$units)
@@ -267,14 +268,18 @@ handlers(
   ),
   on_missing = "ignore"
 )
-plan(multisession, workers = future::availableCores() - 2)
-simul636 <- with_progress({
+plan(multisession, workers = future::availableCores() - 1)
+with_progress({
   pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
-  foreach(
+  simul636 <- foreach(
     aaa = 1:NSamp,
     .combine = rbind,
     .inorder = TRUE,
-    .options.future = list(seed = TRUE)
+    .options.future = list(
+      chunk.size = round(NSamp / (3 * (future::availableCores() - 1))),
+      scheduling = 2,
+      seed = TRUE
+    )
   ) %dofuture% {
     
     pp <- runif(1)
@@ -285,7 +290,7 @@ simul636 <- with_progress({
       result[1, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
     }
     
-    pb()
+    if (aaa %% 10 == 0) {pb(amount = 10)}
     return(result)
   }
   # Avoid warning message from progressor function
@@ -313,7 +318,6 @@ RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
                                           control = RREMBO_CONTROL,
                                           global_log_level = LOG_LEVEL)
 
-NSamp <- 5000
 # for (aaa in 1:NSamp) {
 #   pp <- runif(1)
 #   RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
