@@ -1810,8 +1810,8 @@ bayesian_optimization <- function(
     } else {
       temp <- new_candidates_obj_inputs_for_gp
     }
-    gp_means <- dgpsi:::predict.gp(object = gp_model, x = temp, M = M)
-    lowest_gp_mean_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[whici.min(gp_means)]
+    gp_means <- dgpsi:::predict.gp(object = gp_model, x = temp, M = NUMBER_OF_VECCHIA_NEIGHBOURS)
+    lowest_gp_mean_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.min(gp_means)]
     
     optimization_inital_values <- rbind(best_initial_acquisition_value_obj_input_for_gp,
                                         lowest_gp_mean_obj_input_for_gp)
