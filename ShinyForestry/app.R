@@ -59,7 +59,6 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "mapview", "webshot",
                                        # File-locking, for multi-process
                                        "flock"))
-plan(multisession, workers = 2)
 
 # Value to control the long-running task (Bayesian optimization in Tab 1)
 # We track the task ID. If it changes, the previous long-running task gets cancelled.
