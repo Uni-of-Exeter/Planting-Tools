@@ -94,7 +94,7 @@ generate_legal_unique_samples <- function(n, k,
                                            upper = rep(1, k),
                                            legal_non_zero_values = legal_non_zero_values,
                                            RRembo_hyper_parameters = RRembo_hyper_parameters,
-                                           global_log_level = LOG_LEVEL)
+                                           global_log_level = global_log_level)
         notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
       } else {
         msg <- "generate_legal_unique_samples() -> generate_samples_RRembo_basic() ..."
@@ -103,7 +103,7 @@ generate_legal_unique_samples <- function(n, k,
                                                  D = k,
                                                  legal_non_zero_values = legal_non_zero_values,
                                                  RRembo_hyper_parameters = RRembo_hyper_parameters,
-                                                 global_log_level = LOG_LEVEL)
+                                                 global_log_level = global_log_level)
         notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
       }
       
