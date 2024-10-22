@@ -467,6 +467,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    input,
                                    output,
                                    session,
+                                   infpref_reactive,
                                    ConvertSample,
                                    LinesToCompareReactive,
                                    ClickedVector,
@@ -637,17 +638,18 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       
       shinyjs::disable("choose1")
       shinyjs::disable("choose2")
-      infpref <<- pref$infer()
       
-      infpref[is.na(infpref)] <- 1e-5
-      infpref[infpref<0] <- 1e-5
+      temp <- pref$infer()
+      temp[is.na(temp)] <- 1e-5
+      temp[temp<0] <- 1e-5
+      infpref_reactive(temp)
       
       SelectedSimMat2 <- SelectedSimMatGlobal
       VecNbMet <- VecNbMet0()
       
       # columns <- c("Carbon","redsquirrel","Area","Visits")
       SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
-      ClusteringDat <- data.frame(sqrt(infpref)*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
+      ClusteringDat <- data.frame(sqrt(infpref_reactive())*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
       ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
       ClusteringDat <- unique(ClusteringDat)
       set.seed(123)

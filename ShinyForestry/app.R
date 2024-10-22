@@ -493,6 +493,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   bayesian_optimization_finished <- reactiveVal(TRUE)
   
+  infpref_reactive <- reactiveVal()
+  
   CarbonSliderVal <- reactive({input$SliderMain})
   
   # bioSliderVal <- reactive({input$BioSlider})
@@ -1274,11 +1276,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           message(current_task_id, " [INFO] BO future start")
           bayesian_optimization_finished(FALSE)
           
-          if (exists("infpref")) {
+          if (isFALSE(is.null(infpref_reactive()))) {
             # Order is c("Carbon", SPECIES, "Area","Visits")
-            len <- length(infpref)
-            preference_weight_area <- infpref[len - 1]
-            mypref <- infpref[c(1:(len - 2), len)]
+            len <- length(infpref_reactive())
+            preference_weight_area <- infpref_reactive()[len - 1]
+            mypref <- infpref_reactive()[c(1:(len - 2), len)]
           } else {
             preference_weight_area <- 1
             mypref <- rep(1, length(c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits)))
@@ -1737,6 +1739,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            input = input,
                            output = output,
                            session = session,
+                           infpref_reactive = infpref_reactive,
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
@@ -1763,6 +1766,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            input = input,
                            output = output,
                            session = session,
+                           infpref_reactive = infpref_reactive,
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
