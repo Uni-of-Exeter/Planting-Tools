@@ -1413,6 +1413,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               msg <- paste0("task ", current_task_id, " future_promise resulted in the error: ", error)
               showNotification(paste("[ERROR]", msg))
               notif(msg, log_level = "error", global_log_level = global_log_level)
+              bayesian_optimization_finished(TRUE)
             }
           })
           
