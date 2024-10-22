@@ -23,7 +23,7 @@ generate_legal_unique_samples <- function(n, k,
                                           RRembo = FALSE,
                                           RRembo_hyper_parameters = NULL,
                                           RRembo_smart = FALSE,
-                                          # current_task_id,
+                                          current_task_id,
                                           global_log_level = LOG_LEVEL) {
   
   if (isTRUE(RRembo) && is.null(RRembo_hyper_parameters)) {
@@ -48,9 +48,9 @@ generate_legal_unique_samples <- function(n, k,
   if (isTRUE(RRembo)) use_dplyr <- FALSE
   
   while (nrow(valid_samples) < n && attempts <= max_attempts) {
-    # if (current_task_id != get_latest_task_id()) {
-    #   return(FALSE)
-    # }
+    if (current_task_id != get_latest_task_id()) {
+      return()
+    }
     msg <- paste0("Attempt ", attempts, "/", max_attempts, " at generating inputs (", nrow(valid_samples), "/", n, " so far)... ")
     notif(msg, log_level = "debug", global_log_level = global_log_level)
     
@@ -81,9 +81,9 @@ generate_legal_unique_samples <- function(n, k,
     # TODO REMBO with dplyr
     if (isTRUE(RRembo)) use_dplyr <- FALSE
     
-    # if (current_task_id != get_latest_task_id()) {
-    #   return(FALSE)
-    # }
+    if (current_task_id != get_latest_task_id()) {
+      return()
+    }
     if (isTRUE(RRembo)) {
       
       if (isTRUE(RRembo_smart)) {
@@ -119,9 +119,9 @@ generate_legal_unique_samples <- function(n, k,
       notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
       
     }
-    # if (current_task_id != get_latest_task_id()) {
-    #   return(FALSE)
-    # }
+    if (current_task_id != get_latest_task_id()) {
+      return()
+    }
     
     # Add samples to valid_samples, and filter on the threshold if isTRUE(constrained)
     if (isTRUE(constrained)) {
@@ -1696,7 +1696,7 @@ bayesian_optimization <- function(
                                                                RRembo = TRUE,
                                                                RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                RRembo_smart = RREMBO_SMART,
-                                                               # current_task_id,
+                                                               current_task_id = current_task_id,
                                                                global_log_level = global_log_level)
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
@@ -1708,8 +1708,12 @@ bayesian_optimization <- function(
                                                                  RRembo = TRUE,
                                                                  RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                  RRembo_smart = RREMBO_SMART,
-                                                                 # current_task_id,
+                                                                 current_task_id = current_task_id,
                                                                  global_log_level = global_log_level)
+  
+  if (current_task_id != get_latest_task_id()) {
+    return(FALSE)
+  }
   
   # Add a strategy that plants everywhere, and one that plants nowhere, to handle the case when the user has some extreme thresholds
   obj_inputs_full_maximum_planting_high_dim_categorical <- area_possible_non_zero_values
@@ -1790,7 +1794,7 @@ bayesian_optimization <- function(
                                                                                 RRembo = TRUE,
                                                                                 RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
                                                                                 RRembo_smart = RREMBO_SMART,
-                                                                                # current_task_id,
+                                                                                current_task_id = current_task_id,
                                                                                 global_log_level = global_log_level)
     if (current_task_id != get_latest_task_id()) {
       return(FALSE)
