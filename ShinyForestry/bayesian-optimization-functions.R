@@ -99,11 +99,24 @@ generate_legal_unique_samples <- function(n, k,
       } else {
         msg <- "generate_legal_unique_samples() -> generate_samples_RRembo_basic() ..."
         notif(msg, log_level = "debug", global_log_level = global_log_level)
-        samples <- generate_samples_RRembo_basic(d = d,
-                                                 D = k,
-                                                 legal_non_zero_values = legal_non_zero_values,
-                                                 RRembo_hyper_parameters = RRembo_hyper_parameters,
-                                                 global_log_level = global_log_level)
+        if (attempts > 1) {
+          temp <- lhs::optAugmentLHS(lhs = valid_samples, m = number_of_rows_left_to_generate, mult = 1)
+          # Only take the new rows
+          temp <- temp[(length(valid_samples) + 1):length(temp), ]
+          temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = samples, A = A)
+          # Turn values between 0 and 1 to legal area values by rounding then multiplying
+          temp_high_dimension_categorical <- continuous_to_categorical(values = temp_high_dimension,
+                                                                       legal_non_zero_values = legal_non_zero_values)
+          samples <- list(sample_low_dimension = temp,
+                          sample_high_dimension = temp_high_dimension,
+                          sample_high_dimension_categorical = temp_high_dimension_categorical)
+        } else {
+          samples <- generate_samples_RRembo_basic(d = d,
+                                                   D = k,
+                                                   legal_non_zero_values = legal_non_zero_values,
+                                                   RRembo_hyper_parameters = RRembo_hyper_parameters,
+                                                   global_log_level = global_log_level)
+        }
         notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
       }
       
