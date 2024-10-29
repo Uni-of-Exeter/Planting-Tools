@@ -1442,11 +1442,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 global_log_level = LOG_LEVEL,
                 PLOT = FALSE,
                 
-                BAYESIAN_OPTIMIZATION_ITERATIONS = 10,
+                BAYESIAN_OPTIMIZATION_ITERATIONS = 5,
                 # progressr_object = function(amount = 0, message = "") {},
                 # progressr_object_arg = my_progressr_object,
                 BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
-                PENALTY_COEFFICIENT = 5000,
+                PENALTY_COEFFICIENT = 1000,
                 # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
                 EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
                 EXPLORATION_COEFFICIENT = 0,
