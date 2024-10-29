@@ -18,6 +18,8 @@
 # options(warn=0) # default
 options(shiny.error = browser)
 
+set.seed(1)
+
 # more --> less: debug / info / warning / error / none
 LOG_LEVEL <- "warning"
 
