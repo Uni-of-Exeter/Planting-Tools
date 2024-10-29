@@ -373,7 +373,7 @@ for (i in 1:length(SPECIES_ENGLISH)) {
 # SPECIES <- c(NAME_CONVERSION[1:2, "Specie"], "Pollinators", "All")
 # SPECIES_ENGLISH <- c(NAME_CONVERSION[1:2, "English_specie"], "Pollinators", "All")
 N_SPECIES <- length(SPECIES)
-TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
+TARGETS <- c("Carbon", SPECIES, "Area", "Visits")
 N_TARGETS <- length(TARGETS)
 
 #Indicates if the quantity must be above (TRUE) or below the target (FALSE)
