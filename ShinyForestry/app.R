@@ -1379,6 +1379,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 return()
               } else { # If the result is valid (i.e. there are no new tasks started)
                 area_sum <- sum(bo_results$area_vector)
+                # If no results, i.e. no feasible solution
+                if (area_sum == 0) {
+                  showNotification("No feasible solution found")
+                }
                 parcels_activation <- bo_results$area_vector
                 parcels_activation[parcels_activation != 0] <- 1
                 names(parcels_activation) <- NULL
