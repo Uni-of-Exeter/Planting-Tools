@@ -37,6 +37,8 @@ if (file.exists(log_filename)) {
 
 source(normalizePath(file.path(FolderSource, "functions.R")))
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
+source(normalizePath(file.path(FolderSource, "preferTrees.R")))
+
 install_and_load_packages("devtools", quiet = TRUE)
 if (!require(dgpsi)) {
   devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
@@ -52,7 +54,7 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "prefeR", "dplyr", "magrittr",
+                                       "mvtnorm", "dplyr", "magrittr",
                                        "lhs", "sensitivity",
                                        "progressr", "doFuture", "promises",
                                        # # Active subspace method
@@ -60,7 +62,8 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        # To plot the best map, and save it to a file
                                        "mapview", "webshot",
                                        # File-locking, for multi-process
-                                       "flock"))
+                                       "flock",
+                                       "adaptMCMC"))
 
 # Value to control the long-running task (Bayesian optimization in Tab 1)
 # We track the task ID. If it changes, the previous long-running task gets cancelled.
@@ -495,7 +498,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   bayesian_optimization_finished <- reactiveVal(TRUE)
   
-  infpref_reactive <- reactiveVal()
+  infpref_reactive <- reactiveVal(rep(1, length(TARGETS)))
+  pref_reactive <- reactiveVal()
   
   CarbonSliderVal <- reactive({input$SliderMain})
   
@@ -1617,18 +1621,52 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       }
       
       VecNbMet0(VecNbMet)
-      
-      priors <- c(prefeR::Normal(125, 60),
-                  prefeR::Normal(5, 3))
-      for (i in 1:N_SPECIES) {
-        priors <- c(priors, prefeR::Normal(5, 5))
+      prior_list_temp <- list()
+      # Carbon prior
+      # mean = 1 / half(midpoint)
+      # 2 * sd = 1 / half(midpoint)
+      if (isFALSE("Carbon" %in% colnames(SelectedSimMat2))) {
+        stop("Defining a prior over an outcome that doesn't exist")
       }
-      priors <- c(priors, prefeR::Normal(8, 5))
-      pref <<- prefeR::prefEl(data = datAll2,
-                              priors = priors)
+      prior_list_temp$Carbon <- gamma_prior(2 / max(SelectedSimMat2$Carbon),
+                                            1 / max(SelectedSimMat2$Carbon))
+      
+      # Species priors, similarly-derived values
+      for (i in 1:N_SPECIES) {
+        specie <- SPECIES[i]
+        if (isFALSE(specie %in% colnames(SelectedSimMat2))) {
+          stop("Defining a prior over an outcome that doesn't exist")
+        }
+        add_to_list <- setNames(list(Normal(2 / max(SelectedSimMat2[[specie]]),
+                                            1 / max(SelectedSimMat2[[specie]]))),
+                                specie)
+        prior_list_temp <- append(prior_list_temp, add_to_list)
+      }
+      
+      # Area prior
+      if (isFALSE("Area" %in% colnames(SelectedSimMat2))) {
+        stop("Defining a prior over an outcome that doesn't exist")
+      }
+      prior_list_temp$Area <- gamma_prior(- 2 / max(SelectedSimMat2$Area),
+                                          1 / max(SelectedSimMat2$Area))
+      
+      # Visits prior
+      if (isFALSE("Visits" %in% colnames(SelectedSimMat2))) {
+        stop("Defining a prior over an outcome that doesn't exist")
+      }
+      prior_list_temp$Visits <- Normal(2 / max(SelectedSimMat2$Visits),
+                                       1 / max(SelectedSimMat2$Visits))
+      
+      # Re-order the list in accordance to TARGETS vector
+      prior_list <- list()
+      for (target in TARGETS) {
+        prior_list[[target]] <- prior_list_temp[[target]]
+      }
+      
+      # pref_reactive(prefObject(data = datAll2,
+      #                          priors = prior_list))
       
       UniqueBinCodes <- unique(DatBinaryCode)
-      
       if (dim(AtleastOneDat)[1] >= 250)
       {
         NbRoundsMax(MaxRounds)
@@ -1639,8 +1677,18 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         LinesToCompareReactive(LinesToCompare)
         SelectedLine <- list()
-        SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
-        SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
+        # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
+        # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
+        
+        # Pick 2 random strategies that meet all targets and update pref_reactive
+        two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
+                                                                                                           SelectedSimMat2 = SelectedSimMat2,
+                                                                                                           pref_reactive = pref_reactive,
+                                                                                                           N_TARGETS_ARG3 = N_TARGETS,
+                                                                                                           TARGETS_ARG2 = TARGETS,
+                                                                                                           prior_list = prior_list)
+        SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+        SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
         
         for (aai in 1:2) {
           SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
@@ -1757,7 +1805,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            VecNbMet0 = VecNbMet0,
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
-                           pref = pref,
+                           pref_reactive = pref_reactive,
                            ColourScheme = ColourScheme(),
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),
@@ -1784,7 +1832,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            VecNbMet0 = VecNbMet0,
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
-                           pref = pref,
+                           pref_reactive = pref_reactive,
                            ColourScheme = ColourScheme(),
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),

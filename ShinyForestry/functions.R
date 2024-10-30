@@ -463,6 +463,71 @@ map_sell_not_avail <- function(FullTableNotAvail,
   
 }
 
+pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0,
+                                                                       SelectedSimMat2,
+                                                                       pref_reactive,
+                                                                       N_TARGETS_ARG3,
+                                                                       TARGETS_ARG2,
+                                                                       prior_list) {
+  N_TARGETS <- N_TARGETS_ARG3
+  TARGETS <- TARGETS_ARG2
+  indices_strategies_meet_all_targets <- which(VecNbMet0() == N_TARGETS)
+  # If there are none, pick 2 random strategies
+  if (length(indices_strategies_meet_all_targets) == 0) {
+    indices_strategies_meet_all_targets <- sample(1:nrow(SelectedSimMat2), 2)
+  }
+  
+  two_strategies_that_meet_all_targets <- sample(indices_strategies_meet_all_targets, 2)
+  if (isFALSE(is.null(pref_reactive()))) {
+    
+    # If we have already added strategies
+    i <- 0
+    continue_loop <- TRUE
+    while (i < 10 && continue_loop) {
+      i <- i + 1
+      
+      # Convert to strings in order to compare rows easily
+      current_rows_as_strings <- apply(pref_reactive()$data, 1, toString)
+      
+      temp <- SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
+      rownames(temp) <- NULL
+      new_rows_as_strings <- apply(temp, 1, toString)
+      
+      indices_duplicates_in_new_rows <- which(new_rows_as_strings %in% current_rows_as_strings)
+      if (length(indices_duplicates_in_new_rows) > 0) {
+        # If there are duplicates, try 2 new ones
+        two_strategies_that_meet_all_targets[indices_duplicates_in_new_rows] <- sample(indices_strategies_meet_all_targets, length(indices_duplicates_in_new_rows))
+      } else {
+        # No duplicates, so we end the loop
+        continue_loop <- FALSE
+      }
+      
+    }
+    # We couldn't find enough target-compatible strategies to avoid preference strategy duplication
+    if (i == 10) {
+      warning("We couldn't find enough target-compatible strategies to avoid preference strategy duplication")
+      notif("We couldn't find enough target-compatible strategies to avoid preference strategy duplication", log_level = "warning", global_log_level = global_log_level)
+    }
+    
+    # temp is SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
+    pref_reactive()$data_augment(temp)
+    rm(temp)
+    
+  } else {
+    
+    # If we are adding strategies for the first time
+    # Rownames might cause issues, so we remove them
+    temp <- SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
+    rownames(temp) <- NULL
+    pref_reactive(prefObject(data = temp,
+                             priors = prior_list))
+    rm(temp)
+    
+  }
+  
+  return(two_strategies_that_meet_all_targets)
+}
+
 observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
                                    input,
                                    output,
@@ -488,7 +553,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    VecNbMet0,
                                    shconv,
                                    SelectedSimMatGlobal,
-                                   pref,
+                                   pref_reactive,
                                    ColourScheme,
                                    ColorLighteningFactor,
                                    ColorDarkeningFactor,
@@ -514,15 +579,18 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
     if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
     {
       CR <- CurrentRound()
+      length_pref_reactive_data <- nrow(pref_reactive()$data)
       if (choose == 1) {
-        pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+        # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+        pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
       } else if (choose == 2) {
-        pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
+        # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
+        pref_reactive()$addPref(c(length_pref_reactive_data, length_pref_reactive_data - 1))
       }
-      if(CR<dim(LinesToCompare)[1]){
-        LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
-      }
-      LinesToCompareReactive(LinesToCompare)
+      # if(CR<dim(LinesToCompare)[1]){
+      #   LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
+      # }
+      # LinesToCompareReactive(LinesToCompare)
       
       CR <- CR+1
       CurrentRound(CR)
@@ -532,8 +600,18 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       listMaps[[2]] <- calcBaseMap$map
       
       SelectedLine <- list()
-      SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
-      SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
+      # Re-pick 2 random stragies like in app.R line 1687
+      # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
+      # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
+      two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
+                                                                                                         SelectedSimMat2 = SelectedSimMat2,
+                                                                                                         pref_reactive = pref_reactive,
+                                                                                                         N_TARGETS_ARG3 = N_TARGETS,
+                                                                                                         TARGETS_ARG2 = TARGETS,
+                                                                                                         prior_list = NULL)
+      SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+      SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+      
       for(aai in 1:2){
         SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
         SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
@@ -633,60 +711,61 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       
     } else {
       CR <- CurrentRound()
-      pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+      # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+      pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
       
       
       shinyjs::disable("choose1")
       shinyjs::disable("choose2")
       
-      temp <- pref$infer()
-      temp[is.na(temp)] <- 1e-5
-      temp[temp<0] <- 1e-5
+      # temp <- pref$infer()
+      pref_reactive()$update()
+      temp <- pref_reactive()$posterior_mean
       infpref_reactive(temp)
       
-      SelectedSimMat2 <- SelectedSimMatGlobal
-      VecNbMet <- VecNbMet0()
-      
-      # columns <- c("Carbon","redsquirrel","Area","Visits")
-      SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
-      ClusteringDat <- data.frame(sqrt(infpref_reactive())*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
-      ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
-      ClusteringDat <- unique(ClusteringDat)
-      set.seed(123)
-      
-      FailedTsne <- TRUE
-      PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
-      IndexPerp <- 1
-      
-      while((FailedTsne)&(IndexPerp<=length(PerpVec))){
-        Perp <- PerpVec[IndexPerp]
-        tsRes <-try(Rtsne(ClusteringDat, perplexity = Perp))
-        IndexPerp <- IndexPerp+1       
-        if(class(tsRes)[1]!="try-error"){FailedTsne <- FALSE}
-      }
-      
-      if(FailedTsne){
-        
-        pp <- ggplot() +theme_void() +
-          annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
-                   size = 10, color = "black", hjust = 0.5, vjust = 0.5)
-        output$plotOP1 <- renderPlot({pp})
-        updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
-        
-      }else{
-        
-        tsneclusters <- Mclust(tsRes$Y, 1:N_TARGETS)
-        ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
-          ggpairs(columns=1:N_TARGETS, aes(color=cluster),upper=list(continuous="points"))
-        output$plotOP1 <- renderPlot({ClusterPlot})
-        
-        
-        #pp< <- ggplot(data=data.frame(x=tsRes$Y[,1],y=tsRes$Y[,2]),aes(x,y))+
-        #  geom_point(aes(colour =factor(ClusteringDat$NbTargetsMet)))+
-        #  labs(x="dim1",y="dim2",color = "Number of Targets Met")+theme_minimal()
-        #output$plotOP1 <- renderPlot({pp})
-        updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
-      }
+      # SelectedSimMat2 <- SelectedSimMatGlobal
+      # VecNbMet <- VecNbMet0()
+      # 
+      # # columns <- c("Carbon","redsquirrel","Area","Visits")
+      # SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
+      # ClusteringDat <- data.frame(sqrt(infpref_reactive())*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
+      # ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
+      # ClusteringDat <- unique(ClusteringDat)
+      # set.seed(123)
+      # 
+      # FailedTsne <- TRUE
+      # PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
+      # IndexPerp <- 1
+      # 
+      # while((FailedTsne)&(IndexPerp<=length(PerpVec))){
+      #   Perp <- PerpVec[IndexPerp]
+      #   tsRes <-try(Rtsne(ClusteringDat, perplexity = Perp))
+      #   IndexPerp <- IndexPerp+1       
+      #   if(class(tsRes)[1]!="try-error"){FailedTsne <- FALSE}
+      # }
+      # 
+      # if(FailedTsne){
+      #   
+      #   pp <- ggplot() +theme_void() +
+      #     annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
+      #              size = 10, color = "black", hjust = 0.5, vjust = 0.5)
+      #   output$plotOP1 <- renderPlot({pp})
+      #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+      #   
+      # }else{
+      #   
+      #   tsneclusters <- Mclust(tsRes$Y, 1:N_TARGETS)
+      #   ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
+      #     ggpairs(columns=1:N_TARGETS, aes(color=cluster),upper=list(continuous="points"))
+      #   output$plotOP1 <- renderPlot({ClusterPlot})
+      #   
+      #   
+      #   #pp< <- ggplot(data=data.frame(x=tsRes$Y[,1],y=tsRes$Y[,2]),aes(x,y))+
+      #   #  geom_point(aes(colour =factor(ClusteringDat$NbTargetsMet)))+
+      #   #  labs(x="dim1",y="dim2",color = "Number of Targets Met")+theme_minimal()
+      #   #output$plotOP1 <- renderPlot({pp})
+      #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+      # }
       
     }  }
 }
