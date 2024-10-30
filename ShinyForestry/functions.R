@@ -560,11 +560,13 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    SPECIES_ARG3,
                                    SPECIES_ENGLISH_ARG3,
                                    N_TARGETS_ARG2,
+                                   TARGETS_ARG1,
                                    GreyPolygonWidth,
                                    UnitPolygonColours) {
   SPECIES <- SPECIES_ARG3
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
   N_TARGETS <- N_TARGETS_ARG2
+  TARGETS <- TARGETS_ARG1
   SavedVec <- ClickedVector()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
@@ -992,10 +994,10 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(mean(SelectedSimMat2$Carbon) / 150,
+  tolvec <- c("Carbon" = mean(SelectedSimMat2$Carbon) / 150,
               colMeans(speciesMat) / 150,
-              mean(SelectedSimMat2$Area) / 150,
-              mean(SelectedSimMat2$Visits) / 150)
+              "Area" = mean(SelectedSimMat2$Area) / 150,
+              "Visits" = mean(SelectedSimMat2$Visits) / 150)
   for(i in 1:length(tolvec)) {
     # tolvec is a named vector, so tolvec[i] == 0 produces a named vector with the value, not the value directly
     # this causes a bug, isTRUE returns the boolean only

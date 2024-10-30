@@ -34,7 +34,6 @@ Imports:
   arrow,
   lwgeom,
   mvtnorm,
-  prefeR
   # Planting-Tools timothee with Bayesian Optimization
   lhs,
   sensitivity,

@@ -466,7 +466,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                             )
                                           )
                                           ),
-                                          tabPanel("Clustering", id = "Clustering",
+                                          tabPanel("Preferences", id = "Preferences",
                                                    fluidPage(
                                                      shinyjs::hidden(
                                                        fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))
@@ -485,15 +485,20 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                                    ))
 ))
 
-server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
-                   NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
+server <- function(input, output, session,
+                   SPECIES_ARG1 = SPECIES,
+                   SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH,
+                   N_TARGETS_ARG1 = N_TARGETS,
+                   NAME_CONVERSION_ARG1 = NAME_CONVERSION,
+                   TARGETS_ARG1 = TARGETS) {
   
   # hideTab(inputId = "tabs", target = "Exploration")
-  # hideTab(inputId = "tabs", target = "Clustering")
+  # hideTab(inputId = "tabs", target = "Preferences")
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
   N_TARGETS <- N_TARGETS_ARG1
+  TARGETS <- TARGETS_ARG1
   NAME_CONVERSION <- NAME_CONVERSION_ARG1
   
   bayesian_optimization_finished <- reactiveVal(TRUE)
@@ -816,7 +821,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                      alphaLVL=alphaLVL,
                                      ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider),
                                      tolvec=tolvecReactive())
-      
       SelectedSimMat2 <- tmp$SelectedSimMat2
       Icalc <- tmp$Icalc
       LimitsMat <- tmp$LimitsMat
@@ -1093,7 +1097,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   observeEvent({input$map_shape_click
     lapply(SliderNames, function(sl) {input[[sl]]})
   },{
-    message("Slider changed")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
       
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
@@ -1279,7 +1282,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             return()
           }
           
-          message(current_task_id, " [INFO] BO future start")
+          msg <- paste0("task ", current_task_id, " BO future start")
+          notif(msg, global_log_level = LOG_LEVEL)
           bayesian_optimization_finished(FALSE)
           
           if (isFALSE(is.null(infpref_reactive()))) {
@@ -1291,6 +1295,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             preference_weight_area <- 1
             mypref <- rep(1, length(c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits)))
           }
+          tolvec <- tolvecReactive()
           # https://shiny.posit.co/r/articles/improve/nonblocking/index.html
           bayesian_optimization_extendedtask <- ExtendedTask$new(function(
             seed,
@@ -1328,7 +1333,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             
             # GP
             KERNEL, # matern2.5 or sexp
-            NUMBER_OF_VECCHIA_NEIGHBOURS
+            NUMBER_OF_VECCHIA_NEIGHBOURS,
+            
+            tolvec,
+            alpha
           ) {
             future_promise(expr = {
               bo_results <- bayesian_optimization(
@@ -1369,7 +1377,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 
                 # GP
                 KERNEL = KERNEL, # matern2.5 or sexp
-                NUMBER_OF_VECCHIA_NEIGHBOURS = NUMBER_OF_VECCHIA_NEIGHBOURS
+                NUMBER_OF_VECCHIA_NEIGHBOURS = NUMBER_OF_VECCHIA_NEIGHBOURS,
+                
+                tolvec = tol,
+                alpha = alpha
               )
               return(bo_results)
             }, seed = NULL) %...>% {
@@ -1378,15 +1389,21 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
               
               # Check if this result is invalid (i.e. a newer task has started)
               if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
-                message(current_task_id, " The previous Bayesian optimization has been cancelled.")
-                showNotification(current_task_id, " The previous Bayesian optimization has been cancelled.")
+                msg <- paste0("task ", current_task_id, " The previous Bayesian optimization has been cancelled.")
+                notif(msg, global_log_level = global_log_level)
+                showNotification(msg)
                 return()
               } else { # If the result is valid (i.e. there are no new tasks started)
-                area_sum <- sum(bo_results$area_vector)
+                
                 # If no results, i.e. no feasible solution
-                if (area_sum == 0) {
+                if (is.null(bo_results)) {
                   showNotification("No feasible solution found")
+                  return()
                 }
+                
+                # Otherwise, a feasible solution is found
+                
+                area_sum <- sum(bo_results$area_vector)
                 parcels_activation <- bo_results$area_vector
                 parcels_activation[parcels_activation != 0] <- 1
                 names(parcels_activation) <- NULL
@@ -1474,7 +1491,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                 
                 # GP
                 KERNEL = "matern2.5", # matern2.5 or sexp
-                NUMBER_OF_VECCHIA_NEIGHBOURS = 20
+                NUMBER_OF_VECCHIA_NEIGHBOURS = 20,
+                
+                tolvec = tolvec,
+                alpha = alphaLVL
               )
             # })
         } else {
@@ -1490,7 +1510,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   # }
   #  )
   
-  observeEvent(input$tabs == "Clustering", {
+  observeEvent(input$tabs == "Preferences", {
     
     SavedVec <- ClickedVector()
     SelectedDropdown <- input$inSelect
@@ -1812,6 +1832,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS,
+                           TARGETS_ARG1 = TARGETS,
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours)
   })
@@ -1839,6 +1860,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS,
+                           TARGETS_ARG1 = TARGETS,
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours)
   })
