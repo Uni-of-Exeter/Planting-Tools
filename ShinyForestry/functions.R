@@ -379,7 +379,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
 map_sell_not_avail <- function(FullTableNotAvail,
                                SelectedDropdown,
                                listMaps = NULL,
-                               map = NULL) {
+                               map = NULL,NotAvailColour="black") {
    if (dim(FullTableNotAvail)[1]>0) { 
      SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown
    } else {
@@ -389,11 +389,11 @@ map_sell_not_avail <- function(FullTableNotAvail,
      SELGEO <- FullTableNotAvail$geometry[SELLNOTAVAIL]
      for (iii in 1:length(SELGEO)) {
        if (is.null(map) && !is.null(listMaps)) {
-         listMaps[[1]]<-addPolygons(listMaps[[1]],data=SELGEO,layerId=paste0("NotAvail"),color="green",fillColor="green",weight=1)
-        listMaps[[2]]<-addPolygons(listMaps[[2]],data=SELGEO,layerId=paste0("NotAvail"),color="green",fillColor="green",weight=1)
+         listMaps[[1]]<-addPolygons(listMaps[[1]],data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,fillColor=NotAvailColour,weight=1)
+        listMaps[[2]]<-addPolygons(listMaps[[2]],data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,fillColor=NotAvailColour,weight=1)
          
        } else if (!is.null(map) && is.null(listMaps)) {
-         map<-addPolygons(map,data=SELGEO,layerId=paste0("NotAvail"),color="green",fillColor="green",weight=1)
+         map<-addPolygons(map,data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,fillColor=NotAvailColour,weight=1)
        }
      }
    }
@@ -437,11 +437,13 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    SPECIES_ENGLISH_ARG3,
                                    N_TARGETS_ARG2,
                                    GreyPolygonWidth,
-                                   UnitPolygonColours) {
+                                   UnitPolygonColours,
+                                   ClickedVectorYear) {
   SPECIES <- SPECIES_ARG3
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
   N_TARGETS <- N_TARGETS_ARG2
   SavedVec <- ClickedVector()
+  SavedVecYear <- ClickedVectorYear()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
   
@@ -476,7 +478,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
       SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
       for(aai in 1:2){
-        SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
+        SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVecYear)]
         SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
         # SelectedBio <- SelectedLine[[aai]]$redsquirrel
         for (x in SPECIES) {
@@ -764,6 +766,420 @@ outputmap_calculateMats <- function(input,
            SelecTargetBioList))
 }
 
+################### This is function outputmap_calculateMats adapted to the case where
+################### HERE CHANGE
+outputmap_calculateMatsYear <- function(input,
+                                    SavedVecLoc,
+                                    simul636YearLoc,
+                                    AreaSelected,
+                                    CarbonSelected,
+                                    CarbonSelectedYear,
+                                    # RedSquirrelSelected,
+                                    SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                    VisitsSelected,
+                                    CarbonSelectedSD,
+                                    CarbonSelectedSDYear,
+                                    # RedSquirrelSelectedSD,
+                                    SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                    VisitsSelectedSD,
+                                    alphaLVL = alphaLVL,
+                                    input_areaSlider_multiplicative_coefficient = TRUE,
+                                    ManualTargets=NULL,
+                                    tolvec,
+                                    #YearSelect,
+                                    PrecalculatedCarbonSelectedTableMean=NULL,
+                                    PrecalculatedCarbonSelectedTableSD=NULL,
+                                    SavedVecYearLoc,
+                                    PreviousSavedVecYearLoc,
+                                    SAMPLELIST) {
+  
+  # Because only CO2 has variations with time we create a "binary" SelectedSimMat that is used for 
+  # all the other output variables. 29 is the code for No Planting
+  # SelectedSimMat: matrix of simulations with year
+  # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
+  # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
+  # SVMMAT: Matrix composed on SavedVec on every line (to do an OR later).
+  # For the moment, the area does not change with year of planting.
+  if (length(SavedVecYearLoc) == 1) {
+    SelectedSimMat <- as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])
+    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=29)
+  } else {
+    SelectedSimMat <- simul636YearLoc[, 1:length(SavedVecYearLoc)]
+    SelectedSimMatBinary <- 1*(simul636YearLoc[, 1:length(SavedVecYearLoc)]!=29)
+  }
+  
+  #Simul636YearOverrideLoc<-Simul636YearOverrideReactive()
+  #####
+  #SelectedSimMat[SelectedSimMat>YearSelect]<-29
+  #browser()
+  SelectedSimMatYearORSavedVec<-SelectedSimMat
+  #We assume that if the land parcel has been clicked by the user, it overrides previous year of planting
+  # and forces the whole column of SelectedSimMat to be equal to 0 (plant at year 0)
+  # Note that SelectedSimMat is only used for CO2 as for the others, 
+  #SAMPLELIST<-list()
+  #browser()
+  for(bcc in 1:dim(SelectedSimMatYearORSavedVec)[2])
+  {#if(SavedVecYearLoc[bcc]<29){
+    
+  #  
+   # if(SavedVecYearLoc[bcc]<28){
+      #SAMPLELIST[[bcc]]<- sample((SavedVecYearLoc[bcc]+1):29,dim(SelectedSimMatYearORSavedVec)[1], replace=T)
+   #   SAMPLELIST[[bcc]]<- sample(28:29,dim(SelectedSimMatYearORSavedVec)[1], replace=T)
+  #  }else{SAMPLELIST[[bcc]]<-rep(29,dim(SelectedSimMatYearORSavedVec)[1])}
+    if(!is.null(SAMPLELIST[[bcc]])){SelectedSimMatYearORSavedVec[,bcc] <-SAMPLELIST[[bcc]]}
+    #}
+  }
+  #browser()
+  SelectedSimMatBinary<-1*(SelectedSimMatYearORSavedVec!=29)
+
+  SVMAT <- t(matrix(SavedVecLoc, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  CarbonMATYearORSavedVec <- t(matrix(CarbonSelected, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+ # CarbonMATYearORSavedVec <- CarbonMAT
+ # CarbonMATBinary <- CarbonMAT
+  
+  if(is.null(PrecalculatedCarbonSelectedTableMean)){
+  
+  for(abb in 1:dim(CarbonMATYearORSavedVec)[1])
+  {
+    for(bcc in 1:dim(CarbonMATYearORSavedVec)[2])
+    {
+      #CarbonMAT[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMat[abb,bcc])]
+      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
+     
+    }
+    
+  }
+    
+  }else{CarbonMATYearORSavedVec<-PrecalculatedCarbonSelectedTableMean
+  for (bb in 1:length(SavedVecYearLoc))
+    {#if(SavedVecYearLoc[bb]<29){
+      if(!is.null(SAMPLELIST[[bb]])){  
+      CarbonMATYearORSavedVec[,bb]<-as.numeric(CarbonSelectedYear[bb,1+SAMPLELIST[[bb]]])}
+    #}
+    
+    
+  }}
+  
+    for (i in 1:length(SpeciesListSelected)) {
+    specie_name <- names(SpeciesListSelected)[i]
+    specie_value <- SpeciesListSelected[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  
+  CarbonSDMATYearORSavedVec <- t(matrix(CarbonSelectedSD, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  #CarbonSDMATYearORSavedVec<-CarbonSDMAT
+  
+  
+  
+  if(is.null(PrecalculatedCarbonSelectedTableSD)){
+    
+  for(abb in 1:dim(CarbonSDMATYearORSavedVec)[1])
+  {
+    for(bcc in 1:dim(CarbonSDMATYearORSavedVec)[2])
+    {
+      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      
+    }
+    
+  }
+  }else{CarbonSDMATYearORSavedVec<-PrecalculatedCarbonSelectedTableSD
+  for (bb in 1:length(SavedVecYearLoc))
+  {#if(SavedVecLoc[bb]==1){
+    if(!is.null(SAMPLELIST[[bb]])){  
+    CarbonSDMATYearORSavedVec[,bb]<-as.numeric(CarbonSelectedSDYear[bb,1+SAMPLELIST[[bb]]])}
+  }
+  
+    
+}
+  for (i in 1:length(SpeciesListSelectedSD)) {
+    specie_name <- names(SpeciesListSelectedSD)[i]
+    specie_value <- SpeciesListSelectedSD[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  
+ 
+  # Create a data frame representing the selected similarity matrix
+ # SelectedSimMatBinary <- data.frame(1 * (SelectedSimMatBinary | SVMAT))
+  
+#browser()
+  
+  if (is.null(ManualTargets)){
+    SelecTargetCarbon <- input$SliderMain
+    SelecTargetBioVector <- c()
+    SelecTargetBioList <- list()
+    for (x in names(SpeciesListSelected)) {
+      var_name <- paste0("SelecTargetBio", x)
+      value <- input[[paste0("BioSlider", x)]]
+      assign(var_name, value)
+      SelecTargetBioVector <- c(SelecTargetBioVector, value)
+      SelecTargetBioList[var_name] <- value
+    }
+    SelecTargetArea <- input$AreaSlider
+    SelecTargetVisits <- input$VisitsSlider}else{SelecTargetCarbon<-ManualTargets[[1]];SelecTargetBioVector<-unlist(ManualTargets[[2]]);
+    SelecTargetBioList<-ManualTargets[[2]];
+    SelecTargetArea<-ManualTargets[[3]];SelecTargetVisits<-ManualTargets[[4]]
+    }
+  
+  
+  speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
+                                                      function(x) bquote(rowMeans(SelectedSimMatBinary * get(paste0(.(x), "MAT"))))),
+                                               names(SpeciesListSelected)))
+  speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMatBinary * (get(paste0(.(x), "MAT"))^2) / length(SavedVecYearLoc))))),
+                                                 names(SpeciesListSelectedSD)))
+  #browser()
+  SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
+                                SelectedSimMatYearORSavedVec=SelectedSimMatYearORSavedVec,
+                                Carbon = rowSums(CarbonMATYearORSavedVec),#rowSums(SelectedSimMat * CarbonMAT),
+                                speciesMat,
+                                Area = rowSums(SelectedSimMatBinary * AreaMAT),
+                                Visits = rowMeans(SelectedSimMatBinary * (VisitsMAT)),
+                                CarbonSD = sqrt(rowSums(CarbonMATYearORSavedVec^2)),#sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+                                speciesMatSD,
+                                VisitsSD = sqrt(rowSums(SelectedSimMatBinary * (VisitsSDMAT^2))) / length(SavedVecYearLoc))
+#browser()
+  Icalc <- MultiImpl(
+    TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
+    EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+    SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+    alpha = alphaLVL, tolVec = tolvec
+  )
+  
+  LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
+                            speciesMat,
+                            SelectedSimMat2$Area,
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + tolvec[1],
+                                                                       speciesMatSD^2 + tolvec[1 + (1:ncol(speciesMat))],
+                                                                       rep(0, length(SelectedSimMat2$Area)) + tolvec[length(tolvec) - 1],
+                                                                       SelectedSimMat2$VisitsSD^2 + tolvec[length(tolvec)]))
+  
+  return(c(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
+                SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
+           SelecTargetBioList,SAMPLELIST=SAMPLELIST))
+}
+
+#########################################################
+#########################################################
+################### This is function outputmap_calculateMats adapted to the case where
+################### HERE CHANGE
+outputmap_calculateMatsYearType <- function(input,
+                                        SavedVecLoc,
+                                        simul636YearTypeLoc,
+                                        AreaSelected,
+                                        CarbonSelected,
+                                        CarbonSelectedYear,
+                                        CarbonSelectedYear85,
+                                        # RedSquirrelSelected,
+                                        SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                        VisitsSelected,
+                                        CarbonSelectedSD,
+                                        CarbonSelectedSDYear,
+                                        CarbonSelectedSDYear85,
+                                        # RedSquirrelSelectedSD,
+                                        SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                        VisitsSelectedSD,
+                                        alphaLVL = alphaLVL,
+                                        input_areaSlider_multiplicative_coefficient = TRUE,
+                                        ManualTargets=NULL,
+                                        tolvec,
+                                        #YearSelect,
+                                        PrecalculatedCarbonSelectedTableTypeMean=NULL,
+                                        PrecalculatedCarbonSelectedTableTypeSD=NULL,
+                                        SavedVecYearTypeLoc,
+                                        PreviousSavedVecYearTypeLoc,
+                                        SAMPLELIST) {
+  
+  # Because only CO2 has variations with time we create a "binary" SelectedSimMat that is used for 
+  # all the other output variables. 29 is the code for No Planting
+  # SelectedSimMat: matrix of simulations with year
+  # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
+  # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
+  # SVMMAT: Matrix composed on SavedVec on every line (to do an OR later).
+  # For the moment, the area does not change with year of planting.
+  if (length(SavedVecYearTypeLoc) == 1) {
+    SelectedSimMat <- as.matrix(simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)])
+    SelectedSimMatBinary<- 1*(as.matrix(simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)])!=(-1))
+  } else {
+    SelectedSimMat <- simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)]
+    SelectedSimMatBinary <- 1*(simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)]!=(-1))
+  }
+  
+  SelectedSimMatYearTypeORSavedVec<-simul636YearTypeLoc
+  #browser()
+  #Need to transform matrix here.
+  
+  #We assume that if the land parcel has been clicked by the user, it overrides previous year of planting
+  # and forces the whole column of SelectedSimMat to be equal to 0 (plant at year 0)
+  # Note that SelectedSimMat is only used for CO2 as for the others, 
+  
+  
+  for(bcc in 1:dim(SelectedSimMatYearTypeORSavedVec$TYPE)[2])
+  {
+    if(!is.null(SAMPLELIST[[bcc]])){
+      SelectedSimMatYearTypeORSavedVec$YEAR[,bcc] <-SAMPLELIST[[bcc]]$YEAR
+      SelectedSimMatYearTypeORSavedVec$TYPE[,bcc] <-SAMPLELIST[[bcc]]$TYPE
+    }
+   
+  }
+  SelectedSimMatBinary<-1*(SelectedSimMatYearTypeORSavedVec$YEAR!=(-1))
+  
+  SVMAT <- t(matrix(SavedVecYearTypeLoc, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  CarbonMATYearTypeORSavedVec <- t(matrix(CarbonSelectedYear, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  #CarbonMATYearTypeORSavedVec85 <- t(matrix(CarbonSelectedYear85, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  
+  #if(is.null(PrecalculatedCarbonSelectedTableTypeMean)){
+    
+   # for(abb in 1:dim(CarbonMATYearTypeORSavedVec)[1])
+  #  {
+   #   for(bcc in 1:dim(CarbonMATYearORSavedVec)[2])
+    #  {
+      #  CarbonMATYearTypeORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
+     #   CarbonMATYearTypeORSavedVec85[abb,bcc]<-CarbonSelectedYear85[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
+    #    
+    #  }
+      
+    #}
+    
+  #}else{
+ # browser()
+  CarbonMATYearTypeORSavedVec<-PrecalculatedCarbonSelectedTableTypeMean
+  for (bb in 1:length(SavedVecYearTypeLoc))
+  {
+    if(!is.null(SAMPLELIST[[bb]])){  
+     # browser()
+      CarbonMATYearTypeORSavedVec[,bb]<-0
+      TypeA<-(SAMPLELIST[[bb]]$TYPE=="A")
+      TypeB<-(SAMPLELIST[[bb]]$TYPE=="B")
+      CarbonMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
+      CarbonMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
+      }
+   
+  }
+  
+  #}
+  
+  for (i in 1:length(SpeciesListSelected)) {
+    specie_name <- names(SpeciesListSelected)[i]
+    specie_value <- SpeciesListSelected[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  
+  CarbonSDMATYearTypeORSavedVec <- t(matrix(CarbonSelectedSD, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  #CarbonSDMATYearTypeORSavedVec85 <- t(matrix(CarbonSelectedSDYear85, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  
+  
+  
+  #if(is.null(PrecalculatedCarbonSelectedTableTypeSD)){
+    
+  #  for(abb in 1:dim(CarbonSDMATYearTypeORSavedVec)[1])
+   # {
+    #  for(bcc in 1:dim(CarbonSDMATYearTypeORSavedVec)[2])
+     # {
+      #  CarbonSDMATYearTypeORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
+       # CarbonSDMATYearTypeORSavedVec85[abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      #}
+  #  }
+#}else{
+  CarbonSDMATYearTypeORSavedVec<-PrecalculatedCarbonSelectedTableTypeSD
+  for (bb in 1:length(SavedVecYearTypeLoc))
+  {  if(!is.null(SAMPLELIST[[bb]])){  
+    
+    CarbonSDMATYearTypeORSavedVec[,bb]<-0
+    TypeA<-(SAMPLELIST[[bb]]$TYPE=="A")
+    TypeB<-(SAMPLELIST[[bb]]$TYPE=="B")
+    CarbonSDMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedSDYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
+    CarbonSDMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedSDYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
+    
+   #   CarbonSDMATYearTypeORSavedVec[,bb]<-as.numeric(CarbonSelectedSDYear[bb,1+SAMPLELIST[[bb]]])
+      
+      }
+  }
+  
+  
+  #}
+  for (i in 1:length(SpeciesListSelectedSD)) {
+    specie_name <- names(SpeciesListSelectedSD)[i]
+    specie_value <- SpeciesListSelectedSD[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  
+  
+  
+  
+  if (is.null(ManualTargets)){
+    SelecTargetCarbon <- input$SliderMain
+    SelecTargetBioVector <- c()
+    SelecTargetBioList <- list()
+    for (x in names(SpeciesListSelected)) {
+      var_name <- paste0("SelecTargetBio", x)
+      value <- input[[paste0("BioSlider", x)]]
+      assign(var_name, value)
+      SelecTargetBioVector <- c(SelecTargetBioVector, value)
+      SelecTargetBioList[var_name] <- value
+    }
+    SelecTargetArea <- input$AreaSlider
+    SelecTargetVisits <- input$VisitsSlider}else{SelecTargetCarbon<-ManualTargets[[1]];SelecTargetBioVector<-unlist(ManualTargets[[2]]);
+    SelecTargetBioList<-ManualTargets[[2]];
+    SelecTargetArea<-ManualTargets[[3]];SelecTargetVisits<-ManualTargets[[4]]
+    }
+  
+  
+  speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
+                                                      function(x) bquote(rowMeans(SelectedSimMatBinary * get(paste0(.(x), "MAT"))))),
+                                               names(SpeciesListSelected)))
+  speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMatBinary * (get(paste0(.(x), "MAT"))^2) / length(SavedVecYearTypeLoc))))),
+                                                 names(SpeciesListSelectedSD)))
+  
+  SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMatYearTypeORSavedVec,#SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
+                                #SelectedSimMatYearTypeORSavedVec=SelectedSimMatYearTypeORSavedVec,
+                                Carbon = rowSums(CarbonMATYearTypeORSavedVec),
+                                speciesMat,
+                                Area = rowSums(SelectedSimMatBinary * AreaMAT),
+                                Visits = rowMeans(SelectedSimMatBinary * (VisitsMAT)),
+                                CarbonSD = sqrt(rowSums(CarbonMATYearTypeORSavedVec^2)),
+                                speciesMatSD,
+                                VisitsSD = sqrt(rowSums(SelectedSimMatBinary * (VisitsSDMAT^2))) / length(SavedVecYearTypeLoc))
+#  write.csv(SelectedSimMat3,file="d:\\ValuesMat.csv")
+#  save(simul636YearTypeLoc,file="d:\\SimulYearType.Rdata")
+#  browser()
+#  #browser()
+  Icalc <- MultiImpl(
+    TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
+    EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+    SDYMat = data.frame(SelectedSimMat2$CarbonSD,speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+    alpha = alphaLVL, tolVec = tolvec
+  )
+  
+  LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
+                            speciesMat,
+                            SelectedSimMat2$Area,
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + tolvec[1], 
+                                                                       speciesMatSD^2 + tolvec[1 + (1:ncol(speciesMat))],
+                                                                       rep(0, length(SelectedSimMat2$Area)) + tolvec[length(tolvec) - 1],
+                                                                       SelectedSimMat2$VisitsSD^2 + tolvec[length(tolvec)]))
+  
+  return(c(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
+                SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
+          SelecTargetBioList,SAMPLELIST=SAMPLELIST))
+}
+
+
+###################
 InitFindMaxSliderValues <- function(SavedVecLoc,
                                     AreaSelected,
                                     CarbonSelected,
@@ -896,7 +1312,207 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   
   return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,AreaMin=AreaMin,VisistMax=VisistMax,tolvec=tolvec))
 }
+#################################
 
+###################
+InitFindMaxSliderValuesYear <- function(SavedVecLoc,
+                                    AreaSelected,
+                                    CarbonSelected,
+                                    CarbonSelectedYear,
+                                    CarbonSelectedYear85,
+                                    # RedSquirrelSelected,
+                                    SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                    VisitsSelected,
+                                    CarbonSelectedSD,
+                                    CarbonSelectedSDYear,
+                                    CarbonSelectedSDYear85,
+                                    # RedSquirrelSelectedSD,
+                                    SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                    VisitsSelectedSD,
+                                    input_areaSlider_multiplicative_coefficient = TRUE,
+                                    alpha,
+                                    SavedVecYearLoc) {
+  simul636Loc <- matrix(1,2,length(SavedVecYearLoc))
+  simul636YearLoc <- matrix(0,2,length(SavedVecYearLoc))
+  #TODO
+  
+  # If only one element in SavedVec, select corresponding column in simul636
+  if (length(SavedVecLoc) == 1) {
+    SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecYearLoc)])
+    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=29)
+    
+  } else {
+    SelectedSimMat <- simul636YearLoc[, 1:length(SavedVecYearLoc)]
+    SelectedSimMatBinary <- 1*(simul636YearLoc[, 1:length(SavedVecYearLoc)]!=29)
+  }
+ 
+  
+  SelectedSimMatYearORSavedVec<-SelectedSimMat
+  #We assume that if the land parcel has been clicked by the user, it overrides previous year of planting
+  # and forces the whole column of SelectedSimMat to be equal to 0 (plant at year 0)
+  # Note that SelectedSimMat is only used for CO2 as for the others, 
+  #for(bcc in 1:dim(SelectedSimMatYearORSavedVec)[2])
+  #{if(SavedVecLoc[bcc]==1){
+  #  SelectedSimMatYearORSavedVec[,bcc] <- 0}
+  #}
+
+  
+  SVMAT <- t(matrix(SavedVecYearLoc, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  #CarbonMAT <- t(matrix(CarbonSelected, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  CarbonMATYearORSavedVec <- t(matrix(CarbonSelected, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  CarbonMATYearORSavedVec85 <- t(matrix(CarbonSelected, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  
+  
+  
+  for(abb in 1:dim(CarbonMATYearORSavedVec)[1])
+  {
+    for(bcc in 1:dim(CarbonMATYearORSavedVec)[2])
+    {
+      #CarbonMAT[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMat[abb,bcc])]
+      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonMATYearORSavedVec85[abb,bcc]<-CarbonSelectedYear85[bcc,paste0("JulesMeanY85",SelectedSimMatYearORSavedVec[abb,bcc])]
+    }
+    
+  }
+
+  # RedSquirrelMAT <- t(matrix(as.numeric(RedSquirrelSelected), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelected)) {
+    specie_name <- names(SpeciesListSelected)[i]
+    specie_value <- SpeciesListSelected[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "Selected"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  AreaMAT <- t(matrix(AreaSelected, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  VisitsMAT <- t(matrix(as.numeric(VisitsSelected),  length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  
+#  CarbonSDMAT <- t(matrix(CarbonSelectedSD, length(SavedVecLoc), dim(SelectedSimMat)[1]))
+  CarbonSDMATYearORSavedVec <- t(matrix(CarbonSelectedSD, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  CarbonSDMATYearORSavedVec85 <- t(matrix(CarbonSelectedSD, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  
+  for(abb in 1:dim(CarbonSDMATYearORSavedVec)[1])
+  {
+    for(bcc in 1:dim(CarbonSDMATYearORSavedVec)[2])
+    {
+      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonSDMATYearORSavedVec85[abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("JulesSDY85",SelectedSimMatYearORSavedVec[abb,bcc])]
+    }
+    
+  }
+
+    # RedSquirrelSDMAT <- t(matrix(as.numeric(RedSquirrelSelectedSD), length(SavedVec), dim(SelectedSimMat)[1]))
+  for (i in 1:length(SpeciesListSelectedSD)) {
+    specie_name <- names(SpeciesListSelectedSD)[i]
+    specie_value <- SpeciesListSelectedSD[[i]]
+    mat_name <- paste0(specie_name, "MAT")
+    # specieSelected <- get(paste0(specie_name, "SelectedSD"))
+    value <- t(matrix(as.numeric(specie_value), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+    assign(mat_name, value)
+  }
+  VisitsSDMAT <- t(matrix(as.numeric(VisitsSelectedSD), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
+  
+  # Create a data frame representing the selected similarity matrix
+  #SelectedSimMat <- data.frame(1 * (SelectedSimMat | SVMAT))
+  SelectedSimMatBinary <- data.frame(1 * (SelectedSimMatBinary | SVMAT))
+  
+  
+  #SelecTargetCarbon <- input$SliderMain
+  # SelecTargetBio <- input$BioSlider
+  #SelecTargetBioVector <- c()
+  #SelecTargetBioList <- list()
+  #for (x in names(SpeciesListSelected)) {
+  #  var_name <- paste0("SelecTargetBio", x)
+  #  # input[paste0("BioSlider", x)] bugs because it is a reactivevalue
+  #  value <- input[[paste0("BioSlider", x)]]
+  #  assign(var_name, value)
+  #  SelecTargetBioVector <- c(SelecTargetBioVector, value)
+  #  SelecTargetBioList[var_name] <- value
+  #}
+  #SelecTargetArea <- input$AreaSlider
+  #SelecTargetVisits <- input$VisitsSlider
+  
+  speciesMat <- do.call("data.frame", setNames(lapply(names(SpeciesListSelected),
+                                                      function(x) bquote(rowMeans(SelectedSimMat * get(paste0(.(x), "MAT"))))),
+                                               names(SpeciesListSelected)))
+  speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
+                                                        function(x) bquote(sqrt(rowSums(SelectedSimMat * (get(paste0(.(x), "MAT"))^2) / length(SavedVecYearLoc))))),
+                                                 names(SpeciesListSelectedSD)))
+  #SelectedSimMat2 <- data.frame(SelectedSimMat,
+   #                             Carbon = rowSums(SelectedSimMat * CarbonMAT),
+    #                            # redsquirrel = rowMeans(SelectedSimMat * RedSquirrelMAT),
+     #                           speciesMat,
+      #                          Area = rowSums(SelectedSimMat * AreaMAT),
+       #                         Visits = rowMeans(SelectedSimMat * (VisitsMAT)),
+        #                        CarbonSD = sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+         #                       # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
+          #                      speciesMatSD,
+           #                     VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVecLoc))
+#browser()
+  SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
+                                SelectedSimMatYearORSavedVec=SelectedSimMatYearORSavedVec,
+                                Carbon = rowSums(CarbonMATYearORSavedVec85),#rowSums(SelectedSimMat * CarbonMAT),
+                                speciesMat=speciesMat,
+                                Area = rowSums(SelectedSimMatBinary * AreaMAT),
+                                Visits = rowMeans(SelectedSimMatBinary * (VisitsMAT)),
+                                CarbonSD = sqrt(rowSums(CarbonSDMATYearORSavedVec85^2)),#sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
+                                speciesMatSD=speciesMatSD,
+                                VisitsSD = sqrt(rowSums(SelectedSimMatBinary * (VisitsSDMAT^2))) / length(SavedVecYearLoc))
+  
+  
+    # for (specie_name in names(SpeciesListSelected)) {
+  #   value <- rowMeans(SelectedSimMat * get(paste0(specie_name, "MAT")))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
+  # for (specie_name in names(SpeciesListSelectedSD)) {
+  #   value <- sqrt(rowSums(SelectedSimMat * (get(paste0(specie_name, "MAT"))^2) / length(SavedVec)))
+  #   SelectedSimMat2[specie_name] <- value
+  # }
+  
+  tolvec <- c(mean(SelectedSimMat2$Carbon) / 150,
+              colMeans(speciesMat) / 150,
+              mean(SelectedSimMat2$Area) / 150,
+              mean(SelectedSimMat2$Visits) / 150)
+  for(i in 1:length(tolvec)) {
+    # tolvec is a named vector, so tolvec[i] == 0 produces a named vector with the value, not the value directly
+    # this causes a bug, isTRUE returns the boolean only
+    if (isTRUE(tolvec[i] == 0)) {
+      tolvec[i] <- 0.1
+    }
+  }
+  # tolVec <- c(4, 0.05, 0.1, 2)
+  #  Icalc <- MultiImpl(# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
+  #   TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
+  #  EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
+  # SDYMat = data.frame(SelectedSimMat2$CarbonSD, speciesMatSD, rep(0, length(SelectedSimMat2$Area)), SelectedSimMat2$VisitsSD),
+  #  alpha = alpha, tolVec = tolvec)
+  
+  LimitsMat <- (-data.frame(SelectedSimMat2$Carbon,
+                            # SelectedSimMat2$redsquirrel,
+                            speciesMat,
+                            SelectedSimMat2$Area,
+                            # SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + 4^2, SelectedSimMat2$redsquirrelSD^2 + 2^2, rep(0, length(SelectedSimMat2$Area)) + 100^2, SelectedSimMat2$VisitsSD + 2^2))
+                            SelectedSimMat2$Visits)) / sqrt(data.frame(SelectedSimMat2$CarbonSD^2 + tolvec[1],
+                                                                       speciesMatSD^2 + tolvec[1 + (1:ncol(speciesMat))],
+                                                                       rep(0, length(SelectedSimMat2$Area)) + tolvec[length(tolvec) - 1],
+                                                                       SelectedSimMat2$VisitsSD^2 + tolvec[length(tolvec)]))
+  # we would want here the inverse truncated normal,
+  CarbonMax<-max(0,trunc(sqrt(sum((CarbonSDMATYearORSavedVec[1,])^2) + tolvec[1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Carbon[1]))
+  bioMaxList<-list()
+  for (ijj in 1:length(names(speciesMat)))
+  {NM<-names(speciesMat)[ijj]
+  NMSD<-names(speciesMatSD)[ijj]
+  bioMaxList[[ijj]]<-max(0,trunc(sqrt(SelectedSimMat2[[NMSD]][1]^2 + tolvec[1+ijj])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1+ijj],b=Inf,mean=0,sd=1)+SelectedSimMat2[[NM]][1]))
+  
+  }
+  AreaMax<-max(0,trunc(1+sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=alpha,a=LimitsMat[1,dim(LimitsMat)[2]-1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Area[1]))
+  AreaMin<-max(0,trunc(1+sqrt( tolvec[dim(LimitsMat)[2]-1])*qtruncnorm(p=alpha,a=0,b=Inf,mean=0,sd=1)))
+  VisistMax<-max(0,trunc(sqrt( SelectedSimMat2$VisitsSD[1]^2+tolvec[dim(LimitsMat)[2]])*qtruncnorm(p=1-alpha,a=LimitsMat[1,dim(LimitsMat)[2]],b=Inf,mean=0,sd=1)+SelectedSimMat2$Visits[1]))
+  
+  
+  return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,AreaMin=AreaMin,VisistMax=VisistMax,tolvec=tolvec))
+}
+######################################################################
 add_suffix_to_duplicates <- function(vec) {
   seen <- list()
   for (i in seq_along(vec)) {
