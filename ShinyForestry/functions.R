@@ -714,6 +714,7 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
     } else {
       CR <- CurrentRound()
       # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+      length_pref_reactive_data <- nrow(pref_reactive()$data)
       pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
       
       
