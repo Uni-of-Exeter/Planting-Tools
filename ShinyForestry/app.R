@@ -1381,7 +1381,7 @@ server <- function(input, output, session,
                 KERNEL = KERNEL, # matern2.5 or sexp
                 NUMBER_OF_VECCHIA_NEIGHBOURS = NUMBER_OF_VECCHIA_NEIGHBOURS,
                 
-                tolvec = tol,
+                tolvec = tolvec,
                 alpha = alpha
               )
               return(bo_results)

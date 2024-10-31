@@ -1289,7 +1289,7 @@ objective_function <- function(inputs, # c(area_vector)
                              SDY = vector_sum_sd,
                              alpha = alpha,
                              # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[-c("Area")][outcome_idx])$Im
+                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
       penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
       if (exploration == FALSE) {
         objectives <- c(objectives, vector_sum - penalty)
@@ -1314,7 +1314,7 @@ objective_function <- function(inputs, # c(area_vector)
                              SDY = vector_sum_sd,
                              alpha = alpha,
                              # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[-c("Area")][outcome_idx])$Im
+                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
       penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
       if (exploration == FALSE) {
         # objectives <- c(objectives, - vector_sum - penalty)
@@ -2458,7 +2458,7 @@ bayesian_optimization <- function(
                              SDY = vector_sum_sd,
                              alpha = alpha,
                              # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[-c("Area")][outcome_idx])$Im
+                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
       }
@@ -2477,7 +2477,7 @@ bayesian_optimization <- function(
                              SDY = vector_sum_sd,
                              alpha = alpha,
                              # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[-c("Area")][outcome_idx])$Im
+                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
       }
