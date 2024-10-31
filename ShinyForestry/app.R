@@ -503,7 +503,7 @@ server <- function(input, output, session,
   
   bayesian_optimization_finished <- reactiveVal(TRUE)
   
-  infpref_reactive <- reactiveVal(rep(1, length(TARGETS)))
+  infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
   
   CarbonSliderVal <- reactive({input$SliderMain})
@@ -1294,7 +1294,7 @@ server <- function(input, output, session,
             preference_weight_area <- infpref_reactive()[len - 1]
             mypref <- infpref_reactive()[c(1:(len - 2), len)]
           } else {
-            preference_weight_area <- 1
+            preference_weight_area <- - 1
             mypref <- rep(1, length(c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits)))
           }
           tolvec <- tolvecReactive()

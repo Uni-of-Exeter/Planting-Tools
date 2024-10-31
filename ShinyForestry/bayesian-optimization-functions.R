@@ -1163,9 +1163,9 @@ objective_function <- function(inputs, # c(area_vector)
                                outcomes_to_maximize_SD_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
                                outcomes_to_maximize_sum_threshold_vector = NULL, # vector
                                penalty_coefficient_arg = PENALTY_COEFFICIENT,
-                               preference_weight_area = 1,
-                               preference_weights_minimize = NULL,
-                               preference_weights_maximize = NULL,
+                               preference_weight_area = -1, # Minimize -> negative
+                               preference_weights_minimize = NULL, # Minimize -> negative
+                               preference_weights_maximize = NULL, # Maximize -> positive
                                exploration = FALSE, # vector, 1 value per outcome
                                scale = FALSE,
                                tolvec,
@@ -1232,7 +1232,8 @@ objective_function <- function(inputs, # c(area_vector)
   vector_sum <- sum(area_vector)
   threshold <- area_sum_threshold
   penalty <- penalty_coefficient * max(0, vector_sum - threshold)
-  preference_weight <- preference_weight_area
+  # Minimize -> negative
+  preference_weight <- - preference_weight_area
   if (exploration == FALSE) {
     objectives[1] <- vector_sum + penalty
     result <- result + preference_weight * vector_sum + penalty
@@ -1279,7 +1280,8 @@ objective_function <- function(inputs, # c(area_vector)
       vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
       vector_sum_sd <- sqrt(sum((outcomes_to_minimize_SD_matrix[, outcome_idx])^2))
       threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-      preference_weight <- preference_weights_minimize[outcome_idx]
+      # Minimize -> negative
+      preference_weight <- - preference_weights_minimize[outcome_idx]
       outcome_name <- colnames(outcomes_to_minimize_matrix)[outcome_idx]
       # minus outcome and threshold, because the standard formula handles the case of maximizing the outcome, but here we minimize
       implausibility <- Impl(Target = - threshold,
