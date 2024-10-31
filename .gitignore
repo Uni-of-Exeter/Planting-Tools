@@ -12,4 +12,4 @@ scenario_species_prob_30.csv
 scenario_species_prob_40.csv
 scenario_species_prob_50.csv
 task_id.txt
-task_id_lockfile
+*_lockfile
