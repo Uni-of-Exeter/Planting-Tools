@@ -1272,10 +1272,12 @@ server <- function(input, output, session,
             return()
           }
           
-          message("Updating SelectedFullTableRow before BO ...")
+          msg <- "Updating SelectedFullTableRow before BO ..."
+          notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
           SelectedFullTableRow(SelectedMins[SelecRow, ])
           SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
-          message("Updated SelectedFullTableRow before BO done")
+          msg <- paste(msg, "done")
+          notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
           
           if (current_task_id != get_latest_task_id()) {
             notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
