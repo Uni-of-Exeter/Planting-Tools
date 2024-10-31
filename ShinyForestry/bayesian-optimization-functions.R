@@ -2253,7 +2253,7 @@ bayesian_optimization <- function(
   } else if (isFALSE(EXPLORATION)) {
     area_vector <- obj_inputs[which.min(obj_outputs), ]
     
-    if (PLOT) {
+    if (isTRUE(PLOT)) {
       # Map
       library(leaflet)
       indices_to_plot <- which(area_vector != 0)
@@ -2264,7 +2264,7 @@ bayesian_optimization <- function(
       mapview::mapshot(map, file = "tab1-map.png")
     }
     
-    if (PLOT) {
+    if (isTRUE(PLOT)) {
       carbon_vectors <- matrix(carbon_possible_non_zero_values, ncol = k, nrow = nrow(obj_inputs), byrow = TRUE)
       carbon_vectors[obj_inputs == 0] <- 0
       
