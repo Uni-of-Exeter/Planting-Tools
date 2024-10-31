@@ -1513,7 +1513,6 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
     mylock <- flock::lock(lockfile_name)
     base::write(x = msg, file = log_filename, append = TRUE)
     flock::unlock(mylock)
-    file.remove(lockfile_name)
   }
   
   if (isTRUE(message_arg)) {
