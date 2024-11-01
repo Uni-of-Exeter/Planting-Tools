@@ -178,7 +178,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   #Note that JulesMeanY29 is considered "No Planting" so the values of 0 will not be changed
   for(ii in 1:30)
   {
-    FullTab[paste0("JulesMeanY",(ii-1))]<-rep(0, length(Uni))  
+    FullTab[paste0("JulesMeanY",(ii-1))]<-rep(0, length(Uni))
   }
   for(ii in 1:30)
   {
@@ -187,7 +187,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   for(ii in 1:30)
   {
-    FullTab[paste0("JulesMeanY85",(ii-1))]<-rep(0, length(Uni))  
+    FullTab[paste0("JulesMeanY85",(ii-1))]<-rep(0, length(Uni))
   }
   for(ii in 1:30)
   {
