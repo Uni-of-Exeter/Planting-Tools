@@ -11,5 +11,6 @@ scenario_species_prob_20.csv
 scenario_species_prob_30.csv
 scenario_species_prob_40.csv
 scenario_species_prob_50.csv
+ShinyForestry/appMod.r
 task_id.txt
 *_lockfile
