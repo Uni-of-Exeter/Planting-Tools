@@ -405,10 +405,76 @@ map_sell_not_avail <- function(FullTableNotAvail,
   
 }
 
+pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0,
+                                                                       SelectedSimMat2,
+                                                                       pref_reactive,
+                                                                       N_TARGETS_ARG3,
+                                                                       TARGETS_ARG2,
+                                                                       prior_list) {
+  N_TARGETS <- N_TARGETS_ARG3
+  TARGETS <- TARGETS_ARG2
+  indices_strategies_meet_all_targets <- which(VecNbMet0() == N_TARGETS)
+  # If there are none, pick 2 random strategies
+  if (length(indices_strategies_meet_all_targets) == 0) {
+    indices_strategies_meet_all_targets <- sample(1:nrow(SelectedSimMat2), 2)
+  }
+  
+  two_strategies_that_meet_all_targets <- sample(indices_strategies_meet_all_targets, 2)
+  if (isFALSE(is.null(pref_reactive()))) {
+    
+    # If we have already added strategies
+    i <- 0
+    continue_loop <- TRUE
+    while (i < 10 && continue_loop) {
+      i <- i + 1
+      
+      # Convert to strings in order to compare rows easily
+      current_rows_as_strings <- apply(pref_reactive()$data, 1, toString)
+      
+      temp <- SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
+      rownames(temp) <- NULL
+      new_rows_as_strings <- apply(temp, 1, toString)
+      
+      indices_duplicates_in_new_rows <- which(new_rows_as_strings %in% current_rows_as_strings)
+      if (length(indices_duplicates_in_new_rows) > 0) {
+        # If there are duplicates, try 2 new ones
+        two_strategies_that_meet_all_targets[indices_duplicates_in_new_rows] <- sample(indices_strategies_meet_all_targets, length(indices_duplicates_in_new_rows))
+      } else {
+        # No duplicates, so we end the loop
+        continue_loop <- FALSE
+      }
+      
+    }
+    # We couldn't find enough target-compatible strategies to avoid preference strategy duplication
+    if (i == 10) {
+      warning("We couldn't find enough target-compatible strategies to avoid preference strategy duplication")
+      notif("We couldn't find enough target-compatible strategies to avoid preference strategy duplication", log_level = "warning", global_log_level = global_log_level)
+    }
+    
+    # temp is SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
+    pref_reactive()$data_augment(temp)
+    rm(temp)
+    
+  } else {
+    
+    # If we are adding strategies for the first time
+    # Rownames might cause issues, so we remove them
+    temp <- SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
+    rownames(temp) <- NULL
+    pref_reactive(prefObject(data = temp,
+                             priors = prior_list))
+    rm(temp)
+    
+  }
+  
+  return(two_strategies_that_meet_all_targets)
+}
+
 observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
                                    input,
                                    output,
                                    session,
+                                   infpref_reactive,
                                    ConvertSample,
                                    LinesToCompareReactive,
                                    ClickedVector,
@@ -429,19 +495,21 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
                                    VecNbMet0,
                                    shconv,
                                    SelectedSimMatGlobal,
-                                   pref,
+                                   pref_reactive,
                                    ColourScheme,
                                    ColorLighteningFactor,
                                    ColorDarkeningFactor,
                                    SPECIES_ARG3,
                                    SPECIES_ENGLISH_ARG3,
                                    N_TARGETS_ARG2,
+                                   TARGETS_ARG1,
                                    GreyPolygonWidth,
                                    UnitPolygonColours,
                                    ClickedVectorYear) {
   SPECIES <- SPECIES_ARG3
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
   N_TARGETS <- N_TARGETS_ARG2
+  TARGETS <- TARGETS_ARG1
   SavedVec <- ClickedVector()
   SavedVecYear <- ClickedVectorYear()
   LinesToCompare <- as.matrix(LinesToCompareReactive())
@@ -457,15 +525,18 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
     if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
     {
       CR <- CurrentRound()
+      length_pref_reactive_data <- nrow(pref_reactive()$data)
       if (choose == 1) {
-        pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+        # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+        pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
       } else if (choose == 2) {
-        pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
+        # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
+        pref_reactive()$addPref(c(length_pref_reactive_data, length_pref_reactive_data - 1))
       }
-      if(CR<dim(LinesToCompare)[1]){
-        LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
-      }
-      LinesToCompareReactive(LinesToCompare)
+      # if(CR<dim(LinesToCompare)[1]){
+      #   LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
+      # }
+      # LinesToCompareReactive(LinesToCompare)
       
       CR <- CR+1
       CurrentRound(CR)
@@ -475,8 +546,18 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       listMaps[[2]] <- calcBaseMap$map
       
       SelectedLine <- list()
-      SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
-      SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
+      # Re-pick 2 random stragies like in app.R line 1687
+      # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
+      # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
+      two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
+                                                                                                         SelectedSimMat2 = SelectedSimMat2,
+                                                                                                         pref_reactive = pref_reactive,
+                                                                                                         N_TARGETS_ARG3 = N_TARGETS,
+                                                                                                         TARGETS_ARG2 = TARGETS,
+                                                                                                         prior_list = NULL)
+      SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+      SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+      
       for(aai in 1:2){
         SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVecYear)]
         SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
@@ -576,59 +657,62 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       
     } else {
       CR <- CurrentRound()
-      pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+      # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+      length_pref_reactive_data <- nrow(pref_reactive()$data)
+      pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
       
       
       shinyjs::disable("choose1")
       shinyjs::disable("choose2")
-      infpref <<- pref$infer()
       
-      infpref[is.na(infpref)] <- 1e-5
-      infpref[infpref<0] <- 1e-5
+      # temp <- pref$infer()
+      pref_reactive()$update()
+      temp <- pref_reactive()$posterior_mean
+      infpref_reactive(temp)
       
-      SelectedSimMat2 <- SelectedSimMatGlobal
-      VecNbMet <- VecNbMet0()
-      
-      # columns <- c("Carbon","redsquirrel","Area","Visits")
-      SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
-      ClusteringDat <- data.frame(sqrt(infpref)*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
-      ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
-      ClusteringDat <- unique(ClusteringDat)
-      set.seed(123)
-      
-      FailedTsne <- TRUE
-      PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
-      IndexPerp <- 1
-      
-      while((FailedTsne)&(IndexPerp<=length(PerpVec))){
-        Perp <- PerpVec[IndexPerp]
-        tsRes <-try(Rtsne(ClusteringDat, perplexity = Perp))
-        IndexPerp <- IndexPerp+1       
-        if(class(tsRes)[1]!="try-error"){FailedTsne <- FALSE}
-      }
-      
-      if(FailedTsne){
-        
-        pp <- ggplot() +theme_void() +
-          annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
-                   size = 10, color = "black", hjust = 0.5, vjust = 0.5)
-        output$plotOP1 <- renderPlot({pp})
-        updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
-        
-      }else{
-        
-        tsneclusters <- Mclust(tsRes$Y, 1:N_TARGETS)
-        ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
-          ggpairs(columns=1:N_TARGETS, aes(color=cluster),upper=list(continuous="points"))
-        output$plotOP1 <- renderPlot({ClusterPlot})
-        
-        
-        #pp< <- ggplot(data=data.frame(x=tsRes$Y[,1],y=tsRes$Y[,2]),aes(x,y))+
-        #  geom_point(aes(colour =factor(ClusteringDat$NbTargetsMet)))+
-        #  labs(x="dim1",y="dim2",color = "Number of Targets Met")+theme_minimal()
-        #output$plotOP1 <- renderPlot({pp})
-        updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
-      }
+      # SelectedSimMat2 <- SelectedSimMatGlobal
+      # VecNbMet <- VecNbMet0()
+      # 
+      # # columns <- c("Carbon","redsquirrel","Area","Visits")
+      # SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
+      # ClusteringDat <- data.frame(sqrt(infpref_reactive())*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
+      # ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
+      # ClusteringDat <- unique(ClusteringDat)
+      # set.seed(123)
+      # 
+      # FailedTsne <- TRUE
+      # PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
+      # IndexPerp <- 1
+      # 
+      # while((FailedTsne)&(IndexPerp<=length(PerpVec))){
+      #   Perp <- PerpVec[IndexPerp]
+      #   tsRes <-try(Rtsne(ClusteringDat, perplexity = Perp))
+      #   IndexPerp <- IndexPerp+1       
+      #   if(class(tsRes)[1]!="try-error"){FailedTsne <- FALSE}
+      # }
+      # 
+      # if(FailedTsne){
+      #   
+      #   pp <- ggplot() +theme_void() +
+      #     annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
+      #              size = 10, color = "black", hjust = 0.5, vjust = 0.5)
+      #   output$plotOP1 <- renderPlot({pp})
+      #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+      #   
+      # }else{
+      #   
+      #   tsneclusters <- Mclust(tsRes$Y, 1:N_TARGETS)
+      #   ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
+      #     ggpairs(columns=1:N_TARGETS, aes(color=cluster),upper=list(continuous="points"))
+      #   output$plotOP1 <- renderPlot({ClusterPlot})
+      #   
+      #   
+      #   #pp< <- ggplot(data=data.frame(x=tsRes$Y[,1],y=tsRes$Y[,2]),aes(x,y))+
+      #   #  geom_point(aes(colour =factor(ClusteringDat$NbTargetsMet)))+
+      #   #  labs(x="dim1",y="dim2",color = "Number of Targets Met")+theme_minimal()
+      #   #output$plotOP1 <- renderPlot({pp})
+      #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+      # }
       
     }  }
 }
@@ -1269,10 +1353,10 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(mean(SelectedSimMat2$Carbon) / 150,
+  tolvec <- c("Carbon" = mean(SelectedSimMat2$Carbon) / 150,
               colMeans(speciesMat) / 150,
-              mean(SelectedSimMat2$Area) / 150,
-              mean(SelectedSimMat2$Visits) / 150)
+              "Area" = mean(SelectedSimMat2$Area) / 150,
+              "Visits" = mean(SelectedSimMat2$Visits) / 150)
   for(i in 1:length(tolvec)) {
     # tolvec is a named vector, so tolvec[i] == 0 produces a named vector with the value, not the value directly
     # this causes a bug, isTRUE returns the boolean only
@@ -1603,7 +1687,7 @@ add_richness_columns <- function(FullTable, NAME_CONVERSION) {
   return(FullTable2)
 }
 
-convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob40,jncc100,climatecells) {
+convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob40,jncc100,climatecells,global_log_level=LOG_LEVEL) {
   # Take the Biodiversity probabilities from Matlab results/scenario_species_prob_40.csv
   # and merge them with BristolFullTableMerged.geojson
   
@@ -1661,7 +1745,10 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   polygons_bio$polygon_id_bio <- seq_along(polygons_bio$geometry)
   polygons_jules$polygon_id_jules <- seq_along(polygons_jules$geometry)
   # TODO: parallelize? Filter -> check how Bertrand does it
+  msg <- "Intersecting biodiversity square cells and the shapefile's polygons"
+  notif(msg, global_log_level = global_log_level)
   intersection <- st_intersection(polygons_bio, polygons_jules)
+  notif(paste(msg, "done"), global_log_level = global_log_level)
   
   # data.frame with SD = 0 for species
   df0 <- as.data.frame(matrix(0, ncol = length(all_species_names)))
@@ -1737,7 +1824,9 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   rm(polygons_bio, polygons_jules)
   
   if (any(FullTable$area_diff >= 1)) {
-    warning("The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference")
+    msg <- "The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference"
+    warning(msg)
+    notif(msg, log_level = "warning", global_log_level = global_log_level)
   }
   rm(df0)
   
@@ -1909,13 +1998,16 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
   while (error_happened == TRUE && i <= length(libs)) {
     lib <- libs[i]
     tryCatch({
+      # Unload packages
+      sapply(packages, function(x) {tryCatch(detach(paste0("package:", pkg), unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
+      
       if (update) {
         update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = quiet)
       }
       
       # Only load prefeR namespace
-      if ("prefeR" %in% packages && !requireNamespace("prefeR")) {
-        install.packages("prefeR", lib = lib, repos = repo, type = type, quiet = quiet)
+      if ("prefeR" %in% packages && !requireNamespace("prefeR", quietly = TRUE)) {
+        install.packages("prefeR", lib = lib, repos = repo, quiet = quiet)
         packages <- packages[packages != "prefeR"]
         loadNamespace("prefeR")
       }
@@ -1926,8 +2018,11 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       # Other packages to install
       packages_to_install <- packages[packages_status == FALSE]
       
+      # Unload packages
+      sapply(packages, function(x) {tryCatch(detach(paste0("package:", pkg), unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
+      
       # Remove packages that failed to load if they are already available
-      tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {})
+      tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {}, warning = function(w) {})
       
       # Install packages
       install.packages(packages_to_install, lib = lib, repos = repo, quiet = quiet)

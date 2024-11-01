@@ -14,7 +14,14 @@
 # sudo apt-get -y --no-install-recommends install libfribidi-dev
 
 # options(warn=2, error=recover)
+# options(warn=2)
 # options(warn=0) # default
+options(shiny.error = browser)
+
+set.seed(1)
+
+# more --> less: debug / info / warning / error / none
+LOG_LEVEL <- "warning"
 
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
@@ -22,20 +29,51 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
 }
 
-
 set.seed(1)
 
 
-source(normalizePath(file.path(FolderSource, "functions.R")))
 MAXYEAR<-28
 
+# Delete log file
+log_filename <- base::normalizePath(file.path(FolderSource, "log.txt"), mustWork = FALSE)
+if (file.exists(log_filename)) {
+  file.remove(log_filename)
+}
+
+source(normalizePath(file.path(FolderSource, "functions.R")))
+source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
+source(normalizePath(file.path(FolderSource, "preferTrees.R")))
+
+install_and_load_packages("devtools", quiet = TRUE)
+if (!require(dgpsi)) {
+  devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
+  library("dgpsi")
+  dgpsi::init_py()
+}
+if (!require(RRembo)) {
+  devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
+  library("RRembo")
+}
 install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
                                        "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "prefeR", "dplyr", "magrittr"))
-options(shiny.error = browser)
+                                       "mvtnorm", "dplyr", "magrittr",
+                                       "lhs", "sensitivity",
+                                       "progressr", "doFuture", "promises",
+                                       # # Active subspace method
+                                       "concordance", "BASS", "zipfR",
+                                       # To plot the best map, and save it to a file
+                                       "mapview", "webshot",
+                                       # File-locking, for multi-process
+                                       "flock",
+                                       "adaptMCMC"))
+
+# Value to control the long-running task (Bayesian optimization in Tab 1)
+# We track the task ID. If it changes, the previous long-running task gets cancelled.
+set_latest_task_id(0)
+
 NAME_CONVERSION <- get_name_conversion()
 
 # Swap rows 83 and 84
@@ -52,8 +90,8 @@ UnitPolygonColours <- 1
 
 USER_PATH <- user_path()
 
-ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
-# ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
+# ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
+ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 
@@ -310,7 +348,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                                                                               speciesprob40 = speciesprob40,
                                                                               seer2km = seer2km,
                                                                               jncc100 = jncc100,
-                                                                              climatecells = climatecells)
+                                                                              climatecells = climatecells,
+                                                                              global_log_level = LOG_LEVEL)
   # Add richness columns
   FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
@@ -327,29 +366,90 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 }
 
+message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ...")))
 FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
+message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done")))
 
-
-
+handlers(global = TRUE)
 
 STDMEAN <- 0.05
 STDSTD <- 0.01
 
 # Random sampling
 NSamp <- 5000
+
 #Now the random sample contains the year of planting/
+notif(paste0("Sampling ", NSamp, " random strategies ..."), global_log_level = LOG_LEVEL))
 
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
-for (aaa in 1:NSamp) {
-  Uniqunits <- unique(FullTable$units)
-  pp <- runif(1)
-  RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
-  for (bbb in 1:length(Uniqunits)) {
-    simul636[aaa, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
+Uniqunits <- unique(FullTable$units)
+handlers(
+  list(
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    )
+  ),
+  on_missing = "ignore"
+)
+plan(multisession, workers = future::availableCores() - 2)
+with_progress({
+  pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
+  simul636 <- foreach(
+    aaa = 1:NSamp,
+    .combine = rbind,
+    .inorder = TRUE,
+    .options.future = list(
+      chunk.size = round(NSamp / (3 * (future::availableCores() - 1))),
+      scheduling = 2,
+      seed = TRUE
+    )
+  ) %dofuture% {
+    
+    pp <- runif(1)
+    RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
+    
+    result <- matrix(NA, nrow = 1, ncol = dim(FullTable)[1])
+    for (bbb in 1:length(Uniqunits)) {
+      result[1, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
+    }
+    
+    if (aaa %% 10 == 0) {pb(amount = 10)}
+    return(result)
   }
-  
-}
+    # Avoid warning message from progressor function
+  pb(amount = 0)
+})
+plan(multisession, workers = 2)
+
+handlers(
+  list(
+    handler_shiny(),
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    )
+  ),
+  on_missing = "ignore"
+)
+
+RREMBO_CONTROL <- list(
+  # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
+  designtype = "LHS",
+  # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
+  reverse = FALSE)
+RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
+                                          init = list(n = NSamp), budget = 100,
+                                          control = RREMBO_CONTROL,
+                                          global_log_level = LOG_LEVEL)
+
+# for (aaa in 1:NSamp) {
+#   pp <- runif(1)
+#   RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
+#   for (bbb in 1:length(Uniqunits)) {
+#     simul636[aaa, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
+#   }
+# }
+
 # Simul636Year is populated with the year of planting
 # once simul636Year works it will replace simul636
 # 29 is the code for no planting
@@ -379,6 +479,8 @@ for (aaa in 1:NSamp) {
   simul636YearType$YEAR[aaa,simul636YearType$TYPE[aaa,]!="C"]<-DRAW
 }
 
+notif(paste0("Sampling ", NSamp, " random strategies ... done"), global_log_level = LOG_LEVEL))
+
 Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 
@@ -393,7 +495,7 @@ message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "fou
 
 alphaLVL <- 0.9
 MaxRounds <- 5
-ConvertSample <- sample(1:5000, 200)
+ConvertSample <- sample(1:NSamp, 200)
 
 # Read the outcomes from the Elicitor app
 while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
@@ -430,7 +532,7 @@ for (i in 1:length(SPECIES_ENGLISH)) {
 # SPECIES <- c(NAME_CONVERSION[1:2, "Specie"], "Pollinators", "All")
 # SPECIES_ENGLISH <- c(NAME_CONVERSION[1:2, "English_specie"], "Pollinators", "All")
 N_SPECIES <- length(SPECIES)
-TARGETS <- c("Carbon", SPECIES, "Area", "NbVisits")
+TARGETS <- c("Carbon", SPECIES, "Area", "Visits")
 N_TARGETS <- length(TARGETS)
 
 #Indicates if the quantity must be above (TRUE) or below the target (FALSE)
@@ -541,7 +643,6 @@ for (ext in AllExtents)
 
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
-gc()
 
 ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(fluidRow(
@@ -593,7 +694,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                             )
                                           )
                                           ),
-                                          tabPanel("Clustering", id = "Clustering",
+                                          tabPanel("Preferences", id = "Preferences",
                                                    fluidPage(
                                                      shinyjs::hidden(
                                                        fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))
@@ -612,16 +713,26 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                                    ))
 ))
 
-server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH, N_TARGETS_ARG1 = N_TARGETS,
-                   NAME_CONVERSION_ARG1 = NAME_CONVERSION) {
+server <- function(input, output, session,
+                   SPECIES_ARG1 = SPECIES,
+                   SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH,
+                   N_TARGETS_ARG1 = N_TARGETS,
+                   NAME_CONVERSION_ARG1 = NAME_CONVERSION,
+                   TARGETS_ARG1 = TARGETS) {
   
   # hideTab(inputId = "tabs", target = "Exploration")
-  # hideTab(inputId = "tabs", target = "Clustering")
+  # hideTab(inputId = "tabs", target = "Preferences")
   SPECIES <- SPECIES_ARG1
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
   N_SPECIES <- length(SPECIES)
   N_TARGETS <- N_TARGETS_ARG1
+  TARGETS <- TARGETS_ARG1
   NAME_CONVERSION <- NAME_CONVERSION_ARG1
+  
+  bayesian_optimization_finished <- reactiveVal(TRUE)
+  
+  infpref_reactive <- reactiveVal()
+  pref_reactive <- reactiveVal()
   
   CarbonSliderVal <- reactive({input$SliderMain})
   
@@ -1053,7 +1164,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       )
       
       ########## same function with YearType
-     # browser()
       tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                              SavedVecLoc = ClickedVector(),
                                              simul636YearTypeLoc = simul636YearType,
@@ -1081,17 +1191,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                                              SAMPLELIST=Simul636YearTypeOverrideReactive()
       )
       
-      
-      
-      ###################
-      #browser()
-      #SelectedSimMat2 <- tmp$SelectedSimMat2
-      #Icalc <- tmp$Icalc
-      #LimitsMat <- tmp$LimitsMat
-      #SelecTargetCarbon <- MaxVals$CarbonMax
-      #SelecTargetArea <- max_areaslider
-      #SelecTargetVisits <- max_visitsslider
-     # #PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
     
       ######## With Year
       SelectedSimMat2<-list()
@@ -1113,19 +1212,20 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
       }
-      rm(tmp)
-      ### TO DO HERE
+      # Carbon
       CONDITION_SEL<-(PROBAMAT[,1] >= alphaLVL) &
+        # Biodiversity
         # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
         condition &
+        # Area
         (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
+        # Visits
         (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL)
     
       SubsetMeetTargets <-list()
       SubsetMeetTargets[["YEAR"]]<- SelectedSimMat2$YEAR[CONDITION_SEL,]
       SubsetMeetTargets[["TYPE"]]<- SelectedSimMat2$TYPE[CONDITION_SEL,]
       
-     # browser()
       SubsetMeetTargetsReactive(SubsetMeetTargets)
       
       DF<-data.frame(SubsetMeetTargets$YEAR,SubsetMeetTargets$TYPE)
@@ -1146,12 +1246,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         PreviousFourUniqueRowsReactive(seq(1,LengthVec))
       }else{FourUniqueRowsReactive(NULL)
         PreviousFourUniqueRowsReactive(NULL)}
-      
-      
-      
-      
     }
-    
     
     CreatedBaseMap(0)
     UpdatedExtent(1)
@@ -1159,23 +1254,15 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     
   })
   
-  
-  #DONE 
+  # Trigger on changes on the Year slider
   observe({
-    # browser()
     if(input$YearSelect!=YearSelectReactive()){
       YearSelectReactive(input$YearSelect)}})
   
-  
-  ## TOCHECK 3
-  
+  # Trigger if anything changes
+  # TODO: Maybe add &bayesian_optimization_finished() as a condition, or check that values have been populated
   observe({
-    #HERE
-    
-    
-    
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-      #browser()
       SavedVec<-ClickedVector()
       PreviousSavedVec<-PreviousClickedVector()
       
@@ -1190,7 +1277,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       PreviousSelectedVec<-PreviousSelectedVector()
       
       SelectedRow<-SelectedFullTableRow()
-      # browser()
       YearSelect<-YearSelectReactive()
       PrevYearSelectedLoc<-PreviousYearSelect()
       
@@ -1245,9 +1331,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
 
       FullColVec <- ColObtained$FullColVec
       ClickedCols <- ColObtained$ClickedCols
-      #browser()
+      
       # Code: 1: RED: no planting, 2: Tree Type A 3: Tree Type B
-      # Please replace here
       
       TypeA<-(SelectedRowType=="A")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
       TypeB<-(SelectedRowType=="B")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
@@ -1279,7 +1364,12 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
           
           removeControl(mapp,layerId="legend")
-          #browser()
+          
+          # If the bayesian optimization is not finished, SelectedFullTableRow() is NULL, so try again 5 seconds later
+          if (is.null(SelectedFullTableRow())) {
+            invalidateLater(5000)
+          }
+          
           SFTR<-SelectedFullTableRow()
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
@@ -1472,8 +1562,8 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
   
   
   
-  # TO CHECK 2
-  # Check for changes in all the sliders
+  # Check for changes in all the sliders, except on app launch
+  
   #lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
   # if (input[[sl]]) {
   observeEvent({input$map_shape_click
@@ -1481,9 +1571,10 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
     input$YearSelect
   },{
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-      #HERE
-     
-      #browser()
+      
+      # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
+      current_task_id <- get_latest_task_id() + 1
+      set_latest_task_id(current_task_id)
       
       SavedVec <- ClickedVector()
       
@@ -1522,6 +1613,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           SpeciesListSelectedSD[var_name] <- list(value())
         }
         VisitsSelectedSD <- VisitsSelectedSD0()
+        
+        if (current_task_id != get_latest_task_id()) {
+          notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+          return()
+        }
         
         tmp <- outputmap_calculateMats(input = input,
                                        SavedVecLoc = SavedVec,
@@ -1625,10 +1721,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
         
-        
-        #browser()
-        
-        
         condition <- TRUE
         for (iii in 1:length(SPECIES)) {
           x<-SPECIES[iii]
@@ -1638,7 +1730,6 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           
           condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
         }
-       # rm(tmp)
         
 #        SubsetMeetTargets <- SelectedSimMat2[(PROBAMAT[,1] >= alphaLVL) &
  #                                              condition &
@@ -1646,10 +1737,13 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
    #                                            (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL), ]
 #        SubsetMeetTargetsReactive(SubsetMeetTargets)
  #       SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
-        
+        # Carbon
         CONDITION_SEL<-(PROBAMAT[,1] >= alphaLVL) &
+          # Biodiversity species
           condition &
+          # Area
           (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
+          # Visits
           (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL)
         
         SubsetMeetTargets <-list()
@@ -1668,6 +1762,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         SubsetMeetTargets[["VisitsSD"]]<-tmpYearType$SelectedSimMat2[["VisitsSD"]][CONDITION_SEL]
         SubsetMeetTargets[["Area"]]<-tmpYearType$SelectedSimMat2[["Area"]][CONDITION_SEL]
         
+        if (current_task_id != get_latest_task_id()) {
+          notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+          return()
+        }
+        
         SubsetMeetTargetsReactive(SubsetMeetTargets)
         
         DF<-data.frame(SubsetMeetTargets$YEAR,SubsetMeetTargets$TYPE)
@@ -1681,8 +1780,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         DFPrev<-data.frame(PreviousSub$YEAR,PreviousSub$TYPE)
         uniqueRowsPrev<-which(!duplicated(DFPrev))
         PreviousSubsetMeetTargetsReactiveUnique(list(YEAR=PreviousSub$YEAR[uniqueRowsPrev,],TYPE=PreviousSub$TYPE[uniqueRowsPrev,]))
-        
-    #  browser()            
+                 
 
         if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0){
           LengthVec<-min(4,dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
@@ -1690,7 +1788,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           PreviousFourUniqueRowsReactive(seq(1,LengthVec))
         }else{FourUniqueRowsReactive(NULL)
           PreviousFourUniqueRowsReactive(NULL)}
-        #browser()
+        
         if (dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] > 0) {
           if (max(tmpYearType$SelectedSimMat2$Carbon) != min(tmpYearType$SelectedSimMat2$Carbon)) {
             DistSliderCarbon <- (SubsetMeetTargets[["CarbonMean"]] - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon) - min(tmpYearType$SelectedSimMat2$Carbon))
@@ -1730,6 +1828,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             DistSliderVisits <- (SubsetMeetTargets[["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits))
           }
           
+          if (current_task_id != get_latest_task_id()) {
+            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+            return()
+          }
+          
           # REMINDER TO SCALE VALUES
           DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
           # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
@@ -1751,14 +1854,255 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
             result <- rowSums(SelectedMins$YEAR)
           }
           SelecRow <- which.min(result)
-          #browser()
+          
+          if (current_task_id != get_latest_task_id()) {
+            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+            return()
+          }
+          
+          SelecTargetBioVector <- c()
+          for (x in names(SpeciesListSelected)) {
+            var_name <- paste0("SelecTargetBio", x)
+            # input[paste0("BioSlider", x)] bugs because it is a reactivevalue
+            value <- input[[paste0("BioSlider", x)]]
+            assign(var_name, value)
+            SelecTargetBioVector <- c(SelecTargetBioVector, setNames(value, x))
+          }
+          
+          names(SelecTargetCarbon) <- "Carbon"
+          names(SelecTargetVisits) <- "Visits"
+          
+          msg <- "Updating SelectedFullTableRow before BO ..."
+          notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
+          
           SelectedFullTableRow(
             tmpYearType$SelectedSimMat2[CONDITION_SEL,][SelecRow,]
-            
           )
           SelectedVector(SelectedMins)
+          
+          msg <- paste(msg, "done")
+          notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
+          
+          if (current_task_id != get_latest_task_id()) {
+            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+            return()
+          }
+          
+          msg <- paste0("task ", current_task_id, " BO future start")
+          notif(msg, global_log_level = LOG_LEVEL)
+          bayesian_optimization_finished(FALSE)
+          
+          if (isFALSE(is.null(infpref_reactive()))) {
+            # Order is c("Carbon", SPECIES, "Area", "Visits")
+            len <- length(infpref_reactive())
+            preference_weight_area <- infpref_reactive()[len - 1]
+            mypref <- infpref_reactive()[c(1:(len - 2), len)]
+          } else {
+            preference_weight_area <- - 1
+            mypref <- rep(1, N_TARGETS - 1)
+          }
+          tolvec <- tolvecReactive()
+          # https://shiny.posit.co/r/articles/improve/nonblocking/index.html
+          bayesian_optimization_extendedtask <- ExtendedTask$new(function(
+            seed,
+            FullTable,
+            area_sum_threshold,
+            outcomes_to_maximize_sum_threshold_vector,
+            # outcomes_to_minimize_sum_threshold_vector = NULL,
+            global_log_level,
+            PLOT,
+            
+            BAYESIAN_OPTIMIZATION_ITERATIONS,
+            # progressr_object_arg,
+            # progressr_object = progressor(steps = max_loop_progress_bar, message = "Bayesian optimization"),
+            BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+            PENALTY_COEFFICIENT,
+            EXPLORATION,
+            EXPLORATION_COEFFICIENT,
+            
+            SCALE,
+            
+            preference_weight_area,
+            preference_weights_maximize,
+            # preference_weights_minimize = rep(1, length(c())),
+            
+            current_task_id,
+            
+            CUSTOM_DESIGN_POINTS_STRATEGIES,
+            DESIGN_POINTS_STRATEGY,
+            
+            CONSTRAINED_INPUTS,
+            
+            RREMBO_CONTROL,
+            RREMBO_HYPER_PARAMETERS,
+            RREMBO_SMART,
+            
+            # GP
+            KERNEL, # matern2.5 or sexp
+            NUMBER_OF_VECCHIA_NEIGHBOURS,
+            
+            tolvec,
+            alpha
+          ) {
+            future_promise(expr = {
+              bo_results <- bayesian_optimization(
+                # session = session,
+                seed = seed,
+                FullTable = FullTable,
+                area_sum_threshold = area_sum_threshold,
+                outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
+                # outcomes_to_minimize_sum_threshold_vector = NULL,
+                global_log_level = global_log_level,
+                PLOT = PLOT,
+                
+                BAYESIAN_OPTIMIZATION_ITERATIONS = BAYESIAN_OPTIMIZATION_ITERATIONS,
+                # progressr_object = progressr_object_arg,
+                # progressr_object = progressor(steps = max_loop_progress_bar, message = "Bayesian optimization"),
+                BAYESIAN_OPTIMIZATION_BATCH_SIZE = BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+                PENALTY_COEFFICIENT = PENALTY_COEFFICIENT,
+                # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
+                EXPLORATION = EXPLORATION, # FALSE for tab 1, TRUE for tab 2
+                EXPLORATION_COEFFICIENT = EXPLORATION_COEFFICIENT,
+                
+                SCALE = SCALE,
+                
+                preference_weight_area = preference_weight_area,
+                preference_weights_maximize = preference_weights_maximize,
+                # preference_weights_minimize = rep(1, length(c())),
+                
+                current_task_id = current_task_id,
+                
+                CUSTOM_DESIGN_POINTS_STRATEGIES = CUSTOM_DESIGN_POINTS_STRATEGIES,
+                DESIGN_POINTS_STRATEGY = DESIGN_POINTS_STRATEGY,
+                
+                CONSTRAINED_INPUTS = CONSTRAINED_INPUTS,
+                
+                RREMBO_CONTROL = RREMBO_CONTROL,
+                RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+                RREMBO_SMART = RREMBO_SMART,
+                
+                # GP
+                KERNEL = KERNEL, # matern2.5 or sexp
+                NUMBER_OF_VECCHIA_NEIGHBOURS = NUMBER_OF_VECCHIA_NEIGHBOURS,
+                
+                tolvec = tolvec,
+                alpha = alpha
+              )
+              return(bo_results)
+            }, seed = NULL) %...>% {
+              
+              bo_results <- .
+              
+              # Check if this result is invalid (i.e. a newer task has started)
+              if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
+                msg <- paste0("task ", current_task_id, " The previous Bayesian optimization has been cancelled.")
+                notif(msg, global_log_level = global_log_level)
+                showNotification(msg)
+                return()
+              } else { # If the result is valid (i.e. there are no new tasks started)
+                
+                # If no results, i.e. no feasible solution
+                if (is.null(bo_results)) {
+                  showNotification("No feasible solution found")
+                  return()
+                }
+                
+                # Otherwise, a feasible solution is found
+                area_sum <- sum(bo_results$area_vector)
+                parcels_activation <- bo_results$area_vector
+                parcels_activation[parcels_activation != 0] <- 1
+                names(parcels_activation) <- NULL
+                
+                last_col <- ncol(bo_results$outcomes_to_maximize)
+                number_of_rows <- nrow(bo_results$outcomes_to_maximize)
+                col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("JulesMean")),
+                              colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"JulesMean")))
+                col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
+                                 sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
+                
+                selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
+                                                                    # CarbonMean, BioMeans, Area, VisitsMean
+                                                                    col_sums[-last_col], "Area" = area_sum, col_sums[last_col],
+                                                                    # CarbonSD, BioSD, VisitsSD
+                                                                    col_sums_SD), nrow = 1))
+                
+                colnames(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow, ])
+                selectedvectorvalue <- selectedfulltablerowvalue[, 1:length(parcels_activation)]
+                
+                # SelectedFullTableRow(SelectedMins[SelecRow, ])
+                # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
+                SelectedFullTableRow(selectedfulltablerowvalue)
+                SelectedVector(selectedvectorvalue)
+                
+                message(current_task_id, " [INFO] Bayesian optimization finished successfully.")
+                showNotification(current_task_id, " [INFO] Bayesian optimization finished successfully.")
+                message(current_task_id, " [INFO] sum_carbon=", col_sums[1])
+                
+              }
+              bayesian_optimization_finished(TRUE)
+            } %...!% {
+              error <- .
+              msg <- paste0("task ", current_task_id, " future_promise resulted in the error: ", error)
+              showNotification(paste("[ERROR]", msg))
+              notif(msg, log_level = "error", global_log_level = global_log_level)
+              bayesian_optimization_finished(TRUE)
+            }
+          })
+          
+          # # shiny::withProgress(
+          # progressr::withProgressShiny(
+          #   # progressr::with_progress(
+          #   message = "Finding strategy",
+          #   value = 0,
+          #   # session = session,
+          #   # min = 0,
+          #   # max = BAYESIAN_OPTIMIZATION_ITERATIONS * 3,
+          #   expr = {
+              # my_progressr_object <- progressor(steps = 5 * 3, message = "Bayesian optimization")
+          bayesian_optimization_extendedtask$invoke(
+                seed = 1,
+                FullTable = FullTable,
+                area_sum_threshold = SelecTargetArea,
+                outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
+                # outcomes_to_minimize_sum_threshold_vector = NULL,
+                global_log_level = LOG_LEVEL,
+                PLOT = FALSE,
+                
+                BAYESIAN_OPTIMIZATION_ITERATIONS = 5,
+                # progressr_object = function(amount = 0, message = "") {},
+                # progressr_object_arg = my_progressr_object,
+                BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
+                PENALTY_COEFFICIENT = 1000,
+                # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
+                EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
+                EXPLORATION_COEFFICIENT = 0,
+                
+                SCALE = FALSE,
+                
+                preference_weight_area = preference_weight_area,
+                preference_weights_maximize = mypref,
+                # preference_weights_minimize = rep(1, length(c())),
+                
+                current_task_id = current_task_id,
+                
+                CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
+                DESIGN_POINTS_STRATEGY = "expected improvement",
+                
+                CONSTRAINED_INPUTS = TRUE,
+                
+                RREMBO_CONTROL = RREMBO_CONTROL,
+                RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+                RREMBO_SMART = FALSE,
+                
+                # GP
+                KERNEL = "matern2.5", # matern2.5 or sexp
+                NUMBER_OF_VECCHIA_NEIGHBOURS = 20,
+                
+                tolvec = tolvec,
+                alpha = alphaLVL
+              )
+            # })
         } else {
-           #browser()
           ZeroSelected<-tmpYearType$SelectedSimMat2[1,]
           ZeroSelected<-replace(ZeroSelected,1:(length(SavedVecYearType)),-1)
           ZeroSelected<-replace(ZeroSelected,(length(SavedVecYearType)+1):(2*length(SavedVecYearType)),"C")
@@ -1771,20 +2115,11 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
           )
           SelectedVector(TOSAVE)
         }
-      }      
-      
-      
-      
-      
+      }
     }
-    #  }
-  })
+  }, ignoreInit = TRUE)
   
-  
-  # }
-  #  )
-  # DONE TO CHANGE LATER
-  observeEvent(input$tabs == "Clustering", {
+  observeEvent(input$tabs == "Preferences", {
     
     SavedVec <- ClickedVector()
     SavedVecYear <- ClickedVectorYear()
@@ -1920,18 +2255,52 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
       }
       
       VecNbMet0(VecNbMet)
-      
-      priors <- c(prefeR::Normal(125, 60),
-                  prefeR::Normal(5, 3))
-      for (i in 1:N_SPECIES) {
-        priors <- c(priors, prefeR::Normal(5, 5))
+      prior_list_temp <- list()
+      # Carbon prior
+      # mean = 1 / half(midpoint)
+      # 2 * sd = 1 / half(midpoint)
+      if (isFALSE("Carbon" %in% colnames(SelectedSimMat2))) {
+        stop("Defining a prior over an outcome that doesn't exist")
       }
-      priors <- c(priors, prefeR::Normal(8, 5))
-      pref <<- prefeR::prefEl(data = datAll2,
-                              priors = priors)
+      prior_list_temp$Carbon <- gamma_prior(2 / max(SelectedSimMat2$Carbon),
+                                            1 / max(SelectedSimMat2$Carbon))
+      
+      # Species priors, similarly-derived values
+      for (i in 1:N_SPECIES) {
+        specie <- SPECIES[i]
+        if (isFALSE(specie %in% colnames(SelectedSimMat2))) {
+          stop("Defining a prior over an outcome that doesn't exist")
+        }
+        add_to_list <- setNames(list(Normal(2 / max(SelectedSimMat2[[specie]]),
+                                            1 / max(SelectedSimMat2[[specie]]))),
+                                specie)
+        prior_list_temp <- append(prior_list_temp, add_to_list)
+      }
+      
+      # Area prior
+      if (isFALSE("Area" %in% colnames(SelectedSimMat2))) {
+        stop("Defining a prior over an outcome that doesn't exist")
+      }
+      prior_list_temp$Area <- gamma_prior(- 2 / max(SelectedSimMat2$Area),
+                                          1 / max(SelectedSimMat2$Area))
+      
+      # Visits prior
+      if (isFALSE("Visits" %in% colnames(SelectedSimMat2))) {
+        stop("Defining a prior over an outcome that doesn't exist")
+      }
+      prior_list_temp$Visits <- Normal(2 / max(SelectedSimMat2$Visits),
+                                       1 / max(SelectedSimMat2$Visits))
+      
+      # Re-order the list in accordance to TARGETS vector
+      prior_list <- list()
+      for (target in TARGETS) {
+        prior_list[[target]] <- prior_list_temp[[target]]
+      }
+      
+      # pref_reactive(prefObject(data = datAll2,
+      #                          priors = prior_list))
       
       UniqueBinCodes <- unique(DatBinaryCode)
-      
       if (dim(AtleastOneDat)[1] >= 250)
       {
         NbRoundsMax(MaxRounds)
@@ -1942,8 +2311,18 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
         
         LinesToCompareReactive(LinesToCompare)
         SelectedLine <- list()
-        SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
-        SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
+        # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
+        # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
+        
+        # Pick 2 random strategies that meet all targets and update pref_reactive
+        two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
+                                                                                                           SelectedSimMat2 = SelectedSimMat2,
+                                                                                                           pref_reactive = pref_reactive,
+                                                                                                           N_TARGETS_ARG3 = N_TARGETS,
+                                                                                                           TARGETS_ARG2 = TARGETS,
+                                                                                                           prior_list = prior_list)
+        SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+        SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
         
         for (aai in 1:2) {
           SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
@@ -2048,6 +2427,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            input = input,
                            output = output,
                            session = session,
+                           infpref_reactive = infpref_reactive,
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
@@ -2058,13 +2438,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            VecNbMet0 = VecNbMet0,
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
-                           pref = pref,
+                           pref_reactive = pref_reactive,
                            ColourScheme = ColourScheme(),
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS,
+                           TARGETS_ARG1 = TARGETS,
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours,
                            ClickedVectorYear=ClickedVectorYear)
@@ -2075,6 +2456,7 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            input = input,
                            output = output,
                            session = session,
+                           infpref_reactive = infpref_reactive,
                            ConvertSample = ConvertSample,
                            LinesToCompareReactive = LinesToCompareReactive,
                            ClickedVector = ClickedVector,
@@ -2085,13 +2467,14 @@ server <- function(input, output, session, SPECIES_ARG1 = SPECIES, SPECIES_ENGLI
                            VecNbMet0 = VecNbMet0,
                            shconv = shconv,
                            SelectedSimMatGlobal = SelectedSimMatGlobal,
-                           pref = pref,
+                           pref_reactive = pref_reactive,
                            ColourScheme = ColourScheme(),
                            ColorLighteningFactor = ColorLighteningFactor(),
                            ColorDarkeningFactor = ColorDarkeningFactor(),
                            SPECIES_ARG3 = SPECIES,
                            SPECIES_ENGLISH_ARG3 = SPECIES_ENGLISH,
                            N_TARGETS_ARG2 = N_TARGETS,
+                           TARGETS_ARG1 = TARGETS,
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours,
                            ClickedVectorYear=ClickedVectorYear)
