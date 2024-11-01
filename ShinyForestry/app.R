@@ -380,7 +380,7 @@ STDSTD <- 0.01
 NSamp <- 5000
 
 #Now the random sample contains the year of planting/
-notif(paste0("Sampling ", NSamp, " random strategies ..."), global_log_level = LOG_LEVEL))
+notif(paste0("Sampling ", NSamp, " random strategies ..."), global_log_level = LOG_LEVEL)
 
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 Uniqunits <- unique(FullTable$units)
@@ -479,7 +479,7 @@ for (aaa in 1:NSamp) {
   simul636YearType$YEAR[aaa,simul636YearType$TYPE[aaa,]!="C"]<-DRAW
 }
 
-notif(paste0("Sampling ", NSamp, " random strategies ... done"), global_log_level = LOG_LEVEL))
+notif(paste0("Sampling ", NSamp, " random strategies ... done"), global_log_level = LOG_LEVEL)
 
 Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
