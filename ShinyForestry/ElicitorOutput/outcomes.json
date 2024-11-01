@@ -16,5 +16,23 @@
         "metric": "Species richness",
         "time-period": "Set year",
         "year": "2027"
+    },
+    "3": {
+        "target": "No",
+        "category": "Biodiversity",
+        "scale": "National",
+        "sub-category": "Birds",
+        "metric": "Species richness",
+        "time-period": "Set year",
+        "year": "2027"
+    },
+    "4": {
+        "target": "No",
+        "category": "Biodiversity",
+        "scale": "National",
+        "sub-category": "Mammals",
+        "metric": "Species richness",
+        "time-period": "Set year",
+        "year": "2027"
     }
 }
