@@ -420,7 +420,8 @@ with_progress({
     # Avoid warning message from progressor function
   pb(amount = 0)
 })
-plan(multisession, workers = 2)
+# plan(multisession, workers = 2)
+plan(sequential)
 
 handlers(
   list(
