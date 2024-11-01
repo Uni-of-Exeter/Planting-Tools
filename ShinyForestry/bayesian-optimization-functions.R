@@ -1307,7 +1307,6 @@ objective_function <- function(inputs, # c(area_vector)
       vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
       vector_sum_sd <- sqrt(sum((outcomes_to_maximize_SD_matrix[, outcome_idx])^2))
       threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-      browser()
       preference_weight <- preference_weights_maximize[outcome_idx]
       implausibility <- Impl(Target = threshold,
                              EY = vector_sum,
