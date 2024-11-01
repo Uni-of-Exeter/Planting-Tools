@@ -1113,9 +1113,9 @@ outputmap_calculateMatsYearType <- function(input,
    
   }
   SelectedSimMatBinary<-1*(SelectedSimMatYearTypeORSavedVec$YEAR!=(-1))
-  
+ 
   SVMAT <- t(matrix(SavedVecYearTypeLoc, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
-  CarbonMATYearTypeORSavedVec <- t(matrix(CarbonSelectedYear, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  #CarbonMATYearTypeORSavedVec <- t(matrix(as.matrix(CarbonSelectedYear), length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
   #CarbonMATYearTypeORSavedVec85 <- t(matrix(CarbonSelectedYear85, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
   
   #if(is.null(PrecalculatedCarbonSelectedTableTypeMean)){
@@ -1159,7 +1159,7 @@ outputmap_calculateMatsYearType <- function(input,
   AreaMAT <- t(matrix(AreaSelected, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
   VisitsMAT <- t(matrix(as.numeric(VisitsSelected), length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
   
-  CarbonSDMATYearTypeORSavedVec <- t(matrix(CarbonSelectedSD, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
+  #CarbonSDMATYearTypeORSavedVec <- t(matrix(CarbonSelectedSD, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
   #CarbonSDMATYearTypeORSavedVec85 <- t(matrix(CarbonSelectedSDYear85, length(SavedVecYearTypeLoc), dim(SelectedSimMat)[1]))
   
   
