@@ -732,7 +732,8 @@ outputmap_calculateMats <- function(input,
                                     alphaLVL = alphaLVL,
                                     input_areaSlider_multiplicative_coefficient = TRUE,
                                     ManualTargets=NULL,
-                                    tolvec) {
+                                    tolvec,
+                                    MAXYEAR=MAXYEAR) {
   
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVecLoc) == 1) {
@@ -875,10 +876,11 @@ outputmap_calculateMatsYear <- function(input,
                                     PrecalculatedCarbonSelectedTableSD=NULL,
                                     SavedVecYearLoc,
                                     PreviousSavedVecYearLoc,
-                                    SAMPLELIST) {
+                                    SAMPLELIST,
+                                    MAXYEAR=MAXYEAR) {
   
   # Because only CO2 has variations with time we create a "binary" SelectedSimMat that is used for 
-  # all the other output variables. 29 is the code for No Planting
+  # all the other output variables. (MAXYEAR+1) is the code for No Planting
   # SelectedSimMat: matrix of simulations with year
   # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
   # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
@@ -886,15 +888,15 @@ outputmap_calculateMatsYear <- function(input,
   # For the moment, the area does not change with year of planting.
   if (length(SavedVecYearLoc) == 1) {
     SelectedSimMat <- as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])
-    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=29)
+    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=(MAXYEAR+1))
   } else {
     SelectedSimMat <- simul636YearLoc[, 1:length(SavedVecYearLoc)]
-    SelectedSimMatBinary <- 1*(simul636YearLoc[, 1:length(SavedVecYearLoc)]!=29)
+    SelectedSimMatBinary <- 1*(simul636YearLoc[, 1:length(SavedVecYearLoc)]!=(MAXYEAR+1))
   }
   
   #Simul636YearOverrideLoc<-Simul636YearOverrideReactive()
   #####
-  #SelectedSimMat[SelectedSimMat>YearSelect]<-29
+  #SelectedSimMat[SelectedSimMat>YearSelect]<-(MAXYEAR+1)
   #browser()
   SelectedSimMatYearORSavedVec<-SelectedSimMat
   #We assume that if the land parcel has been clicked by the user, it overrides previous year of planting
@@ -903,18 +905,18 @@ outputmap_calculateMatsYear <- function(input,
   #SAMPLELIST<-list()
   #browser()
   for(bcc in 1:dim(SelectedSimMatYearORSavedVec)[2])
-  {#if(SavedVecYearLoc[bcc]<29){
+  {#if(SavedVecYearLoc[bcc]<(MAXYEAR+1)){
     
   #  
    # if(SavedVecYearLoc[bcc]<28){
-      #SAMPLELIST[[bcc]]<- sample((SavedVecYearLoc[bcc]+1):29,dim(SelectedSimMatYearORSavedVec)[1], replace=T)
-   #   SAMPLELIST[[bcc]]<- sample(28:29,dim(SelectedSimMatYearORSavedVec)[1], replace=T)
-  #  }else{SAMPLELIST[[bcc]]<-rep(29,dim(SelectedSimMatYearORSavedVec)[1])}
+      #SAMPLELIST[[bcc]]<- sample((SavedVecYearLoc[bcc]+1):(MAXYEAR+1),dim(SelectedSimMatYearORSavedVec)[1], replace=T)
+   #   SAMPLELIST[[bcc]]<- sample((MAXYEAR):(MAXYEAR+1),dim(SelectedSimMatYearORSavedVec)[1], replace=T)
+  #  }else{SAMPLELIST[[bcc]]<-rep((MAXYEAR+1),dim(SelectedSimMatYearORSavedVec)[1])}
     if(!is.null(SAMPLELIST[[bcc]])){SelectedSimMatYearORSavedVec[,bcc] <-SAMPLELIST[[bcc]]}
     #}
   }
   #browser()
-  SelectedSimMatBinary<-1*(SelectedSimMatYearORSavedVec!=29)
+  SelectedSimMatBinary<-1*(SelectedSimMatYearORSavedVec!=(MAXYEAR+1))
 
   SVMAT <- t(matrix(SavedVecLoc, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
   CarbonMATYearORSavedVec <- t(matrix(CarbonSelected, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
@@ -928,7 +930,7 @@ outputmap_calculateMatsYear <- function(input,
     for(bcc in 1:dim(CarbonMATYearORSavedVec)[2])
     {
       #CarbonMAT[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMat[abb,bcc])]
-      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
      
     }
     
@@ -936,7 +938,7 @@ outputmap_calculateMatsYear <- function(input,
     
   }else{CarbonMATYearORSavedVec<-PrecalculatedCarbonSelectedTableMean
   for (bb in 1:length(SavedVecYearLoc))
-    {#if(SavedVecYearLoc[bb]<29){
+    {#if(SavedVecYearLoc[bb]<(MAXYEAR+1)){
       if(!is.null(SAMPLELIST[[bb]])){  
       CarbonMATYearORSavedVec[,bb]<-as.numeric(CarbonSelectedYear[bb,1+SAMPLELIST[[bb]]])}
     #}
@@ -965,7 +967,7 @@ outputmap_calculateMatsYear <- function(input,
   {
     for(bcc in 1:dim(CarbonSDMATYearORSavedVec)[2])
     {
-      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
       
     }
     
@@ -1078,10 +1080,11 @@ outputmap_calculateMatsYearType <- function(input,
                                         PrecalculatedCarbonSelectedTableTypeSD=NULL,
                                         SavedVecYearTypeLoc,
                                         PreviousSavedVecYearTypeLoc,
-                                        SAMPLELIST) {
+                                        SAMPLELIST,
+                                        MAXYEAR=MAXYEAR) {
   
   # Because only CO2 has variations with time we create a "binary" SelectedSimMat that is used for 
-  # all the other output variables. 29 is the code for No Planting
+  # all the other output variables. (MAXYEAR+1) is the code for No Planting
   # SelectedSimMat: matrix of simulations with year
   # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
   # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
@@ -1139,8 +1142,8 @@ outputmap_calculateMatsYearType <- function(input,
     if(!is.null(SAMPLELIST[[bb]])){  
      # browser()
       CarbonMATYearTypeORSavedVec[,bb]<-0
-      TypeA<-(SAMPLELIST[[bb]]$TYPE=="A")
-      TypeB<-(SAMPLELIST[[bb]]$TYPE=="B")
+      TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
+      TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
       CarbonMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
       CarbonMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
       }
@@ -1180,8 +1183,8 @@ outputmap_calculateMatsYearType <- function(input,
   {  if(!is.null(SAMPLELIST[[bb]])){  
     
     CarbonSDMATYearTypeORSavedVec[,bb]<-0
-    TypeA<-(SAMPLELIST[[bb]]$TYPE=="A")
-    TypeB<-(SAMPLELIST[[bb]]$TYPE=="B")
+    TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
+    TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
     CarbonSDMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedSDYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
     CarbonSDMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedSDYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
     
@@ -1275,7 +1278,8 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
                                     SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                     VisitsSelectedSD,
                                     input_areaSlider_multiplicative_coefficient = TRUE,
-                                    alpha) {
+                                    alpha,
+                                    MAXYEAR) {
   simul636Loc <- matrix(1,2,length(SavedVecLoc))
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVecLoc) == 1) {
@@ -1415,7 +1419,8 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
                                     VisitsSelectedSD,
                                     input_areaSlider_multiplicative_coefficient = TRUE,
                                     alpha,
-                                    SavedVecYearLoc) {
+                                    SavedVecYearLoc,
+                                    MAXYEAR) {
   simul636Loc <- matrix(1,2,length(SavedVecYearLoc))
   simul636YearLoc <- matrix(0,2,length(SavedVecYearLoc))
   #TODO
@@ -1423,11 +1428,11 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
   # If only one element in SavedVec, select corresponding column in simul636
   if (length(SavedVecLoc) == 1) {
     SelectedSimMat <- as.matrix(simul636Loc[, 1:length(SavedVecYearLoc)])
-    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=29)
+    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=(MAXYEAR+1))
     
   } else {
     SelectedSimMat <- simul636YearLoc[, 1:length(SavedVecYearLoc)]
-    SelectedSimMatBinary <- 1*(simul636YearLoc[, 1:length(SavedVecYearLoc)]!=29)
+    SelectedSimMatBinary <- 1*(simul636YearLoc[, 1:length(SavedVecYearLoc)]!=(MAXYEAR+1))
   }
  
   
@@ -1453,8 +1458,8 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
     for(bcc in 1:dim(CarbonMATYearORSavedVec)[2])
     {
       #CarbonMAT[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMat[abb,bcc])]
-      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
-      CarbonMATYearORSavedVec85[abb,bcc]<-CarbonSelectedYear85[bcc,paste0("JulesMeanY85",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonMATYearORSavedVec85[abb,bcc]<-CarbonSelectedYear85[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
     }
     
   }
@@ -1479,8 +1484,8 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
   {
     for(bcc in 1:dim(CarbonSDMATYearORSavedVec)[2])
     {
-      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
-      CarbonSDMATYearORSavedVec85[abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("JulesSDY85",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonSDMATYearORSavedVec85[abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
     }
     
   }
