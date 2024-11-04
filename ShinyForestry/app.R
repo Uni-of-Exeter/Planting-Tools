@@ -785,6 +785,7 @@ server <- function(input, output, session,
                    N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION,
                    TARGETS_ARG1 = TARGETS) {
+  set.seed(1)
   
   SESSION_FILE_SUFFIX <- paste0("_", session$token)
   
