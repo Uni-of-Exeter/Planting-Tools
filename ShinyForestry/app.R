@@ -351,6 +351,55 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   # Add richness columns
   FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
+  # Outcomes
+  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
+  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
+    Sys.sleep(5)
+  }
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
+  
+  # Read the outcomes from the Elicitor app
+  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))),
+                                       silent = TRUE)),
+                  "try-error")) {
+    Sys.sleep(1)
+  }
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
+  
+  outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
+  SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
+  
+  # SPECIES_ENGLISH <- c("Pollinators", "Reed Bunting", "Lapwing", "Invertebrate - snails")
+  # c("Pollinators", "Herptiles")
+  # SPECIES_ENGLISH <- unique(NAME_CONVERSION$Group_pretty)[c(2, 7)]
+  
+  # Default specie and group
+  if (length(SPECIES_ENGLISH) == 0) {
+    SPECIES_ENGLISH <- "All"
+  }
+  # Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
+  SPECIES <- SPECIES_ENGLISH
+  for (i in 1:length(SPECIES_ENGLISH)) {
+    ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
+    # If it is a group
+    if (ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All")) {
+      SPECIES[i] <- get_ugly_group(ugly_english_specie, NAME_CONVERSION)
+    } else {
+      # If it is a specie
+      SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
+    }
+  }
+  # S
+  FullTable <- FullTable %>%
+    dplyr::select(
+      # Keep non-biodiversity columns
+      !dplyr::starts_with("Bio") |
+        # and only the biodiversity columns we need (reduce the file and RAM size requirements)
+        (
+          dplyr::starts_with("Bio") & dplyr::matches(paste0(SPECIES, collapse = "|"))
+        )
+    )
+  
   # Move decision units with id -1 (Maintain current land use) from FullTable to FullTableNotAvail if we want to handle them in a special way
   # OR
   # Only delete lines with "units"=-1 from FullTable
@@ -486,45 +535,48 @@ Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]
 #browser()
 #hist(simul636YearType,100)
 
-message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
-while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
-  Sys.sleep(5)
-}
-message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
-
 alphaLVL <- 0.9
 MaxRounds <- 5
 ConvertSample <- sample(1:NSamp, 200)
 
-# Read the outcomes from the Elicitor app
-while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
-                                     , silent = TRUE)),
-                "try-error")) {
-  Sys.sleep(1)
-}
-message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
-
-outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
-SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
-
-# SPECIES_ENGLISH <- c("Pollinators", "Reed Bunting", "Lapwing", "Invertebrate - snails")
-# c("Pollinators", "Herptiles")
-# SPECIES_ENGLISH <- unique(NAME_CONVERSION$Group_pretty)[c(2, 7)]
-
-# Default specie and group
-if (length(SPECIES_ENGLISH) == 0) {
-  SPECIES_ENGLISH <- "All"
-}
-# Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
-SPECIES <- SPECIES_ENGLISH
-for (i in 1:length(SPECIES_ENGLISH)) {
-  ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
-  # If it is a group
-  if (ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All")) {
-    SPECIES[i] <- get_ugly_group(ugly_english_specie, NAME_CONVERSION)
-  } else {
-    # If it is a specie
-    SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
+# Outcomes
+if (isFALSE(exists("outcomes"))) {
+  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
+  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
+    Sys.sleep(5)
+  }
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
+  
+  # Read the outcomes from the Elicitor app
+  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
+                                       , silent = TRUE)),
+                  "try-error")) {
+    Sys.sleep(1)
+  }
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
+  
+  outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
+  SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
+  
+  # SPECIES_ENGLISH <- c("Pollinators", "Reed Bunting", "Lapwing", "Invertebrate - snails")
+  # c("Pollinators", "Herptiles")
+  # SPECIES_ENGLISH <- unique(NAME_CONVERSION$Group_pretty)[c(2, 7)]
+  
+  # Default specie and group
+  if (length(SPECIES_ENGLISH) == 0) {
+    SPECIES_ENGLISH <- "All"
+  }
+  # Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
+  SPECIES <- SPECIES_ENGLISH
+  for (i in 1:length(SPECIES_ENGLISH)) {
+    ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
+    # If it is a group
+    if (ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All")) {
+      SPECIES[i] <- get_ugly_group(ugly_english_specie, NAME_CONVERSION)
+    } else {
+      # If it is a specie
+      SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
+    }
   }
 }
 
