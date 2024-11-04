@@ -485,7 +485,7 @@ for (aaa in 1:NSamp) {
   probbType<-runif(1,0.5)
   Planted<-(simul636[aaa,]==1)
   if(sum(Planted)>0){
-    simul636YearType[["TYPE"]][aaa,simul636[aaa,]==1]<-sample(c("A","B"),sum(Planted),replace=T,prob=c(probbType,1-probbType))}
+    simul636YearType[["TYPE"]][aaa,simul636[aaa,]==1]<-sample(c("Conifers","Deciduous"),sum(Planted),replace=T,prob=c(probbType,1-probbType))}
   
   probb<-runif(1,0.2,0.6)
   size<-15*runif(1)
@@ -635,7 +635,7 @@ for (ext in AllExtents)
       PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-0
       }else{
         
-        if(simul636YearType[["TYPE"]][abb,bcc]=="A"){
+        if(simul636YearType[["TYPE"]][abb,bcc]=="Conifers"){
           PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
                                                                                          simul636YearType$YEAR[abb,bcc])]
           PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
@@ -1332,7 +1332,7 @@ server <- function(input, output, session,
 
       for(aa in 1:length(SavedVecYear))
       { 
-        if(SelectedRowType[aa]=="A"){
+        if(SelectedRowType[aa]=="Conifers"){
         CarbonMeanCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),MeanCarbonVec[aa,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",SelectedRowYear[aa])],0)
         CarbonVarCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),VARCarbonVec[aa,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedRowYear[aa])],0)
         }else{
@@ -1348,7 +1348,7 @@ server <- function(input, output, session,
       
       # Code: 1: RED: no planting, 2: Tree Type A 3: Tree Type B
       
-      TypeA<-(SelectedRowType=="A")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
+      TypeA<-(SelectedRowType=="Conifers")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
       TypeB<-(SelectedRowType=="B")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
       BlockedCells<-(SavedVecYearType>=YearSelect)
       
