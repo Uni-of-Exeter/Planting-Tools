@@ -666,8 +666,8 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                                                FullTable$extent[1]),
                                                    jqui_resizable(div(
                                                      leafletOutput("map", width = "100%", height = "100%"),
-                                                     sliderInput("YearSelect","year",0+STARTYEAR,MAXYEAR+STARTYEAR,
-                                                                 0+STARTYEAR,step=5,width = "100%",sep = "")
+                                                     sliderInput("YearSelect","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+                                                                 0+STARTYEAR,step=1,width = "100%",sep = "")
                                                      
                                                    )
                                                    ),
