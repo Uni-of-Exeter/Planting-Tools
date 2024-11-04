@@ -1140,7 +1140,7 @@ outputmap_calculateMatsYearType <- function(input,
      # browser()
       CarbonMATYearTypeORSavedVec[,bb]<-0
       TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
-      TypeB<-(SAMPLELIST[[bb]]$TYPE=="B")
+      TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
       CarbonMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
       CarbonMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
       }
@@ -1181,7 +1181,7 @@ outputmap_calculateMatsYearType <- function(input,
     
     CarbonSDMATYearTypeORSavedVec[,bb]<-0
     TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
-    TypeB<-(SAMPLELIST[[bb]]$TYPE=="B")
+    TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
     CarbonSDMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedSDYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
     CarbonSDMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedSDYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
     

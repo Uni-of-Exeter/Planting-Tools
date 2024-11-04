@@ -1336,7 +1336,7 @@ server <- function(input, output, session,
         CarbonMeanCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),MeanCarbonVec[aa,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",SelectedRowYear[aa])],0)
         CarbonVarCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),VARCarbonVec[aa,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedRowYear[aa])],0)
         }else{
-          if(SelectedRowType[aa]=="B"){
+          if(SelectedRowType[aa]=="Deciduous"){
         CarbonMeanCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),MeanCarbonVec85[aa,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",SelectedRowYear[aa])],0)
         CarbonVarCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),VARCarbonVec85[aa,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",SelectedRowYear[aa])],0)}else{
           CarbonMeanCalc[aa]<-0; CarbonVarCalc[aa]<-0}
@@ -1349,7 +1349,7 @@ server <- function(input, output, session,
       # Code: 1: RED: no planting, 2: Tree Type A 3: Tree Type B
       
       TypeA<-(SelectedRowType=="Conifers")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
-      TypeB<-(SelectedRowType=="B")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
+      TypeB<-(SelectedRowType=="Deciduous")&(SelectedRowYear<=YearSelect)&(SavedVecYearType<YearSelect)
       BlockedCells<-(SavedVecYearType>=YearSelect)
       
      # Consolidated<-2*((SavedVecYear>=YearSelect)&(SavedVecYear!=29))+1*((YearsSelectedRow<29)&((SavedVecYear==29)|(SavedVecYear<YearSelect)))
