@@ -1480,7 +1480,7 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
     for(bcc in 1:dim(CarbonSDMATYearORSavedVec)[2])
     {
       CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
-      CarbonSDMATYearORSavedVec85[abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("JulesSDY85",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonSDMATYearORSavedVec85[abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
     }
     
   }
