@@ -928,7 +928,7 @@ outputmap_calculateMatsYear <- function(input,
     for(bcc in 1:dim(CarbonMATYearORSavedVec)[2])
     {
       #CarbonMAT[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMat[abb,bcc])]
-      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
      
     }
     
@@ -965,7 +965,7 @@ outputmap_calculateMatsYear <- function(input,
   {
     for(bcc in 1:dim(CarbonSDMATYearORSavedVec)[2])
     {
-      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
       
     }
     
@@ -1453,7 +1453,7 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
     for(bcc in 1:dim(CarbonMATYearORSavedVec)[2])
     {
       #CarbonMAT[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMat[abb,bcc])]
-      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("JulesMeanY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonMATYearORSavedVec[abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
       CarbonMATYearORSavedVec85[abb,bcc]<-CarbonSelectedYear85[bcc,paste0("JulesMeanY85",SelectedSimMatYearORSavedVec[abb,bcc])]
     }
     
@@ -1479,7 +1479,7 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
   {
     for(bcc in 1:dim(CarbonSDMATYearORSavedVec)[2])
     {
-      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",SelectedSimMatYearORSavedVec[abb,bcc])]
+      CarbonSDMATYearORSavedVec[abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedSimMatYearORSavedVec[abb,bcc])]
       CarbonSDMATYearORSavedVec85[abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("JulesSDY85",SelectedSimMatYearORSavedVec[abb,bcc])]
     }
     

@@ -195,7 +195,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   }
   for(ii in 1:30)
   {
-    FullTab[paste0("JulesSDY",(ii-1))]<-rep(0, length(Uni))
+    FullTab[paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",(ii-1))]<-rep(0, length(Uni))
   }
   
   for(ii in 1:30)
@@ -320,7 +320,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
       #JulesMeanY29 is not replaced here as it is used to men that there is no planting.
       
       FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-colSums(SelJulesMeansYears*SellWeightsArr)
-      FullTable[ii,paste0("JulesSDY",0:28)]<-sqrt(colSums((SelJulesSDsYears*SellWeightsArr)^2))
+      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-sqrt(colSums((SelJulesSDsYears*SellWeightsArr)^2))
       
       FullTable$Carbon_Mean_Scenario26_TreeSpecieDeciduous<-sum(SelJulesMeans85*SELLWeights)
       FullTable$Carbon_SD_Scenario26_TreeSpecieDeciduous<-sqrt(sum((SelJulesSDs85*SELLWeights)^2))
@@ -346,7 +346,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
       
       
       FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-29
-      FullTable[ii,paste0("JulesSDY",0:28)]<-29
+      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-29
       
       FullTable[ii,paste0("JulesMeanY85",0:28)]<-29
       FullTable[ii,paste0("JulesSDY85",0:28)]<-29
@@ -606,7 +606,7 @@ for (ext in AllExtents)
 {
   CarbonSelectedYear<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
   CarbonSelectedYear$geometry<-NULL
-  CarbonSelectedSDYear<-FullTable[FullTable$extent == ext,paste0("JulesSDY",0:29)]
+  CarbonSelectedSDYear<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
   CarbonSelectedSDYear$geometry<-NULL
   
   CarbonSelectedYear85<-FullTable[FullTable$extent == ext,paste0("JulesMeanY85",0:MAXYEAR)]
@@ -627,7 +627,7 @@ for (ext in AllExtents)
     {
       
       PrecalcCarbonAllExtents[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636Year[abb,bcc])]
-      PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",simul636Year[abb,bcc])]
+      PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636Year[abb,bcc])]
 
       
       if(simul636YearType[["TYPE"]][abb,bcc]=="C"){
@@ -638,7 +638,7 @@ for (ext in AllExtents)
         if(simul636YearType[["TYPE"]][abb,bcc]=="A"){
           PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
                                                                                          simul636YearType$YEAR[abb,bcc])]
-          PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("JulesSDY",
+          PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
                                                                                              simul636YearType$YEAR[abb,bcc])]
         }else{
           PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear85[bcc,paste0("JulesMeanY85",simul636YearType$YEAR[abb,bcc])]
@@ -1011,7 +1011,7 @@ server <- function(input, output, session,
       VisitsSelected <- FullTable$VisitsMean[FullTable$extent == SelectedDropdown]
       
       CarbonSelectedSD <- (FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[FullTable$extent == SelectedDropdown])
-      CarbonSelectedSDYear<-FullTable[FullTable$extent == SelectedDropdown,paste0("JulesSDY",0:29)]
+      CarbonSelectedSDYear<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
       CarbonSelectedSDYear$geometry<-NULL
 
       CarbonSelectedSDYear85<-FullTable[FullTable$extent == SelectedDropdown,paste0("JulesSDY85",0:29)]
@@ -1300,7 +1300,7 @@ server <- function(input, output, session,
       MeanCarbonVec85<- FullTable[,paste0("JulesMeanY85",0:29)]
       MeanCarbonVec85$geometry<-NULL
       
-      VARCarbonVec<- (FullTable[,paste0("JulesSDY",0:29)])
+      VARCarbonVec<- (FullTable[,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:29)])
       VARCarbonVec$geometry<-NULL
       VARCarbonVec<-VARCarbonVec^2
       
@@ -1334,7 +1334,7 @@ server <- function(input, output, session,
       { 
         if(SelectedRowType[aa]=="A"){
         CarbonMeanCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),MeanCarbonVec[aa,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",SelectedRowYear[aa])],0)
-        CarbonVarCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),VARCarbonVec[aa,paste0("JulesSDY",SelectedRowYear[aa])],0)
+        CarbonVarCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),VARCarbonVec[aa,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",SelectedRowYear[aa])],0)
         }else{
           if(SelectedRowType[aa]=="B"){
         CarbonMeanCalc[aa]<-ifelse((SelectedRowYear[aa]>(-1))&(SelectedRowYear[aa]<=YearSelect),MeanCarbonVec85[aa,paste0("JulesMeanY85",SelectedRowYear[aa])],0)
