@@ -189,20 +189,20 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   #We are looking at CO2 retained in 2050. Then JulesMeanY0 means that if we plant in year 0,
   #we will obtain JulesMeanYears$mean337, year 1: mean325, year 2: mean313,....
   #Note that JulesMeanY29 is considered "No Planting" so the values of 0 will not be changed
-  for(ii in 1:30)
+  for(ii in 1:(MAXYEAR+2))
   {
     FullTab[paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",(ii-1))]<-rep(0, length(Uni))
   }
-  for(ii in 1:30)
+  for(ii in 1:(MAXYEAR+2))
   {
     FullTab[paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",(ii-1))]<-rep(0, length(Uni))
   }
   
-  for(ii in 1:30)
+  for(ii in 1:(MAXYEAR+2))
   {
     FullTab[paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",(ii-1))]<-rep(0, length(Uni))
   }
-  for(ii in 1:30)
+  for(ii in 1:(MAXYEAR+2))
   {
     FullTab[paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",(ii-1))]<-rep(0, length(Uni))
   }
@@ -235,14 +235,14 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   JulesMean<-NULL;JulesSD<-NULL;
   gc()
   
-  # Jules results for all years from 0 to 28
+  # Jules results for all years from 0 to MAXYEAR
   JulesMeanYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
   JulesSDYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
   
   
-  SelectedJulesMeanYears<-JulesMeanYears[LinesJules,paste0("mean",12*(29-seq(1,29,1))+1)]
+  SelectedJulesMeanYears<-JulesMeanYears[LinesJules,paste0("mean",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesMeanYears[LinesJulesNoMinus1, ] <- 0
-  SelectedJulesSDYears<-JulesSDYears[LinesJules,paste0("sd",12*(29-seq(1,29,1))+1)]
+  SelectedJulesSDYears<-JulesSDYears[LinesJules,paste0("sd",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesSDYears[LinesJulesNoMinus1, ] <- 0
   JulesMeanYears<-0;JulesSDYears<-0;
   
@@ -262,9 +262,9 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   JulesMeanYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
   JulesSDYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
-  SelectedJulesMeanYears85<-JulesMeanYears85[LinesJules,paste0("mean",12*(29-seq(1,29,1))+1)]
+  SelectedJulesMeanYears85<-JulesMeanYears85[LinesJules,paste0("mean",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesMeanYears85[LinesJulesNoMinus1, ] <- 0
-  SelectedJulesSDYears85<-JulesSDYears85[LinesJules,paste0("sd",12*(29-seq(1,29,1))+1)]
+  SelectedJulesSDYears85<-JulesSDYears85[LinesJules,paste0("sd",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesSDYears85[LinesJulesNoMinus1, ] <- 0
   JulesMeanYears85<-NULL;JulesSDYears85<-NULL;
   gc()
@@ -297,7 +297,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
     SELLSqs <- INTT$idSq[SELLLines]
     SELLWeights <- INTT$area[SELLLines]
     #    SellWeightsArr <- t(matrix(SELLWeights, length(SELLWeights), NBSIMS))
-    SellWeightsArr <- (matrix(SELLWeights, length(SELLWeights), 29))
+    SellWeightsArr <- (matrix(SELLWeights, length(SELLWeights), (MAXYEAR+1)))
     
     SelJulesMeans <- SelectedJulesMeanSq$mean337[SELLSqs]
     SelJulesSDs <- SelectedJulesSDSq$sd337[SELLSqs]
@@ -319,15 +319,15 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
       
       #JulesMeanY29 is not replaced here as it is used to men that there is no planting.
       
-      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-colSums(SelJulesMeansYears*SellWeightsArr)
-      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-sqrt(colSums((SelJulesSDsYears*SellWeightsArr)^2))
+      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-colSums(SelJulesMeansYears*SellWeightsArr)
+      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-sqrt(colSums((SelJulesSDsYears*SellWeightsArr)^2))
       
       FullTable$Carbon_Mean_Scenario26_TreeSpecieDeciduous<-sum(SelJulesMeans85*SELLWeights)
       FullTable$Carbon_SD_Scenario26_TreeSpecieDeciduous<-sqrt(sum((SelJulesSDs85*SELLWeights)^2))
       
       
-      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:28)]<-colSums(SelJulesMeansYears85*SellWeightsArr)
-      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:28)]<-sqrt(colSums((SelJulesSDsYears85*SellWeightsArr)^2))
+      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-colSums(SelJulesMeansYears85*SellWeightsArr)
+      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-sqrt(colSums((SelJulesSDsYears85*SellWeightsArr)^2))
       
       
       FullTable$area[ii] <- sum(SELLWeights)
@@ -345,11 +345,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
       
       
       
-      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-29
-      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:28)]<-29
+      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
+      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
       
-      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:28)]<-29
-      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:28)]<-29
+      FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
+      FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
       
       
       FullTable$area[ii] <- sum(SELLWeights)
@@ -466,17 +466,17 @@ RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
 
 # Simul636Year is populated with the year of planting
 # once simul636Year works it will replace simul636
-# 29 is the code for no planting
-# Otherwise 0 to 28 is the year of planting if planted.
+# (MAXYEAR+1) is the code for no planting
+# Otherwise 0 to MAXYEAR is the year of planting if planted.
 simul636Year<-simul636
 for (aaa in 1:NSamp) {
   
-  simul636Year[aaa,simul636[aaa,]==0]<-(29)
+  simul636Year[aaa,simul636[aaa,]==0]<-(MAXYEAR+1)
   probb<-runif(1,0.2,0.6)
   size<-15*runif(1)
-  simul636Year[aaa,simul636[aaa,]!=0]<-pmin(rnbinom(sum(simul636[aaa,]),size=size,prob=probb),28)
+  simul636Year[aaa,simul636[aaa,]!=0]<-pmin(rnbinom(sum(simul636[aaa,]),size=size,prob=probb),MAXYEAR)
 }
-#### Simul636YearType is a similar table but it stops at year 28 and
+#### Simul636YearType is a similar table but it stops at year MAXYEAR and
 #### instead, we pick a tree type (or no planting)
 simul636YearType<-list(YEAR=simul636-1,TYPE=apply(simul636,2,as.character))
 for (aaa in 1:NSamp) {
@@ -604,14 +604,14 @@ PrecalcCarbonAllExtentsSDType<-list()
 
 for (ext in AllExtents)
 {
-  CarbonSelectedYear<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
+  CarbonSelectedYear<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
   CarbonSelectedYear$geometry<-NULL
-  CarbonSelectedSDYear<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
+  CarbonSelectedSDYear<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
   CarbonSelectedSDYear$geometry<-NULL
   
-  CarbonSelectedYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]
+  CarbonSelectedYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
   CarbonSelectedYear85$geometry<-NULL
-  CarbonSelectedSDYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]
+  CarbonSelectedSDYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
   CarbonSelectedSDYear85$geometry<-NULL
   
   
@@ -665,7 +665,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                                                FullTable$extent[1]),
                                                    jqui_resizable(div(
                                                      leafletOutput("map", width = "100%", height = "100%"),
-                                                     sliderInput("YearSelect","year",0,28,0,step=1,width = "100%")
+                                                     sliderInput("YearSelect","year",0,MAXYEAR,0,step=1,width = "100%")
                                                      
                                                    )
                                                    ),
@@ -988,12 +988,12 @@ server <- function(input, output, session,
       #browser()
       AreaSelected <- FullTable$area[FullTable$extent == SelectedDropdown]
       CarbonSelected <- (FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[FullTable$extent == SelectedDropdown])
-      # we take everything up to year 29 (no planting)
-      CarbonSelectedYear<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
+      # we take everything up to year (MAXYEAR+1) (no planting)
+      CarbonSelectedYear<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
       CarbonSelectedYear$geometry<-NULL
   
 
-      CarbonSelectedYear85<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:29)]
+      CarbonSelectedYear85<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
       CarbonSelectedYear85$geometry<-NULL
       
       
@@ -1011,10 +1011,10 @@ server <- function(input, output, session,
       VisitsSelected <- FullTable$VisitsMean[FullTable$extent == SelectedDropdown]
       
       CarbonSelectedSD <- (FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[FullTable$extent == SelectedDropdown])
-      CarbonSelectedSDYear<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
+      CarbonSelectedSDYear<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
       CarbonSelectedSDYear$geometry<-NULL
 
-      CarbonSelectedSDYear85<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:29)]
+      CarbonSelectedSDYear85<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
       CarbonSelectedSDYear85$geometry<-NULL
       
       # RedSquirrelSelectedSD <- FullTable$BioSD_Sciurus_vulgaris[FullTable$extent == SelectedDropdown]
@@ -1038,7 +1038,7 @@ server <- function(input, output, session,
       PreviousClickedVector(rep(-1, dim(SelectedSquares)[1]))
       
       
-      ClickedVectorYear(rep(29, dim(SelectedSquares)[1]))
+      ClickedVectorYear(rep((MAXYEAR+1), dim(SelectedSquares)[1]))
       PreviousClickedVectorYear(rep(-1, dim(SelectedSquares)[1]))
       
       ClickedVectorYearType(rep(-1, dim(SelectedSquares)[1]))
@@ -1099,7 +1099,8 @@ server <- function(input, output, session,
                                            VisitsSelectedSD,
                                            input_areaSlider_multiplicative_coefficient = TRUE,
                                            alpha=alphaLVL,
-                                           ClickedVectorYear())
+                                           ClickedVectorYear(),
+                                           MAXYEAR=MAXYEAR)
       
       #MaxValsReactive(MaxVals)
       MaxMinValsReactiveVector(c(MaxVals$CarbonMax,unlist(MaxVals$bioMaxList),MaxVals$AreaMax,MaxVals$VisistMax))
@@ -1149,7 +1150,8 @@ server <- function(input, output, session,
                                      VisitsSelectedSD = VisitsSelectedSD,
                                      alphaLVL=alphaLVL,
                                      ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider),
-                                     tolvec=tolvecReactive())
+                                     tolvec=tolvecReactive(),
+                                     MAXYEAR=MAXYEAR)
       
       ########## same function with Year
       tmpYear <- outputmap_calculateMatsYear(input = input,
@@ -1174,7 +1176,8 @@ server <- function(input, output, session,
                                              PrecalculatedCarbonSelectedTableSD=PrecalcCarbonAllExtentsSD[[SelectedDropdown]],
                                              SavedVecYearLoc=ClickedVectorYear(),
                                              PreviousSavedVecYearLoc=PreviousClickedVector(),
-                                             SAMPLELIST=Simul636YearOverrideReactive()
+                                             SAMPLELIST=Simul636YearOverrideReactive(),
+                                             MAXYEAR=MAXYEAR
       )
       
       ########## same function with YearType
@@ -1202,7 +1205,8 @@ server <- function(input, output, session,
                                              PrecalculatedCarbonSelectedTableTypeSD=PrecalcCarbonAllExtentsSDType[[SelectedDropdown]],
                                              SavedVecYearTypeLoc=ClickedVectorYearType(),
                                              PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
-                                             SAMPLELIST=Simul636YearTypeOverrideReactive()
+                                             SAMPLELIST=Simul636YearTypeOverrideReactive(),
+                                             MAXYEAR=MAXYEAR
       )
       
     
@@ -1294,17 +1298,17 @@ server <- function(input, output, session,
       YearSelect<-YearSelectReactive()
       PrevYearSelectedLoc<-PreviousYearSelect()
       
-      MeanCarbonVec<- FullTable[,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:29)]
+      MeanCarbonVec<- FullTable[,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
       MeanCarbonVec$geometry<-NULL
       
-      MeanCarbonVec85<- FullTable[,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:29)]
+      MeanCarbonVec85<- FullTable[,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
       MeanCarbonVec85$geometry<-NULL
       
-      VARCarbonVec<- (FullTable[,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:29)])
+      VARCarbonVec<- (FullTable[,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))])
       VARCarbonVec$geometry<-NULL
       VARCarbonVec<-VARCarbonVec^2
       
-      VARCarbonVec85<- (FullTable[,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:29)])
+      VARCarbonVec85<- (FullTable[,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))])
       VARCarbonVec85$geometry<-NULL
       VARCarbonVec85<-VARCarbonVec85^2
       
@@ -1646,7 +1650,8 @@ server <- function(input, output, session,
                                        SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
                                        VisitsSelectedSD = VisitsSelectedSD,
                                        alphaLVL=alphaLVL,
-                                       tolvec=tolvecReactive())
+                                       tolvec=tolvecReactive(),
+                                       MAXYEAR=MAXYEAR)
         
         
         ########## same function with Year
@@ -1670,7 +1675,8 @@ server <- function(input, output, session,
                                                PrecalculatedCarbonSelectedTableSD=PrecalcCarbonAllExtentsSD[[SelectedDropdown]],
                                                SavedVecYearLoc = ClickedVectorYear(),
                                                PreviousSavedVecYearLoc=PreviousClickedVector(),
-                                               SAMPLELIST=Simul636YearOverrideReactive()
+                                               SAMPLELIST=Simul636YearOverrideReactive(),
+                                               MAXYEAR=MAXYEAR
         )
         #browser()
         #SelectedSimMat2 <- tmp$SelectedSimMat2
@@ -1704,7 +1710,8 @@ server <- function(input, output, session,
                                                        PrecalculatedCarbonSelectedTableTypeSD=PrecalcCarbonAllExtentsSDType[[SelectedDropdown]],
                                                        SavedVecYearTypeLoc=ClickedVectorYearType(),
                                                        PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
-                                                       SAMPLELIST=Simul636YearTypeOverrideReactive()
+                                                       SAMPLELIST=Simul636YearTypeOverrideReactive(),
+                                                       MAXYEAR=MAXYEAR
         )
         
         
@@ -2523,16 +2530,16 @@ server <- function(input, output, session,
           
           SavedVec[iii] <- ifelse(SavedVec[iii] == 1, 0, 1);
           
-          if(SavedVecYear[iii]==29){SavedVecYear[iii] <- input$YearSelect;}else{
-            SavedVecYear[iii]<-ifelse(SavedVecYear[iii]>= input$YearSelect, 29, input$YearSelect)}
+          if(SavedVecYear[iii]==(MAXYEAR+1)){SavedVecYear[iii] <- input$YearSelect;}else{
+            SavedVecYear[iii]<-ifelse(SavedVecYear[iii]>= input$YearSelect, (MAXYEAR+1), input$YearSelect)}
           #If there has been a changed in SavedVec, then updated the list containing the override of simul636
           
           
           if(SavedVecYearPriorToChange[iii]!=SavedVecYear[iii]){
-            if(SavedVecYear[iii]==29){SAMPLELIST[iii]<-list(NULL)}else{
-              if(SavedVecYear[iii]==28){#browser()
+            if(SavedVecYear[iii]==(MAXYEAR+1)){SAMPLELIST[iii]<-list(NULL)}else{
+              if(SavedVecYear[iii]==MAXYEAR){#browser()
                 SAMPLELIST[[iii]]<-rep(29,dim(simul636Year)[1])}else{
-                  SAMPLELIST[[ iii]]<- sample((SavedVecYear[ iii]+1):29,dim(simul636Year)[1], replace=T)
+                  SAMPLELIST[[ iii]]<- sample((SavedVecYear[ iii]+1):(MAXYEAR+1),dim(simul636Year)[1], replace=T)
                   
                 }
             }
