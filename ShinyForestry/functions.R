@@ -1674,6 +1674,9 @@ add_richness_columns <- function(FullTable, NAME_CONVERSION) {
                           biosd = 0)
     } else {
       FullTable2 <- cbind(FullTable2,
+                          # Original method for species richness
+                          # biomean = round(rowSums(FullTable2[, col_indices_of_group])),
+                          # We prefer to use an average because a large group would naturally have a much higher richness than a small group, and we don't want that
                           biomean = round(rowSums(FullTable2[, col_indices_of_group]) / length(col_indices_of_group)),
                           biosd = 0)
     }
