@@ -1323,7 +1323,6 @@ server <- function(input, output, session,
       YearSelectReactive(input$YearSelect)}})
   
   # Trigger if anything changes
-  # TODO: Maybe add &bayesian_optimization_finished() as a condition, or check that values have been populated
   observe({
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
       SavedVec<-ClickedVector()
@@ -1626,6 +1625,7 @@ server <- function(input, output, session,
   
   
   # Check for changes in all the sliders, except on app launch
+  # TODO: Maybe add &bayesian_optimization_finished() as a condition, or check that values have been populated
   
   #lapply(SliderNames, function(sl) {observeEvent(input[[sl]],{
   # if (input[[sl]]) {
