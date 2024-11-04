@@ -1404,7 +1404,7 @@ theme_Publication <- function(base_size = 10) {
 # https://ntfy.sh/uoerstudioserver
 # https://ntfysenate.uboracle1.freeddns.org/uoerstudioserver
 notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default", rbind = FALSE, pad_character = "_",
-                  ntfy = TRUE, file = TRUE, message_arg = TRUE,
+                  ntfy = TRUE, file = TRUE, file_suffix = SESSION_FILE_SUFFIX, message_arg = TRUE,
                   log_level = "info", global_log_level = LOG_LEVEL) {
   
   log_level_msg <- toupper(log_level)
@@ -1504,8 +1504,8 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
   if (isTRUE(file)) {
     # Log to file, because ntfy has a quota
     FolderSource <- get_foldersource()
-    log_filename <- normalizePath(file.path(FolderSource, "log.txt"))
-    lockfile_name <- normalizePath(file.path(FolderSource, "log_lockfile"))
+    log_filename <- normalizePath(file.path(FolderSource, paste0("log", file_suffix, ".txt")))
+    lockfile_name <- normalizePath(file.path(FolderSource, paste0("log_lockfile", file_suffix)))
     
     if (isFALSE(file.exists(log_filename))) {
       file.create(log_filename)
@@ -1529,10 +1529,10 @@ get_foldersource <- function() {
   return(FolderSource)
 }
 
-get_latest_task_id <- function(global_log_level = LOG_LEVEL) {
+get_latest_task_id <- function(global_log_level = LOG_LEVEL, file_suffix = SESSION_FILE_SUFFIX) {
   FolderSource <- get_foldersource()
-  task_id_filename <- normalizePath(file.path(FolderSource, "task_id.txt"))
-  lockfile_name <- normalizePath(file.path(FolderSource, "task_id_lockfile"))
+  task_id_filename <- normalizePath(file.path(FolderSource, paste0("task_id", file_suffix, ".txt")))
+  lockfile_name <- normalizePath(file.path(FolderSource, paste0("task_id_lockfile", file_suffix)))
   
   if (isFALSE(file.exists(task_id_filename))) {
     msg <- "get_latest_task_id() is trying to read the file task_id.txt but it does not exist"
@@ -1546,10 +1546,10 @@ get_latest_task_id <- function(global_log_level = LOG_LEVEL) {
   return(latest_task_id)
 }
 
-set_latest_task_id <- function(task_id) {
+set_latest_task_id <- function(task_id, file_suffix = SESSION_FILE_SUFFIX) {
   FolderSource <- get_foldersource()
-  task_id_filename <- normalizePath(file.path(FolderSource, "task_id.txt"))
-  lockfile_name <- normalizePath(file.path(FolderSource, "task_id_lockfile"))
+  task_id_filename <- normalizePath(file.path(FolderSource, paste0("task_id", file_suffix, ".txt")))
+  lockfile_name <- normalizePath(file.path(FolderSource, paste0("task_id_lockfile", file_suffix)))
   
   if (isFALSE(file.exists(task_id_filename))) {
     file.create(task_id_filename)

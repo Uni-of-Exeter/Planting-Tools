@@ -40,6 +40,8 @@ if (file.exists(log_filename)) {
   file.remove(log_filename)
 }
 
+# Overridden in server() block, necessary for source(...)
+SESSION_FILE_SUFFIX <- ""
 source(normalizePath(file.path(FolderSource, "functions.R")))
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
 source(normalizePath(file.path(FolderSource, "preferTrees.R")))
@@ -69,10 +71,6 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        # File-locking, for multi-process
                                        "flock",
                                        "adaptMCMC"))
-
-# Value to control the long-running task (Bayesian optimization in Tab 1)
-# We track the task ID. If it changes, the previous long-running task gets cancelled.
-set_latest_task_id(0)
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -380,7 +378,7 @@ STDSTD <- 0.01
 NSamp <- 5000
 
 #Now the random sample contains the year of planting/
-notif(paste0("Sampling ", NSamp, " random strategies ..."), global_log_level = LOG_LEVEL)
+notif(paste0("Sampling ", NSamp, " random strategies ..."), global_log_level = LOG_LEVEL, file_suffix = "")
 
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 Uniqunits <- unique(FullTable$units)
@@ -480,7 +478,7 @@ for (aaa in 1:NSamp) {
   simul636YearType$YEAR[aaa,simul636YearType$TYPE[aaa,]!="C"]<-DRAW
 }
 
-notif(paste0("Sampling ", NSamp, " random strategies ... done"), global_log_level = LOG_LEVEL)
+notif(paste0("Sampling ", NSamp, " random strategies ... done"), global_log_level = LOG_LEVEL, file_suffix = "")
 
 Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
@@ -720,6 +718,18 @@ server <- function(input, output, session,
                    N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION,
                    TARGETS_ARG1 = TARGETS) {
+  
+  SESSION_FILE_SUFFIX <- paste0("_", session$ns)
+  
+  # Value to control the long-running task (Bayesian optimization in Tab 1)
+  # We track the task ID. If it changes, the previous long-running task gets cancelled.
+  set_latest_task_id(0)
+  
+  # Delete log file
+  log_filename <- base::normalizePath(file.path(FolderSource, paste0("log", SESSION_FILE_SUFFIX, ".txt")), mustWork = FALSE)
+  if (file.exists(log_filename)) {
+    file.remove(log_filename)
+  }
   
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Preferences")
@@ -2749,6 +2759,11 @@ server <- function(input, output, session,
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
       MapReactive()
     }
+  })
+  
+  # On session close, delete temporary files
+  session$onSessionEnded(function() {
+    unlink(paste0("*", SESSION_FILE_SUFFIX, "*"))
   })
 }
 
