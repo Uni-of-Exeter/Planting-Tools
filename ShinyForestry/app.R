@@ -38,7 +38,7 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
 set.seed(1)
 
 STARTYEAR<-2025
-MAXYEAR<-24
+MAXYEAR<-2050-STARTYEAR-1
 
 # Delete log file
 log_filename <- base::normalizePath(file.path(FolderSource, "log.txt"), mustWork = FALSE)
@@ -666,7 +666,8 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                                                FullTable$extent[1]),
                                                    jqui_resizable(div(
                                                      leafletOutput("map", width = "100%", height = "100%"),
-                                                     sliderInput("YearSelect","year",0,MAXYEAR,0,step=1,width = "100%")
+                                                     sliderInput("YearSelect","year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+                                                                 0+STARTYEAR,step=5,width = "100%",sep = "")
                                                      
                                                    )
                                                    ),
@@ -1275,8 +1276,8 @@ server <- function(input, output, session,
   
   # Trigger on changes on the Year slider
   observe({
-    if(input$YearSelect!=YearSelectReactive()){
-      YearSelectReactive(input$YearSelect)}})
+    if((input$YearSelect-STARTYEAR)!=YearSelectReactive()){
+      YearSelectReactive(input$YearSelect-STARTYEAR)}})
   
   # Trigger if anything changes
   # TODO: Maybe add &bayesian_optimization_finished() as a condition, or check that values have been populated
@@ -2531,8 +2532,8 @@ server <- function(input, output, session,
           
           SavedVec[iii] <- ifelse(SavedVec[iii] == 1, 0, 1);
           
-          if(SavedVecYear[iii]==(MAXYEAR+1)){SavedVecYear[iii] <- input$YearSelect;}else{
-            SavedVecYear[iii]<-ifelse(SavedVecYear[iii]>= input$YearSelect, (MAXYEAR+1), input$YearSelect)}
+          if(SavedVecYear[iii]==(MAXYEAR+1)){SavedVecYear[iii] <- (input$YearSelect-STARTYEAR);}else{
+            SavedVecYear[iii]<-ifelse(SavedVecYear[iii]>= (input$YearSelect-STARTYEAR), (MAXYEAR+1), (input$YearSelect-STARTYEAR))}
           #If there has been a changed in SavedVec, then updated the list containing the override of simul636
           
           
@@ -2548,8 +2549,8 @@ server <- function(input, output, session,
           }
       #### TO CHANGE: there is a problem here.
         #  browser()
-          if(SavedVecYearType[iii]==(-1)){SavedVecYearType[iii] <- input$YearSelect;}else{
-            SavedVecYearType[iii]<-ifelse(SavedVecYearType[iii]>= input$YearSelect, (-1), input$YearSelect)}
+          if(SavedVecYearType[iii]==(-1)){SavedVecYearType[iii] <- (input$YearSelect-STARTYEAR);}else{
+            SavedVecYearType[iii]<-ifelse(SavedVecYearType[iii]>= (input$YearSelect-STARTYEAR), (-1), (input$YearSelect-STARTYEAR))}
 
           if(SavedVecYearTypePriorToChange[iii]!=SavedVecYearType[iii]){
             if(SavedVecYearType[iii]==(-1)){SAMPLELIST_TYPE[iii]<-list(NULL)}else{
