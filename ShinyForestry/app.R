@@ -37,8 +37,8 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
 
 set.seed(1)
 
-
-MAXYEAR<-28
+STARTYEAR<-2025
+MAXYEAR<-24
 
 # Delete log file
 log_filename <- base::normalizePath(file.path(FolderSource, "log.txt"), mustWork = FALSE)
@@ -481,7 +481,7 @@ for (aaa in 1:NSamp) {
 simul636YearType<-list(YEAR=simul636-1,TYPE=apply(simul636,2,as.character))
 for (aaa in 1:NSamp) {
   
-  simul636YearType[["TYPE"]][aaa,simul636[aaa,]==0]<-"C"
+  simul636YearType[["TYPE"]][aaa,simul636[aaa,]==0]<-"NoPlanting"
   probbType<-runif(1,0.5)
   Planted<-(simul636[aaa,]==1)
   if(sum(Planted)>0){
@@ -490,7 +490,7 @@ for (aaa in 1:NSamp) {
   probb<-runif(1,0.2,0.6)
   size<-15*runif(1)
   DRAW<-pmin(rnbinom(sum(simul636[aaa,]),size=size,prob=probb),MAXYEAR)
-  simul636YearType$YEAR[aaa,simul636YearType$TYPE[aaa,]!="C"]<-DRAW
+  simul636YearType$YEAR[aaa,simul636YearType$TYPE[aaa,]!="NoPlanting"]<-DRAW
 }
 
 notif(paste0("Sampling ", NSamp, " random strategies ... done"), global_log_level = LOG_LEVEL)
@@ -630,7 +630,7 @@ for (ext in AllExtents)
       PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636Year[abb,bcc])]
 
       
-      if(simul636YearType[["TYPE"]][abb,bcc]=="C"){
+      if(simul636YearType[["TYPE"]][abb,bcc]=="NoPlanting"){
       PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-0
       PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-0
       }else{
@@ -651,6 +651,7 @@ for (ext in AllExtents)
     }
     
   }
+  
   
 }
 
@@ -1031,8 +1032,8 @@ server <- function(input, output, session,
       VisitsSelectedSD <- FullTable$VisitsSD[FullTable$extent == SelectedDropdown]
       
       
-      PreviousSelectedVector(list(YEAR=rep(-2,dim(SelectedSquares)[1]),TYPE=rep("C",dim(SelectedSquares)[1])))
-      SelectedVector(list(YEAR=rep(-1,dim(SelectedSquares)[1]),TYPE=rep("C",dim(SelectedSquares)[1])))
+      PreviousSelectedVector(list(YEAR=rep(-2,dim(SelectedSquares)[1]),TYPE=rep("NoPlanting",dim(SelectedSquares)[1])))
+      SelectedVector(list(YEAR=rep(-1,dim(SelectedSquares)[1]),TYPE=rep("NoPlanting",dim(SelectedSquares)[1])))
       
       ClickedVector(rep(0, dim(SelectedSquares)[1]))
       PreviousClickedVector(rep(-1, dim(SelectedSquares)[1]))
@@ -2126,7 +2127,7 @@ server <- function(input, output, session,
         } else {
           ZeroSelected<-tmpYearType$SelectedSimMat2[1,]
           ZeroSelected<-replace(ZeroSelected,1:(length(SavedVecYearType)),-1)
-          ZeroSelected<-replace(ZeroSelected,(length(SavedVecYearType)+1):(2*length(SavedVecYearType)),"C")
+          ZeroSelected<-replace(ZeroSelected,(length(SavedVecYearType)+1):(2*length(SavedVecYearType)),"NoPlanting")
 
           ZeroSelected[1,(2*length(SavedVecYearType)+1):dim(ZeroSelected)[2]]<-0
           names(ZeroSelected)<-names(tmpYearType$SelectedSimMat2)
@@ -2556,14 +2557,14 @@ server <- function(input, output, session,
                   
                 SAMPLELIST_TYPE[[iii]]<-list()
                 SAMPLELIST_TYPE[[iii]][["YEAR"]]<-rep(-1,dim(simul636YearType$YEAR)[1])
-                SAMPLELIST_TYPE[[iii]][["TYPE"]]<-rep("C",dim(simul636YearType$YEAR)[1])
+                SAMPLELIST_TYPE[[iii]][["TYPE"]]<-rep("NoPlanting",dim(simul636YearType$YEAR)[1])
                 }else{
               #    browser()
                   SAMPLELIST_TYPE[[iii]]<-list()
                   SAMPLELIST_TYPE[[iii]][["YEAR"]]<-simul636YearType$YEAR[,iii]
                   SAMPLELIST_TYPE[[iii]][["TYPE"]]<-simul636YearType$TYPE[,iii]
                   
-                  ALREADYC<-(SAMPLELIST_TYPE[[iii]]$TYPE!="C")
+                  ALREADYC<-(SAMPLELIST_TYPE[[iii]]$TYPE!="NoPlanting")
                   
                   SAMPLELIST_TYPE[[iii]]$YEAR[!ALREADYC]<-sample((SavedVecYearType[ iii]+1):MAXYEAR,sum(!ALREADYC), replace=T)
                   
