@@ -181,7 +181,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
                         Carbon_Mean_Scenario26_TreeSpecieConifers = rep(15, length(Uni)),
                         Carbon_SD_Scenario26_TreeSpecieConifers = rep(1, length(Uni)), 
-                        JulesMean85 = rep(15, length(Uni)),
+                        Carbon_Mean_Scenario26_TreeSpecieDeciduous = rep(15, length(Uni)),
                         JulesSD85 = rep(1, length(Uni)), 
                         VisitsMean = rep(30, length(Uni)),
                         VisitsSD = rep(2, length(Uni)), BioMean_Sciurus_vulgaris = rep(0.5, length(Uni)),
@@ -322,7 +322,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
       FullTable[ii,paste0("JulesMeanY",0:28)]<-colSums(SelJulesMeansYears*SellWeightsArr)
       FullTable[ii,paste0("JulesSDY",0:28)]<-sqrt(colSums((SelJulesSDsYears*SellWeightsArr)^2))
       
-      FullTable$JulesMean85<-sum(SelJulesMeans85*SELLWeights)
+      FullTable$Carbon_Mean_Scenario26_TreeSpecieDeciduous<-sum(SelJulesMeans85*SELLWeights)
       FullTable$JulesSD85<-sqrt(sum((SelJulesSDs85*SELLWeights)^2))
       
       
@@ -340,7 +340,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
     } else {
       FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[ii] <- 0
       FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[ii] <- 0
-      FullTable$JulesMean85[ii]<-0
+      FullTable$Carbon_Mean_Scenario26_TreeSpecieDeciduous[ii]<-0
       FullTable$JulesSD85[ii]<-0
       
       
