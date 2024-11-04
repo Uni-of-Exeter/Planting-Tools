@@ -1404,7 +1404,7 @@ theme_Publication <- function(base_size = 10) {
 # https://ntfy.sh/uoerstudioserver
 # https://ntfysenate.uboracle1.freeddns.org/uoerstudioserver
 notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default", rbind = FALSE, pad_character = "_",
-                  ntfy = TRUE, file = TRUE, file_suffix = SESSION_FILE_SUFFIX, message_arg = TRUE,
+                  ntfy = FALSE, file = TRUE, file_suffix = SESSION_FILE_SUFFIX, message_arg = TRUE,
                   log_level = "info", global_log_level = LOG_LEVEL) {
   
   log_level_msg <- toupper(log_level)
