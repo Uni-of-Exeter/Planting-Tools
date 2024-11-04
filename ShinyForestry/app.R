@@ -180,7 +180,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   # units is the list of decision units
   FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
                         Carbon_Mean_Scenario26_TreeSpecieConifers = rep(15, length(Uni)),
-                        JulesSD26 = rep(1, length(Uni)), 
+                        Carbon_SD_Scenario26_TreeSpecieConifers = rep(1, length(Uni)), 
                         JulesMean85 = rep(15, length(Uni)),
                         JulesSD85 = rep(1, length(Uni)), 
                         VisitsMean = rep(30, length(Uni)),
@@ -314,8 +314,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
     
     if (length(SelJulesMeans) >= 1) {
       # SimuArr <- rmvnorm(NBSIMS, mean = SelJulesMeans, sigma = diag(SelJulesSDs^2))
-      FullTable$[ii] <-    sum(SelJulesMeans*SELLWeights)#sum(colMeans(SimuArr * SellWeightsArr))
-      FullTable$JulesSD[ii] <- sqrt(sum((SelJulesSDs*SELLWeights)^2))#sd(rowSums(SimuArr * SellWeightsArr))
+      FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[ii] <-    sum(SelJulesMeans*SELLWeights)#sum(colMeans(SimuArr * SellWeightsArr))
+      FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[ii] <- sqrt(sum((SelJulesSDs*SELLWeights)^2))#sd(rowSums(SimuArr * SellWeightsArr))
       
       #JulesMeanY29 is not replaced here as it is used to men that there is no planting.
       
@@ -339,7 +339,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
       #  FullTable$area[ii] <- sum(SELLWeights)
     } else {
       FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[ii] <- 0
-      FullTable$JulesSD[ii] <- 0
+      FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[ii] <- 0
       FullTable$JulesMean85[ii]<-0
       FullTable$JulesSD85[ii]<-0
       
@@ -1010,7 +1010,7 @@ server <- function(input, output, session,
       }
       VisitsSelected <- FullTable$VisitsMean[FullTable$extent == SelectedDropdown]
       
-      CarbonSelectedSD <- (FullTable$JulesSD[FullTable$extent == SelectedDropdown])
+      CarbonSelectedSD <- (FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[FullTable$extent == SelectedDropdown])
       CarbonSelectedSDYear<-FullTable[FullTable$extent == SelectedDropdown,paste0("JulesSDY",0:29)]
       CarbonSelectedSDYear$geometry<-NULL
 
@@ -2031,8 +2031,8 @@ server <- function(input, output, session,
                 number_of_rows <- nrow(bo_results$outcomes_to_maximize)
                 col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("Carbon_Mean_Scenario26_TreeSpecieConifers")),
                               colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"Carbon_Mean_Scenario26_TreeSpecieConifers")))
-                col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("JulesSD"))^2)) / number_of_rows,
-                                 sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"JulesSD"))^2)) / number_of_rows)
+                col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("Carbon_SD_Scenario26_TreeSpecieConifers"))^2)) / number_of_rows,
+                                 sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"Carbon_SD_Scenario26_TreeSpecieConifers"))^2)) / number_of_rows)
                 
                 selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
                                                                     # CarbonMean, BioMeans, Area, VisitsMean

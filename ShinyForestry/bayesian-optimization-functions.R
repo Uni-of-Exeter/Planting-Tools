@@ -1653,7 +1653,7 @@ bayesian_optimization <- function(
         outcomes_to_maximize_SD_matrix <- dplyr::bind_cols(outcomes_to_maximize_SD_matrix,
                                                            FullTable %>%
                                                              sf::st_drop_geometry() %>%
-                                                             dplyr::select("JulesSD"))
+                                                             dplyr::select("Carbon_SD_Scenario26_TreeSpecieConifers"))
       } else {
         outcomes_to_maximize_matrix <- dplyr::bind_cols(outcomes_to_maximize_matrix,
                                                         FullTable %>%
@@ -1689,7 +1689,7 @@ bayesian_optimization <- function(
         outcomes_to_minimize_SD_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
                                                            FullTable %>%
                                                              sf::st_drop_geometry() %>%
-                                                             dplyr::select("JulesSD"))
+                                                             dplyr::select("Carbon_SD_Scenario26_TreeSpecieConifers"))
       } else {
         outcomes_to_minimize_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
                                                         FullTable %>%
