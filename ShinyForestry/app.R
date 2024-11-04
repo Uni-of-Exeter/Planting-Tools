@@ -98,11 +98,11 @@ USER_PATH <- user_path()
 
 # ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
 ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
-JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
+DataFilesFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
 if(Sys.getenv("USERNAME")=="bn267"){
 ### CHANGED!!!
-JulesAppFolder <- "d:\\JulesOP\\"
+DataFilesFolder <- "d:\\JulesOP\\"
 PROJdir<-system.file("proj/proj.db", package = "sf")
 PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
 sf_proj_search_paths(PROJdir)
@@ -120,13 +120,13 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   
   
   
-  SquaresLoad <- sf::st_read(normalizePath(file.path(JulesAppFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))
+  SquaresLoad <- sf::st_read(normalizePath(file.path(DataFilesFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))
   Sqconv <- st_transform(SquaresLoad, crs = 4326)
-  CorrespondenceJules <- read.csv(normalizePath(file.path(JulesAppFolder, "CorrespondanceSqToJules.csv")))[, -1]
-  seer2km <- st_read(normalizePath(file.path(JulesAppFolder, "SEER_net2km.shp")))
-  jncc100 <- read.csv(normalizePath(file.path(JulesAppFolder, "beta_JNCC100_interact_quad.csv")))
-  speciesprob40 <-  read.csv(normalizePath(file.path(JulesAppFolder, "scenario_species_prob_40.csv")), header = FALSE)
-  climatecells <- read.csv(normalizePath(file.path(JulesAppFolder, "climate_cells.csv")))
+  CorrespondenceJules <- read.csv(normalizePath(file.path(DataFilesFolder, "CorrespondanceSqToJules.csv")))[, -1]
+  seer2km <- st_read(normalizePath(file.path(DataFilesFolder, "SEER_net2km.shp")))
+  jncc100 <- read.csv(normalizePath(file.path(DataFilesFolder, "beta_JNCC100_interact_quad.csv")))
+  speciesprob40 <-  read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40.csv")), header = FALSE)
+  climatecells <- read.csv(normalizePath(file.path(DataFilesFolder, "climate_cells.csv")))
 }
 
 message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))))
@@ -225,8 +225,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   LinesJulesNoMinus1 <- which(LinesJules == (-1))
   LinesJules[LinesJulesNoMinus1] <- 1
   
-  JulesMean <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
-  JulesSD <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
+  JulesMean <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
+  JulesSD <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
   
   SelectedJulesMeanSq <- JulesMean[LinesJules, ]
   SelectedJulesMeanSq[LinesJulesNoMinus1, ] <- 0
@@ -236,8 +236,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   gc()
   
   # Jules results for all years from 0 to 28
-  JulesMeanYears<-arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
-  JulesSDYears<-arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
+  JulesMeanYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
+  JulesSDYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
   
   
   SelectedJulesMeanYears<-JulesMeanYears[LinesJules,paste0("mean",12*(29-seq(1,29,1))+1)]
@@ -250,8 +250,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   
   
-  JulesMean85 <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[, c("x", "y", "mean337")]
-  JulesSD85 <- arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[, c("x", "y", "sd337")]
+  JulesMean85 <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[, c("x", "y", "mean337")]
+  JulesSD85 <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[, c("x", "y", "sd337")]
   SelectedJulesMeanSq85 <- JulesMean85[LinesJules, ]
   SelectedJulesMeanSq85[LinesJulesNoMinus1, ] <- 0
   SelectedJulesSDSq85 <- JulesSD85[LinesJules, ]
@@ -260,8 +260,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   gc()
   
   
-  JulesMeanYears85<-arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
-  JulesSDYears85<-arrow::read_feather(normalizePath(file.path(JulesAppFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
+  JulesMeanYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
+  JulesSDYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
   SelectedJulesMeanYears85<-JulesMeanYears85[LinesJules,paste0("mean",12*(29-seq(1,29,1))+1)]
   SelectedJulesMeanYears85[LinesJulesNoMinus1, ] <- 0
   SelectedJulesSDYears85<-JulesSDYears85[LinesJules,paste0("sd",12*(29-seq(1,29,1))+1)]
