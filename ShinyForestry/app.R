@@ -20,6 +20,12 @@ options(shiny.error = browser)
 
 set.seed(1)
 
+
+if(Sys.getenv("USERNAME")=="bn267"){
+  FolderSource <- "C://Users//bn267//OneDrive - University of Exeter//Documents//GitHub//Planting-Tools//ShinyForestry//"
+}
+
+
 # more --> less: debug / info / warning / error / none
 LOG_LEVEL <- "warning"
 
@@ -94,6 +100,13 @@ USER_PATH <- user_path()
 ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 JulesAppFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 
+if(Sys.getenv("USERNAME")=="bn267"){
+### CHANGED!!!
+JulesAppFolder <- "d:\\JulesOP\\"
+PROJdir<-system.file("proj/proj.db", package = "sf")
+PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
+sf_proj_search_paths(PROJdir)
+}
 
 
 
