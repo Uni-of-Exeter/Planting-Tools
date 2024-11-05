@@ -40,11 +40,10 @@ set.seed(1)
 STARTYEAR<-2025
 MAXYEAR<-2050-STARTYEAR-1
 
-# Delete log file
-log_filename <- base::normalizePath(file.path(FolderSource, "log.txt"), mustWork = FALSE)
-if (file.exists(log_filename)) {
-  file.remove(log_filename)
-}
+# Delete log and lock files
+unlink(base::normalizePath(file.path(FolderSource, "log*"), mustWork = FALSE))
+unlink(base::normalizePath(file.path(FolderSource, "*lockfile*"), mustWork = FALSE))
+unlink(base::normalizePath(file.path(FolderSource, "task_id*"), mustWork = FALSE))
 
 # Overridden in server() block, necessary for source(...)
 SESSION_FILE_SUFFIX <- ""
