@@ -51,13 +51,14 @@ source(normalizePath(file.path(FolderSource, "functions.R")))
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
 source(normalizePath(file.path(FolderSource, "preferTrees.R")))
 
-install_and_load_packages("devtools", quiet = TRUE)
 if (!require(dgpsi)) {
+  install_and_load_packages("devtools", quiet = TRUE)
   devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
   library("dgpsi")
   dgpsi::init_py()
 }
 if (!require(RRembo)) {
+  install_and_load_packages("devtools", quiet = TRUE)
   devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
   library("RRembo")
 }
