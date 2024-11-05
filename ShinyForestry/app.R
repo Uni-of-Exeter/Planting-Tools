@@ -788,6 +788,8 @@ server <- function(input, output, session,
   set.seed(1)
   
   SESSION_FILE_SUFFIX <- paste0("_", session$token)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
   
   # Value to control the long-running task (Bayesian optimization in Tab 1)
   # We track the task ID. If it changes, the previous long-running task gets cancelled.
