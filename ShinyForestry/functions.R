@@ -1421,8 +1421,10 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
                                     alpha,
                                     SavedVecYearLoc,
                                     MAXYEAR) {
+  
+  #browser()
   simul636Loc <- matrix(1,2,length(SavedVecYearLoc))
-  simul636YearLoc <- matrix(0,2,length(SavedVecYearLoc))
+  simul636YearLoc <- matrix(1,2,length(SavedVecYearLoc))
   #TODO
   
   # If only one element in SavedVec, select corresponding column in simul636
@@ -1541,11 +1543,11 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
   SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
                                 SelectedSimMatYearORSavedVec=SelectedSimMatYearORSavedVec,
                                 Carbon = rowSums(CarbonMATYearORSavedVec85),#rowSums(SelectedSimMat * CarbonMAT),
-                                speciesMat=speciesMat,
+                                speciesMat,
                                 Area = rowSums(SelectedSimMatBinary * AreaMAT),
                                 Visits = rowMeans(SelectedSimMatBinary * (VisitsMAT)),
                                 CarbonSD = sqrt(rowSums(CarbonSDMATYearORSavedVec85^2)),#sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
-                                speciesMatSD=speciesMatSD,
+                                speciesMatSD,
                                 VisitsSD = sqrt(rowSums(SelectedSimMatBinary * (VisitsSDMAT^2))) / length(SavedVecYearLoc))
   
   
@@ -1586,6 +1588,7 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
                                                                        rep(0, length(SelectedSimMat2$Area)) + tolvec[length(tolvec) - 1],
                                                                        SelectedSimMat2$VisitsSD^2 + tolvec[length(tolvec)]))
   # we would want here the inverse truncated normal,
+  #browser()
   CarbonMax<-max(0,trunc(sqrt(sum((CarbonSDMATYearORSavedVec[1,])^2) + tolvec[1])*qtruncnorm(p=1-alpha,a=LimitsMat[1,1],b=Inf,mean=0,sd=1)+SelectedSimMat2$Carbon[1]))
   bioMaxList<-list()
   for (ijj in 1:length(names(speciesMat)))

@@ -1155,7 +1155,7 @@ server <- function(input, output, session,
       #                         alpha=alphaLVL)
       #browser()   
       #TODO
-      #browser()
+     # browser()
       MaxVals<-InitFindMaxSliderValuesYear(SelectedVector(),
                                            AreaSelected,
                                            CarbonSelected,
