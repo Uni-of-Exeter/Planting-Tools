@@ -27,7 +27,7 @@ if(Sys.getenv("USERNAME")=="bn267"){
 
 
 # more --> less: debug / info / warning / error / none
-LOG_LEVEL <- "warning"
+LOG_LEVEL <- "error"
 
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
