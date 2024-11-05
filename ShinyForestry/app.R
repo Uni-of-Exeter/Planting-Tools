@@ -785,8 +785,19 @@ server <- function(input, output, session,
                    SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH,
                    N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION,
-                   TARGETS_ARG1 = TARGETS) {
+                   TARGETS_ARG1 = TARGETS,
+                   LOG_LEVEL_ARG = LOG_LEVEL) {
   set.seed(1)
+  
+  # hideTab(inputId = "tabs", target = "Exploration")
+  # hideTab(inputId = "tabs", target = "Preferences")
+  SPECIES <- SPECIES_ARG1
+  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
+  N_SPECIES <- length(SPECIES)
+  N_TARGETS <- N_TARGETS_ARG1
+  TARGETS <- TARGETS_ARG1
+  NAME_CONVERSION <- NAME_CONVERSION_ARG1
+  LOG_LEVEL <- LOG_LEVEL_ARG
   
   SESSION_FILE_SUFFIX <- paste0("_", session$token)
   # Use the local (session) variables instead of global ones
@@ -802,15 +813,6 @@ server <- function(input, output, session,
   if (file.exists(log_filename)) {
     file.remove(log_filename)
   }
-  
-  # hideTab(inputId = "tabs", target = "Exploration")
-  # hideTab(inputId = "tabs", target = "Preferences")
-  SPECIES <- SPECIES_ARG1
-  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG1
-  N_SPECIES <- length(SPECIES)
-  N_TARGETS <- N_TARGETS_ARG1
-  TARGETS <- TARGETS_ARG1
-  NAME_CONVERSION <- NAME_CONVERSION_ARG1
   
   bayesian_optimization_finished <- reactiveVal(TRUE)
   
