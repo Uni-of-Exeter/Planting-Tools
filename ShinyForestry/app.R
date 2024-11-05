@@ -18,6 +18,8 @@
 # options(warn=0) # default
 options(shiny.error = browser)
 
+
+RUN_BO<-FALSE
 set.seed(1)
 
 
@@ -1924,7 +1926,7 @@ server <- function(input, output, session,
             notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
             return()
           }
-          
+          #browser()
           # REMINDER TO SCALE VALUES
           DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
           # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
@@ -1971,7 +1973,8 @@ server <- function(input, output, session,
             tmpYearType$SelectedSimMat2[CONDITION_SEL,][SelecRow,]
           )
           SelectedVector(SelectedMins)
-          
+
+          if(RUN_BO){          
           msg <- paste(msg, "done")
           notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
           
@@ -1994,6 +1997,9 @@ server <- function(input, output, session,
             mypref <- rep(1, N_TARGETS - 1)
           }
           tolvec <- tolvecReactive()
+          
+
+          
           # https://shiny.posit.co/r/articles/improve/nonblocking/index.html
           bayesian_optimization_extendedtask <- ExtendedTask$new(function(
             seed,
@@ -2193,7 +2199,7 @@ server <- function(input, output, session,
                 tolvec = tolvec,
                 alpha = alphaLVL
               )
-            # })
+          }
         } else {
           ZeroSelected<-tmpYearType$SelectedSimMat2[1,]
           ZeroSelected<-replace(ZeroSelected,1:(length(SavedVecYearType)),-1)
