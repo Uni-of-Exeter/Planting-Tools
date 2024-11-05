@@ -787,6 +787,7 @@ server <- function(input, output, session,
   set.seed(1)
   
   SESSION_FILE_SUFFIX <- paste0("_", session$token)
+  # Use the local (session) variables instead of global ones
   source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
   source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
   
