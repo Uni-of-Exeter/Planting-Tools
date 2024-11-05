@@ -1207,7 +1207,6 @@ server <- function(input, output, session,
       }
       updateSliderInput(session, "AreaSlider", min=MaxVals$AreaMin,max = max_areaslider, value = MaxVals$AreaMax, step = 0.5)
       updateSliderInput(session, "VisitsSlider", max = max_visitsslider, value = max_visitsslider)
-      #browser()
       # We now need to obtain the list of strategies from simul636 that meet the targets with the right confidence.
       tmp <- outputmap_calculateMats(input = input,
                                      SavedVecLoc = ClickedVector(),
@@ -1227,31 +1226,28 @@ server <- function(input, output, session,
                                      MAXYEAR=MAXYEAR)
       
       ########## same function with Year
-      tmpYear <- outputmap_calculateMatsYear(input = input,
-                                             SavedVecLoc = ClickedVector(),
-                                             simul636YearLoc = simul636Year,
-                                             AreaSelected = AreaSelected,
-                                             CarbonSelected = CarbonSelected,
-                                             CarbonSelectedYear =CarbonSelectedYear,
-                                             # RedSquirrelSelected = RedSquirrelSelected,
-                                             SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                             VisitsSelected = VisitsSelected,
-                                             CarbonSelectedSD = CarbonSelectedSD,
-                                             CarbonSelectedSDYear = CarbonSelectedSDYear,
-                                             # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                             SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                             VisitsSelectedSD = VisitsSelectedSD,
-                                             alphaLVL=alphaLVL,
-                                             ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider),
-                                             tolvec=tolvecReactive(),
-                                             #YearSelect=input$YearSelect,
-                                             PrecalculatedCarbonSelectedTableMean=PrecalcCarbonAllExtents[[SelectedDropdown]],
-                                             PrecalculatedCarbonSelectedTableSD=PrecalcCarbonAllExtentsSD[[SelectedDropdown]],
-                                             SavedVecYearLoc=ClickedVectorYear(),
-                                             PreviousSavedVecYearLoc=PreviousClickedVector(),
-                                             SAMPLELIST=Simul636YearOverrideReactive(),
-                                             MAXYEAR=MAXYEAR
-      )
+  #    tmpYear <- outputmap_calculateMatsYear(input = input,
+  #                                           SavedVecLoc = ClickedVector(),
+   #                                          simul636YearLoc = simul636Year,
+    #                                         AreaSelected = AreaSelected,
+    #                                         CarbonSelected = CarbonSelected,
+    #                                         CarbonSelectedYear =CarbonSelectedYear,
+    #                                         SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+    #                                         VisitsSelected = VisitsSelected,
+    #                                         CarbonSelectedSD = CarbonSelectedSD,
+    #                                         CarbonSelectedSDYear = CarbonSelectedSDYear,
+    #                                         SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+    #                                         VisitsSelectedSD = VisitsSelectedSD,
+    #                                         alphaLVL=alphaLVL,
+    #                                         ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider),
+    #                                         tolvec=tolvecReactive(),
+    #                                         PrecalculatedCarbonSelectedTableMean=PrecalcCarbonAllExtents[[SelectedDropdown]],
+    #                                         PrecalculatedCarbonSelectedTableSD=PrecalcCarbonAllExtentsSD[[SelectedDropdown]],
+    #                                         SavedVecYearLoc=ClickedVectorYear(),
+    #                                         PreviousSavedVecYearLoc=PreviousClickedVector(),
+    #                                         SAMPLELIST=Simul636YearOverrideReactive(),
+    #                                         MAXYEAR=MAXYEAR
+    #  )
       
       ########## same function with YearType
       tmpYearType <- outputmap_calculateMatsYearType(input = input,
@@ -1384,7 +1380,7 @@ server <- function(input, output, session,
       VARCarbonVec85$geometry<-NULL
       VARCarbonVec85<-VARCarbonVec85^2
       
-      #browser()
+
       #YearsSelectedRow<-SelectedRow[1,paste0("SelectedSimMat.YEAR.",1:length(SavedVecYear))]
       #YearsSelectedRow[YearsSelectedRow>YearSelect]<-(-1)
       
@@ -1393,7 +1389,7 @@ server <- function(input, output, session,
       
       
       PreviousSelectedVec$YEAR[PreviousSelectedVec$YEAR>PrevYearSelectedLoc]<-(-1)
-      #browser()
+
       
       
       # Display that we can plant from SavedVecYear 
@@ -1445,7 +1441,7 @@ server <- function(input, output, session,
           COLOURS<-rep("transparent",length(Consolidated))
           #COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
           #COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
-         # browser()
+       
           COLOURS[TypeA]<-"purple"
           COLOURS[TypeB]<-"green"
           COLOURS[BlockedCells]<-"red"
@@ -1471,7 +1467,7 @@ server <- function(input, output, session,
               addControlText <- paste0(addControlText, specie_english, ": ", 
                                        round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")}
           }
-          #browser()
+
           mapp<-
             addControl(mapp,html = paste0("<p>Carbon: ", round(sum(CarbonMeanCalc), 2), "\u00B1", round(2*sqrt(sum(CarbonVarCalc)), 2), "<br>",
                                           # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
@@ -1504,7 +1500,6 @@ server <- function(input, output, session,
   # TO CHANGE LATER!!
   observe({
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")) {
-      #browser()
       SubsetMeetTargets<-SubsetMeetTargetsReactive()
       PreviousSubsetMeetTargets<-PreviousSubsetMeetTargetsReactive()
       SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
@@ -1543,7 +1538,7 @@ server <- function(input, output, session,
             
           }
           removeControl(mapp,layerId="legend")
-          #browser()
+      
           SFTR<-SelectedRows[ii,]
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
@@ -1729,29 +1724,28 @@ server <- function(input, output, session,
         
         ########## same function with Year
         # browser()
-        tmpYear <- outputmap_calculateMatsYear(input = input,
-                                               SavedVecLoc = SavedVec,
-                                               simul636YearLoc = simul636Year,
-                                               AreaSelected = AreaSelected,
-                                               CarbonSelected = CarbonSelected,
-                                               CarbonSelectedYear =CarbonSelectedYear,
-                                               SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                               VisitsSelected = VisitsSelected,
-                                               CarbonSelectedSD = CarbonSelectedSD,
-                                               CarbonSelectedSDYear = CarbonSelectedSDYear,
-                                               SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                               VisitsSelectedSD = VisitsSelectedSD,
-                                               alphaLVL=alphaLVL,
-                                               tolvec=tolvecReactive(),
-                                               #YearSelect=input$YearSelect,
-                                               PrecalculatedCarbonSelectedTableMean=PrecalcCarbonAllExtents[[SelectedDropdown]],
-                                               PrecalculatedCarbonSelectedTableSD=PrecalcCarbonAllExtentsSD[[SelectedDropdown]],
-                                               SavedVecYearLoc = ClickedVectorYear(),
-                                               PreviousSavedVecYearLoc=PreviousClickedVector(),
-                                               SAMPLELIST=Simul636YearOverrideReactive(),
-                                               MAXYEAR=MAXYEAR
-        )
-        #browser()
+      #  tmpYear <- outputmap_calculateMatsYear(input = input,
+       #                                        SavedVecLoc = SavedVec,
+      #                                         simul636YearLoc = simul636Year,
+       #                                        AreaSelected = AreaSelected,
+        #                                       CarbonSelected = CarbonSelected,
+         #                                      CarbonSelectedYear =CarbonSelectedYear,
+          #                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+           #                                    VisitsSelected = VisitsSelected,
+            #                                   CarbonSelectedSD = CarbonSelectedSD,
+             #                                  CarbonSelectedSDYear = CarbonSelectedSDYear,
+              #                                 SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+               #                                VisitsSelectedSD = VisitsSelectedSD,
+                #                               alphaLVL=alphaLVL,
+                 #                              tolvec=tolvecReactive(),
+                  #                             PrecalculatedCarbonSelectedTableMean=PrecalcCarbonAllExtents[[SelectedDropdown]],
+                   #                            PrecalculatedCarbonSelectedTableSD=PrecalcCarbonAllExtentsSD[[SelectedDropdown]],
+                    #                           SavedVecYearLoc = ClickedVectorYear(),
+                     #                          PreviousSavedVecYearLoc=PreviousClickedVector(),
+                      #                         SAMPLELIST=Simul636YearOverrideReactive(),
+                       #                        MAXYEAR=MAXYEAR
+        #)
+       # browser()
         #SelectedSimMat2 <- tmp$SelectedSimMat2
         #Icalc <- tmp$Icalc
         #LimitsMat <- tmp$LimitsMat
@@ -1882,7 +1876,7 @@ server <- function(input, output, session,
           PreviousFourUniqueRowsReactive(seq(1,LengthVec))
         }else{FourUniqueRowsReactive(NULL)
           PreviousFourUniqueRowsReactive(NULL)}
-        
+        #browser()
         if (dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] > 0) {
           if (max(tmpYearType$SelectedSimMat2$Carbon) != min(tmpYearType$SelectedSimMat2$Carbon)) {
             DistSliderCarbon <- (SubsetMeetTargets[["CarbonMean"]] - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon) - min(tmpYearType$SelectedSimMat2$Carbon))
@@ -1912,9 +1906,9 @@ server <- function(input, output, session,
             DistSliderBioListDataframes[x] <- data.frame(x = value)
           }
           if (max(tmpYearType$SelectedSimMat2$Area) != min(tmpYearType$SelectedSimMat2$Area)) {
-            DistSliderArea <- (SubsetMeetTargets[["Area"]] - SelecTargetArea) / (max(tmpYearType$SelectedSimMat2$Area) - min(tmpYearType$SelectedSimMat2$Area))
+            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area) - min(tmpYearType$SelectedSimMat2$Area))
           } else {
-            DistSliderArea <- (SubsetMeetTargets[["Area"]] - SelecTargetArea) / (max(tmpYearType$SelectedSimMat2$Area))
+            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area))
           }
           if (max(tmpYearType$SelectedSimMat2$Visits) != min(tmpYearType$SelectedSimMat2$Visits)) {
             DistSliderVisits <- (SubsetMeetTargets[["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits) - min(tmpYearType$SelectedSimMat2$Visits))
