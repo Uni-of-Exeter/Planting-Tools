@@ -67,6 +67,7 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
                                        "mvtnorm", "dplyr", "magrittr",
+                                       "rstudioapi",
                                        "lhs", "sensitivity",
                                        "progressr", "doFuture", "promises",
                                        # # Active subspace method
@@ -75,7 +76,7 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "mapview", "webshot",
                                        # File-locking, for multi-process
                                        "flock",
-                                       "adaptMCMC"))
+                                       "adaptMCMC"), update = TRUE)
 
 NAME_CONVERSION <- get_name_conversion()
 
