@@ -552,6 +552,8 @@ Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]
 #hist(simul636YearType,100)
 
 alphaLVL <- 0.9
+ILevel<- -(sqrt(alphaLVL/(1-alphaLVL)))
+
 MaxRounds <- 5
 ConvertSample <- sample(1:NSamp, 200)
 
@@ -1300,15 +1302,15 @@ server <- function(input, output, session,
         condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
       }
       # Carbon
-      CONDITION_SEL<-(PROBAMAT[,1] >= alphaLVL) &
-        # Biodiversity
-        # (SelectedSimMat2$redsquirrel >= SelecTargetBio) &
-        condition &
-        # Area
-        (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
-        # Visits
-        (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL)
+     # CONDITION_SEL<-(PROBAMAT[,1] >= alphaLVL) &
+      #  condition &
+      #  (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
+       # (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL)
     
+      CONDITION_SEL<-ifelse(apply((Icalc$IVEC*t(matrix(2*((AboveTargets-0.5)),dim(Icalc$IVEC)[2],dim(Icalc$IVEC)[1])))<=ILevel,1,prod),TRUE,FALSE)
+      
+      
+      
       SubsetMeetTargets <-list()
       SubsetMeetTargets[["YEAR"]]<- SelectedSimMat2$YEAR[CONDITION_SEL,]
       SubsetMeetTargets[["TYPE"]]<- SelectedSimMat2$TYPE[CONDITION_SEL,]
@@ -1753,7 +1755,7 @@ server <- function(input, output, session,
         #SelecTargetArea <- tmp$SelecTargetArea
         #SelecTargetVisits <- tmp$SelecTargetVisits
         #PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
-        
+     # browser()
         tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                                        SavedVecLoc = SavedVecYearType,
                                                        simul636YearTypeLoc = simul636YearType,
@@ -1826,13 +1828,16 @@ server <- function(input, output, session,
 #        SubsetMeetTargetsReactive(SubsetMeetTargets)
  #       SubsetMeetTargetsReactiveUnique(unique(SubsetMeetTargets))
         # Carbon
-        CONDITION_SEL<-(PROBAMAT[,1] >= alphaLVL) &
-          # Biodiversity species
-          condition &
-          # Area
-          (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
-          # Visits
-          (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL)
+        #CONDITION_SEL<-(PROBAMAT[,1] >= alphaLVL) &
+        #  condition &
+         # (PROBAMAT[,dim(PROBAMAT)[2]-1] >= alphaLVL) &
+        #  (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL)
+        
+       
+        # browser()
+        
+        CONDITION_SEL<-ifelse(apply((Icalc$IVEC*t(matrix(2*((AboveTargets-0.5)),dim(Icalc$IVEC)[2],dim(Icalc$IVEC)[1])))<=ILevel,1,prod),TRUE,FALSE)
+        
         
         SubsetMeetTargets <-list()
         SubsetMeetTargets[["YEAR"]]<- SelectedSimMat2$YEAR[CONDITION_SEL,]
@@ -1854,7 +1859,7 @@ server <- function(input, output, session,
           notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
           return()
         }
-        
+      
         SubsetMeetTargetsReactive(SubsetMeetTargets)
         
         DF<-data.frame(SubsetMeetTargets$YEAR,SubsetMeetTargets$TYPE)
@@ -1928,7 +1933,9 @@ server <- function(input, output, session,
           #SelecdMinRows <- which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
           #SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
           #SelecRow <- which.min(rowSums(SelectedMins[1:length(SavedVec), ]))
-          SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits
+          # We consider that all biodiversity are as important and carbon and visits. The area is not taken into account in the minimization
+          # as it is a below target
+          SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe)+  DistSliderVisits
           SelecdMinRows <- which(SUMM == min(SUMM))
           SelectedMins <- list(YEAR=SubsetMeetTargets$YEAR[SelecdMinRows, ],TYPE=SubsetMeetTargets$TYPE[SelecdMinRows,])
          
@@ -1964,7 +1971,7 @@ server <- function(input, output, session,
           notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
           
           SelectedFullTableRow(
-            tmpYearType$SelectedSimMat2[CONDITION_SEL,][SelecRow,]
+            tmpYearType$SelectedSimMat2[CONDITION_SEL,][SelecdMinRows[SelecRow],]
           )
           SelectedVector(SelectedMins)
 

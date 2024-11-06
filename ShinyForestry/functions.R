@@ -1231,19 +1231,19 @@ outputmap_calculateMatsYearType <- function(input,
   speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
                                                         function(x) bquote(sqrt(rowSums(SelectedSimMatBinary * (get(paste0(.(x), "MAT"))^2) / length(SavedVecYearTypeLoc))))),
                                                  names(SpeciesListSelectedSD)))
-  
+ # browser()
   SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMatYearTypeORSavedVec,#SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
                                 #SelectedSimMatYearTypeORSavedVec=SelectedSimMatYearTypeORSavedVec,
                                 Carbon = rowSums(CarbonMATYearTypeORSavedVec),
                                 speciesMat,
                                 Area = rowSums(SelectedSimMatBinary * AreaMAT),
                                 Visits = rowMeans(SelectedSimMatBinary * (VisitsMAT)),
-                                CarbonSD = sqrt(rowSums(CarbonMATYearTypeORSavedVec^2)),
+                                CarbonSD = sqrt(rowSums(CarbonSDMATYearTypeORSavedVec^2)),
                                 speciesMatSD,
                                 VisitsSD = sqrt(rowSums(SelectedSimMatBinary * (VisitsSDMAT^2))) / length(SavedVecYearTypeLoc))
 #  write.csv(SelectedSimMat3,file="d:\\ValuesMat.csv")
 #  save(simul636YearTypeLoc,file="d:\\SimulYearType.Rdata")
-#  browser()
+ # browser()
 #  #browser()
   Icalc <- MultiImpl(
     TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
