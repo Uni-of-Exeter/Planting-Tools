@@ -1994,6 +1994,10 @@ server <- function(input, output, session,
             mypref <- rep(1, N_TARGETS - 1)
           }
           tolvec <- tolvecReactive()
+          
+          # We can plant at this year + 1, in each parcel
+          # ClickedVector contains -1 for no planting, and 0...MAXYEAR for year after (strictly) which we can plant
+          year_of_planting_min_threshold <- ClickedVector()
           # https://shiny.posit.co/r/articles/improve/nonblocking/index.html
           bayesian_optimization_extendedtask <- ExtendedTask$new(function(
             seed,
