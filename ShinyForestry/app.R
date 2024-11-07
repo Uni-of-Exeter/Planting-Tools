@@ -2520,7 +2520,7 @@ server <- function(input, output, session,
     output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})
     
     
-  })
+  }, ignoreInit = TRUE)
   # DONE TO CHANGE LATER
   observeEvent(input$choose1, {
     observe_event_function(choose = 1, # 1 for input$choose1, 2 for input$choose2
