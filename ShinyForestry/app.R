@@ -1668,9 +1668,10 @@ server <- function(input, output, session,
       )}else{
         Text4("No Fourth Strategy that meet all the targets")
       }
-    
+    #browser()
     Text0(paste0("Estimated percentage of strategies that meet all ", N_TARGETS," targets: ",
-                 round(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] / dim(unique(data.frame(simul636YearType$YEAR,simul636YearType$TYPE)))[1] * 100, 2),"%"))
+                 round(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] / dim(unique(data.frame(simul636YearType$YEAR,simul636YearType$TYPE)))[1] * 100, 2),"%
+displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   })
   
   #DONE
