@@ -548,7 +548,8 @@ notif(paste0("Sampling ", NSamp, " random strategies ... done"), global_log_leve
 Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 
-#browser()
+
+
 #hist(simul636YearType,100)
 
 alphaLVL <- 0.9
@@ -908,9 +909,10 @@ server <- function(input, output, session,
     input$tabs
   },{
     if (input$tabs == "Exploration"){
+    
       if (first_time_open_exploration_reactive() == TRUE) {
-        SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
-                                 min(4, dim(SubsetMeetTargetsReactiveUnique())[1]), replace = FALSE)
+        SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1],
+                                 min(4, dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]), replace = FALSE)
         FourUniqueRowsReactive(SelectedSample)
         first_time_open_exploration_reactive(FALSE)
       }
@@ -919,8 +921,9 @@ server <- function(input, output, session,
   observeEvent({
     input$random
   },{
-    SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique())[1],
-                             min(4, dim(SubsetMeetTargetsReactiveUnique())[1]), replace = FALSE)
+    #browser()
+    SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1],
+                             min(4, dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]), replace = FALSE)
     FourUniqueRowsReactive(SelectedSample)
   })
   # Clicked Vector indicates the units that have been clicked
@@ -942,7 +945,7 @@ server <- function(input, output, session,
   ClickedVectorYearType <- reactiveVal(NULL)
   PreviousClickedVectorYearType<- reactiveVal(NULL)
   
-  PreviousYearSelect<-reactiveVal(0)
+  PreviousYearSelectReactive<-reactiveVal(0)
   
   PreviousConsolidatedReactive<-reactiveVal(NULL)
 
@@ -1157,9 +1160,8 @@ server <- function(input, output, session,
       #                           VisitsSelectedSD,
       #                          input_areaSlider_multiplicative_coefficient = TRUE,
       #                         alpha=alphaLVL)
-      #browser()   
+    
       #TODO
-     # browser()
       MaxVals<-InitFindMaxSliderValuesYear(SelectedVector(),
                                            AreaSelected,
                                            CarbonSelected,
@@ -1285,6 +1287,8 @@ server <- function(input, output, session,
       SelectedSimMat2<-list()
       SelectedSimMat2[["YEAR"]]<- tmpYearType$SelectedSimMat2[,paste0("SelectedSimMat.YEAR.",1:dim(simul636YearType[["YEAR"]])[2])]
       SelectedSimMat2[["TYPE"]]<- tmpYearType$SelectedSimMat2[,paste0("SelectedSimMat.TYPE.",1:dim(simul636YearType[["TYPE"]])[2])]
+      SelectedSimMat2[["OUTPUTS"]]<-tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))]
+      names(SelectedSimMat2[["OUTPUTS"]])<-names(tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))])
       Icalc <- tmpYearType$Icalc
       LimitsMat <- tmpYearType$LimitsMat
       SelecTargetCarbon <- MaxVals$CarbonMax
@@ -1310,24 +1314,30 @@ server <- function(input, output, session,
       CONDITION_SEL<-ifelse(apply((Icalc$IVEC*t(matrix(2*((AboveTargets-0.5)),dim(Icalc$IVEC)[2],dim(Icalc$IVEC)[1])))<=ILevel,1,prod),TRUE,FALSE)
       
       
+      FullSubsetMeetTargets<-tmpYearType$SelectedSimMat2[CONDITION_SEL,]
+      
       
       SubsetMeetTargets <-list()
       SubsetMeetTargets[["YEAR"]]<- SelectedSimMat2$YEAR[CONDITION_SEL,]
       SubsetMeetTargets[["TYPE"]]<- SelectedSimMat2$TYPE[CONDITION_SEL,]
+      SubsetMeetTargets[["OUTPUTS"]]<- SelectedSimMat2$OUTPUTS[CONDITION_SEL,]
       
       SubsetMeetTargetsReactive(SubsetMeetTargets)
       
       DF<-data.frame(SubsetMeetTargets$YEAR,SubsetMeetTargets$TYPE)
       uniqueRows<-which(!duplicated(DF))
       
-      SubsetMeetTargetsReactiveUnique(list(YEAR=SubsetMeetTargets$YEAR[uniqueRows,],TYPE=SubsetMeetTargets$TYPE[uniqueRows,]))
+      SubsetMeetTargetsReactiveUnique(list(YEAR=SubsetMeetTargets$YEAR[uniqueRows,],TYPE=SubsetMeetTargets$TYPE[uniqueRows,],OUTPUTS=SubsetMeetTargets$OUTPUTS[uniqueRows,]))
+
       PreviousSub<-SubsetMeetTargets
       PreviousSub$YEAR<-SubsetMeetTargets$YEAR-1
       PreviousSubsetMeetTargetsReactive(PreviousSub)
-      
+
       DFPrev<-data.frame(PreviousSub$YEAR,PreviousSub$TYPE)
       uniqueRowsPrev<-which(!duplicated(DFPrev))
-      PreviousSubsetMeetTargetsReactiveUnique(list(YEAR=PreviousSub$YEAR[uniqueRowsPrev,],TYPE=PreviousSub$TYPE[uniqueRowsPrev,]))
+      PreviousSubsetMeetTargetsReactiveUnique(list(YEAR=PreviousSub$YEAR[uniqueRowsPrev,],TYPE=PreviousSub$TYPE[uniqueRowsPrev,],
+                                                   OUTPUTS=PreviousSub$OUTPUTS[uniqueRowsPrev,]
+                                                   ))
       
       if(dim(unique(SubsetMeetTargets$YEAR))[1]>0){
         LengthVec<-min(4,dim(unique(SubsetMeetTargets$YEAR)[1]))
@@ -1366,7 +1376,7 @@ server <- function(input, output, session,
       
       SelectedRow<-SelectedFullTableRow()
       YearSelect<-YearSelectReactive()
-      PrevYearSelectedLoc<-PreviousYearSelect()
+      PrevYearSelectedLoc<-PreviousYearSelectReactive()
       
       MeanCarbonVec<- FullTable[,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
       MeanCarbonVec$geometry<-NULL
@@ -1491,7 +1501,7 @@ server <- function(input, output, session,
             
       PreviousSelectedVector(SelectedVec)
       # replace the text
-      PreviousYearSelect(YearSelect)
+      PreviousYearSelectReactive(YearSelect)
       PreviousConsolidatedReactive(Consolidated)
       
     }
@@ -1502,6 +1512,12 @@ server <- function(input, output, session,
   # TO CHANGE LATER!!
   observe({
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")) {
+      #browser()
+      YearSelect<-YearSelectReactive()
+      PrevYearSelect<-PreviousYearSelectReactive()
+      SavedVecYearType<-ClickedVectorYearType()
+      PrevSavedVecYearType<-PreviousClickedVectorYearType()
+      
       SubsetMeetTargets<-SubsetMeetTargetsReactive()
       PreviousSubsetMeetTargets<-PreviousSubsetMeetTargetsReactive()
       SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
@@ -1512,59 +1528,81 @@ server <- function(input, output, session,
       FourUniqueRowsLoc<-FourUniqueRowsReactive()
       PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
       if(length(FourUniqueRowsLoc)>0){
-        SelectedRows<-SubsetMeetTargetsUnique[FourUniqueRowsLoc,]
-        PrevSelectedRows<-PreviousSubsetMeetTargetsUnique[PreviousFourUniqueRowsLoc,]
+        SelectedRows<-list(YEAR=SubsetMeetTargetsUnique$YEAR[FourUniqueRowsLoc,],TYPE=SubsetMeetTargetsUnique$TYPE[FourUniqueRowsLoc,],
+                           OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[FourUniqueRowsLoc,])
+        PrevSelectedRows<-list(YEAR=PreviousSubsetMeetTargetsUnique$YEAR[PreviousFourUniqueRowsLoc,],
+                               TYPE=PreviousSubsetMeetTargetsUnique$TYPE[PreviousFourUniqueRowsLoc,],
+                               OUTPUTS=PreviousSubsetMeetTargetsUnique$OUTPUTS[PreviousFourUniqueRowsLoc,])
+        
         
         ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
                                ColorLighteningFactor(), ColorDarkeningFactor())
         
         FullColVec <- ColObtained$FullColVec
         ClickedCols <- ColObtained$ClickedCols
-        if (dim(PrevSelectedRows)[1] < dim(SelectedRows)[1]) { PrevSelectedRows=SelectedRows+1 }
+        if (length(PreviousFourUniqueRowsLoc) < length(FourUniqueRowsLoc)) { PrevSelectedRows<-SelectedRows
+          PrevSelectedRows$YEAR=SelectedRows$YEAR+1 }
         
-        
+
         for (ii in seq(1,min(4,length(FourUniqueRowsLoc)))) {
+          #### TOCHANGE!!
+        
           
-          Consolidated<-2*SavedMat[ii,]+1*((SelectedRows[ii,1:dim(SavedMat)[2]]==1)&(SavedMat[ii,]==0))
+          TypeA<-(SelectedRows$TYPE[ii,]=="Conifers")&(SelectedRows$YEAR[ii,]<=YearSelect)&(SavedVecYearType<YearSelect)
+          TypeB<-(SelectedRows$TYPE[ii,]=="Deciduous")&(SelectedRows$YEAR[ii,]<=YearSelect)&(SavedVecYearType<YearSelect)
+          BlockedCells<-(SavedVecYearType>=YearSelect)
           
-          PreviousConsolidated<-2*PreviousSavedMat[ii,]+1*((PrevSelectedRows[ii,1:dim(SavedMat)[2]]==1)&(PreviousSavedMat[ii,]==0))
-          if (length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
+          
+          Consolidated<-1*TypeA+2*TypeB+3*BlockedCells
+          
+          PrevTypeA<-(PrevSelectedRows$TYPE[ii,]=="Conifers")&(PrevSelectedRows$YEAR[ii,]<=PrevYearSelect)&(PrevSavedVecYearType<PrevYearSelect)
+          PrevTypeB<-(PrevSelectedRows$TYPE[ii,]=="Deciduous")&(PrevSelectedRows$YEAR[ii,]<=PrevYearSelect)&(PrevSavedVecYearType<PrevYearSelect)
+          PrevBlockedCells<-(PrevSavedVecYearType>=PrevYearSelect)
+         
+          
+          PreviousConsolidated<-1*PrevTypeA+2*PrevTypeB+3*PrevBlockedCells
+          
+          
+          
+           if (length(PreviousConsolidated)==0){PreviousConsolidated<-Consolidated+1}
           if ((CreatedBaseMap()==1)&(dim(SavedMat)[2]>0)){
             
             mapp<-leafletProxy(paste0("map",ii+1))
             removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
             COLOURS<-rep("transparent",length(Consolidated))
-            COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
-            COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
+            COLOURS[TypeA]<-"purple"
+            COLOURS[TypeB]<-"green"
+            COLOURS[BlockedCells]<-"red"
             mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
             
           }
           removeControl(mapp,layerId="legend")
-      
-          SFTR<-SelectedRows[ii,]
+          #browser()
+          SFTR<-list()
+          SFTR$YEAR<-SelectedRows$YEAR[ii,]
+          SFTR$TYPE<-SelectedRows$TYPE[ii,]
+          SFTR$OUTPUTS<-SelectedRows$OUTPUTS[ii,]
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
             specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-            selectedBiospecie <- SFTR[[specie_latin]]
-            selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
+            selectedBiospecie <- SFTR$OUTPUTS[[specie_latin]]
+            selectedBioSDspecie <- SFTR$OUTPUTS[[paste0( specie_latin,"SD")]]
             addControlText <- paste0(addControlText, specie_english, ": ", 
                                      round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
           
           mapp<-
-            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon, 2), "\u00B1", round(2*SFTR$CarbonSD, 2), "<br>",
-                                          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", round(2*SFTR$OUTPUTS$CarbonSD, 2), "<br>",
                                           addControlText,
-                                          "Area Planted: ", round(SFTR$Area, 2), "<br>",
-                                          "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
+                                          "Area Planted: ", round(SFTR$OUTPUTS$Area, 2), "<br>",
+                                          "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", round(2*SFTR$OUTPUTS$VisitsSD, 2),
                                           "</p>"), position = "topright",layerId="legend")
           
           
           
         }
         
-        #}
         if(length(FourUniqueRowsLoc)<4){
           #add here text to say that there are no more unique examples.
           for(ii in seq(length(FourUniqueRowsLoc)+1,4))
@@ -1580,17 +1618,17 @@ server <- function(input, output, session,
             
             
           }
-          PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
-          PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
-          PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
-          
-          
-          UpdatedRows<-ClickedMatrixTab2Reactive()
-          if(length(FourUniqueRowsLoc)<4){
-            UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
-            
-          }
-          PreviousClickedMatrixTab2Reactive(UpdatedRows)
+        #  PreviousSubsetMeetTargetsReactive(SubsetMeetTargetsReactive())
+        #  PreviousFourUniqueRowsReactive(FourUniqueRowsReactive())
+        #  PreviousSubsetMeetTargetsReactiveUnique(SubsetMeetTargetsReactiveUnique())
+        #  
+        #  
+        #  UpdatedRows<-ClickedMatrixTab2Reactive()
+        #  if(length(FourUniqueRowsLoc)<4){
+        #    UpdatedRows[length(FourUniqueRowsLoc):4,]<-PreviousClickedMatrixTab2Reactive()[length(FourUniqueRowsLoc):4,]
+        #    
+        #  }
+        #  PreviousClickedMatrixTab2Reactive(UpdatedRows)
         }
         
       }else{}
@@ -1604,34 +1642,35 @@ server <- function(input, output, session,
     input$random
     input$tabs
   }, {
+    #browser()
     FourUniqueRows<-FourUniqueRowsReactive()
     if(length(FourUniqueRows)>0){
       Text1(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[1]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[1]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
       )}else{
         Text1("No Strategy that meet all the targets")
       }
     if(length(FourUniqueRows)>1){
       Text2(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[2]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[2]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
       )}else{
         Text2("No Second Strategy that meet all the targets")
       }
     if(length(FourUniqueRows)>2){
       Text3(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[3]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[3]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
       )}else{
         Text3("No Third Strategy that meet all the targets")
       }
     if(length(FourUniqueRows)>3){
       Text4(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[4]," out of ",dim(SubsetMeetTargetsReactiveUnique())[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[4]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
       )}else{
         Text4("No Fourth Strategy that meet all the targets")
       }
     
     Text0(paste0("Estimated percentage of strategies that meet all ", N_TARGETS," targets: ",
-                 round(dim(SubsetMeetTargetsReactiveUnique())[1] / dim(unique(simul636))[1] * 100, 2),"%"))
+                 round(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] / dim(unique(data.frame(simul636YearType$YEAR,simul636YearType$TYPE)))[1] * 100, 2),"%"))
   })
   
   #DONE
@@ -1801,7 +1840,10 @@ server <- function(input, output, session,
         SelectedSimMat2<-list()
         SelectedSimMat2[["YEAR"]]<- tmpYearType$SelectedSimMat2[,paste0("SelectedSimMat.YEAR.",1:dim(simul636YearType[["YEAR"]])[2])]
         SelectedSimMat2[["TYPE"]]<- tmpYearType$SelectedSimMat2[,paste0("SelectedSimMat.TYPE.",1:dim(simul636YearType[["TYPE"]])[2])]
-
+        SelectedSimMat2[["OUTPUTS"]]<-tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))]
+        names(SelectedSimMat2[["OUTPUTS"]])<-names(tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))])
+        
+        
         Icalc <- tmpYearType$Icalc
         LimitsMat <- tmpYearType$LimitsMat
         SelecTargetCarbon <-tmpYearType$SelecTargetCarbon
@@ -1842,18 +1884,19 @@ server <- function(input, output, session,
         SubsetMeetTargets <-list()
         SubsetMeetTargets[["YEAR"]]<- SelectedSimMat2$YEAR[CONDITION_SEL,]
         SubsetMeetTargets[["TYPE"]]<- SelectedSimMat2$TYPE[CONDITION_SEL,]
+        SubsetMeetTargets[["OUTPUTS"]]<- SelectedSimMat2$OUTPUTS[CONDITION_SEL,]
         
-        SubsetMeetTargets[["CarbonMean"]]<-tmpYearType$SelectedSimMat2$Carbon[CONDITION_SEL]
-        SubsetMeetTargets[["CarbonSD"]]<-tmpYearType$SelectedSimMat2$CarbonSD[CONDITION_SEL]
+      #  SubsetMeetTargets[["CarbonMean"]]<-tmpYearType$SelectedSimMat2$Carbon[CONDITION_SEL]
+      #  SubsetMeetTargets[["CarbonSD"]]<-tmpYearType$SelectedSimMat2$CarbonSD[CONDITION_SEL]
         
-        for (iii in 1:length(SPECIES)) {
-          x<-SPECIES[iii]
-          SubsetMeetTargets[[x]]<-tmpYearType$SelectedSimMat2[[x]][CONDITION_SEL]
-          SubsetMeetTargets[[paste0(x,"SD")]]<-tmpYearType$SelectedSimMat2[[paste0(x,"SD")]][CONDITION_SEL]
-        }
-        SubsetMeetTargets[["Visits"]]<-tmpYearType$SelectedSimMat2[["Visits"]][CONDITION_SEL]
-        SubsetMeetTargets[["VisitsSD"]]<-tmpYearType$SelectedSimMat2[["VisitsSD"]][CONDITION_SEL]
-        SubsetMeetTargets[["Area"]]<-tmpYearType$SelectedSimMat2[["Area"]][CONDITION_SEL]
+      #  for (iii in 1:length(SPECIES)) {
+      #    x<-SPECIES[iii]
+      #    SubsetMeetTargets[[x]]<-tmpYearType$SelectedSimMat2[[x]][CONDITION_SEL]
+      #    SubsetMeetTargets[[paste0(x,"SD")]]<-tmpYearType$SelectedSimMat2[[paste0(x,"SD")]][CONDITION_SEL]
+      #  }
+      #  SubsetMeetTargets[["Visits"]]<-tmpYearType$SelectedSimMat2[["Visits"]][CONDITION_SEL]
+      #  SubsetMeetTargets[["VisitsSD"]]<-tmpYearType$SelectedSimMat2[["VisitsSD"]][CONDITION_SEL]
+      #  SubsetMeetTargets[["Area"]]<-tmpYearType$SelectedSimMat2[["Area"]][CONDITION_SEL]
         
         if (current_task_id != get_latest_task_id()) {
           notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
@@ -1864,15 +1907,18 @@ server <- function(input, output, session,
         
         DF<-data.frame(SubsetMeetTargets$YEAR,SubsetMeetTargets$TYPE)
         uniqueRows<-which(!duplicated(DF))
-        
-        SubsetMeetTargetsReactiveUnique(list(YEAR=SubsetMeetTargets$YEAR[uniqueRows,],TYPE=SubsetMeetTargets$TYPE[uniqueRows,]))
+        #bowser()
+        SubsetMeetTargetsReactiveUnique(list(YEAR=SubsetMeetTargets$YEAR[uniqueRows,],TYPE=SubsetMeetTargets$TYPE[uniqueRows,],
+                                             OUTPUTS=SubsetMeetTargets$OUTPUTS[uniqueRows,]))
         PreviousSub<-SubsetMeetTargets
         PreviousSub$YEAR<-SubsetMeetTargets$YEAR-1
         PreviousSubsetMeetTargetsReactive(PreviousSub)
         
         DFPrev<-data.frame(PreviousSub$YEAR,PreviousSub$TYPE)
         uniqueRowsPrev<-which(!duplicated(DFPrev))
-        PreviousSubsetMeetTargetsReactiveUnique(list(YEAR=PreviousSub$YEAR[uniqueRowsPrev,],TYPE=PreviousSub$TYPE[uniqueRowsPrev,]))
+        PreviousSubsetMeetTargetsReactiveUnique(list(YEAR=PreviousSub$YEAR[uniqueRowsPrev,],
+                                                     TYPE=PreviousSub$TYPE[uniqueRowsPrev,],
+                                                     OUTPUTS=PreviousSub$OUTPUTS[uniqueRowsPrev,]))
                  
 
         if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0){
@@ -1881,12 +1927,12 @@ server <- function(input, output, session,
           PreviousFourUniqueRowsReactive(seq(1,LengthVec))
         }else{FourUniqueRowsReactive(NULL)
           PreviousFourUniqueRowsReactive(NULL)}
-        #browser()
+       # browser()
         if (dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] > 0) {
           if (max(tmpYearType$SelectedSimMat2$Carbon) != min(tmpYearType$SelectedSimMat2$Carbon)) {
-            DistSliderCarbon <- (SubsetMeetTargets[["CarbonMean"]] - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon) - min(tmpYearType$SelectedSimMat2$Carbon))
+            DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon) - min(tmpYearType$SelectedSimMat2$Carbon))
           } else {
-            DistSliderCarbon <- (SubsetMeetTargets[["CarbonMean"]] - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon))
+            DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon))
           }
           # if (max(SelectedSimMat2$redsquirrel) != min(SelectedSimMat2$redsquirrel)) {
           #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel) - min(SelectedSimMat2$redsquirrel))
@@ -1899,26 +1945,26 @@ server <- function(input, output, session,
             SelecTargetBiospecie <- get(paste0("SelecTargetBio", x))[[1]]
             var_name <- paste0("DistSliderBio", x)
             if (max(tmpYearType$SelectedSimMat2[x]) != min(tmpYearType$SelectedSimMat2[x])) {
-              value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]]) - min(tmpYearType$SelectedSimMat2[[x]]))
+              value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]]) - min(tmpYearType$SelectedSimMat2[[x]]))
             } else {
               if (max(tmpYearType$SelectedSimMat2[x]) != 0) {
-                value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]]))
+                value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]]))
               } else {
-                value <- (SubsetMeetTargets[[x]] - SelecTargetBiospecie)
+                value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie)
               }
             }
             assign(var_name, value)
             DistSliderBioListDataframes[x] <- data.frame(x = value)
           }
           if (max(tmpYearType$SelectedSimMat2$Area) != min(tmpYearType$SelectedSimMat2$Area)) {
-            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area) - min(tmpYearType$SelectedSimMat2$Area))
+            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["OUTPUTS"]][["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area) - min(tmpYearType$SelectedSimMat2$Area))
           } else {
-            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area))
+            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["OUTPUTS"]][["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area))
           }
           if (max(tmpYearType$SelectedSimMat2$Visits) != min(tmpYearType$SelectedSimMat2$Visits)) {
-            DistSliderVisits <- (SubsetMeetTargets[["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits) - min(tmpYearType$SelectedSimMat2$Visits))
+            DistSliderVisits <- (SubsetMeetTargets[["OUTPUTS"]][["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits) - min(tmpYearType$SelectedSimMat2$Visits))
           } else {
-            DistSliderVisits <- (SubsetMeetTargets[["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits))
+            DistSliderVisits <- (SubsetMeetTargets[["OUTPUTS"]][["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits))
           }
           
           if (current_task_id != get_latest_task_id()) {
@@ -1937,7 +1983,8 @@ server <- function(input, output, session,
           # as it is a below target
           SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe)+  DistSliderVisits
           SelecdMinRows <- which(SUMM == min(SUMM))
-          SelectedMins <- list(YEAR=SubsetMeetTargets$YEAR[SelecdMinRows, ],TYPE=SubsetMeetTargets$TYPE[SelecdMinRows,])
+          SelectedMins <- list(YEAR=SubsetMeetTargets$YEAR[SelecdMinRows, ],TYPE=SubsetMeetTargets$TYPE[SelecdMinRows,],
+                               OUTPUTS=SubsetMeetTargets$YEAR[SelecdMinRows,])
          
           
           # If it is a vector, i.e. only 1 unit is available
@@ -2220,7 +2267,7 @@ server <- function(input, output, session,
   }, ignoreInit = TRUE)
   
   observeEvent(input$tabs == "Preferences", {
-    
+
     SavedVec <- ClickedVector()
     SavedVecYear <- ClickedVectorYear()
     
@@ -2420,7 +2467,8 @@ server <- function(input, output, session,
                                                                                                            pref_reactive = pref_reactive,
                                                                                                            N_TARGETS_ARG3 = N_TARGETS,
                                                                                                            TARGETS_ARG2 = TARGETS,
-                                                                                                           prior_list = prior_list)
+                                                                                                           prior_list = prior_list,
+                                                                                                           global_log_level = LOG_LEVEL)
         SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
         SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
         
@@ -2631,13 +2679,13 @@ server <- function(input, output, session,
 
           if(SavedVecYearTypePriorToChange[iii]!=SavedVecYearType[iii]){
             if(SavedVecYearType[iii]==(-1)){SAMPLELIST_TYPE[iii]<-list(NULL)}else{
-              if(SavedVecYearType[iii]==MAXYEAR){#browser()
+              if(SavedVecYearType[iii]==MAXYEAR){
                   
                 SAMPLELIST_TYPE[[iii]]<-list()
                 SAMPLELIST_TYPE[[iii]][["YEAR"]]<-rep(-1,dim(simul636YearType$YEAR)[1])
                 SAMPLELIST_TYPE[[iii]][["TYPE"]]<-rep("NoPlanting",dim(simul636YearType$YEAR)[1])
                 }else{
-              #    browser()
+
                   SAMPLELIST_TYPE[[iii]]<-list()
                   SAMPLELIST_TYPE[[iii]][["YEAR"]]<-simul636YearType$YEAR[,iii]
                   SAMPLELIST_TYPE[[iii]][["TYPE"]]<-simul636YearType$TYPE[,iii]
@@ -2658,7 +2706,7 @@ server <- function(input, output, session,
       ClickedVector(SavedVec)
       ClickedVectorYear(SavedVecYear)
       ClickedVectorYearType(SavedVecYearType)
-      #browser()
+      
       Simul636YearOverrideReactive(SAMPLELIST)
       Simul636YearTypeOverrideReactive(SAMPLELIST_TYPE)
       
