@@ -410,7 +410,8 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
                                                                        pref_reactive,
                                                                        N_TARGETS_ARG3,
                                                                        TARGETS_ARG2,
-                                                                       prior_list) {
+                                                                       prior_list,
+                                                                       global_log_level = LOG_LEVEL) {
   N_TARGETS <- N_TARGETS_ARG3
   TARGETS <- TARGETS_ARG2
   indices_strategies_meet_all_targets <- which(VecNbMet0() == N_TARGETS)
