@@ -448,7 +448,6 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
     }
     # We couldn't find enough target-compatible strategies to avoid preference strategy duplication
     if (i == 10) {
-      warning("We couldn't find enough target-compatible strategies to avoid preference strategy duplication")
       notif("We couldn't find enough target-compatible strategies to avoid preference strategy duplication", log_level = "warning", global_log_level = global_log_level)
     }
     
@@ -1837,7 +1836,6 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   
   if (any(FullTable$area_diff >= 1)) {
     msg <- "The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference"
-    warning(msg)
     notif(msg, log_level = "warning", global_log_level = global_log_level)
   }
   rm(df0)

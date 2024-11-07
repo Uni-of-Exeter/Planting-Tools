@@ -230,9 +230,10 @@ generate_legal_unique_samples <- function(n, k,
   valid_samples <- as.matrix(valid_samples)
   nb_rows_to_return <- min(n, nrow(valid_samples))
   if (nrow(valid_samples) < n) {
-    warning("[WARNING] The number of rows generated with generate_legal_unique_samples is lower than expected: ",
-            nrow(valid_samples), " instead of ", n,
-            ". Maximum number of iterations (", attempts, ") reached.")
+    msg <- paste0("The number of rows generated with generate_legal_unique_samples is lower than expected: ",
+                  nrow(valid_samples), " instead of ", n,
+                  ". Maximum number of iterations (", attempts, ") reached.")
+    notif(msg, log_level = "warning", global_log_level = global_log_level)
   }
   # Work even if no valid samples are found
   if (nb_rows_to_return >= 1) {
@@ -476,8 +477,10 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
       notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
     } else {
       indtest <- testZ(init$low_dim_design, tA)
-      if (!all(indtest)) 
-        warning("Not all initial low dimensional designs belong to Z.")
+      if (!all(indtest)) {
+        msg <- "Not all initial low dimensional designs belong to Z."
+        notif(msg, log_level = "warning", global_log_level = global_log_level)
+      }
       DoE_low_dimension <- init$low_dim_design
     }
     msg <- "RREMBO generating data. Generate high dimension data (smart projection low-dim to high-dim) ..."
@@ -1363,7 +1366,8 @@ gp_performance <- function(gp_means,
   total_sum_of_squares <- sum((true_outputs - mean(true_outputs))^2)
   residual_sum_of_squares <- sum((gp_means - true_outputs)^2)
   if (total_sum_of_squares == 0) {
-    warning("Total sum of squares is zero, R-squared is not defined.")
+    msg <- "Total sum of squares is zero, R-squared is not defined."
+    notif(msg, log_level = "warning", global_log_level = global_log_level)
     return(NA)
   } else {
     r_squared <- 1 - residual_sum_of_squares / total_sum_of_squares
@@ -1914,7 +1918,6 @@ bayesian_optimization <- function(
       
       if (optimum$convergence != 0) {
         msg <- paste0("task ", current_task_id, ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
-        warning(paste("[WARNING]", msg))
         notif(msg, log_level = "warning", global_log_level = global_log_level)
       }
       
