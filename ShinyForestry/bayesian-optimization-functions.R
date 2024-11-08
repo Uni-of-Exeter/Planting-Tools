@@ -1442,11 +1442,30 @@ theme_Publication <- function(base_size = 10) {
     )
 }
 
-# https://ntfy.sh/uoerstudioserver
-# https://ntfysenate.uboracle1.freeddns.org/uoerstudioserver
-notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default", rbind = FALSE, pad_character = "_",
-                  ntfy = FALSE, file = TRUE, file_suffix = SESSION_FILE_SUFFIX, message_arg = TRUE,
-                  log_level = "info", global_log_level = LOG_LEVEL) {
+# This function is necessary to visualize progress of the background tasks (mainly optimization in tab 1 for now)
+# because it runs in a different process and cannot (easily) print values in the main R console or in the Shiny
+# interface. This function serves to define one way globally to send messages to a local file, console, and ntfy server.
+# The official https://ntfy.sh is rate-limited after a few hundred messages, so I (Tim) host my own on a VPS
+# at https://ntfysenate.uboracle1.freeddns.org and fallback to https://ntfy.sh.
+# Anyone can send messages to it, but everything else requires a login. Ask me for one (t.r.f.bacri@exeter.ac.uk) if you want access.
+# ntfy is nice because notifications can be sent to the webpage browser, and to the smartphone app, with different priorities.
+notif <- function(msg,
+                  # Print command messages
+                  verbose = FALSE,
+                  # cURL flags (when using ntfy)
+                  curl_flags = NULL,
+                  # Notify on ntfy with what priority notifications (https://docs.ntfy.sh/publish/?h=priority#message-priority)
+                  ntfy = FALSE, ntfy_priority = "default",
+                  # Useful to print data.frames correctly on ntfy
+                  rbind = FALSE, pad_character = "_",
+                  # Log to a unique file per Shiny session (`server(...)` instance)
+                  file = TRUE, file_suffix = SESSION_FILE_SUFFIX,
+                  # Print on console with message function
+                  message_arg = TRUE,
+                  # Default logging level (debug, info, warning, error, none)
+                  log_level = "info",
+                  # Maximum allowed logging level. Anything above is not sent (e,g, if set to "error", messages of level "info" are not sent)
+                  global_log_level = LOG_LEVEL) {
   
   log_level_msg <- toupper(log_level)
   log_level <- switch(
@@ -1521,7 +1540,7 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
     )
     
     # Execute the command
-    result <- system(command, ignore.stdout = quiet, timeout = 5)
+    result <- system(command, ignore.stdout = !verbose, timeout = 5)
     # If there was a curl error
     if (result != 0) {
       url <- "https://ntfy.sh/uoerstudioserver"
@@ -1534,7 +1553,7 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
         msg,
         '" "', url, '"'
       )
-      result <- system(command, ignore.stdout = quiet, timeout = 5)
+      result <- system(command, ignore.stdout = !verbose, timeout = 5)
       if (result != 0) {
         warning("[ERROR] notification cannot be sent to ntfy.sh/uoerstudioserver. You should disable notifications to that website by changing the default argument (ntfy) of notif to FALSE.")
       }
