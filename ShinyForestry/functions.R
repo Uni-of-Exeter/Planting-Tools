@@ -1051,8 +1051,6 @@ outputmap_calculateMatsYear <- function(input,
            SelecTargetBioList,SAMPLELIST=SAMPLELIST))
 }
 
-#########################################################
-#########################################################
 ################### This is function outputmap_calculateMats adapted to the case where
 ################### HERE CHANGE
 outputmap_calculateMatsYearType <- function(input,
@@ -1265,8 +1263,6 @@ outputmap_calculateMatsYearType <- function(input,
           SelecTargetBioList,SAMPLELIST=SAMPLELIST))
 }
 
-
-###################
 InitFindMaxSliderValues <- function(SavedVecLoc,
                                     AreaSelected,
                                     CarbonSelected,
@@ -1400,9 +1396,7 @@ InitFindMaxSliderValues <- function(SavedVecLoc,
   
   return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,AreaMin=AreaMin,VisistMax=VisistMax,tolvec=tolvec))
 }
-#################################
 
-###################
 InitFindMaxSliderValuesYear <- function(SavedVecLoc,
                                     AreaSelected,
                                     CarbonSelected,
@@ -1604,7 +1598,7 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
   
   return(list(CarbonMax=CarbonMax,bioMaxList=bioMaxList,AreaMax=AreaMax,AreaMin=AreaMin,VisistMax=VisistMax,tolvec=tolvec))
 }
-######################################################################
+
 add_suffix_to_duplicates <- function(vec) {
   seen <- list()
   for (i in seq_along(vec)) {
