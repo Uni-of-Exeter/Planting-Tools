@@ -820,6 +820,8 @@ server <- function(input, output, session,
   }
   
   bayesian_optimization_finished <- reactiveVal(TRUE)
+  ClusteringDone<-reactiveVal({FALSE})
+  
   
   infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
@@ -921,7 +923,6 @@ server <- function(input, output, session,
   observeEvent({
     input$random
   },{
-    #browser()
     SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1],
                              min(4, dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]), replace = FALSE)
     FourUniqueRowsReactive(SelectedSample)
@@ -1063,7 +1064,6 @@ server <- function(input, output, session,
     
     if (!(dim(SelectedSquares)[1] == 0)) {
       
-      #browser()
       AreaSelected <- FullTable$area[FullTable$extent == SelectedDropdown]
       CarbonSelected <- (FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[FullTable$extent == SelectedDropdown])
       # we take everything up to year (MAXYEAR+1) (no planting)
@@ -1507,12 +1507,26 @@ server <- function(input, output, session,
     }
   })
   
-  # LOOP TO render the land parcel colours
+  # Run clustering if we click on "Exploration" and Clustering has not been done yet
+  observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")&&(!ClusteringDone())) {
+    browser()
+    if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0)
+    { }
+    
+  }
+    
+  })
   
-  # TO CHANGE LATER!!
+  
+  # If we are not on Tab Exploration, clustering Resets.
+  observeEvent({(input$tabs!="Exploration")},{
+  ClusteringDone(FALSE)  
+  })
+  
+
   observe({
-    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")) {
-      #browser()
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+
       YearSelect<-YearSelectReactive()
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
@@ -1577,7 +1591,7 @@ server <- function(input, output, session,
             
           }
           removeControl(mapp,layerId="legend")
-          #browser()
+
           SFTR<-list()
           SFTR$YEAR<-SelectedRows$YEAR[ii,]
           SFTR$TYPE<-SelectedRows$TYPE[ii,]
@@ -1642,7 +1656,6 @@ server <- function(input, output, session,
     input$random
     input$tabs
   }, {
-    #browser()
     FourUniqueRows<-FourUniqueRowsReactive()
     if(length(FourUniqueRows)>0){
       Text1(
@@ -1668,7 +1681,6 @@ server <- function(input, output, session,
       )}else{
         Text4("No Fourth Strategy that meet all the targets")
       }
-    #browser()
     Text0(paste0("Estimated percentage of strategies that meet all ", N_TARGETS," targets: ",
                  round(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] / dim(unique(data.frame(simul636YearType$YEAR,simul636YearType$TYPE)))[1] * 100, 2),"%
 displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
@@ -1765,7 +1777,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         
         
         ########## same function with Year
-        # browser()
       #  tmpYear <- outputmap_calculateMatsYear(input = input,
        #                                        SavedVecLoc = SavedVec,
       #                                         simul636YearLoc = simul636Year,
@@ -1787,7 +1798,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                       #                         SAMPLELIST=Simul636YearOverrideReactive(),
                        #                        MAXYEAR=MAXYEAR
         #)
-       # browser()
         #SelectedSimMat2 <- tmp$SelectedSimMat2
         #Icalc <- tmp$Icalc
         #LimitsMat <- tmp$LimitsMat
@@ -1795,7 +1805,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         #SelecTargetArea <- tmp$SelecTargetArea
         #SelecTargetVisits <- tmp$SelecTargetVisits
         #PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
-     # browser()
+
         tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                                        SavedVecLoc = SavedVecYearType,
                                                        simul636YearTypeLoc = simul636YearType,
@@ -1826,10 +1836,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         
         
         ######## With Year
-        #browser()
-        
-        # TO CHANGE HERE
-        
         #SelectedSimMat2 <- tmpYear$SelectedSimMat2[,-(1:(2*dim(simul636Year)[2]))]#tmpYear$SelectedSimMat2
         #Icalc <- tmpYear$Icalc
         #LimitsMat <- tmpYear$LimitsMat
@@ -1877,7 +1883,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         #  (PROBAMAT[,dim(PROBAMAT)[2]] >= alphaLVL)
         
        
-        # browser()
+
         
         CONDITION_SEL<-ifelse(apply((Icalc$IVEC*t(matrix(2*((AboveTargets-0.5)),dim(Icalc$IVEC)[2],dim(Icalc$IVEC)[1])))<=ILevel,1,prod),TRUE,FALSE)
         
@@ -1928,7 +1934,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           PreviousFourUniqueRowsReactive(seq(1,LengthVec))
         }else{FourUniqueRowsReactive(NULL)
           PreviousFourUniqueRowsReactive(NULL)}
-       # browser()
+
         if (dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] > 0) {
           if (max(tmpYearType$SelectedSimMat2$Carbon) != min(tmpYearType$SelectedSimMat2$Carbon)) {
             DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon) - min(tmpYearType$SelectedSimMat2$Carbon))
@@ -1940,7 +1946,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           # } else {
           #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel))
           # }
-          #browser()
           DistSliderBioListDataframes <- list()
           for (x in SPECIES) {
             SelecTargetBiospecie <- get(paste0("SelecTargetBio", x))[[1]]
@@ -1972,7 +1977,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
             return()
           }
-          #browser()
+
           # REMINDER TO SCALE VALUES
           DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
           # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
@@ -2639,7 +2644,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     
     #GEOVEC <- st_geometry_type(FullTable$geometry)
-    #browser()
+
     if (!is.null(click$id)) {
       ChangeDone <- FALSE
       SavedVec <- ClickedVector()
@@ -2665,7 +2670,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           
           if(SavedVecYearPriorToChange[iii]!=SavedVecYear[iii]){
             if(SavedVecYear[iii]==(MAXYEAR+1)){SAMPLELIST[iii]<-list(NULL)}else{
-              if(SavedVecYear[iii]==MAXYEAR){#browser()
+              if(SavedVecYear[iii]==MAXYEAR){
                 SAMPLELIST[[iii]]<-rep(29,dim(simul636Year)[1])}else{
                   SAMPLELIST[[ iii]]<- sample((SavedVecYear[ iii]+1):(MAXYEAR+1),dim(simul636Year)[1], replace=T)
                   
@@ -2673,8 +2678,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             }
             
           }
-      #### TO CHANGE: there is a problem here.
-        #  browser()
+
           if(SavedVecYearType[iii]==(-1)){SavedVecYearType[iii] <- (input$YearSelect-STARTYEAR);}else{
             SavedVecYearType[iii]<-ifelse(SavedVecYearType[iii]>= (input$YearSelect-STARTYEAR), (-1), (input$YearSelect-STARTYEAR))}
 
