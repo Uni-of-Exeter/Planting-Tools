@@ -821,7 +821,7 @@ server <- function(input, output, session,
   
   bayesian_optimization_finished <- reactiveVal(TRUE)
   ClusteringDone<-reactiveVal({FALSE})
-  
+  Clustering_Category_VectorReactive<-reactiveVal(NULL)
   
   infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
@@ -1509,9 +1509,31 @@ server <- function(input, output, session,
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
   observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")&&(!ClusteringDone())) {
-    browser()
+   
     if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0)
-    { }
+    { 
+      if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]<5){
+        Clustering_Category_VectorReactive(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
+        ClusteringDone(TRUE)
+        
+      }else{
+        
+        NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
+        NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
+        Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
+        TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
+        MClust_RESULTS<-NULL
+        MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)
+        Clustering_Category_VectorReactive(MClust_RESULTS$categories)
+        ClusteringDone(TRUE)
+ 
+        
+        
+        
+      }
+      
+      
+    }
     
   }
     
@@ -1521,6 +1543,7 @@ server <- function(input, output, session,
   # If we are not on Tab Exploration, clustering Resets.
   observeEvent({(input$tabs!="Exploration")},{
   ClusteringDone(FALSE)  
+  Clustering_Category_VectorReactive(NULL)
   })
   
 
