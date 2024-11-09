@@ -920,12 +920,29 @@ server <- function(input, output, session,
       }
     }
   })
+  
+  
   observeEvent({
     input$random
   },{
     SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1],
                              min(4, dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]), replace = FALSE)
     FourUniqueRowsReactive(SelectedSample)
+    if(ClusteringDone()){
+
+        PreviousFourUniqueRowsClusteringReactive(FourUniqueRowsClusteringReactive())
+    #  browser()
+
+      UniqueCategories<-unique(Clustering_Category_VectorReactive())
+      if(!is.null(UniqueCategories)){}
+      
+      
+        
+    }
+      
+  
+    
+    
   })
   # Clicked Vector indicates the units that have been clicked
   # PreviousClickedVector records the previous version if there has been a change
@@ -968,7 +985,11 @@ server <- function(input, output, session,
   FourUniqueRowsReactive<-reactiveVal(NULL)
   PreviousFourUniqueRowsReactive<-reactiveVal(NULL)
   
+  FourUniqueRowsClusteringReactive<-reactiveVal(rep(1,4))
+  PreviousFourUniqueRowsClusteringReactive<-reactiveVal(rep(0,4))
   
+  
+    
   AreaSelected0 <- reactiveVal(NULL)
   CarbonSelected0 <- reactiveVal(NULL)
   CarbonSelectedYear0 <- reactiveVal(NULL)
@@ -1511,7 +1532,9 @@ server <- function(input, output, session,
   observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")&&(!ClusteringDone())) {
    
     if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0)
-    { 
+    {
+      Notif<-showNotification("Running Clustering Algorithm..",duration=10)
+      
       if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]<5){
         Clustering_Category_VectorReactive(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
         ClusteringDone(TRUE)
@@ -1531,8 +1554,7 @@ server <- function(input, output, session,
         
         
       }
-      
-      
+      removeNotification(Notif) 
     }
     
   }
