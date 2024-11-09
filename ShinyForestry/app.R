@@ -931,10 +931,16 @@ server <- function(input, output, session,
     if(ClusteringDone()){
 
         PreviousFourUniqueRowsClusteringReactive(FourUniqueRowsClusteringReactive())
-    #  browser()
+     
 
       UniqueCategories<-unique(Clustering_Category_VectorReactive())
-      if(!is.null(UniqueCategories)){}
+      if(!is.null(UniqueCategories)){
+        NewSamplesSelected<-rep(1,4)
+        for (ii in 1:4){
+          if(length(UniqueCategories)>=ii){NewSamplesSelected[ii]<-sample(1:sum(Clustering_Category_VectorReactive()==ii),1)}
+          }
+        FourUniqueRowsClusteringReactive(NewSamplesSelected) 
+      }
       
       
         
@@ -1530,10 +1536,10 @@ server <- function(input, output, session,
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
   observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")&&(!ClusteringDone())) {
-   
+  
     if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0)
     {
-      Notif<-showNotification("Running Clustering Algorithm..",duration=10)
+      Notif<-showNotification("Running Clustering Algorithm..",duration=10,type="message")
       
       if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]<5){
         Clustering_Category_VectorReactive(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
@@ -1547,7 +1553,7 @@ server <- function(input, output, session,
         TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
         MClust_RESULTS<-NULL
         MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)
-        Clustering_Category_VectorReactive(MClust_RESULTS$categories)
+        Clustering_Category_VectorReactive(MClust_RESULTS$classification)
         ClusteringDone(TRUE)
  
         
@@ -1563,9 +1569,11 @@ server <- function(input, output, session,
   
   
   # If we are not on Tab Exploration, clustering Resets.
-  observeEvent({(input$tabs!="Exploration")},{
+  observe({
+    if((input$tabs!="Exploration")){
+ 
   ClusteringDone(FALSE)  
-  Clustering_Category_VectorReactive(NULL)
+  Clustering_Category_VectorReactive(NULL)}
   })
   
 
