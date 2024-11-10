@@ -68,7 +68,7 @@ if (!require(RRembo)) {
 }
 install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-                                       "ggpubr", "comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+                                       "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
                                        "mvtnorm", "dplyr", "magrittr",
@@ -828,6 +828,9 @@ server <- function(input, output, session,
   Clustering_Category_VectorReactive<-reactiveVal(NULL)
   Clustering_Results_Object_Reactive<-reactiveVal(NULL)
   SetToClusterReactive<-reactiveVal(NULL)
+  Selected_Cluster_To_Display_Reactive<-reactiveVal(NULL)
+  
+  
   
   infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
@@ -1577,6 +1580,9 @@ server <- function(input, output, session,
         ClusteringDone(TRUE)
         Clustering_Results_Object_Reactive(NULL)
         
+        
+        
+        
       }else{
         
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
@@ -1589,12 +1595,26 @@ server <- function(input, output, session,
         Clustering_Category_VectorReactive(MClust_RESULTS$classification)
         SetToClusterReactive(scale(Set_To_Cluster))
         ClusteringDone(TRUE)
- 
+        
         
         
         
       }
+      
+      PreviousFourUniqueRowsClusteringReactive(FourUniqueRowsClusteringReactive())
+      
+      
+      UniqueCategories<-unique(Clustering_Category_VectorReactive())
+      if(!is.null(UniqueCategories)){
+        NewSamplesSelected<-rep(1,4)
+        for (ii in 1:4){
+          if(length(UniqueCategories)>=ii){NewSamplesSelected[ii]<-sample(1:sum(Clustering_Category_VectorReactive()==ii),1)}
+        }
+        FourUniqueRowsClusteringReactive(NewSamplesSelected) 
+      }
+      
       removeNotification(Notif) 
+      Selected_Cluster_To_Display_Reactive(1)
     }
     
   }
@@ -1607,7 +1627,9 @@ server <- function(input, output, session,
     if((input$tabs=="Maps")){
  
   ClusteringDone(FALSE)  
-  Clustering_Category_VectorReactive(NULL)}
+  Clustering_Category_VectorReactive(NULL)
+  Selected_Cluster_To_Display_Reactive(NULL)
+  }
   })
   
 
@@ -1724,6 +1746,27 @@ server <- function(input, output, session,
                                           "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", round(2*SFTR$OUTPUTS$VisitsSD, 2),
                                           "</p>"), position = "topright",layerId="legend")
           
+          ifelse(Selected_Cluster_To_Display_Reactive()==ii,
+          mapp<-
+            addControl(mapp,html =
+                         tags$div(
+                           style = "padding: 10px; 
+                           background-color: #ff9999; 
+                             color: red; 
+                           font-weight: bold; 
+                           border: 0; 
+                           box-shadow:none;
+                           font-size: 18px; 
+                           border-radius: 5px; 
+                           outline: none; 
+                           margin: 0; 
+                           display: block;",paste0( "Cluster ",ii," Selected")
+                         ),
+           position = "bottomleft",layerId="legend2",
+        className = "fieldset {border: 0;}"),
+          removeControl(mapp,layerId="legend2")
+          )
+          
           
           
         }
@@ -1742,8 +1785,11 @@ server <- function(input, output, session,
             mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
                               color="transparent",fillColor="transparent")  
             removeControl(mapp,layerId="legend")
-            mapp<-
-              addControl(mapp,html = "", position = "topright",layerId="legend")
+            removeControl(mapp,layerId="legend2")
+            #mapp<-
+             # addControl(mapp,html = "", position = "topright",layerId="legend")
+           # mapp<-
+            #  addControl(mapp,html = NULL, position = "bottomleft",layerId="legend2")
             
             
           }
@@ -2993,6 +3039,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
       MapReactive()
+      
     }
   })
   # DONE TO CHANGE LATER
@@ -3001,7 +3048,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
       MapReactive()
-    }
+       }
   })
   # DONE TO CHANGE LATER
   
@@ -3009,7 +3056,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
       MapReactive()
-    }
+      }
     
   })
   # DONE TO CHANGE LATER
@@ -3018,8 +3065,15 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
       MapReactive()
-    }
+          }
   })
+  
+  
+  observeEvent(input$map2_click, {Selected_Cluster_To_Display_Reactive(1)  })
+  observeEvent(input$map3_click, {Selected_Cluster_To_Display_Reactive(2) })
+  observeEvent(input$map4_click, {Selected_Cluster_To_Display_Reactive(3)  })
+  observeEvent(input$map5_click, { Selected_Cluster_To_Display_Reactive(4) })
+  
   
   # On session close, delete temporary files
   session$onSessionEnded(function() {
