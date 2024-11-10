@@ -19,6 +19,8 @@
 options(shiny.error = browser)
 
 
+ANALYSISMODE<-TRUE
+
 RUN_BO<-FALSE
 set.seed(1)
 
@@ -550,6 +552,7 @@ Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]
 
 
 
+
 #hist(simul636YearType,100)
 
 alphaLVL <- 0.9
@@ -639,7 +642,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                                                        value = .(value),
                                                        step = 0.5)))
                            }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
-                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15)),
+                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=0.1)),
                            list(sliderInput("VisitsSlider", "Recreation (average visits per month):", min = 0, max = 750, value = 400)))
 #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
 SliderNames<- c("SliderMain",
@@ -766,6 +769,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                             )
                                           )
                                           ),
+                                          if (ANALYSISMODE){tabPanel("Clustering Analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
                                           tabPanel("Preferences", id = "Preferences",
                                                    fluidPage(
                                                      shinyjs::hidden(
@@ -822,6 +826,8 @@ server <- function(input, output, session,
   bayesian_optimization_finished <- reactiveVal(TRUE)
   ClusteringDone<-reactiveVal({FALSE})
   Clustering_Category_VectorReactive<-reactiveVal(NULL)
+  Clustering_Results_Object_Reactive<-reactiveVal(NULL)
+  SetToClusterReactive<-reactiveVal(NULL)
   
   infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
@@ -858,6 +864,7 @@ server <- function(input, output, session,
   Text2 <- reactiveVal("")
   Text3 <- reactiveVal("")
   Text4 <- reactiveVal("")
+
   # # Add TextN <- reactiveVal("") for each specie
   # for (i in 1:N_SPECIES) {
   #   var_name <- paste0("Text", i + 3)
@@ -904,22 +911,46 @@ server <- function(input, output, session,
   output$ThirdMapTxt <- renderText({Text3()})
   output$FourthMapTxt <- renderText({Text4()})
   
-  first_time_open_exploration_reactive <- reactiveVal(TRUE)
+  
+  output$Analysis<-renderPlot({
+    #browser()
+    if(ClusteringDone()){
+    if(!is.null(Clustering_Results_Object_Reactive())){
+      plot(Clustering_Results_Object_Reactive(),what = "classification")
+      
+    }else{""}
+    }else{""}
+  })
+  
+  
+  output$Analysis2<-renderPlot({
+    #browser()
+    if(ClusteringDone()){
+      if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())){
+       
+        pairs(SetToClusterReactive(), col=Clustering_Results_Object_Reactive()$classification)
+        
+      }else{""}
+    }else{""}
+  })
+  
+ 
+# first_time_open_exploration_reactive <- reactiveVal(TRUE)
   
   # If we click random or open the Exploration tab then we pick 4 different scenarios
-  observeEvent({
-    input$tabs
-  },{
-    if (input$tabs == "Exploration"){
-    
-      if (first_time_open_exploration_reactive() == TRUE) {
-        SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1],
-                                 min(4, dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]), replace = FALSE)
-        FourUniqueRowsReactive(SelectedSample)
-        first_time_open_exploration_reactive(FALSE)
-      }
-    }
-  })
+ # observeEvent({
+#    input$tabs
+#  },{
+#    if (input$tabs == "Exploration"){
+#    
+#      if (first_time_open_exploration_reactive() == TRUE) {
+#        SelectedSample <- sample(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1],
+#                                 min(4, dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]), replace = FALSE)
+#        FourUniqueRowsReactive(SelectedSample)
+ #       first_time_open_exploration_reactive(FALSE)
+  #    }
+ #   }
+#  })
   
   
   observeEvent({
@@ -985,7 +1016,7 @@ server <- function(input, output, session,
   tolvecReactive<-reactiveVal(NULL)
   
   SubsetMeetTargetsReactive<-reactiveVal(NULL)
-  SubsetMeetTargetsReactiveUnique<-reactiveVal(NULL)
+  SubsetMeetTargetsReactiveUnique<-reactiveVal(list(YEAR=NULL,TYPE=NULL,OUTPUTS=NULL))
   PreviousSubsetMeetTargetsReactive<-reactiveVal(NULL)
   PreviousSubsetMeetTargetsReactiveUnique<-reactiveVal(NULL)
   FourUniqueRowsReactive<-reactiveVal(NULL)
@@ -1544,6 +1575,7 @@ server <- function(input, output, session,
       if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]<5){
         Clustering_Category_VectorReactive(1:dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
         ClusteringDone(TRUE)
+        Clustering_Results_Object_Reactive(NULL)
         
       }else{
         
@@ -1553,7 +1585,9 @@ server <- function(input, output, session,
         TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
         MClust_RESULTS<-NULL
         MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)
+        Clustering_Results_Object_Reactive(MClust_RESULTS)
         Clustering_Category_VectorReactive(MClust_RESULTS$classification)
+        SetToClusterReactive(scale(Set_To_Cluster))
         ClusteringDone(TRUE)
  
         
@@ -1570,7 +1604,7 @@ server <- function(input, output, session,
   
   # If we are not on Tab Exploration, clustering Resets.
   observe({
-    if((input$tabs!="Exploration")){
+    if((input$tabs=="Maps")){
  
   ClusteringDone(FALSE)  
   Clustering_Category_VectorReactive(NULL)}
@@ -1580,6 +1614,8 @@ server <- function(input, output, session,
   observe({
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
 
+      #browser()
+      
       YearSelect<-YearSelectReactive()
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
@@ -1594,12 +1630,31 @@ server <- function(input, output, session,
       PreviousSavedMat<-PreviousClickedMatrixTab2Reactive()
       FourUniqueRowsLoc<-FourUniqueRowsReactive()
       PreviousFourUniqueRowsLoc<-PreviousFourUniqueRowsReactive()
-      if(length(FourUniqueRowsLoc)>0){
-        SelectedRows<-list(YEAR=SubsetMeetTargetsUnique$YEAR[FourUniqueRowsLoc,],TYPE=SubsetMeetTargetsUnique$TYPE[FourUniqueRowsLoc,],
-                           OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[FourUniqueRowsLoc,])
-        PrevSelectedRows<-list(YEAR=PreviousSubsetMeetTargetsUnique$YEAR[PreviousFourUniqueRowsLoc,],
-                               TYPE=PreviousSubsetMeetTargetsUnique$TYPE[PreviousFourUniqueRowsLoc,],
-                               OUTPUTS=PreviousSubsetMeetTargetsUnique$OUTPUTS[PreviousFourUniqueRowsLoc,])
+      
+      FourUniqueRowsClusteringLoc<-FourUniqueRowsClusteringReactive()
+      Clustering_Category_VectorLoc<-Clustering_Category_VectorReactive()
+      
+      
+      
+      #if(length(FourUniqueRowsLoc)>0){
+        if(length(unique(Clustering_Category_VectorLoc))>0){
+          
+          SelectedRows<-list(YEAR=NULL,TYPE=NULL,OUTPUTS=NULL)
+          LISTSeparatedClusters<-vector("list",length(unique(Clustering_Category_VectorLoc)))
+        for (ii in 1:length(unique(Clustering_Category_VectorLoc))){
+          cat(ii)
+          LISTSeparatedClusters[[ii]]<-list(YEAR=SubsetMeetTargetsUnique$YEAR[Clustering_Category_VectorLoc==ii,],TYPE=SubsetMeetTargetsUnique$TYPE[Clustering_Category_VectorLoc==ii,],
+                                            OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[Clustering_Category_VectorLoc==ii,])
+          SelectedRows$YEAR<-rbind(SelectedRows$YEAR,LISTSeparatedClusters[[ii]]$YEAR[FourUniqueRowsClusteringLoc[ii],])
+          SelectedRows$TYPE<-rbind(SelectedRows$TYPE,LISTSeparatedClusters[[ii]]$TYPE[FourUniqueRowsClusteringLoc[ii],])
+          SelectedRows$OUTPUTS<-rbind(SelectedRows$OUTPUTS,LISTSeparatedClusters[[ii]]$OUTPUTS[FourUniqueRowsClusteringLoc[ii],])
+          
+        }
+        
+        #)
+        #PrevSelectedRows<-list(YEAR=PreviousSubsetMeetTargetsUnique$YEAR[PreviousFourUniqueRowsLoc,],
+        #                       TYPE=PreviousSubsetMeetTargetsUnique$TYPE[PreviousFourUniqueRowsLoc,],
+        #                       OUTPUTS=PreviousSubsetMeetTargetsUnique$OUTPUTS[PreviousFourUniqueRowsLoc,])
         
         
         ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units,
@@ -1607,11 +1662,14 @@ server <- function(input, output, session,
         
         FullColVec <- ColObtained$FullColVec
         ClickedCols <- ColObtained$ClickedCols
-        if (length(PreviousFourUniqueRowsLoc) < length(FourUniqueRowsLoc)) { PrevSelectedRows<-SelectedRows
-          PrevSelectedRows$YEAR=SelectedRows$YEAR+1 }
+       # if (length(PreviousFourUniqueRowsLoc) < length(FourUniqueRowsLoc)) { 
+        PrevSelectedRows<-SelectedRows
+          PrevSelectedRows$YEAR=SelectedRows$YEAR+1# }
         
 
-        for (ii in seq(1,min(4,length(FourUniqueRowsLoc)))) {
+      #  for (ii in seq(1,min(4,length(FourUniqueRowsLoc)))) {
+          for (ii in  1:length(unique(Clustering_Category_VectorLoc))) {          
+         
           #### TOCHANGE!!
         
           
@@ -1670,9 +1728,13 @@ server <- function(input, output, session,
           
         }
         
-        if(length(FourUniqueRowsLoc)<4){
+        #if(length(FourUniqueRowsLoc)<4){
+          if( length(unique(Clustering_Category_VectorLoc))<4){
+         
+          
           #add here text to say that there are no more unique examples.
-          for(ii in seq(length(FourUniqueRowsLoc)+1,4))
+          #for(ii in seq(length(FourUniqueRowsLoc)+1,4))
+            for(ii in seq( length(unique(Clustering_Category_VectorLoc))+1,4))
           {
             
             mapp<-leafletProxy(paste0("map",ii+1))
@@ -1709,28 +1771,31 @@ server <- function(input, output, session,
     input$random
     input$tabs
   }, {
-    FourUniqueRows<-FourUniqueRowsReactive()
-    if(length(FourUniqueRows)>0){
+    #browser()
+    FourUniqueRowsClusteringLoc<-FourUniqueRowsClusteringReactive()
+    Clustering_Category_VectorLoc<-Clustering_Category_VectorReactive()
+    
+    if(length(unique(Clustering_Category_VectorLoc))>0){
       Text1(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[1]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsClusteringLoc[1]," out of ",sum(Clustering_Category_VectorLoc==1))
       )}else{
         Text1("No Strategy that meet all the targets")
       }
-    if(length(FourUniqueRows)>1){
+    if(length(unique(Clustering_Category_VectorLoc))>1){
       Text2(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[2]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsClusteringLoc[2]," out of ",sum(Clustering_Category_VectorLoc==2))
       )}else{
         Text2("No Second Strategy that meet all the targets")
       }
-    if(length(FourUniqueRows)>2){
+    if(length(unique(Clustering_Category_VectorLoc))>2){
       Text3(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[3]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsClusteringLoc[3]," out of ",sum(Clustering_Category_VectorLoc==3))
       )}else{
         Text3("No Third Strategy that meet all the targets")
       }
-    if(length(FourUniqueRows)>3){
+    if(length(unique(Clustering_Category_VectorLoc))>3){
       Text4(
-        paste0("Strategy Displayed: ",FourUniqueRowsReactive()[4]," out of ",dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1])
+        paste0("Strategy Displayed: ",FourUniqueRowsClusteringLoc[4]," out of ",sum(Clustering_Category_VectorLoc==4))
       )}else{
         Text4("No Fourth Strategy that meet all the targets")
       }
