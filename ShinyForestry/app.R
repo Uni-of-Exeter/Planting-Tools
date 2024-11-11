@@ -102,6 +102,9 @@ USER_PATH <- user_path()
 # ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
 ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 DataFilesFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
+DownscalingImagesFolder<-normalizePath(file.path(FolderSource, "DownScalingImages"))
+
+
 
 if(Sys.getenv("USERNAME")=="bn267"){
 ### CHANGED!!!
@@ -841,13 +844,17 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
 #                                                     Slider.shinyInput(inputId="SLID_VERT", min=0,max=100,step=1,value=10,vertical=TRUE)
                                           #    column(10,
                                                 leafletOutput("map6", width = "100%",height = "100%"),
-                                                     sliderInput("sl1",inputId="slider_x",min=0,max=100,step=1,value=10,width = "100%"),
-                                                     sliderInput("sl2",inputId="slider_y",min=0,max=100,step=1,value=10,width = "100%"),
+                                            column(6,plotOutput("Chart1")),column(6,plotOutput("Chart2")),
+tags$div(sliderInput("Direction_x",inputId="slider_x",min=0,max=100,step=1,value=10,width = "100%")),
+tags$div(style = "margin-top: -20px;",sliderInput("Direction_y",inputId="slider_y",min=0,max=100,step=1,value=10,width = "100%")),
                                                      
       #                                      ))
 ))
                                             )
                                             ,
+
+tabPanel("Downscaling",id="DownScale",imageOutput("DownScalingImage")),
+#plotOutput("DownscalingPlots")),
                                           tabPanel("Preferences", id = "Preferences",
                                                    fluidPage(
                                                      shinyjs::hidden(
@@ -1004,6 +1011,9 @@ server <- function(input, output, session,
   })
   
   
+  
+  
+  
   output$Analysis2<-renderPlot({
     #browser()
     if(ClusteringDone()){
@@ -1014,6 +1024,22 @@ server <- function(input, output, session,
       }else{""}
     }else{""}
   })
+  
+  
+  output$Chart1<-renderPlot({
+    plot(1)
+  })
+  
+  
+  output$Chart2<-renderPlot({
+    plot(1)
+  })
+  
+  output$DownScalingImage<-renderImage({
+    list(src = paste0(DownscalingImagesFolder,"\\9a0wi3.gif"), 
+         contentType = 'image/gif', width = 800, height = 600)
+  }, deleteFile = FALSE)
+  
   
  
 # first_time_open_exploration_reactive <- reactiveVal(TRUE)
@@ -1662,7 +1688,7 @@ server <- function(input, output, session,
         
         
       }else{
-        
+        browser()
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
         NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
@@ -1672,6 +1698,28 @@ server <- function(input, output, session,
         Clustering_Results_Object_Reactive(MClust_RESULTS)
         Clustering_Category_VectorReactive(MClust_RESULTS$classification)
         SetToClusterReactive(scale(Set_To_Cluster))
+        
+        # In this part, we extract the basis for each cluster found in the 2d projected data with tsne.
+        # We then project the tsne transformed data on each cluster.
+        # We can then find the min and max value for each direction
+        Basis_Clusters<-list()
+        Mean_Clusters<-list()
+        Projected_TSNE_Clusters<-list()
+        Limits_Direction_Clusters<-list()
+        for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
+          Basis_Clustering[[ii]]<-fit$parameters$variance$orientation[, , ii]
+          Mean_Clusters[[ii]]<-fit$parameters$mean[,ii]
+          DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
+          Projected_TSNE_Data_Clusters[[ii]]<-DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1]))%*% Basis_Clustering[[ii]]
+          Limits_Direction_Clusters[[ii]]<-data.frame(min_dir1=min( Projected_TSNE_Data_Clusters[[ii]][,1]),
+                                                      min_dir2=min( Projected_TSNE_Data_Clusters[[ii]][,2]),
+                                                      max_dir1=max( Projected_TSNE_Data_Clusters[[ii]][,1]),
+                                                      max_dir2=max( Projected_TSNE_Data_Clusters[[ii]][,2])
+                                                      )
+        }
+        
+        
+        
         ClusteringDone(TRUE)
         
         
@@ -3153,6 +3201,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       MapReactive()
     }
   })
+  
+
   
   
   observeEvent(input$map2_click, {Selected_Cluster_To_Display_Reactive(1)  })
