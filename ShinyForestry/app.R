@@ -66,7 +66,7 @@ if (!require(RRembo)) {
   devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
   library("RRembo")
 }
-install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "leaflet", "sf", "ggplot2",
+install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "leaflet", "sf", "ggplot2",
                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
                                        "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
@@ -718,19 +718,79 @@ for (ext in AllExtents)
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
 
-ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
+ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
+                tags$head(
+                  tags$style(HTML("
+                                  
+     .noUi-handle {
+        background-color: #e60000; /* Correct red color */
+        border-radius: 0;
+        width: 2px !important;
+        height: 20px !important;
+        border: none;
+        box-shadow: none;
+        top: -6px;
+     }
+      
+      .noUi-target {
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        height: 6px;
+      }
+
+      .noUi-connect {
+        background-color: #e60000; 
+      }
+
+      .noUi-base {
+        position: relative;
+      }
+
+      .noUi-horizontal {
+        margin-top: 20px;
+      }
+
+      /* Add grid markers */
+      .noUi-origin {
+        height: 10px;
+        width: 2px;
+        background-color: #ccc;
+        position: absolute;
+        top: -3px;
+      }
+
+
+      .noUi-tooltip {
+        background: #e60000;
+        color: white;
+        font-size: 12px;
+        padding: 3px;
+        border-radius: 4px;
+        position: absolute;
+        top: -30px; 
+      }
+
+      .slider-tag {
+        font-size: 14px;
+        color: #333;
+        margin-left: 10px;
+        font-weight: bold;
+      }
+                                  
+                                  "))),
+                tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(fluidRow(
                                             column(9,
                                                    selectInput("inSelect", "area", sort(unique(c(FullTable$extent, FullTableNotAvail$extent))), 
                                                                FullTable$extent[1]),
                                                    jqui_resizable(div(
+                                                     style = "width: 80%; height: 400px;",
                                                      leafletOutput("map", width = "100%", height = "100%"),
                                                      sliderInput("YearSelect","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
                                                                  0+STARTYEAR,step=1,width = "100%",sep = "")
                                                      
                                                    )
-                                                   ),
-                                                   
+                                                   )
                                             ),
                                             column(3,
                                                    # verticalLayout(sliderInput("SliderMain", "Tree Carbon Stored (tonnes of CO2):", min = 0, max = 870, value = 800),
@@ -742,7 +802,7 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                             ))
                                           )
                                           ),
-                                          tabPanel("Exploration", id = "Exploration",verticalLayout(
+                                          tabPanel("Alternative Approaches", id = "Alt",verticalLayout(
                                             fluidPage(fluidRow(
                                               column(10,verbatimTextOutput("ZeroText"),column(2,)))),
                                             fluidPage(fluidRow(
@@ -770,6 +830,24 @@ ui <- fluidPage(useShinyjs(), tabsetPanel(id = "tabs",
                                           )
                                           ),
                                           if (ANALYSISMODE){tabPanel("Clustering Analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
+                                          tabPanel("Exploration", # fluidPage(fluidRow(
+                                            jqui_resizable(div(
+                                              style = "width: 80%; height: 400px;",
+                                              
+                                           # fluidRow(
+                                            #  column(2,
+                                                     
+                                                  #   noUiSliderInput(inputId="SLID_VERT",min=0,max=100,step=1,value=10,orientation="vertical",height = "300px")
+#                                                     Slider.shinyInput(inputId="SLID_VERT", min=0,max=100,step=1,value=10,vertical=TRUE)
+                                          #    column(10,
+                                                leafletOutput("map6", width = "100%",height = "100%"),
+                                                     sliderInput("sl1",inputId="slider_x",min=0,max=100,step=1,value=10,width = "100%"),
+                                                     sliderInput("sl2",inputId="slider_y",min=0,max=100,step=1,value=10,width = "100%"),
+                                                     
+      #                                      ))
+))
+                                            )
+                                            ,
                                           tabPanel("Preferences", id = "Preferences",
                                                    fluidPage(
                                                      shinyjs::hidden(
@@ -1569,7 +1647,7 @@ server <- function(input, output, session,
   })
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
-  observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration")&&(!ClusteringDone())) {
+  observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
   
     if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0)
     {
@@ -1634,7 +1712,7 @@ server <- function(input, output, session,
   
 
   observe({
-    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches") && (ClusteringDone())) {
 
       #browser()
       
@@ -3066,6 +3144,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
       MapReactive()
           }
+  })
+  
+  
+  output$map6 <- renderLeaflet({
+    
+    if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
+      MapReactive()
+    }
   })
   
   
