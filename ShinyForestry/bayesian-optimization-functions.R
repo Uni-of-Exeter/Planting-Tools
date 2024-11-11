@@ -1769,7 +1769,7 @@ bayesian_optimization <- function(
     return(FALSE)
   }
   notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs..."), global_log_level = global_log_level)
-  obj_inputs_full_constrained <- generate_legal_unique_samples(10 * 6, k,
+  obj_inputs_full_constrained <- generate_legal_unique_samples(10 * 4, k,
                                                                legal_non_zero_values = area_possible_non_zero_values,
                                                                max_threshold = area_sum_threshold,
                                                                constrained = CONSTRAINED_INPUTS,
@@ -1781,7 +1781,7 @@ bayesian_optimization <- function(
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
-  obj_inputs_full_unconstrained <- generate_legal_unique_samples(10 * 6, k,
+  obj_inputs_full_unconstrained <- generate_legal_unique_samples(10 * 4, k,
                                                                  legal_non_zero_values = area_possible_non_zero_values,
                                                                  max_threshold = area_sum_threshold,
                                                                  constrained = FALSE,
