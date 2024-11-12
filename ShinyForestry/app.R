@@ -853,7 +853,12 @@ tags$div(style = "margin-top: -20px;",sliderInput("Direction_y",inputId="slider_
                                             )
                                             ,
 
-tabPanel("Downscaling",id="DownScale",imageOutput("DownScalingImage")),
+tabPanel("Downscaling",id="DownScale",fluidPage(fluidRow(
+  column(6,imageOutput("DownScalingImage")),
+  column(6,imageOutput("DownScalingImage2")),
+  
+  ))
+         ),
 #plotOutput("DownscalingPlots")),
                                           tabPanel("Preferences", id = "Preferences",
                                                    fluidPage(
@@ -914,7 +919,7 @@ server <- function(input, output, session,
   Clustering_Results_Object_Reactive<-reactiveVal(NULL)
   SetToClusterReactive<-reactiveVal(NULL)
   Selected_Cluster_To_Display_Reactive<-reactiveVal(NULL)
-  
+  Projected_TSNE_Data_Clusters_Reactive<-reactiveVal(NULL)
   
   
   infpref_reactive <- reactiveVal()
@@ -1001,7 +1006,7 @@ server <- function(input, output, session,
   
   
   output$Analysis<-renderPlot({
-    #browser()
+   
     if(ClusteringDone()){
     if(!is.null(Clustering_Results_Object_Reactive())){
       plot(Clustering_Results_Object_Reactive(),what = "classification")
@@ -1015,7 +1020,7 @@ server <- function(input, output, session,
   
   
   output$Analysis2<-renderPlot({
-    #browser()
+   
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())){
        
@@ -1027,7 +1032,15 @@ server <- function(input, output, session,
   
   
   output$Chart1<-renderPlot({
-    plot(1)
+    
+    if(ClusteringDone()){
+      if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&(unique(Clustering_Category_VectorReactive())==4)){
+      browser()
+        plot(DataCluster_Reactive())
+        
+        
+      }
+      }else{plot(0)}
   })
   
   
@@ -1036,7 +1049,12 @@ server <- function(input, output, session,
   })
   
   output$DownScalingImage<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\9a0wi3.gif"), 
+    list(src = paste0(DownscalingImagesFolder,"\\ezgif.com-animated-gif-maker-4.gif"), 
+         contentType = 'image/gif', width = 800, height = 600)
+  }, deleteFile = FALSE)
+  
+  output$DownScalingImage2<-renderImage({
+    list(src = paste0(DownscalingImagesFolder,"\\ezgif.com-animated-gif-maker-5.gif"), 
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
@@ -1688,7 +1706,7 @@ server <- function(input, output, session,
         
         
       }else{
-        browser()
+       # browser()
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
         NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
@@ -1707,8 +1725,8 @@ server <- function(input, output, session,
         Projected_TSNE_Clusters<-list()
         Limits_Direction_Clusters<-list()
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
-          Basis_Clustering[[ii]]<-fit$parameters$variance$orientation[, , ii]
-          Mean_Clusters[[ii]]<-fit$parameters$mean[,ii]
+          Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]
+          Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
           Projected_TSNE_Data_Clusters[[ii]]<-DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1]))%*% Basis_Clustering[[ii]]
           Limits_Direction_Clusters[[ii]]<-data.frame(min_dir1=min( Projected_TSNE_Data_Clusters[[ii]][,1]),
@@ -1718,6 +1736,11 @@ server <- function(input, output, session,
                                                       )
         }
         
+        Projected_TSNE_Data_Clusters_Reactive(Projected_TSNE_Data_Clusters)
+        Basis_Clustering_Reactive(Basis_Clustering)
+        Mean_Clusters_Reactive(Mean_Clusters)
+        DataCluster_Reactive(DataCluster)
+        Limits_Direction_Clusters_Reactive(Limits_Direction_Clusters)
         
         
         ClusteringDone(TRUE)
