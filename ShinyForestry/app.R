@@ -1720,7 +1720,7 @@ server <- function(input, output, session,
         # In this part, we extract the basis for each cluster found in the 2d projected data with tsne.
         # We then project the tsne transformed data on each cluster.
         # We can then find the min and max value for each direction
-        Basis_Clusters<-list()
+        Basis_Clustering<-list()
         Mean_Clusters<-list()
         Projected_TSNE_Clusters<-list()
         Limits_Direction_Clusters<-list()
