@@ -1039,8 +1039,10 @@ server <- function(input, output, session,
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&length(unique(Clustering_Category_VectorReactive()))==4){
     
-        plot(DataCluster_Reactive())
-        
+        Selected_Cluster_To_Display<-Selected_Cluster_To_Display_Reactive()        
+        Categories<-Clustering_Category_VectorReactive()
+        plot(DataCluster_Reactive()[Categories==Selected_Cluster_To_Display,])
+
         
       }
       }else{plot(0)}
@@ -1728,9 +1730,10 @@ server <- function(input, output, session,
         Mean_Clusters<-list()
         Projected_TSNE_Data_Clusters<-list()
         Limits_Direction_Clusters<-list()
-       browser()
+      # browser()
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
           Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]
+          cat(Basis_Clustering[[ii]])
           Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
           #browser()
