@@ -920,7 +920,10 @@ server <- function(input, output, session,
   SetToClusterReactive<-reactiveVal(NULL)
   Selected_Cluster_To_Display_Reactive<-reactiveVal(NULL)
   Projected_TSNE_Data_Clusters_Reactive<-reactiveVal(NULL)
-  
+  Basis_Clustering_Reactive<-reactiveVal(NULL)
+  Mean_Clusters_Reactive<-reactiveVal(NULL)
+  DataCluster_Reactive<-reactiveVal(NULL)
+  Limits_Direction_Clusters_Reactive<-reactiveVal(NULL)
   
   infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
@@ -1032,10 +1035,10 @@ server <- function(input, output, session,
   
   
   output$Chart1<-renderPlot({
-    
+    browser()
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&(unique(Clustering_Category_VectorReactive())==4)){
-      browser()
+    
         plot(DataCluster_Reactive())
         
         
@@ -1720,14 +1723,17 @@ server <- function(input, output, session,
         # In this part, we extract the basis for each cluster found in the 2d projected data with tsne.
         # We then project the tsne transformed data on each cluster.
         # We can then find the min and max value for each direction
+        
         Basis_Clustering<-list()
         Mean_Clusters<-list()
-        Projected_TSNE_Clusters<-list()
+        Projected_TSNE_Data_Clusters<-list()
         Limits_Direction_Clusters<-list()
+       
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
           Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]
           Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
+          #browser()
           Projected_TSNE_Data_Clusters[[ii]]<-DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1]))%*% Basis_Clustering[[ii]]
           Limits_Direction_Clusters[[ii]]<-data.frame(min_dir1=min( Projected_TSNE_Data_Clusters[[ii]][,1]),
                                                       min_dir2=min( Projected_TSNE_Data_Clusters[[ii]][,2]),
@@ -1735,7 +1741,7 @@ server <- function(input, output, session,
                                                       max_dir2=max( Projected_TSNE_Data_Clusters[[ii]][,2])
                                                       )
         }
-        
+       # browser()
         Projected_TSNE_Data_Clusters_Reactive(Projected_TSNE_Data_Clusters)
         Basis_Clustering_Reactive(Basis_Clustering)
         Mean_Clusters_Reactive(Mean_Clusters)
