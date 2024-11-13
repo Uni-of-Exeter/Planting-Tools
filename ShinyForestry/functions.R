@@ -1672,14 +1672,14 @@ add_richness_columns <- function(FullTable, NAME_CONVERSION) {
     
     if (length(col_indices_of_group) == 1) {
       FullTable2 <- cbind(FullTable2,
-                          biomean = round(0.01 * FullTable2[, col_indices_of_group], 2),
+                          biomean = round( FullTable2[, col_indices_of_group], 2),
                           biosd = 0)
     } else {
       FullTable2 <- cbind(FullTable2,
                           # Original method for species richness
                           # biomean = round(rowSums(FullTable2[, col_indices_of_group])),
                           # We prefer to use an average because a large group would naturally have a much higher richness than a small group, and we don't want that
-                          biomean = round(0.01 * rowSums(FullTable2[, col_indices_of_group]) / length(col_indices_of_group), 2),
+                          biomean = round( rowSums(FullTable2[, col_indices_of_group]) / length(col_indices_of_group), 2),
                           biosd = 0)
     }
     number_of_columns <- length(colnames(FullTable2))

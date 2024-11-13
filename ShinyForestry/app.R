@@ -103,7 +103,7 @@ USER_PATH <- user_path()
 ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 DataFilesFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 DownscalingImagesFolder<-normalizePath(file.path(FolderSource, "DownScalingImages"))
-
+CalculatedFilesFolder<-normalizePath(file.path(FolderSource, "CalculatedFiles"))
 
 
 if(Sys.getenv("USERNAME")=="bn267"){
@@ -373,19 +373,19 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
   
   # Outcomes
-  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
-  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
+  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json"))))
+  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")))) {
     Sys.sleep(5)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "found. Trying to load file..."))
   
   # Read the outcomes from the Elicitor app
-  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))),
+  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json"))),
                                        silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "loaded, processing..."))
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
@@ -566,19 +566,19 @@ ConvertSample <- sample(1:NSamp, 200)
 
 # Outcomes
 if (isFALSE(exists("outcomes"))) {
-  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
-  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
+  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json"))))
+  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")))) {
     Sys.sleep(5)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "found. Trying to load file..."))
   
   # Read the outcomes from the Elicitor app
-  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
+  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")))
                                        , silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "loaded, processing..."))
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
@@ -663,6 +663,17 @@ PrecalcCarbonAllExtentsSD<-list()
 PrecalcCarbonAllExtentsType<-list()
 PrecalcCarbonAllExtentsSDType<-list()
 
+if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtents.RData")))&
+   file.exists(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtentsSD.RData")))&
+   file.exists(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtentsType.RData")))&
+   file.exists(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtentsSDType.RData")))
+){
+load(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtents.RData")))
+load(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtentsSD.RData")))
+load(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtentsType.RData")))
+load(normalizePath(file.path(CalculatedFilesFolder, "\\PrecalcCarbonAllExtentsSDType.RData")))
+}else{
+
 
 for (ext in AllExtents)
 {
@@ -709,15 +720,15 @@ for (ext in AllExtents)
         }
           
           }
-      
+      cat(paste0(abb,"  ",bcc,"\n"))
     }
     
   }
   
   
 }
-
-
+}
+#browser()
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
 
@@ -1035,13 +1046,14 @@ server <- function(input, output, session,
   
   
   output$Chart1<-renderPlot({
-    browser()
+    #browser()
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&length(unique(Clustering_Category_VectorReactive()))==4){
     
         Selected_Cluster_To_Display<-Selected_Cluster_To_Display_Reactive()        
-        Categories<-Clustering_Category_VectorReactive()
-        plot(DataCluster_Reactive()[Categories==Selected_Cluster_To_Display,])
+       # Categories<-Clustering_Category_VectorReactive()
+        DataClust<-DataCluster_Reactive()[[Selected_Cluster_To_Display]]
+        plot(DataClust)
 
         
       }
@@ -1206,6 +1218,7 @@ server <- function(input, output, session,
   # First we need to change this observeEvent inSelect
   #DONE INITIALIZATION
   observeEvent(input$inSelect, {
+   # browser()
     UpdatedExtent(0)
     SelectedDropdown <- input$inSelect
     PreviousClickedVector(NULL)
@@ -1385,7 +1398,7 @@ server <- function(input, output, session,
         if (is.nan(max_bioslider) || is.na(max_bioslider)) {
           max_bioslider <- 0
         }
-        updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 0.5)
+        updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 0.0001)
       }
       # max_areaslider <- trunc(100*sum(AreaSelected))/100
       max_areaslider <- MaxVals$AreaMax
@@ -1549,6 +1562,7 @@ server <- function(input, output, session,
   # Trigger if anything changes
   observe({
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
+     # browser()
       SavedVec<-ClickedVector()
       PreviousSavedVec<-PreviousClickedVector()
       
@@ -1697,7 +1711,7 @@ server <- function(input, output, session,
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
   observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
-  
+  #browser()
     if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0)
     {
       Notif<-showNotification("Running Clustering Algorithm..",duration=10,type="message")
@@ -1711,13 +1725,17 @@ server <- function(input, output, session,
         
         
       }else{
-#        browser()
+        #browser()
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
         NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
+        #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
+        cat(Set_To_Cluster$Carbon)
         TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
+        cat(TSNE_RESULTS$Y)
         MClust_RESULTS<-NULL
         MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)
+        cat(MClust_RESULTS$classification)
         Clustering_Results_Object_Reactive(MClust_RESULTS)
         Clustering_Category_VectorReactive(MClust_RESULTS$classification)
         SetToClusterReactive(scale(Set_To_Cluster))
@@ -1730,12 +1748,14 @@ server <- function(input, output, session,
         Mean_Clusters<-list()
         Projected_TSNE_Data_Clusters<-list()
         Limits_Direction_Clusters<-list()
+        DataClustersClassified<-list()
       # browser()
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
           Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]
           cat(Basis_Clustering[[ii]])
           Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
+          DataClustersClassified[[ii]]<-DataCluster
           #browser()
           Projected_TSNE_Data_Clusters[[ii]]<-DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1]))%*% Basis_Clustering[[ii]]
           Limits_Direction_Clusters[[ii]]<-data.frame(min_dir1=min( Projected_TSNE_Data_Clusters[[ii]][,1]),
@@ -1748,7 +1768,7 @@ server <- function(input, output, session,
         Projected_TSNE_Data_Clusters_Reactive(Projected_TSNE_Data_Clusters)
         Basis_Clustering_Reactive(Basis_Clustering)
         Mean_Clusters_Reactive(Mean_Clusters)
-        DataCluster_Reactive(DataCluster)
+        DataCluster_Reactive(DataClustersClassified)
         Limits_Direction_Clusters_Reactive(Limits_Direction_Clusters)
         
         
@@ -2033,7 +2053,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     input$YearSelect
   },{
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-      
+     # browser()
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
       current_task_id <- get_latest_task_id() + 1
       set_latest_task_id(current_task_id)
