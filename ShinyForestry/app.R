@@ -17,7 +17,7 @@
 # options(warn=2)
 # options(warn=0) # default
 options(shiny.error = browser)
-
+options(shiny.reactlog = TRUE)
 
 ANALYSISMODE<-TRUE
 
@@ -66,7 +66,7 @@ if (!require(RRembo)) {
   devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
   library("RRembo")
 }
-install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "leaflet", "sf", "ggplot2",
+install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
                                        "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
@@ -1712,6 +1712,9 @@ server <- function(input, output, session,
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
   observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
   #browser()
+    #Define local variables in advance
+
+    
     if(dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1]>0)
     {
       Notif<-showNotification("Running Clustering Algorithm..",duration=10,type="message")
@@ -1726,6 +1729,8 @@ server <- function(input, output, session,
         
       }else{
         #browser()
+        cat("starting clustering\n")
+        
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
         NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
@@ -1733,9 +1738,13 @@ server <- function(input, output, session,
         cat(Set_To_Cluster$Carbon)
         TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
         cat(TSNE_RESULTS$Y)
+        #browser()
         MClust_RESULTS<-NULL
         MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)
         cat(MClust_RESULTS$classification)
+        cat("\n")
+        cat("\n")
+        #cat(MClust_RESULTS$parameters$variance)
         Clustering_Results_Object_Reactive(MClust_RESULTS)
         Clustering_Category_VectorReactive(MClust_RESULTS$classification)
         SetToClusterReactive(scale(Set_To_Cluster))
@@ -1743,19 +1752,35 @@ server <- function(input, output, session,
         # In this part, we extract the basis for each cluster found in the 2d projected data with tsne.
         # We then project the tsne transformed data on each cluster.
         # We can then find the min and max value for each direction
-        
-        Basis_Clustering<-list()
-        Mean_Clusters<-list()
-        Projected_TSNE_Data_Clusters<-list()
-        Limits_Direction_Clusters<-list()
-        DataClustersClassified<-list()
+        Basis_Clustering<-vector("list",length(unique(Clustering_Category_VectorReactive())))
+        Mean_Clusters<-vector("list",length(unique(Clustering_Category_VectorReactive())))
+        Projected_TSNE_Data_Clusters<-vector("list",length(unique(Clustering_Category_VectorReactive())))
+        Limits_Direction_Clusters<-vector("list",length(unique(Clustering_Category_VectorReactive())))
+        DataClustersClassified<-vector("list",length(unique(Clustering_Category_VectorReactive())))
+      
       # browser()
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
-          Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]
           cat(Basis_Clustering[[ii]])
-          Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
+
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
           DataClustersClassified[[ii]]<-DataCluster
+          
+          CovarianceDataCluster<-var(DataCluster)
+          evd<-eigen(CovarianceDataCluster)
+          
+          if(is.null(MClust_RESULTS$parameters$variance$orientation)){Basis_Clustering[[ii]]<-diag(2)}else{
+            cat(MClust_RESULTS$parameters$variance$orientation)
+            #browser()
+            #it is possible for orientation to have a single matrix if the orientation is the 
+            # same for all clusters.This test checks if orientation is a single matrix and not a 3d array.
+            # if it's a 3d array then we allocate each matrix to its correct cluster.
+            if(length(dim(MClust_RESULTS$parameters$variance$orientation))==2){
+          Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation
+            }else{Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]}
+            
+            }
+          cat(Basis_Clustering[[ii]])
+          Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
           #browser()
           Projected_TSNE_Data_Clusters[[ii]]<-DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1]))%*% Basis_Clustering[[ii]]
           Limits_Direction_Clusters[[ii]]<-data.frame(min_dir1=min( Projected_TSNE_Data_Clusters[[ii]][,1]),
@@ -1775,6 +1800,7 @@ server <- function(input, output, session,
         ClusteringDone(TRUE)
         
         
+        cat("ending clustering\n")
         
         
       }
@@ -2052,6 +2078,13 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     lapply(SliderNames, function(sl) {input[[sl]]})
     input$YearSelect
   },{
+    # disable map_click_shape while it is running
+    # disable sliders while it is running
+    # disable Year select
+    # disable tabs click
+    
+    #debug()
+    cat("starting updating values based on sliders\n")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
      # browser()
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
@@ -2612,7 +2645,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         }
       }
     }
-  }, ignoreInit = TRUE)
+    cat("ended updating values based on sliders\n")
+      }, ignoreInit = TRUE)
   
   observeEvent(input$tabs == "Preferences", {
 
