@@ -855,7 +855,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
 #                                                     Slider.shinyInput(inputId="SLID_VERT", min=0,max=100,step=1,value=10,vertical=TRUE)
                                           #    column(10,
                                                 leafletOutput("map6", width = "100%",height = "100%"),
-                                            column(6,plotOutput("Chart1")),column(6,plotOutput("Chart2")),
+                                            plotOutput("Chart1"),
 tags$div(sliderInput("Direction_x",inputId="slider_x",min=0,max=100,step=1,value=10,width = "100%")),
 tags$div(style = "margin-top: -20px;",sliderInput("Direction_y",inputId="slider_y",min=0,max=100,step=1,value=10,width = "100%")),
                                                      
@@ -935,6 +935,7 @@ server <- function(input, output, session,
   Mean_Clusters_Reactive<-reactiveVal(NULL)
   DataCluster_Reactive<-reactiveVal(NULL)
   Limits_Direction_Clusters_Reactive<-reactiveVal(NULL)
+  Selected_Point_In_Cluster_To_Display_Reactive<-reactiveVal(1)
   
   infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
@@ -1025,8 +1026,13 @@ server <- function(input, output, session,
     if(!is.null(Clustering_Results_Object_Reactive())){
       plot(Clustering_Results_Object_Reactive(),what = "classification")
       
-    }else{""}
-    }else{""}
+    }else{
+      plot.new()
+      text(0.5, 0.5, "There is not a sufficient number of target compatible strategies to obtain clusters",cex = 1.5, col = "red", font = 2)}
+    }else{
+      plot.new()
+      text(0.5, 0.5, "Clustering has not been done yet",cex = 1.5, col = "red", font = 2)
+    }
   })
   
   
@@ -1040,30 +1046,74 @@ server <- function(input, output, session,
        
         pairs(SetToClusterReactive(), col=Clustering_Results_Object_Reactive()$classification)
         
-      }else{""}
-    }else{""}
+      }else{
+        plot.new()
+        text(0.5, 0.5, "There is not a sufficient number of target compatible strategies to obtain clusters",cex = 1.5, col = "red", font = 2)}
+    }else{
+      plot.new()
+      text(0.5, 0.5, "Clustering has not been done yet",cex = 1.5, col = "red", font = 2)
+      }
   })
   
   
   output$Chart1<-renderPlot({
     #browser()
+    if(ANALYSISMODE){
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&length(unique(Clustering_Category_VectorReactive()))==4){
     
         Selected_Cluster_To_Display<-Selected_Cluster_To_Display_Reactive()        
        # Categories<-Clustering_Category_VectorReactive()
         DataClust<-DataCluster_Reactive()[[Selected_Cluster_To_Display]]
-        plot(DataClust)
-
+        Basis_Loc<-Basis_Clustering_Reactive()[[Selected_Cluster_To_Display]]
+        MEANS_Loc<-Mean_Clusters_Reactive()[[Selected_Cluster_To_Display]]
+        Limits_Direction_Clusters_Loc<-Limits_Direction_Clusters_Reactive()[[Selected_Cluster_To_Display]]
+        min_x_t<-Limits_Direction_Clusters_Loc$min_dir1
+        min_y_t<-Limits_Direction_Clusters_Loc$min_dir2
+        max_x_t<-Limits_Direction_Clusters_Loc$max_dir1
+        max_y_t<-Limits_Direction_Clusters_Loc$max_dir2
         
-      }
-      }else{plot(0)}
-  })
+        #Rotated_Coord<-(DataClust-t(matrix(MEANS_Loc,dim(DataClust)[2],dim(DataClust)[1])))%*%Basis_Loc
+        #min_x_t<-min(Rotated_Coord[,1])
+        #min_y_t<-min(Rotated_Coord[,2])
+        #max_x_t<-max(Rotated_Coord[,1])
+        #max_y_t<-max(Rotated_Coord[,2])
+        
+        #On the left we plot the data in the tsne-output format
+        CoordPoly<-data.frame(x=c(min_x_t,min_x_t,max_x_t,max_x_t),y=c(min_y_t,max_y_t,max_y_t,min_y_t))
+        CoordPolyOrig<-as.matrix(CoordPoly)%*%t(as.matrix(Basis_Loc))+t(matrix(MEANS_Loc,2,4))
+       
+        #browser()
+        pointCoordinatexy<-(c(input$slider_x/100*(max_x_t-min_x_t)+min_x_t,
+                             input$slider_y/100*(max_y_t-min_y_t)+min_y_t))%*%t(as.matrix(Basis_Loc))+t(matrix(MEANS_Loc,2,1))
+        To_Add_Or_Subtract_To_Scale_x<-max(abs(min(CoordPolyOrig[,1])),abs(max(CoordPolyOrig[,1])))/10
+        To_Add_Or_Subtract_To_Scale_y<-max(abs(min(CoordPolyOrig[,2])),abs(max(CoordPolyOrig[,2])))/10
+        
+        plot(DataClust,xlim=c(min(CoordPolyOrig[,1])-To_Add_Or_Subtract_To_Scale_x,max(CoordPolyOrig[,1])+To_Add_Or_Subtract_To_Scale_x),
+             ylim=c(min(CoordPolyOrig[,2])-To_Add_Or_Subtract_To_Scale_y,max(CoordPolyOrig[,2])+To_Add_Or_Subtract_To_Scale_y))
+        points(pointCoordinatexy,col="red")
+        polygon(CoordPolyOrig[,1],CoordPolyOrig[,2])
+        if(!is.null(dim(DataClust))){
+        Dist_Between_Selected_Points_And_Data_Points_After_tsne<-sqrt((DataClust[,1]-pointCoordinatexy[1])^2+(DataClust[,2]-pointCoordinatexy[2])^2)
+        Selected_Point_In_Cluster_To_Display<-which.min(Dist_Between_Selected_Points_And_Data_Points_After_tsne)
+        Selected_Point_In_Cluster_To_Display_Reactive(Selected_Point_In_Cluster_To_Display)
+        }else{Selected_Point_In_Cluster_To_Display_Reactive(1)}
+      }else{
+        plot.new()
+        text(0.5, 0.5, "There is not a sufficient number of target compatible strategies to obtain clusters",cex = 1.5, col = "red", font = 2)}
+    }else{
+      plot.new()
+      text(0.5, 0.5, "Clustering has not been done yet",cex = 1.5, col = "red", font = 2)
+    }  
+      
+    }else{}
+      
+      })
   
   
-  output$Chart2<-renderPlot({
-    plot(1)
-  })
+ # output$Chart2<-renderPlot({
+  #  plot(1)
+  #})
   
   output$DownScalingImage<-renderImage({
     list(src = paste0(DownscalingImagesFolder,"\\ezgif.com-animated-gif-maker-4.gif"), 
@@ -1736,11 +1786,12 @@ server <- function(input, output, session,
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
         #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
         cat(Set_To_Cluster$Carbon)
+       # browser()
         TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
         cat(TSNE_RESULTS$Y)
         #browser()
         MClust_RESULTS<-NULL
-        MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)
+        MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)#,modelNames=c("VVV"))
         cat(MClust_RESULTS$classification)
         cat("\n")
         cat("\n")
@@ -1758,31 +1809,40 @@ server <- function(input, output, session,
         Limits_Direction_Clusters<-vector("list",length(unique(Clustering_Category_VectorReactive())))
         DataClustersClassified<-vector("list",length(unique(Clustering_Category_VectorReactive())))
       
-      # browser()
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
           cat(Basis_Clustering[[ii]])
 
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
           DataClustersClassified[[ii]]<-DataCluster
           
+          if(!is.null(dim(DataCluster))){
+            if(dim(DataCluster)[2]>=2){
           CovarianceDataCluster<-var(DataCluster)
-          evd<-eigen(CovarianceDataCluster)
+          svd_res<-svd(CovarianceDataCluster)
+          Basis_Clustering[[ii]]<-svd_res$u}else{Basis_Clustering[[ii]]<-diag(2)}
+          }else{Basis_Clustering[[ii]]<-diag(2)}
           
-          if(is.null(MClust_RESULTS$parameters$variance$orientation)){Basis_Clustering[[ii]]<-diag(2)}else{
-            cat(MClust_RESULTS$parameters$variance$orientation)
+        #  if(is.null(MClust_RESULTS$parameters$variance$orientation)){Basis_Clustering[[ii]]<-diag(2)}else{
+         #   cat(MClust_RESULTS$parameters$variance$orientation)
             #browser()
             #it is possible for orientation to have a single matrix if the orientation is the 
             # same for all clusters.This test checks if orientation is a single matrix and not a 3d array.
             # if it's a 3d array then we allocate each matrix to its correct cluster.
-            if(length(dim(MClust_RESULTS$parameters$variance$orientation))==2){
-          Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation
-            }else{Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]}
-            
-            }
+        #    if(length(dim(MClust_RESULTS$parameters$variance$orientation))==2){
+        #  Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation
+         #   }else{Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]}
+        #    
+         #   }
           cat(Basis_Clustering[[ii]])
           Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
           #browser()
-          Projected_TSNE_Data_Clusters[[ii]]<-DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1]))%*% Basis_Clustering[[ii]]
+          if(!is.null(dim(DataCluster))){
+          Projected_TSNE_Data_Clusters[[ii]]<-(DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1])))%*% Basis_Clustering[[ii]]}else{
+            Projected_TSNE_Data_Clusters[[ii]]<-(DataCluster- Mean_Clusters[[ii]])%*% Basis_Clustering[[ii]]
+            
+          }
+          
+          
           Limits_Direction_Clusters[[ii]]<-data.frame(min_dir1=min( Projected_TSNE_Data_Clusters[[ii]][,1]),
                                                       min_dir2=min( Projected_TSNE_Data_Clusters[[ii]][,2]),
                                                       max_dir1=max( Projected_TSNE_Data_Clusters[[ii]][,1]),
@@ -3100,6 +3160,16 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     }
     
   })
+  # This part updates the map on the cluster exploration page when the sliders are moved.  
+  observeEvent({input$slider_x
+    input$slider_y
+    },{
+      Selected_Cluster_To_Display_Loc<-Selected_Cluster_To_Display_Reactive()
+      DataCluster_Loc<-DataCluster_Reactive()[[Selected_Cluster_To_Display_Loc]]
+      Selected_Point_In_Cluster_To_Display_Loc<-Selected_Point_In_Cluster_To_Display_Reactive()
+      
+      })
+  
 
   # In this part, we plot the first version of the map
   # DONE TO CHANGE LATER
