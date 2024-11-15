@@ -1089,15 +1089,19 @@ server <- function(input, output, session,
         To_Add_Or_Subtract_To_Scale_x<-max(abs(min(CoordPolyOrig[,1])),abs(max(CoordPolyOrig[,1])))/10
         To_Add_Or_Subtract_To_Scale_y<-max(abs(min(CoordPolyOrig[,2])),abs(max(CoordPolyOrig[,2])))/10
         
-        plot(DataClust,xlim=c(min(CoordPolyOrig[,1])-To_Add_Or_Subtract_To_Scale_x,max(CoordPolyOrig[,1])+To_Add_Or_Subtract_To_Scale_x),
+        plot(DataClust,col= rgb(0.5, 0.5, 0.5, alpha = 0.5) ,
+             xlim=c(min(CoordPolyOrig[,1])-To_Add_Or_Subtract_To_Scale_x,max(CoordPolyOrig[,1])+To_Add_Or_Subtract_To_Scale_x),
              ylim=c(min(CoordPolyOrig[,2])-To_Add_Or_Subtract_To_Scale_y,max(CoordPolyOrig[,2])+To_Add_Or_Subtract_To_Scale_y))
-        points(pointCoordinatexy,col="red")
+        points(pointCoordinatexy,col="red",pch=20)
         polygon(CoordPolyOrig[,1],CoordPolyOrig[,2])
+        
         if(!is.null(dim(DataClust))){
         Dist_Between_Selected_Points_And_Data_Points_After_tsne<-sqrt((DataClust[,1]-pointCoordinatexy[1])^2+(DataClust[,2]-pointCoordinatexy[2])^2)
         Selected_Point_In_Cluster_To_Display<-which.min(Dist_Between_Selected_Points_And_Data_Points_After_tsne)
         Selected_Point_In_Cluster_To_Display_Reactive(Selected_Point_In_Cluster_To_Display)
-        }else{Selected_Point_In_Cluster_To_Display_Reactive(1)}
+        points(DataClust[Selected_Point_In_Cluster_To_Display,1],DataClust[Selected_Point_In_Cluster_To_Display,2],col="blue",pch=20)
+        }else{Selected_Point_In_Cluster_To_Display_Reactive(1)
+          points(DataClust,col="blue",pch=20)}
       }else{
         plot.new()
         text(0.5, 0.5, "There is not a sufficient number of target compatible strategies to obtain clusters",cex = 1.5, col = "red", font = 2)}
@@ -1896,7 +1900,7 @@ server <- function(input, output, session,
   }
   })
   
-
+### Update the map rendering on Alternative Approaches
   observe({
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches") && (ClusteringDone())) {
 
