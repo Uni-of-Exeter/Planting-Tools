@@ -854,6 +854,8 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                                   #   noUiSliderInput(inputId="SLID_VERT",min=0,max=100,step=1,value=10,orientation="vertical",height = "300px")
 #                                                     Slider.shinyInput(inputId="SLID_VERT", min=0,max=100,step=1,value=10,vertical=TRUE)
                                           #    column(10,
+sliderInput("YearSelectClusterExplorationSlider","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+            0+STARTYEAR,step=1,width = "100%",sep = ""),
                                                 leafletOutput("map6", width = "100%",height = "100%"),
                                             plotOutput("Chart1"),
 tags$div(sliderInput("Direction_x",inputId="slider_x",min=0,max=100,step=1,value=10,width = "100%")),
@@ -964,7 +966,7 @@ server <- function(input, output, session,
   VisitsSliderVal <- reactive({input$VisitsSlider})
   
   YearSelectReactive<-reactiveVal(0)
-  
+  YearSelectClusterExplorationReactive<-reactiveVal(0)
   
   
   Text0 <- reactiveVal("")
@@ -1610,8 +1612,14 @@ server <- function(input, output, session,
   
   # Trigger on changes on the Year slider
   observe({
+    if((input$YearSelectClusterExplorationSlider-STARTYEAR)!=YearSelectClusterExplorationReactive()){
+      YearSelectClusterExplorationReactive(input$YearSelectClusterExplorationSlider-STARTYEAR)}})
+  
+  # Trigger on changes on the Year slider for cluster exploration
+  observe({
     if((input$YearSelect-STARTYEAR)!=YearSelectReactive()){
       YearSelectReactive(input$YearSelect-STARTYEAR)}})
+  
   
   # Trigger if anything changes
   observe({
@@ -3164,13 +3172,115 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     }
     
   })
-  # This part updates the map on the cluster exploration page when the sliders are moved.  
-  observeEvent({input$slider_x
-    input$slider_y
-    },{
+  
+  # This part updates the map on the cluster exploration page.  
+  observe({
       Selected_Cluster_To_Display_Loc<-Selected_Cluster_To_Display_Reactive()
       DataCluster_Loc<-DataCluster_Reactive()[[Selected_Cluster_To_Display_Loc]]
       Selected_Point_In_Cluster_To_Display_Loc<-Selected_Point_In_Cluster_To_Display_Reactive()
+      
+     # browser()
+      if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+        YearSelect<-YearSelectClusterExplorationReactive()
+        Clustering_Category_VectorLoc<-Clustering_Category_VectorReactive()
+        SavedVecYearType<-ClickedVectorYearType()
+        SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
+ 
+        
+        
+        if(length(unique(Clustering_Category_VectorLoc))>0){
+          Rows_of_Selected_Cluster_To_Display_in_SubsetMeetTargetsUnique<-which(Clustering_Category_VectorLoc==Selected_Cluster_To_Display_Loc)
+          Row_in_SubsetMeetTargetsUnique_To_Display<-Rows_of_Selected_Cluster_To_Display_in_SubsetMeetTargetsUnique[Selected_Point_In_Cluster_To_Display_Loc]
+          
+          SelectedRowToDisplay<-list(YEAR=SubsetMeetTargetsUnique$YEAR[Row_in_SubsetMeetTargetsUnique_To_Display,],
+                                     TYPE=SubsetMeetTargetsUnique$TYPE[Row_in_SubsetMeetTargetsUnique_To_Display,],
+                                     OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[Row_in_SubsetMeetTargetsUnique_To_Display,])
+        
+            TypeA<-(SelectedRowToDisplay$TYPE=="Conifers")&(SelectedRowToDisplay$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+            TypeB<-(SelectedRowToDisplay$TYPE=="Deciduous")&(SelectedRowToDisplay$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+            BlockedCells<-(SavedVecYearType>=YearSelect)
+              mapp<-leafletProxy(paste0("map6"))
+              removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
+              COLOURS<-rep("transparent",length(TypeA))
+              COLOURS[TypeA]<-"purple"
+              COLOURS[TypeB]<-"green"
+              COLOURS[BlockedCells]<-"red"
+              mapp<-addPolygons(mapp,data=FullTable$geometry,
+                                layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+            removeControl(mapp,layerId="legend")
+           # browser()
+            
+#            SFTR<-list()
+#            SFTR$YEAR<-SelectedRows$YEAR[ii,]
+#            SFTR$TYPE<-SelectedRows$TYPE[ii,]
+#            SFTR$OUTPUTS<-SelectedRows$OUTPUTS[ii,]
+#            addControlText <- ""
+#            for (i in 1:length(SPECIES)) {
+#              specie_latin <- SPECIES[i]
+#              specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+#              selectedBiospecie <- SFTR$OUTPUTS[[specie_latin]]
+#              selectedBioSDspecie <- SFTR$OUTPUTS[[paste0( specie_latin,"SD")]]
+#              addControlText <- paste0(addControlText, specie_english, ": ", 
+#                                       round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+#            }
+#            
+#            mapp<-
+#              addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", round(2*SFTR$OUTPUTS$CarbonSD, 2), "<br>",
+#                                            addControlText,
+#                                            "Area Planted: ", round(SFTR$OUTPUTS$Area, 2), "<br>",
+#                                            "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", round(2*SFTR$OUTPUTS$VisitsSD, 2),
+#                                            "</p>"), position = "topright",layerId="legend")
+#            
+#            ifelse(Selected_Cluster_To_Display_Reactive()==ii,
+#                   mapp<-
+#                     addControl(mapp,html =
+#                                  tags$div(
+#                                    style = "padding: 10px; 
+#                           background-color: #ff9999; 
+#                             color: red; 
+#                           font-weight: bold; 
+#                           border: 0; 
+#                           box-shadow:none;
+#                           font-size: 18px; 
+#                           border-radius: 5px; 
+#                           outline: none; 
+#                           margin: 0; 
+#                           display: block;",paste0( "Cluster ",ii," Selected")
+#                                  ),
+#                                position = "bottomleft",layerId="legend2",
+#                                className = "fieldset {border: 0;}"),
+#                   removeControl(mapp,layerId="legend2")
+#            )
+#            
+#            
+#            
+#          }
+#          
+#          if( length(unique(Clustering_Category_VectorLoc))<4){
+#            
+#            
+#            for(ii in seq( length(unique(Clustering_Category_VectorLoc))+1,4))
+#            {
+#              
+#              mapp<-leafletProxy(paste0("map",ii+1))
+#              removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
+#              mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
+#                                color="transparent",fillColor="transparent")  
+#              removeControl(mapp,layerId="legend")
+#              removeControl(mapp,layerId="legend2")
+#              
+#              
+#            }
+#           
+          }
+          
+        }else{}
+        
+      #}
+      ############################################
+      
+      
+      
       
       })
   
