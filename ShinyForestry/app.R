@@ -69,7 +69,7 @@ if (!require(RRembo)) {
 install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
                                        "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-                                       "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
+                                       "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
                                        "mvtnorm", "dplyr", "magrittr",
                                        "rstudioapi",
@@ -733,65 +733,6 @@ for (ext in AllExtents)
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
 
 ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
-                tags$head(
-                  tags$style(HTML("
-                                  
-     .noUi-handle {
-        background-color: #e60000; /* Correct red color */
-        border-radius: 0;
-        width: 2px !important;
-        height: 20px !important;
-        border: none;
-        box-shadow: none;
-        top: -6px;
-     }
-      
-      .noUi-target {
-        background-color: #e0e0e0;
-        border-radius: 4px;
-        height: 6px;
-      }
-
-      .noUi-connect {
-        background-color: #e60000; 
-      }
-
-      .noUi-base {
-        position: relative;
-      }
-
-      .noUi-horizontal {
-        margin-top: 20px;
-      }
-
-      /* Add grid markers */
-      .noUi-origin {
-        height: 10px;
-        width: 2px;
-        background-color: #ccc;
-        position: absolute;
-        top: -3px;
-      }
-
-
-      .noUi-tooltip {
-        background: #e60000;
-        color: white;
-        font-size: 12px;
-        padding: 3px;
-        border-radius: 4px;
-        position: absolute;
-        top: -30px; 
-      }
-
-      .slider-tag {
-        font-size: 14px;
-        color: #333;
-        margin-left: 10px;
-        font-weight: bold;
-      }
-                                  
-                                  "))),
                 tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(fluidRow(
                                             column(9,
@@ -844,27 +785,80 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                           )
                                           ),
                                           if (ANALYSISMODE){tabPanel("Clustering Analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
-                                          tabPanel("Exploration", # fluidPage(fluidRow(
-                                            jqui_resizable(div(
-                                              style = "width: 80%; height: 400px;",
-                                              
-                                           # fluidRow(
-                                            #  column(2,
-                                                     
-                                                  #   noUiSliderInput(inputId="SLID_VERT",min=0,max=100,step=1,value=10,orientation="vertical",height = "300px")
-#                                                     Slider.shinyInput(inputId="SLID_VERT", min=0,max=100,step=1,value=10,vertical=TRUE)
-                                          #    column(10,
-sliderInput("YearSelectClusterExplorationSlider","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
-            0+STARTYEAR,step=1,width = "100%",sep = ""),
-                                                leafletOutput("map6", width = "100%",height = "100%"),
+                                          tabPanel("Exploration",
+                                                fluidPage(
+                                                  
+                                                  jqui_resizable(
+                                                    div(id = "Full-elements-container",
+                                                    style = "display: flex; flex-direction: column; height: 700px; width: 100%; 
+                                                    overflow: hidden;",
+                                                          div(
+                                                            id = "sliderYearExplorationClusterTop",
+                                                              style = "flex: 1; display: flex;align-items: center; 
+                                                                justify-content: center;",
+                                                            sliderInput("YearSelectClusterExplorationSlider","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+                                                                        0+STARTYEAR,step=1,width = "100%",sep = "")
+                                                             ),
+                                                          div(
+                                                            id = "MultipleElements",
+                                                            style = "flex: 3;display: flex;flex-direction: row;height: 100%;",
+                                                            div(
+                                                                id = "Map6_container",
+                                                                style = "flex: 3;height: 100%;padding-right: 10px",
+                                                                leafletOutput("map6", width = "100%",height = "100%")
+                                                                ),
+                                                            div(id = "column_container",
+                                                                style = "flex: 1;height: 100%;display: flex;flex-direction: column; 
+                                                                      justify-content: flex-start;",
+                                                                div(
+                                                                    style = "display: flex; align-items: center; margin-bottom: 20px;
+                                                                    width: 100%;",
+                                                                    actionButton("Carbon_plus", "+", style = "width: 40px;"),
+                                                                    actionButton("Carbon_minus", "-", style = "width: 40px;"),
+                                                                    tags$div("Carbon", style = "margin-right: 20px;")
+                                                                  ),
+                                                                tagList(
+                                                                  lapply(SPECIES, function(nm) {
+                                                                    div(
+                                                                      style = "display: flex; align-items: center; margin-bottom: 20px; 
+                                                                      width: 100%;",
+                                                                      actionButton(paste0(nm, "_plus"), "+", style = "width: 40px;"),
+                                                                      actionButton(paste0(nm, "_minus"), "-", style = "width: 40px;"),
+                                                                      tags$div(nm, style = "margin-right: 20px;")
+                                                                    )
+                                                                  })
+                                                                ),
+                                                                div(
+                                                                  style = "display: flex; align-items: center; margin-bottom: 20px;
+                                                                  width: 100%;",
+                                                                    actionButton("Area_plus", "+", style = "width: 40px;"),
+                                                                    actionButton("Area_minus", "-", style = "width: 40px;"),
+                                                                    tags$div("Area")
+                                                                    ),
+                                                                
+                                                                div(
+                                                                  style = "display: flex; align-items: center; margin-bottom: 20px;
+                                                                  width: 100%;",
+                                                                  actionButton("Visits_plus", "+", style = "width: 40px;"),
+                                                                  actionButton("Visits_minus", "-", style = "width: 40px;"),
+                                                                  tags$div("Visits")
+                                                                ),
+                                                                div(
+                                                                  #style = "margin-bottom: 0px;",
+                                                                  sliderInput("Direction_x",inputId="slider_x",min=0,max=100,step=0.01,value=10,width = "100%")
+                                                                    ),
+                                                                div(
+                                                                  #style = "margin-bottom: 20px;",
+                                                                  sliderInput("Direction_y",inputId="slider_y",min=0,max=100,step=0.01,value=10,width = "100%")
+                                                                    )
+                                                                )
+                                                              )
+                                                    ),
+                                                    options = list(minWidth = 600, minHeight = 400)
+                                                    )
+                                                ),
                                             plotOutput("Chart1"),
-tags$div(sliderInput("Direction_x",inputId="slider_x",min=0,max=100,step=1,value=10,width = "100%")),
-tags$div(style = "margin-top: -20px;",sliderInput("Direction_y",inputId="slider_y",min=0,max=100,step=1,value=10,width = "100%")),
-                                                     
-      #                                      ))
-))
-                                            )
-                                            ,
+),
 
 tabPanel("Downscaling",id="DownScale",fluidPage(fluidRow(
   column(6,imageOutput("DownScalingImage")),
@@ -1800,6 +1794,22 @@ server <- function(input, output, session,
         cat(Set_To_Cluster$Carbon)
        # browser()
         TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
+        #mgcvObjectTsneToData<-vector("list",length(NamesOUTPUTS))
+        #mgcvObjectDataTotsne<-vector("list",2)
+        #As we cannot directly invert tsne, we fit a GAM to each output individually (we would need to have an inversion model with correlation).
+        #for(ii in 1:length(NamesOUTPUTS)){
+        #  dat<-data.frame(y=SubsetMeetTargetsReactiveUnique()$OUTPUTS[,NamesOUTPUTS[ii]],tsne1=TSNE_RESULTS$Y[,1],tsne2=TSNE_RESULTS$Y[,2])
+        #  mgcvObjectTsneToData[[ii]]<-mgcv::gam(y~s(tsne1,tsne2),data=dat)
+        #  
+        #}
+       # for(ii in 1:2){
+      #    StringToEval<-"dat<-data.frame(y=TSNE_RESULTS[,ii],"
+      #    for(jj in 1:length(NamesOUTPUTS)){
+       #     StringToEval<-paste0(StringToEval,)}
+      #    mgcvObjectDataTotsne[[ii]]<-mgcv(y~s(tsne1,tsne2),data=dat)
+          
+        #}
+        
         cat(TSNE_RESULTS$Y)
         #browser()
         MClust_RESULTS<-NULL
@@ -3175,12 +3185,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   
   # This part updates the map on the cluster exploration page.  
   observe({
-      Selected_Cluster_To_Display_Loc<-Selected_Cluster_To_Display_Reactive()
-      DataCluster_Loc<-DataCluster_Reactive()[[Selected_Cluster_To_Display_Loc]]
-      Selected_Point_In_Cluster_To_Display_Loc<-Selected_Point_In_Cluster_To_Display_Reactive()
+    
       
-     # browser()
+
       if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+        Selected_Cluster_To_Display_Loc<-Selected_Cluster_To_Display_Reactive()
+        
+        Selected_Point_In_Cluster_To_Display_Loc<-Selected_Point_In_Cluster_To_Display_Reactive()
+        
         YearSelect<-YearSelectClusterExplorationReactive()
         Clustering_Category_VectorLoc<-Clustering_Category_VectorReactive()
         SavedVecYearType<-ClickedVectorYearType()
@@ -3210,68 +3222,27 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             removeControl(mapp,layerId="legend")
            # browser()
             
-#            SFTR<-list()
-#            SFTR$YEAR<-SelectedRows$YEAR[ii,]
-#            SFTR$TYPE<-SelectedRows$TYPE[ii,]
-#            SFTR$OUTPUTS<-SelectedRows$OUTPUTS[ii,]
-#            addControlText <- ""
-#            for (i in 1:length(SPECIES)) {
-#              specie_latin <- SPECIES[i]
-#              specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-#              selectedBiospecie <- SFTR$OUTPUTS[[specie_latin]]
-#              selectedBioSDspecie <- SFTR$OUTPUTS[[paste0( specie_latin,"SD")]]
-#              addControlText <- paste0(addControlText, specie_english, ": ", 
-#                                       round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-#            }
-#            
-#            mapp<-
-#              addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", round(2*SFTR$OUTPUTS$CarbonSD, 2), "<br>",
-#                                            addControlText,
-#                                            "Area Planted: ", round(SFTR$OUTPUTS$Area, 2), "<br>",
-#                                            "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", round(2*SFTR$OUTPUTS$VisitsSD, 2),
-#                                            "</p>"), position = "topright",layerId="legend")
-#            
-#            ifelse(Selected_Cluster_To_Display_Reactive()==ii,
-#                   mapp<-
-#                     addControl(mapp,html =
-#                                  tags$div(
-#                                    style = "padding: 10px; 
-#                           background-color: #ff9999; 
-#                             color: red; 
-#                           font-weight: bold; 
-#                           border: 0; 
-#                           box-shadow:none;
-#                           font-size: 18px; 
-#                           border-radius: 5px; 
-#                           outline: none; 
-#                           margin: 0; 
-#                           display: block;",paste0( "Cluster ",ii," Selected")
-#                                  ),
-#                                position = "bottomleft",layerId="legend2",
-#                                className = "fieldset {border: 0;}"),
-#                   removeControl(mapp,layerId="legend2")
-#            )
-#            
-#            
-#            
-#          }
-#          
-#          if( length(unique(Clustering_Category_VectorLoc))<4){
-#            
-#            
-#            for(ii in seq( length(unique(Clustering_Category_VectorLoc))+1,4))
-#            {
-#              
-#              mapp<-leafletProxy(paste0("map",ii+1))
-#              removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
-#              mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
-#                                color="transparent",fillColor="transparent")  
-#              removeControl(mapp,layerId="legend")
-#              removeControl(mapp,layerId="legend2")
-#              
-#              
-#            }
-#           
+            addControlText <- ""
+            for (i in 1:length(SPECIES)) {
+              specie_latin <- SPECIES[i]
+              specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+              selectedBiospecie <- SelectedRowToDisplay$OUTPUTS[[specie_latin]]
+              selectedBioSDspecie <- SelectedRowToDisplay$OUTPUTS[[paste0( specie_latin,"SD")]]
+              addControlText <- paste0(addControlText, specie_english, ": ", 
+                                      round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+            }
+            
+            if(length(unique(Clustering_Category_VectorReactive()))>=4){
+            mapp<-
+              addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedRowToDisplay$OUTPUTS$Carbon, 2), "\u00B1", 
+                                            round(2*SelectedRowToDisplay$OUTPUTS$CarbonSD, 2), "<br>",
+                                            addControlText,
+                                            "Area Planted: ", round(SelectedRowToDisplay$OUTPUTS$Area, 4), "<br>",
+                                            "Visitors: ", round(SelectedRowToDisplay$OUTPUTS$Visits, 2), 
+                                            "\u00B1", round(2*SelectedRowToDisplay$OUTPUTS$VisitsSD, 2),
+                                            "</p>"), position = "topright",layerId="legend")
+            }
+            
           }
           
         }else{}
@@ -3480,6 +3451,190 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   observeEvent(input$map4_click, {Selected_Cluster_To_Display_Reactive(3)  })
   observeEvent(input$map5_click, { Selected_Cluster_To_Display_Reactive(4) })
   
+  observeEvent(input$Carbon_plus,{
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && 
+        (input$tabs=="Exploration") && (ClusteringDone())) {
+    if(length(unique(Clustering_Category_VectorReactive()))>=4){
+    PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                           Selected_Point_In_Cluster_To_Display_Reactive(),
+                           Clustering_Category_VectorReactive(),
+                           SubsetMeetTargetsReactiveUnique(),
+                           Projected_TSNE_Data_Clusters_Reactive(),
+                           Basis_Clustering_Reactive(),
+                           Mean_Clusters_Reactive(),
+                           Limits_Direction_Clusters_Reactive(),
+                           Output_Name="Carbon",
+                           Sign_Button="+"
+                                )
+    if(PM_res$UpdateSliders){
+      updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+        updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+        
+      }
+    }
+  })
+  
+  observeEvent(input$Carbon_minus,{
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+      PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                                   Selected_Point_In_Cluster_To_Display_Reactive(),
+                                   Clustering_Category_VectorReactive(),
+                                   SubsetMeetTargetsReactiveUnique(),
+                                   Projected_TSNE_Data_Clusters_Reactive(),
+                                   Basis_Clustering_Reactive(),
+                                   Mean_Clusters_Reactive(),
+                                   Limits_Direction_Clusters_Reactive(),
+                                   Output_Name="Carbon",
+                                   Sign_Button="-"
+      )
+      if(PM_res$UpdateSliders){
+        updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+        updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+      
+    }
+    
+  })
+#############################
+
+  for (spe in SPECIES) {
+    local({
+      sp <- spe        
+      
+      observeEvent(input[[paste0(sp, "_plus")]], {
+        if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+          PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                                       Selected_Point_In_Cluster_To_Display_Reactive(),
+                                       Clustering_Category_VectorReactive(),
+                                       SubsetMeetTargetsReactiveUnique(),
+                                       Projected_TSNE_Data_Clusters_Reactive(),
+                                       Basis_Clustering_Reactive(),
+                                       Mean_Clusters_Reactive(),
+                                       Limits_Direction_Clusters_Reactive(),
+                                       Output_Name=sp,
+                                       Sign_Button="+"
+          )
+          if(PM_res$UpdateSliders){
+            updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+            updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+          
+        }
+      })
+      
+      observeEvent(input[[paste0(sp, "_minus")]], {
+        if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+          PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                                       Selected_Point_In_Cluster_To_Display_Reactive(),
+                                       Clustering_Category_VectorReactive(),
+                                       SubsetMeetTargetsReactiveUnique(),
+                                       Projected_TSNE_Data_Clusters_Reactive(),
+                                       Basis_Clustering_Reactive(),
+                                       Mean_Clusters_Reactive(),
+                                       Limits_Direction_Clusters_Reactive(),
+                                       Output_Name=sp,
+                                       Sign_Button="-"
+          )
+          if(PM_res$UpdateSliders){
+            updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+            updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+          
+        }
+      })
+      
+    })
+  }
+    
+    
+  
+  
+  
+  
+############################  
+  
+  observeEvent(input$Area_plus,{
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+      PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                                   Selected_Point_In_Cluster_To_Display_Reactive(),
+                                   Clustering_Category_VectorReactive(),
+                                   SubsetMeetTargetsReactiveUnique(),
+                                   Projected_TSNE_Data_Clusters_Reactive(),
+                                   Basis_Clustering_Reactive(),
+                                   Mean_Clusters_Reactive(),
+                                   Limits_Direction_Clusters_Reactive(),
+                                   Output_Name="Area",
+                                   Sign_Button="+"
+      )
+      if(PM_res$UpdateSliders){
+        updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+        updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+      
+    }
+    
+  })
+  
+  
+  observeEvent(input$Area_minus,{
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+      PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                                   Selected_Point_In_Cluster_To_Display_Reactive(),
+                                   Clustering_Category_VectorReactive(),
+                                   SubsetMeetTargetsReactiveUnique(),
+                                   Projected_TSNE_Data_Clusters_Reactive(),
+                                   Basis_Clustering_Reactive(),
+                                   Mean_Clusters_Reactive(),
+                                   Limits_Direction_Clusters_Reactive(),
+                                   Output_Name="Area",
+                                   Sign_Button="-"
+      )
+      if(PM_res$UpdateSliders){
+        updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+        updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+      
+    }
+    
+  })
+  
+  observeEvent(input$Visits_plus,{
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+      PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                                   Selected_Point_In_Cluster_To_Display_Reactive(),
+                                   Clustering_Category_VectorReactive(),
+                                   SubsetMeetTargetsReactiveUnique(),
+                                   Projected_TSNE_Data_Clusters_Reactive(),
+                                   Basis_Clustering_Reactive(),
+                                   Mean_Clusters_Reactive(),
+                                   Limits_Direction_Clusters_Reactive(),
+                                   Output_Name="Visits",
+                                   Sign_Button="+"
+      )
+      if(PM_res$UpdateSliders){
+        updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+        updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+      
+    }
+    
+  })
+  
+  
+  observeEvent(input$Visits_minus,{
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
+      PM_res<-Plus_Or_Minus_Button(Selected_Cluster_To_Display_Reactive(),
+                                   Selected_Point_In_Cluster_To_Display_Reactive(),
+                                   Clustering_Category_VectorReactive(),
+                                   SubsetMeetTargetsReactiveUnique(),
+                                   Projected_TSNE_Data_Clusters_Reactive(),
+                                   Basis_Clustering_Reactive(),
+                                   Mean_Clusters_Reactive(),
+                                   Limits_Direction_Clusters_Reactive(),
+                                   Output_Name="Visits",
+                                   Sign_Button="-"
+      )
+      if(PM_res$UpdateSliders){
+        updateSliderInput(inputId="slider_x", value = PM_res$NewValueOnSlider_x)
+        updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
+      
+    }
+    
+  })
   
   # On session close, delete temporary files
   session$onSessionEnded(function() {
