@@ -11,7 +11,8 @@
 1. (Optional but convenient) Open `Planting-Tools.Rproj` with RStudio
 2. Go in the folder `ShinyForestry`
 3. Download the files from https://universityofexeteruk.sharepoint.com/:f:/r/sites/ADDTREESProject/Data%20Files/JulesOPFilesMissing?csf=1&web=1&e=AhQf5Y
-4. Store them in `ShinyForestry/JulesOP`
-5. Copy the 4 files in `ElicitorOutput/` to your user Downloads folder
-6. From RStudio, open app.R and click on the `Run App` button, or run the R command `shiny::runApp('ShinyForestry', launch.browser = TRUE)`
-7. Wait a few seconds / a minute for the new window to popup
+4. Store them in `ShinyForestry/JulesOP/`
+5. Copy the 4 files in `ShinyForestry/ElicitorOutput/` to your user Downloads folder
+6. Similarly, load the files from https://universityofexeteruk.sharepoint.com/:f:/r/sites/ADDTREESProject/Data%20Files/DownScalingImages?csf=1&web=1&e=RwsXtw into a folder `ShinyForestry/DownScalingImages`.
+7. From RStudio, open app.R and click on the `Run App` button, or run the R command `shiny::runApp('ShinyForestry', launch.browser = TRUE)`
+8. Wait a few seconds / a minute for the new window to popup
