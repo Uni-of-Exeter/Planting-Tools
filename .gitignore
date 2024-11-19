@@ -12,6 +12,11 @@ ShinyForestry/appMod2_after_fusion.r
 *task_id*
 *.feather
 SEER/
+ShinyForestry/ElicitorOutput/land_parcels*
+ShinyForestry/ElicitorOutput/Parcels.geojson
+ShinyForestry/JulesOP/Fishnet_1km_to_SEER_net2km*
+ShinyForestry/JulesOP/beta*
+ShinyForestry/JulesOP/Correspondance*
 *.gif
 *.mov
 *.avi
