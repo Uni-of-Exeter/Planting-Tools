@@ -757,6 +757,24 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                             ))
                                           )
                                           ),
+                            tabPanel("Preferences", id = "Preferences",
+                                     fluidPage(
+                                       shinyjs::hidden(
+                                         fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))
+                                       ),
+                                       conditionalPanel(
+                                         condition = "input.Trigger == true",
+                                         fluidRow(
+                                           column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), actionButton("choose1", "choose"))
+                                           ),
+                                           column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), actionButton("choose2", "choose"))
+                                           )
+                                         )),
+                                       conditionalPanel(
+                                         condition = "input.Trigger == false", fluidRow(column(12, jqui_resizable(plotOutput("plotOP1"))))
+                                       )
+                                     ))
+                                          ,
                                           tabPanel("Alternative Approaches", id = "Alt",verticalLayout(
                                             fluidPage(fluidRow(
                                               column(10,verbatimTextOutput("ZeroText"),column(2,)))),
@@ -865,25 +883,9 @@ tabPanel("Downscaling",id="DownScale",fluidPage(fluidRow(
   column(6,imageOutput("DownScalingImage2")),
   
   ))
-         ),
+         )
 #plotOutput("DownscalingPlots")),
-                                          tabPanel("Preferences", id = "Preferences",
-                                                   fluidPage(
-                                                     shinyjs::hidden(
-                                                       fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))
-                                                     ),
-                                                     conditionalPanel(
-                                                       condition = "input.Trigger == true",
-                                                       fluidRow(
-                                                         column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), actionButton("choose1", "choose"))
-                                                         ),
-                                                         column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), actionButton("choose2", "choose"))
-                                                         )
-                                                       )),
-                                                     conditionalPanel(
-                                                       condition = "input.Trigger == false", fluidRow(column(12, jqui_resizable(plotOutput("plotOP1"))))
-                                                     )
-                                                   ))
+                                     
 ))
 
 server <- function(input, output, session,
@@ -1528,7 +1530,7 @@ server <- function(input, output, session,
                                              PrecalculatedCarbonSelectedTableTypeMean=PrecalcCarbonAllExtentsType[[SelectedDropdown]],
                                              PrecalculatedCarbonSelectedTableTypeSD=PrecalcCarbonAllExtentsSDType[[SelectedDropdown]],
                                              SavedVecYearTypeLoc=ClickedVectorYearType(),
-                                             PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
+                                            # PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
                                              SAMPLELIST=Simul636YearTypeOverrideReactive(),
                                              MAXYEAR=MAXYEAR
       )
@@ -2285,7 +2287,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                                        PrecalculatedCarbonSelectedTableTypeMean=PrecalcCarbonAllExtentsType[[SelectedDropdown]],
                                                        PrecalculatedCarbonSelectedTableTypeSD=PrecalcCarbonAllExtentsSDType[[SelectedDropdown]],
                                                        SavedVecYearTypeLoc=ClickedVectorYearType(),
-                                                       PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
+                                                     #  PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
                                                        SAMPLELIST=Simul636YearTypeOverrideReactive(),
                                                        MAXYEAR=MAXYEAR
         )
@@ -2730,10 +2732,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     cat("ended updating values based on sliders\n")
       }, ignoreInit = TRUE)
   
+  
   observeEvent(input$tabs == "Preferences", {
 
     SavedVec <- ClickedVector()
     SavedVecYear <- ClickedVectorYear()
+    SavedVecYearType <- ClickedVectorYearType()  
+    # TO CHANGE LATER
+    YearSelect<-YearSelectReactive()
     
     SelectedDropdown <- input$inSelect
     
@@ -2748,11 +2754,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     listMaps[[1]] <- calcBaseMap$map
     listMaps[[2]] <- calcBaseMap$map
     
-    if (!is.null(SavedVec)) {
+    if (!is.null(SavedVecYearType)) {
       
       AreaSelected <- AreaSelected0()
       CarbonSelected <- CarbonSelected0()
       CarbonSelectedYear<-CarbonSelectedYear0()
+      CarbonSelectedYear85<-CarbonSelectedYear850()
       # RedSquirrelSelected <- RedSquirrelSelected0()
       SpeciesListSelected <- list()
       for (x in SPECIES) {
@@ -2765,6 +2772,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
       CarbonSelectedSD <- CarbonSelectedSD0()
       CarbonSelectedSDYear <- CarbonSelectedSDYear0()
+      CarbonSelectedSDYear85 <- CarbonSelectedSDYear850()
       
       # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
       SpeciesListSelectedSD <- list()
@@ -2793,114 +2801,144 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                      input_areaSlider_multiplicative_coefficient = FALSE,
                                      tolvec=tolvecReactive())
       
-      SelectedSimMat2 <- tmp$SelectedSimMat2
-      Icalc <- tmp$Icalc
-      LimitsMat <- tmp$LimitsMat
-      rm(tmp)
+      
+      tmpYearType <- outputmap_calculateMatsYearType(input = input,
+                                                     SavedVecLoc = SavedVecYearType,
+                                                     simul636YearTypeLoc = simul636YearType,
+                                                     AreaSelected = AreaSelected,
+                                                     CarbonSelected = CarbonSelected,
+                                                     CarbonSelectedYear =CarbonSelectedYear,
+                                                     CarbonSelectedYear85 =CarbonSelectedYear85,
+                                                     # RedSquirrelSelected = RedSquirrelSelected,
+                                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                                     VisitsSelected = VisitsSelected,
+                                                     CarbonSelectedSD = CarbonSelectedSD,
+                                                     CarbonSelectedSDYear = CarbonSelectedSDYear,
+                                                     CarbonSelectedSDYear85 = CarbonSelectedSDYear85,
+                                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                                     VisitsSelectedSD = VisitsSelectedSD,
+                                                     alphaLVL=alphaLVL,
+                                                     tolvec=tolvecReactive(),
+                                                     #YearSelect=input$YearSelect,
+                                                     PrecalculatedCarbonSelectedTableTypeMean=PrecalcCarbonAllExtentsType[[SelectedDropdown]],
+                                                     PrecalculatedCarbonSelectedTableTypeSD=PrecalcCarbonAllExtentsSDType[[SelectedDropdown]],
+                                                     SavedVecYearTypeLoc=ClickedVectorYearType(),
+                                                     #PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
+                                                     SAMPLELIST=Simul636YearTypeOverrideReactive(),
+                                                     MAXYEAR=MAXYEAR
+      )
+      
+      
+      
+      
+      #SelectedSimMat2 <- tmp$SelectedSimMat2
+      #Icalc <- tmp$Icalc
+      #LimitsMat <- tmp$LimitsMat
+      #rm(tmp)
+      
+      SelectedSimMat2<-list()
+      SelectedSimMat2[["YEAR"]]<- tmpYearType$SelectedSimMat2[,paste0("SelectedSimMat.YEAR.",1:dim(simul636YearType[["YEAR"]])[2])]
+      SelectedSimMat2[["TYPE"]]<- tmpYearType$SelectedSimMat2[,paste0("SelectedSimMat.TYPE.",1:dim(simul636YearType[["TYPE"]])[2])]
+      SelectedSimMat2[["OUTPUTS"]]<-tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))]
+      names(SelectedSimMat2[["OUTPUTS"]])<-names(tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))])
+      
+      
       
       SelectedSimMatGlobal <<- SelectedSimMat2
       
-      #PROBAMAT <- Icalc$IVEC
-      #for (abc in 1:dim(Icalc$IVEC)[2]) {
-      #  PROBAMAT[, abc] <- 1 - ptruncnorm(Icalc$IVEC[, abc], a = LimitsMat[, abc], b = Inf)
+      Icalc <- tmpYearType$Icalc
+      
+    #  PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
+     # CONDPROB_AtLeast1 <- FALSE
+    #  for (i in 1:ncol(PROBAMAT)) {
+    #    CONDPROB_AtLeast1 <- CONDPROB_AtLeast1 | (PROBAMAT[, 1] >= alphaLVL)
+    #  }
+
+     # AtleastOneDat <- unique(SelectedSimMat2[CONDPROB_AtLeast1, ])
+      
+      #species_data_frame <- do.call("data.frame",
+       #                             setNames(lapply(SPECIES, function(x) bquote(SelectedSimMat2[.(x)])),
+        #                                     SPECIES))
+      #datAll = as.matrix(data.frame(Carbon = SelectedSimMat2$Carbon,
+         #                           species_data_frame,
+        #                            Area = SelectedSimMat2$Area,
+        #                            Visits = SelectedSimMat2$Visits))
+      #datAll2 <- datAll[ConvertSample, ]
+      
+      #DatBinaryCode <- ""
+      #for (i in 1:(ncol(PROBAMAT) - 1)) {
+      #  DatBinaryCode <- paste0(DatBinaryCode, 1 * (PROBAMAT[, 1] >= alphaLVL))
       #}
-      PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
-      
-      # CONDPROB_AtLeast1 <- (PROBAMAT[, 1] >= alphaLVL) | (PROBAMAT[, 2] >= alphaLVL) | (PROBAMAT[, 3] >= alphaLVL) | (PROBAMAT[, 4] >= alphaLVL)
-      CONDPROB_AtLeast1 <- FALSE
-      for (i in 1:ncol(PROBAMAT)) {
-        CONDPROB_AtLeast1 <- CONDPROB_AtLeast1 | (PROBAMAT[, 1] >= alphaLVL)
-      }
-      
-      #  datAll = data.frame(CarbonMet = 1*(PROBAMAT[, 1] >= alphaLVL),
-      #                      redSquirrel = 1*(PROBAMAT[, 2] >= alphaLVL),
-      #                   Area = 1*(PROBAMAT[, 3] >= alphaLVL),
-      #                  Visits = 1*(PROBAMAT[, 4] >= alphaLVL))
-      AtleastOneDat <- unique(SelectedSimMat2[CONDPROB_AtLeast1, ])
-      
-      species_data_frame <- do.call("data.frame",
-                                    setNames(lapply(SPECIES, function(x) bquote(SelectedSimMat2[.(x)])),
-                                             SPECIES))
-      datAll = as.matrix(data.frame(Carbon = SelectedSimMat2$Carbon,
-                                    # redsquirrel = SelectedSimMat2$redsquirrel,
-                                    species_data_frame,
-                                    Area = SelectedSimMat2$Area,
-                                    Visits = SelectedSimMat2$Visits))
-      datAll2 <- datAll[ConvertSample, ]
-      
-      # DatBinaryCode <- paste0(1*(PROBAMAT[, 1] >= alphaLVL), 1*(PROBAMAT[, 2] >= alphaLVL), 1*(PROBAMAT[, 3] >= alphaLVL), Visits = 1*(PROBAMAT[, 4] >= alphaLVL))
-      DatBinaryCode <- ""
-      for (i in 1:(ncol(PROBAMAT) - 1)) {
-        DatBinaryCode <- paste0(DatBinaryCode, 1 * (PROBAMAT[, 1] >= alphaLVL))
-      }
-      DatBinaryCode <- paste0(DatBinaryCode, Visits = 1 * (PROBAMAT[, ncol(PROBAMAT)] >= alphaLVL))
+      #DatBinaryCode <- paste0(DatBinaryCode, Visits = 1 * (PROBAMAT[, ncol(PROBAMAT)] >= alphaLVL))
       
       
-      DatBinaryCode0(DatBinaryCode)
-      VecNbMet <- rep(0, length(CONDPROB_AtLeast1))
-      # VecNbMet[(((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)) |
-      #             ((PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)) |
-      #             ((PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)) |
-      #             ((PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)))] <- 1
-      # VecNbMet[(((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] < alphaLVL)) |
-      #             ((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)) |
-      #             ((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)) |
-      #             ((PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)) |
-      #             ((PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)) |
-      #             ((PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL))
-      # )] <- 2
-      # VecNbMet[(((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] < alphaLVL)) |
-      #             ((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] < alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)) |
-      #             ((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] < alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL)) |
-      #             ((PROBAMAT[, 1] < alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL))
-      # )] <- 3
-      # VecNbMet[(((PROBAMAT[, 1] >= alphaLVL) & (PROBAMAT[, 2] >= alphaLVL) & (PROBAMAT[, 3] >= alphaLVL) & (PROBAMAT[, 4] >= alphaLVL))
-      # )] <- 4
-      for (i in 1:ncol(PROBAMAT)) {
-        indices_list <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = i)
-        indices <- FALSE
-        for (j in 1:length(indices_list)) {
-          indices <- indices | indices_list[[j]]
-        }
-        VecNbMet[indices] <- i
-      }
+      #DatBinaryCode0(DatBinaryCode)
+      #VecNbMet <- rep(0, length(CONDPROB_AtLeast1))
+    #  for (i in 1:ncol(PROBAMAT)) {
+     #   indices_list <- check_targets_met(PROBAMAT, target = alphaLVL, nb_targets_met = i)
+    #    indices <- FALSE
+     #   for (j in 1:length(indices_list)) {
+      #    indices <- indices | indices_list[[j]]
+      #  }
+       # VecNbMet[indices] <- i
+      #}
       
-      VecNbMet0(VecNbMet)
+    #  VecNbMet0(VecNbMet)
+
+      CONDITION_SEL<-ifelse(apply((Icalc$IVEC*t(matrix(2*((AboveTargets-0.5)),dim(Icalc$IVEC)[2],dim(Icalc$IVEC)[1])))<=ILevel,1,prod),TRUE,FALSE)
+      
+      
+      SubsetMeetTargets <-list()
+      SubsetMeetTargets[["YEAR"]]<- SelectedSimMat2$YEAR[CONDITION_SEL,]
+      SubsetMeetTargets[["TYPE"]]<- SelectedSimMat2$TYPE[CONDITION_SEL,]
+      SubsetMeetTargets[["OUTPUTS"]]<- SelectedSimMat2$OUTPUTS[CONDITION_SEL,]
+      
+      DF<-data.frame(SubsetMeetTargets$YEAR,SubsetMeetTargets$TYPE)
+      uniqueRows<-which(!duplicated(DF))
+      
+      SubsetMeetTargetsUnique<-(list(YEAR=SubsetMeetTargets$YEAR[uniqueRows,],TYPE=SubsetMeetTargets$TYPE[uniqueRows,],
+                                           OUTPUTS=SubsetMeetTargets$OUTPUTS[uniqueRows,]))
+      
+     
+      if (dim(SubsetMeetTargetsUnique$YEAR)[1] >= 250)
+      {
+        
       prior_list_temp <- list()
       # Carbon prior
       # mean = 1 / half(midpoint)
       # 2 * sd = 1 / half(midpoint)
-      if (isFALSE("Carbon" %in% colnames(SelectedSimMat2))) {
+      if (isFALSE("Carbon" %in% colnames(SelectedSimMat2$OUTPUTS))) {
         stop("Defining a prior over an outcome that doesn't exist")
       }
-      prior_list_temp$Carbon <- gamma_prior(2 / max(SelectedSimMat2$Carbon),
-                                            1 / max(SelectedSimMat2$Carbon))
+      prior_list_temp$Carbon <- gamma_prior(2 / max(SelectedSimMat2$OUTPUTS$Carbon),
+                                            1 / max(SelectedSimMat2$OUTPUTS$Carbon))
       
       # Species priors, similarly-derived values
       for (i in 1:N_SPECIES) {
         specie <- SPECIES[i]
-        if (isFALSE(specie %in% colnames(SelectedSimMat2))) {
+        if (isFALSE(specie %in% colnames(SelectedSimMat2$OUTPUTS))) {
           stop("Defining a prior over an outcome that doesn't exist")
         }
-        add_to_list <- setNames(list(Normal(2 / max(SelectedSimMat2[[specie]]),
-                                            1 / max(SelectedSimMat2[[specie]]))),
+        add_to_list <- setNames(list(Normal(2 / max(SelectedSimMat2$OUTPUTS[[specie]]),
+                                            1 / max(SelectedSimMat2$OUTPUTS[[specie]]))),
                                 specie)
         prior_list_temp <- append(prior_list_temp, add_to_list)
       }
       
       # Area prior
-      if (isFALSE("Area" %in% colnames(SelectedSimMat2))) {
+      if (isFALSE("Area" %in% colnames(SelectedSimMat2$OUTPUTS))) {
         stop("Defining a prior over an outcome that doesn't exist")
       }
-      prior_list_temp$Area <- gamma_prior(- 2 / max(SelectedSimMat2$Area),
-                                          1 / max(SelectedSimMat2$Area))
+      prior_list_temp$Area <- gamma_prior(- 2 / max(SelectedSimMat2$OUTPUTS$Area),
+                                          1 / max(SelectedSimMat2$OUTPUTS$Area))
       
       # Visits prior
-      if (isFALSE("Visits" %in% colnames(SelectedSimMat2))) {
+      if (isFALSE("Visits" %in% colnames(SelectedSimMat2$OUTPUTS))) {
         stop("Defining a prior over an outcome that doesn't exist")
       }
-      prior_list_temp$Visits <- Normal(2 / max(SelectedSimMat2$Visits),
-                                       1 / max(SelectedSimMat2$Visits))
+      prior_list_temp$Visits <- Normal(2 / max(SelectedSimMat2$OUTPUTS$Visits),
+                                       1 / max(SelectedSimMat2$OUTPUTS$Visits))
       
       # Re-order the list in accordance to TARGETS vector
       prior_list <- list()
@@ -2911,103 +2949,151 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       # pref_reactive(prefObject(data = datAll2,
       #                          priors = prior_list))
       
-      UniqueBinCodes <- unique(DatBinaryCode)
-      if (dim(AtleastOneDat)[1] >= 250)
-      {
+#      UniqueBinCodes <- unique(DatBinaryCode)
+      
+   
+      
+      RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],length(ConvertSample),replace=F)
+      datAll2<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
+                    TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
+                    OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
+
         NbRoundsMax(MaxRounds)
         
         LinesToCompare <- matrix(1, MaxRounds, 2)
-        LinesToCompare[1, ] <- sample(1:dim(datAll2)[1], 2, replace = F)
+        LinesToCompare[1, ] <- sample(1:dim(datAll2$YEAR)[1], 2, replace = F)
         CurrentRound(1)
-        
+             
         LinesToCompareReactive(LinesToCompare)
         SelectedLine <- list()
+        pref_reactive(prefObject(data = datAll2$OUTPUTS[LinesToCompare[1,],],
+                                 priors = prior_list))
         # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
         # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
         
         # Pick 2 random strategies that meet all targets and update pref_reactive
-        two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
-                                                                                                           SelectedSimMat2 = SelectedSimMat2,
-                                                                                                           pref_reactive = pref_reactive,
-                                                                                                           N_TARGETS_ARG3 = N_TARGETS,
-                                                                                                           TARGETS_ARG2 = TARGETS,
-                                                                                                           prior_list = prior_list,
-                                                                                                           global_log_level = LOG_LEVEL)
-        SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
-        SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+        #two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
+         #                                                                                                  SelectedSimMat2 = SelectedSimMat2,
+          #                                                                                                 pref_reactive = pref_reactive,
+           #                                                                                                N_TARGETS_ARG3 = N_TARGETS,
+            #                                                                                               TARGETS_ARG2 = TARGETS,
+             #                                                                                              prior_list = prior_list,
+              #                                                                                             global_log_level = LOG_LEVEL)
+        SelectedLine[[1]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1, 1],],
+                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 1],],
+                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 1],])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+        SelectedLine[[2]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1,2],],
+                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 2],],
+                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 2],])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
         
         for (aai in 1:2) {
-          SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
-          SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
-          # SelectedBio <- SelectedLine[[aai]]$redsquirrel
-          for (x in SPECIES) {
-            var_name <- paste0("SelectedBio", x)
-            value <- SelectedLine[[aai]][[x]]
-            assign(var_name, value)
-          }
-          SelectedArea <- SelectedLine[[aai]]$Area
-          SelectedVisits <- SelectedLine[[aai]]$Visits
           
-          SelectedTreeCarbonSD <- SelectedLine[[aai]]$CarbonSD
-          # SelectedBioSD <- SelectedLine[[aai]]$redsquirrelSD
-          for (x in SPECIES) {
-            var_name <- paste0("SelectedBioSD", x)
-            value <- SelectedLine[[aai]][[paste0(x, "SD")]]
-            assign(var_name, value)
-          }
-          SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
+          TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+          TypeB<-(SelectedLine[[aai]]$TYPE=="Deciduous")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+          BlockedCells<-(SavedVecYearType>=YearSelect)
+          mapp<-listMaps[[aai]]
+          removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
+          COLOURS<-rep("transparent",length(TypeA))
           
-          SELL <- (FullTable$extent == SelectedDropdown)
-          if (!is.null(SELL)) {
-            
-            SELGEO <- FullTable$geometry[SELL]
-            SELGEOFull <- FullTable[SELL, ]
-            SELGEOFull$layerId <- paste0("Square", 1:dim(SELGEOFull)[1])
-            
-            
-            
-            ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units[SELL],
-                                   ColorLighteningFactor(), ColorDarkeningFactor())
-            
-            FullColVec <- ColObtained$FullColVec
-            ClickedCols <- ColObtained$ClickedCols
-            SELGEOFull$color <- ColObtained$FullColVec
-            SELGEOFull$color[SavedVec == 1] <- ColObtained$ClickedCols[SavedVec == 1]
-            
-            
-            SELGEOSavedVec <- SELGEOFull[, c("geometry", "layerId")]
-            SELGEOSwitched <- SELGEOFull[, c("geometry", "layerId")]
-            
-            SELGEORemaining <- SELGEOFull[(SavedVec == 1) | (SwitchedOnCells == 1), c("geometry", "layerId", "color")]
-            
-            
-            SELGEOSavedVec <- SELGEOSavedVec[SavedVec == 1, ]
-            SELGEOSwitched <- SELGEOSwitched[(SwitchedOnCells == 1) & (SavedVec != 1), ]
-            
-            if (dim(SELGEORemaining)[1] > 0) {
-              listMaps[[aai]] <- addPolygons(listMaps[[aai]], data = SELGEORemaining, color = SELGEORemaining$color, layerId = ~SELGEORemaining$layerId, weight = UnitPolygonColours)
-            }
-            
-            
-          }
+          COLOURS[TypeA]<-"purple"
+          COLOURS[TypeB]<-"green"
+          COLOURS[BlockedCells]<-"red"
+          mapp<-addPolygons(mapp,data=FullTable$geometry,
+                            layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+          removeControl(mapp,layerId="legend")
+          ############################################################################# TO CHANGE PREF ELICITATION           
           
+        
           addControlText <- ""
           for (i in 1:length(SPECIES)) {
-            specie_latin <- get_ugly_specie(SPECIES[i], NAME_CONVERSION)
-            specie_english <- if (specie_latin == "All") "All Species Richness" else get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
-            selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
-            selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-            addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+            specie_latin <- SPECIES[i]
+            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+            selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
+            selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
+            addControlText <- paste0(addControlText, specie_english, ": ", 
+                                     round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
           }
+        
           
-          listMaps[[aai]] <- listMaps[[aai]] %>%
-            addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2*SelectedTreeCarbonSD, 2), "<br>",
-                                     # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-                                     addControlText,
-                                     "Area Planted: ", round(SelectedArea, 2), "<br>",
-                                     "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2*SelectedVisitsSD, 2),
-                                     "</p>"), position = "topright")
+          mapp<-
+            addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+                                          round(2*SelectedLine[[aai]]$OUTPUTS$CarbonSD, 2), "<br>",
+                                          addControlText,
+                                          "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "<br>",
+                                          "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+                                          "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
+                                          "</p>"), position = "topright",layerId="legend")
+          listMaps[[aai]]<-mapp
+        
+      #    SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
+      #    SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
+       #   for (x in SPECIES) {
+        #    var_name <- paste0("SelectedBio", x)
+         #   value <- SelectedLine[[aai]][[x]]
+         #   assign(var_name, value)
+         # }
+        #  SelectedArea <- SelectedLine[[aai]]$Area
+        #  SelectedVisits <- SelectedLine[[aai]]$Visits
           
+     #     SelectedTreeCarbonSD <- SelectedLine[[aai]]$CarbonSD
+      #    for (x in SPECIES) {
+       #     var_name <- paste0("SelectedBioSD", x)
+        #    value <- SelectedLine[[aai]][[paste0(x, "SD")]]
+         #   assign(var_name, value)
+          #}
+        #  SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
+          
+         # SELL <- (FullTable$extent == SelectedDropdown)
+        #  if (!is.null(SELL)) {
+        #    
+        #    SELGEO <- FullTable$geometry[SELL]
+        #    SELGEOFull <- FullTable[SELL, ]
+        #    SELGEOFull$layerId <- paste0("Square", 1:dim(SELGEOFull)[1])
+        #    
+        #    
+        #    
+        #    ColObtained <- getCols(ColourScheme = ColourScheme(), UnitsVec = FullTable$units[SELL],
+        #                           ColorLighteningFactor(), ColorDarkeningFactor())
+        #    
+        #    FullColVec <- ColObtained$FullColVec
+        #    ClickedCols <- ColObtained$ClickedCols
+        #    SELGEOFull$color <- ColObtained$FullColVec
+        #    SELGEOFull$color[SavedVec == 1] <- ColObtained$ClickedCols[SavedVec == 1]
+        #    
+        #    
+        #    SELGEOSavedVec <- SELGEOFull[, c("geometry", "layerId")]
+        #    SELGEOSwitched <- SELGEOFull[, c("geometry", "layerId")]
+        #    
+        #    SELGEORemaining <- SELGEOFull[(SavedVec == 1) | (SwitchedOnCells == 1), c("geometry", "layerId", "color")]
+        #    
+        #    
+        #    SELGEOSavedVec <- SELGEOSavedVec[SavedVec == 1, ]
+        #    SELGEOSwitched <- SELGEOSwitched[(SwitchedOnCells == 1) & (SavedVec != 1), ]
+        #    
+        #    if (dim(SELGEORemaining)[1] > 0) {
+        #      listMaps[[aai]] <- addPolygons(listMaps[[aai]], data = SELGEORemaining, color = SELGEORemaining$color, layerId = ~SELGEORemaining$layerId, weight = UnitPolygonColours)
+        #    }
+        #    
+        #    
+        #  }
+          
+         # addControlText <- ""
+        #  for (i in 1:length(SPECIES)) {
+        #    specie_latin <- get_ugly_specie(SPECIES[i], NAME_CONVERSION)
+        #    specie_english <- if (specie_latin == "All") "All Species Richness" else get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
+        #    selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+        #    selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+        #    addControlText <- paste0(addControlText, get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+        #  }
+          
+        #  listMaps[[aai]] <- listMaps[[aai]] %>%
+        #    addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2*SelectedTreeCarbonSD, 2), "<br>",
+        #                             # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+        #                             addControlText,
+         #                            "Area Planted: ", round(SelectedArea, 2), "<br>",
+        #                             "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2*SelectedVisitsSD, 2),
+        #                             "</p>"), position = "topright")
+        #  
         }
         
         shinyjs::enable("choose1")
@@ -3033,8 +3119,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     
   }, ignoreInit = TRUE)
-  # DONE TO CHANGE LATER
+
   observeEvent(input$choose1, {
+    browser() 
     observe_event_function(choose = 1, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,
@@ -3062,7 +3149,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            UnitPolygonColours = UnitPolygonColours,
                            ClickedVectorYear=ClickedVectorYear)
   })
-  # DONE TO CHANGE LATER
+
   observeEvent(input$choose2, {
     observe_event_function(choose = 2, # 1 for input$choose1, 2 for input$choose2
                            input = input,
@@ -3092,9 +3179,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            ClickedVectorYear=ClickedVectorYear)
   })
   
+#################################################################### TO CHANGE PREF ELICITATION  
   
-  
-  # TO CHECK 1
   observeEvent({input$map_shape_click}, {
     click <- input$map_shape_click
     SelectedDropdown <- input$inSelect
