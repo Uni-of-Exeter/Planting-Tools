@@ -1094,30 +1094,30 @@ outputmap_calculateMats <- function(input,
 ################### This is function outputmap_calculateMats adapted to the case where
 ################### HERE CHANGE
 outputmap_calculateMatsYear <- function(input,
-                                    SavedVecLoc,
-                                    simul636YearLoc,
-                                    AreaSelected,
-                                    CarbonSelected,
-                                    CarbonSelectedYear,
-                                    # RedSquirrelSelected,
-                                    SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                    VisitsSelected,
-                                    CarbonSelectedSD,
-                                    CarbonSelectedSDYear,
-                                    # RedSquirrelSelectedSD,
-                                    SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                    VisitsSelectedSD,
-                                    alphaLVL = alphaLVL,
-                                    input_areaSlider_multiplicative_coefficient = TRUE,
-                                    ManualTargets=NULL,
-                                    tolvec,
-                                    #YearSelect,
-                                    PrecalculatedCarbonSelectedTableMean=NULL,
-                                    PrecalculatedCarbonSelectedTableSD=NULL,
-                                    SavedVecYearLoc,
-                                    PreviousSavedVecYearLoc,
-                                    SAMPLELIST,
-                                    MAXYEAR=MAXYEAR) {
+                                        SavedVecLoc,
+                                        simul636YearLoc,
+                                        AreaSelected,
+                                        CarbonSelected,
+                                        CarbonSelectedYear,
+                                        # RedSquirrelSelected,
+                                        SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                        VisitsSelected,
+                                        CarbonSelectedSD,
+                                        CarbonSelectedSDYear,
+                                        # RedSquirrelSelectedSD,
+                                        SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                        VisitsSelectedSD,
+                                        alphaLVL = alphaLVL,
+                                        input_areaSlider_multiplicative_coefficient = TRUE,
+                                        ManualTargets=NULL,
+                                        tolvec,
+                                        #YearSelect,
+                                        PrecalculatedCarbonSelectedTableMean=NULL,
+                                        PrecalculatedCarbonSelectedTableSD=NULL,
+                                        SavedVecYearLoc,
+                                        PreviousSavedVecYearLoc,
+                                        SAMPLELIST,
+                                        MAXYEAR=MAXYEAR) {
   
   # Because only CO2 has variations with time we create a "binary" SelectedSimMat that is used for 
   # all the other output variables. (MAXYEAR+1) is the code for No Planting

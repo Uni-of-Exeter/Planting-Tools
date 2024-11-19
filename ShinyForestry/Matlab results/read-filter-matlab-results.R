@@ -26,6 +26,13 @@
 # writematrix(scenario_species_prob_40, 'scenario_species_prob_40.csv');
 # scenario_species_prob_50 = es_biodiversity_scenario.species_prob_50;
 # writematrix(scenario_species_prob_50, 'scenario_species_prob_50.csv');
+
+# NEW (07/11/2024) CODE IS
+# Years from 2020
+# writematrix(biodiversity.es_biodiversity_baseline.species_prob_40, 'baseline_species_prob_40_unmanaged_conifers.csv');
+# writematrix(biodiversity.es_biodiversity_scenario.species_prob_40, 'scenario_species_prob_40_unmanaged_conifers.csv');
+# writematrix(biodiversity.es_biodiversity_baseline.species_prob_40, 'baseline_species_prob_40_unmanaged_deciduous.csv');
+# writematrix(biodiversity.es_biodiversity_scenario.species_prob_40, 'scenario_species_prob_40_unmanaged_deciduous.csv');
 # 
 # climate_cells = es_biodiversity_scenario.climate_cells;
 # writetable(climate_cells, 'climate_cells.csv');
