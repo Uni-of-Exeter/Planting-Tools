@@ -1212,7 +1212,6 @@ objective_function <- function(inputs, # c(area_vector)
                                preference_weights_minimize = NULL, # Minimize -> negative
                                preference_weights_maximize = NULL, # Maximize -> positive
                                exploration = FALSE, # vector, 1 value per outcome
-                               scale = FALSE,
                                tolvec,
                                alpha = 0.9,
                                multi_objectives = FALSE) {
@@ -1243,15 +1242,14 @@ objective_function <- function(inputs, # c(area_vector)
   # years_vector <- years_vector[indices_of_non_zero_area]
   # years_possible_non_zero_values <- years_possible_non_zero_values[indices_of_non_zero_area]
   
-  # Other outcomes to maximize + scale (x-min)/(max-min)
+  # Other outcomes to maximize
   if (is.null(outcomes_to_maximize_matrix) == FALSE) {
     outcomes_to_maximize_matrix <- outcomes_to_maximize_matrix %>%
       dplyr::slice(indices_of_non_zero_area)
     outcomes_to_maximize_SD_matrix <- outcomes_to_maximize_SD_matrix %>%
       dplyr::slice(indices_of_non_zero_area)
-    # dplyr::mutate(across(everything(), ~ (.x - min(.x)) / (max(.x) - min(.x))))
   }
-  # Other outsomes to minimize + scale (x-min)/(max-min)
+  # Other outsomes to minimize
   if (is.null(outcomes_to_minimize_matrix) == FALSE) {
     outcomes_to_minimize_matrix <- outcomes_to_minimize_matrix %>%
       dplyr::slice(indices_of_non_zero_area)
@@ -1644,8 +1642,6 @@ bayesian_optimization <- function(
     EXPLORATION = TRUE, # FALSE for tab 1, TRUE for tab 2
     EXPLORATION_COEFFICIENT = 0,
     
-    SCALE = FALSE,
-    
     preference_weight_area = 1,
     preference_weights_maximize = NULL,
     
@@ -1839,7 +1835,6 @@ bayesian_optimization <- function(
                        penalty_coefficient_arg = PENALTY_COEFFICIENT,
                        preference_weight_area = preference_weight_area,
                        preference_weights_maximize = preference_weights_maximize,
-                       scale = SCALE,
                        tolvec = tolvec,
                        alpha = alpha)
   notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs done"), global_log_level = global_log_level)
@@ -2045,7 +2040,6 @@ bayesian_optimization <- function(
                           penalty_coefficient_arg = PENALTY_COEFFICIENT,
                           preference_weight_area = 1,
                           preference_weights_maximize = preference_weights_maximize,
-                          scale = SCALE,
                           tolvec = tolvec,
                           alpha = alpha)
     time_obj_function <- Sys.time() - begin_inside

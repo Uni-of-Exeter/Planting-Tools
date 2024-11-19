@@ -2516,7 +2516,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             return()
           }
 
-          # REMINDER TO SCALE VALUES
           DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
           # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
           # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits))
@@ -2611,8 +2610,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             EXPLORATION,
             EXPLORATION_COEFFICIENT,
             
-            SCALE,
-            
             preference_weight_area,
             preference_weights_maximize,
             # preference_weights_minimize = rep(1, length(c())),
@@ -2654,8 +2651,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
                 EXPLORATION = EXPLORATION, # FALSE for tab 1, TRUE for tab 2
                 EXPLORATION_COEFFICIENT = EXPLORATION_COEFFICIENT,
-                
-                SCALE = SCALE,
                 
                 preference_weight_area = preference_weight_area,
                 preference_weights_maximize = preference_weights_maximize,
@@ -2767,8 +2762,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
                 EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
                 EXPLORATION_COEFFICIENT = 0,
-                
-                SCALE = FALSE,
                 
                 preference_weight_area = preference_weight_area,
                 preference_weights_maximize = mypref,
