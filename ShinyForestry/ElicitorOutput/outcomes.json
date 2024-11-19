@@ -16,23 +16,5 @@
         "metric": "Species richness",
         "time-period": "Set year",
         "year": "2024"
-    },
-    "3": {
-        "target": "No",
-        "category": "Biodiversity",
-        "scale": "National",
-        "sub-category": "Skylark",
-        "metric": "Prob. of appearance",
-        "time-period": "Set year",
-        "year": "2026"
-    },
-    "4": {
-        "target": "No",
-        "category": "Biodiversity",
-        "scale": "National",
-        "sub-category": "Tall Bog-Sedge",
-        "metric": "Prob. of appearance",
-        "time-period": "Set year",
-        "year": "2025"
     }
 }
