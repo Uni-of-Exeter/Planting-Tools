@@ -471,7 +471,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
       
     } else if (specie_or_group %in% c(NAME_CONVERSION$Group, "All")) {
       
-      old_col_values <- FullTable2 %>%
+      old_col_values <- FullTable %>%
         sf::st_drop_geometry() %>%
         dplyr::select(starts_with("Richness") &
                         contains(paste0("Group", specie_or_group, "_")) &
