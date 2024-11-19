@@ -131,7 +131,29 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   CorrespondenceJules <- read.csv(normalizePath(file.path(DataFilesFolder, "CorrespondanceSqToJules.csv")))[, -1]
   seer2km <- st_read(normalizePath(file.path(DataFilesFolder, "SEER_net2km.shp")))
   jncc100 <- read.csv(normalizePath(file.path(DataFilesFolder, "beta_JNCC100_interact_quad.csv")))
-  speciesprob40 <-  read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40.csv")), header = FALSE)
+  baseline_species_prob_40_unmanaged_conifers <- read.csv(normalizePath(file.path(DataFilesFolder, "baseline_species_prob_40_unmanaged_conifers.csv")), header = FALSE)
+  baseline_species_prob_40_unmanaged_deciduous <- read.csv(normalizePath(file.path(DataFilesFolder, "baseline_species_prob_40_unmanaged_deciduous.csv")), header = FALSE)
+  scenario_species_prob_40_unmanaged_conifers <- read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40_unmanaged_conifers.csv")), header = FALSE)
+  scenario_species_prob_40_unmanaged_deciduous <- read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40_unmanaged_deciduous.csv")), header = FALSE)
+  speciesprob_list <- list(list(planting = FALSE, # baseline
+                                tree_specie = "Conifers",
+                                table = baseline_species_prob_40_unmanaged_conifers),
+                           
+                           list(planting = FALSE, # baseline
+                                tree_specie = "Deciduous",
+                                table = baseline_species_prob_40_unmanaged_deciduous),
+                           
+                           list(planting = TRUE, # scenario
+                                tree_specie = "Conifers",
+                                table = scenario_species_prob_40_unmanaged_conifers),
+                           
+                           list(planting = TRUE, # scenario
+                                tree_specie = "Deciduous",
+                                table = scenario_species_prob_40_unmanaged_deciduous))
+  # Free lots of RAM
+  rm(baseline_species_prob_40_unmanaged_conifers, baseline_species_prob_40_unmanaged_deciduous,
+     scenario_species_prob_40_unmanaged_conifers, scenario_species_prob_40_unmanaged_deciduous)
+  
   climatecells <- read.csv(normalizePath(file.path(DataFilesFolder, "climate_cells.csv")))
 }
 
@@ -364,13 +386,14 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   # Replace Biodiversity columns with correct ones
   FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
-                                                                              speciesprob40 = speciesprob40,
+                                                                              speciesprob_list = speciesprob_list,
                                                                               seer2km = seer2km,
                                                                               jncc100 = jncc100,
                                                                               climatecells = climatecells,
+                                                                              MAXYEAR = MAXYEAR,
                                                                               global_log_level = LOG_LEVEL)
-  # Add richness columns
-  FullTable <- add_richness_columns(FullTable = FullTable, NAME_CONVERSION = NAME_CONVERSION) %>% st_as_sf()
+  # Free a lot of RAM
+  rm(speciesprob_list)
   
   # Outcomes
   message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json"))))
@@ -398,6 +421,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   if (length(SPECIES_ENGLISH) == 0) {
     SPECIES_ENGLISH <- "All"
   }
+  GROUPS <- c()
   # Separate the groups from SPECIES_ENGLISH, then merge them to SPECIES
   SPECIES <- SPECIES_ENGLISH
   for (i in 1:length(SPECIES_ENGLISH)) {
@@ -405,21 +429,75 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
     # If it is a group
     if (ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All")) {
       SPECIES[i] <- get_ugly_group(ugly_english_specie, NAME_CONVERSION)
+      GROUPS <- c(GROUPS, get_ugly_group(ugly_english_specie, NAME_CONVERSION))
     } else {
       # If it is a specie
       SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
     }
   }
-  # S
+  
+  # Add the richness
+  FullTable <- add_richness_columns(FullTable, groups = GROUPS, maxyear = MAXYEAR,
+                                    NAME_CONVERSION = NAME_CONVERSION, SCENARIO = 26)
+  
+  # FOR BACKWARD COMPATIBILITY
+  # until the code works with the new biodiversity columns, keep the old ones:
+  # BioMean_specie, BioSD_specie
+  # BioMean_Birds, BioSD_Birds
+  for (specie_or_group in SPECIES) {
+    if (specie_or_group %in% NAME_CONVERSION$Specie) {
+      
+      old_col_mean_values <- FullTable %>%
+        sf::st_drop_geometry() %>%
+        dplyr::select(starts_with("Bio_Mean") &
+                        contains(paste0("BioSpecie", specie_or_group, "_")) &
+                        contains("Scenario26") &
+                        contains("TreeSpecieConifers") &
+                        contains("_Planting")) %>%
+        pull()
+      old_col_sd_values <- FullTable %>%
+        sf::st_drop_geometry() %>%
+        dplyr::select(starts_with("Bio_SD") &
+                        contains(paste0("BioSpecie", specie_or_group, "_")) &
+                        contains("Scenario26") &
+                        contains("TreeSpecieConifers") &
+                        contains("_Planting")) %>%
+        pull()
+      
+      new_col_mean_name <- paste0("BioMean_", specie_or_group)
+      new_col_sd_name <- paste0("BioSD_", specie_or_group)
+      FullTable[[new_col_mean_name]] <- old_col_mean_values
+      FullTable[[new_col_sd_name]] <- old_col_sd_values
+      
+    } else if (specie_or_group %in% c(NAME_CONVERSION$Group, "All")) {
+      
+      old_col_values <- FullTable2 %>%
+        sf::st_drop_geometry() %>%
+        dplyr::select(starts_with("Richness") &
+                        contains(paste0("Group", specie_or_group, "_")) &
+                        contains("TreeSpecieConifers") &
+                        contains("Scenario26") &
+                        contains("PlantingYear0")) %>%
+        pull()
+      
+      new_col_name <- paste0("BioMean_", specie_or_group)
+      FullTable[[new_col_name]] <- old_col_values
+      
+      old_col_values <- rep(0, length(old_col_values))
+      new_col_name <- paste0("BioSD_", specie_or_group)
+      FullTable[[new_col_name]] <- old_col_values
+      
+    }
+  }
+  
+  # Only keep all possible biodiversity species (unions of species selected)
+  species_to_keep <- intersect(SPECIES, NAME_CONVERSION$Specie)
+  species_to_remove <- setdiff(NAME_CONVERSION$Specie, species_to_keep)
+  species_to_remove_pattern <- paste0("Bio.*?(", paste0(species_to_remove, collapse = "|"), ").*")
+  
+  # Remove biodiversity columns with the species we don't need
   FullTable <- FullTable %>%
-    dplyr::select(
-      # Keep non-biodiversity columns
-      !dplyr::starts_with("Bio") |
-        # and only the biodiversity columns we need (reduce the file and RAM size requirements)
-        (
-          dplyr::starts_with("Bio") & dplyr::matches(paste0(SPECIES, collapse = "|"))
-        )
-    )
+    dplyr::select(!matches(species_to_remove_pattern))
   
   # Move decision units with id -1 (Maintain current land use) from FullTable to FullTableNotAvail if we want to handle them in a special way
   # OR
@@ -506,10 +584,11 @@ RREMBO_CONTROL <- list(
   designtype = "LHS",
   # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
   reverse = FALSE)
-RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
-                                          init = list(n = NSamp), budget = 100,
-                                          control = RREMBO_CONTROL,
-                                          global_log_level = LOG_LEVEL)
+RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
+                                           D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                           init = list(n = 100), budget = 100,
+                                           control = RREMBO_CONTROL,
+                                           global_log_level = LOG_LEVEL)
 
 # for (aaa in 1:NSamp) {
 #   pp <- runif(1)

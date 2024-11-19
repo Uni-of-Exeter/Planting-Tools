@@ -469,6 +469,7 @@ continuous_to_multi_categorical <- function(values,
   
   return(solutions)
 }
+
 generate_samples_RRembo <- function(d, lower, upper, budget = 100,
                                     legal_non_zero_values,
                                     # control = list(Atype = "isotropic",
@@ -611,6 +612,10 @@ generate_samples_RRembo_basic <- function(d, D, budget = 100,
   notif(msg, log_level = "debug", global_log_level = global_log_level)
   DoE_high_dimension_categorical <- continuous_to_categorical(values = DoE_high_dimension,
                                                               legal_non_zero_values = legal_non_zero_values)
+  
+  DoE_high_dimension_categorical <- continuous_to_multi_categorical(values = DoE_high_dimension,
+                                                                    legal_non_zero_values = legal_non_zero_values)
+  
   notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
   notif(paste("generate_samples_RRembo_basic() done"), log_level = "debug", global_log_level = global_log_level)
   
@@ -1687,8 +1692,24 @@ bayesian_optimization <- function(
   # Generate 10 * the dimension of the input
   n <- 10 * k
   begin <- Sys.time()
-
-  area_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select(area) %>% unlist(use.names = FALSE)
+  
+  # Parameters to optimize on
+  area_possible_non_zero_values <- FullTable %>%
+    sf::st_drop_geometry() %>%
+    dplyr::select(area) %>%
+    unlist(use.names = FALSE)
+  area_possible_values <- rbind(0, area_possible_non_zero_values)
+  rownames(area_possible_values) <- NULL
+  
+  years_possible_values <- 0:(MAXYEAR+1)
+  
+  tree_species_possible_values <- FullTable %>%
+    sf::st_drop_geometry() %>%
+    dplyr::select(dplyr::starts_with("Bio_Mean")) %>%
+    colnames() %>%
+    gsub(pattern = ".*Specie(.*?)_Scenario.*", x = ., replacement = "\\1", perl = TRUE) %>%
+    unique()
+  
   
   # Outcomes to maximize
   outcomes_to_maximize_matrix <- outcomes_to_maximize_SD_matrix <- c()
