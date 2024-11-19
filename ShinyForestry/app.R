@@ -81,7 +81,7 @@ install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "
                                        "mapview", "webshot",
                                        # File-locking, for multi-process
                                        "flock",
-                                       "adaptMCMC"), update = TRUE)
+                                       "adaptMCMC", "data.table"), update = TRUE)
 
 NAME_CONVERSION <- get_name_conversion()
 
