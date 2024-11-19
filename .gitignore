@@ -12,3 +12,10 @@ ShinyForestry/appMod2_after_fusion.r
 *task_id*
 *.feather
 SEER/
+*.gif
+*.mov
+*.avi
+*.wmv
+*.mp3
+*.mp4
+*.mkv
