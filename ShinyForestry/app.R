@@ -400,10 +400,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
     Sys.sleep(5)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "found. Trying to load file..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
   
   # Read the outcomes from the Elicitor app
-  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json"))),
+  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))),
                                        silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
