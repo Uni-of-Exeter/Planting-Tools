@@ -396,8 +396,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   rm(speciesprob_list)
   
   # Outcomes
-  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json"))))
-  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")))) {
+  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
+  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
     Sys.sleep(5)
   }
   message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "found. Trying to load file..."))
@@ -408,7 +408,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                   "try-error")) {
     Sys.sleep(1)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "loaded, processing..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
