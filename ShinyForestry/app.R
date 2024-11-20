@@ -645,19 +645,19 @@ ConvertSample <- sample(1:NSamp, 200)
 
 # Outcomes
 if (isFALSE(exists("outcomes"))) {
-  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json"))))
-  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")))) {
+  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
+  while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
     Sys.sleep(5)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "found. Trying to load file..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
   
   # Read the outcomes from the Elicitor app
-  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")))
+  while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
                                        , silent = TRUE)),
                   "try-error")) {
     Sys.sleep(1)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes_uag_all_and_birds.json")), "loaded, processing..."))
+  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
