@@ -2138,7 +2138,7 @@ bayesian_optimization <- function(
       # "legal_output_indices" = paste0(legal_output_indices, collapse = "; "),
       "# strategies found" = length(legal_output_indices),
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
-      "# strategies evaluated" = BAYESIAN_OPTIMIZATION_ITERATIONS * BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+      "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
       "Σarea summary" = paste0(round(summary(rowSums(area_vectors), 1), 2), collapse = "; "),
       "area max" = area_sum_threshold,
@@ -2481,7 +2481,7 @@ bayesian_optimization <- function(
     
     notif_msg2 <- rbind(
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
-      "# strategies evaluated" = BAYESIAN_OPTIMIZATION_ITERATIONS * BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+      "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
       "Σarea" = sum(area_vector),
       "area max" = area_sum_threshold,
