@@ -807,7 +807,7 @@ for (ext in AllExtents)
   
 }
 }
-#browser()
+
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
 
@@ -1134,7 +1134,7 @@ server <- function(input, output, session,
   
   
   output$Chart1<-renderPlot({
-    #browser()
+   
     if(ANALYSISMODE){
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&length(unique(Clustering_Category_VectorReactive()))==4){
@@ -1160,7 +1160,7 @@ server <- function(input, output, session,
         CoordPoly<-data.frame(x=c(min_x_t,min_x_t,max_x_t,max_x_t),y=c(min_y_t,max_y_t,max_y_t,min_y_t))
         CoordPolyOrig<-as.matrix(CoordPoly)%*%t(as.matrix(Basis_Loc))+t(matrix(MEANS_Loc,2,4))
        
-        #browser()
+       
         pointCoordinatexy<-(c(input$slider_x/100*(max_x_t-min_x_t)+min_x_t,
                              input$slider_y/100*(max_y_t-min_y_t)+min_y_t))%*%t(as.matrix(Basis_Loc))+t(matrix(MEANS_Loc,2,1))
         To_Add_Or_Subtract_To_Scale_x<-max(abs(min(CoordPolyOrig[,1])),abs(max(CoordPolyOrig[,1])))/10
@@ -1349,7 +1349,7 @@ server <- function(input, output, session,
   # First we need to change this observeEvent inSelect
   #DONE INITIALIZATION
   observeEvent(input$inSelect, {
-   # browser()
+  
     UpdatedExtent(0)
     SelectedDropdown <- input$inSelect
     PreviousClickedVector(NULL)
@@ -1699,7 +1699,7 @@ server <- function(input, output, session,
   # Trigger if anything changes
   observe({
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-     # browser()
+     
       SavedVec<-ClickedVector()
       PreviousSavedVec<-PreviousClickedVector()
       
@@ -1714,7 +1714,8 @@ server <- function(input, output, session,
       PreviousSelectedVec<-PreviousSelectedVector()
       
       SelectedRow<-SelectedFullTableRow()
-      YearSelect<-YearSelectReactive()
+      YearSelect<-input$YearSelect-STARTYEAR
+      YearSelectReactive(YearSelect)
       PrevYearSelectedLoc<-PreviousYearSelectReactive()
       
       MeanCarbonVec<- FullTable[,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
@@ -1820,7 +1821,9 @@ server <- function(input, output, session,
           }
 
           mapp<-
-            addControl(mapp,html = paste0("<p>Carbon: ", round(sum(CarbonMeanCalc), 2), "\u00B1", round(2*sqrt(sum(CarbonVarCalc)), 2), "<br>",
+            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon,2)#round(sum(CarbonMeanCalc), 2)
+                                          , "\u00B1", round(2*SFTR$CarbonSD, 2)#round(2*sqrt(sum(CarbonVarCalc)), 2)
+                                          , "<br>",
                                           # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
                                           addControlText,
                                           "Area Planted: ", round(SFTR$Area, 2), "<br>",
@@ -1848,7 +1851,7 @@ server <- function(input, output, session,
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
   observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
-  #browser()
+ 
     #Define local variables in advance
 
     
@@ -1865,7 +1868,7 @@ server <- function(input, output, session,
         
         
       }else{
-        #browser()
+      
         cat("starting clustering\n")
         
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
@@ -1873,7 +1876,7 @@ server <- function(input, output, session,
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
         #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
         cat(Set_To_Cluster$Carbon)
-       # browser()
+      
         TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
         #mgcvObjectTsneToData<-vector("list",length(NamesOUTPUTS))
         #mgcvObjectDataTotsne<-vector("list",2)
@@ -1892,7 +1895,7 @@ server <- function(input, output, session,
         #}
         
         cat(TSNE_RESULTS$Y)
-        #browser()
+      
         MClust_RESULTS<-NULL
         MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)#,modelNames=c("VVV"))
         cat(MClust_RESULTS$classification)
@@ -1927,7 +1930,7 @@ server <- function(input, output, session,
           
         #  if(is.null(MClust_RESULTS$parameters$variance$orientation)){Basis_Clustering[[ii]]<-diag(2)}else{
          #   cat(MClust_RESULTS$parameters$variance$orientation)
-            #browser()
+           
             #it is possible for orientation to have a single matrix if the orientation is the 
             # same for all clusters.This test checks if orientation is a single matrix and not a 3d array.
             # if it's a 3d array then we allocate each matrix to its correct cluster.
@@ -1938,7 +1941,7 @@ server <- function(input, output, session,
          #   }
           cat(Basis_Clustering[[ii]])
           Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
-          #browser()
+         
           if(!is.null(dim(DataCluster))){
           Projected_TSNE_Data_Clusters[[ii]]<-(DataCluster- t(matrix(Mean_Clusters[[ii]],dim(DataCluster)[2],dim(DataCluster)[1])))%*% Basis_Clustering[[ii]]}else{
             Projected_TSNE_Data_Clusters[[ii]]<-(DataCluster- Mean_Clusters[[ii]])%*% Basis_Clustering[[ii]]
@@ -1952,7 +1955,7 @@ server <- function(input, output, session,
                                                       max_dir2=max( Projected_TSNE_Data_Clusters[[ii]][,2])
                                                       )
         }
-       # browser()
+      
         Projected_TSNE_Data_Clusters_Reactive(Projected_TSNE_Data_Clusters)
         Basis_Clustering_Reactive(Basis_Clustering)
         Mean_Clusters_Reactive(Mean_Clusters)
@@ -2003,8 +2006,6 @@ server <- function(input, output, session,
   observe({
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches") && (ClusteringDone())) {
 
-      #browser()
-      
       YearSelect<-YearSelectReactive()
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
@@ -2184,7 +2185,6 @@ server <- function(input, output, session,
     input$random
     input$tabs
   }, {
-    #browser()
     FourUniqueRowsClusteringLoc<-FourUniqueRowsClusteringReactive()
     Clustering_Category_VectorLoc<-Clustering_Category_VectorReactive()
     
@@ -2249,7 +2249,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     #debug()
     cat("starting updating values based on sliders\n")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-     # browser()
+     # # browser()
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
       current_task_id <- get_latest_task_id() + 1
       set_latest_task_id(current_task_id)
@@ -2527,7 +2527,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe)+  DistSliderVisits
           SelecdMinRows <- which(SUMM == min(SUMM))
           SelectedMins <- list(YEAR=SubsetMeetTargets$YEAR[SelecdMinRows, ],TYPE=SubsetMeetTargets$TYPE[SelecdMinRows,],
-                               OUTPUTS=SubsetMeetTargets$YEAR[SelecdMinRows,])
+                               OUTPUTS=SubsetMeetTargets$OUTPUTS[SelecdMinRows,])
          
           
           # If it is a vector, i.e. only 1 unit is available
@@ -3193,8 +3193,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   }, ignoreInit = TRUE)
 
   observeEvent(input$choose1, {
-    browser() 
-    observe_event_function(choose = 1, # 1 for input$choose1, 2 for input$choose2
+  # #  browser() 
+    observe_event_function_YearType(choose = 1, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,
                            session = session,
@@ -3223,7 +3223,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   })
 
   observeEvent(input$choose2, {
-    observe_event_function(choose = 2, # 1 for input$choose1, 2 for input$choose2
+    observe_event_function_YearType(choose = 2, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,
                            session = session,
@@ -3378,7 +3378,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               mapp<-addPolygons(mapp,data=FullTable$geometry,
                                 layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
             removeControl(mapp,layerId="legend")
-           # browser()
+          
             
             addControlText <- ""
             for (i in 1:length(SPECIES)) {
