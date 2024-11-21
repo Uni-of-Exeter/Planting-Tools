@@ -56,17 +56,25 @@ source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"
 source(normalizePath(file.path(FolderSource, "preferTrees.R")))
 
 if (!require(dgpsi)) {
+  # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+  install_and_load_packages("testthat", quiet = TRUE)
+  install_and_load_packages("pkgload", quiet = TRUE)
   install_and_load_packages("devtools", quiet = TRUE)
   devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
   library("dgpsi")
   dgpsi::init_py()
 }
 if (!require(RRembo)) {
+  # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+  install_and_load_packages("testthat", quiet = TRUE)
+  install_and_load_packages("pkgload", quiet = TRUE)
   install_and_load_packages("devtools", quiet = TRUE)
   devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
   library("RRembo")
 }
-install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+install_and_load_packages(packages = c(# https://github.com/tidyverse/vroom/issues/538
+                                       "progress",
+                                       "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
                                        "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
                                        "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
