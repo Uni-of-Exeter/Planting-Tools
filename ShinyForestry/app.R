@@ -20,7 +20,6 @@ options(shiny.error = browser)
 options(shiny.reactlog = TRUE)
 
 ANALYSISMODE<-TRUE
-UPDATE_AND_INSTALL_PACKAGES<-FALSE
 
 RUN_BO<-FALSE
 set.seed(1)
@@ -57,89 +56,53 @@ source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"
 source(normalizePath(file.path(FolderSource, "preferTrees.R")))
 
 
-if(UPDATE_AND_INSTALL_PACKAGES){
-if (!require(dgpsi)) {
-  # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-  install_and_load_packages("testthat", quiet = TRUE)
-  install_and_load_packages("pkgload", quiet = TRUE)
-  install_and_load_packages("devtools", quiet = TRUE)
-  devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
-  library("dgpsi")
-  dgpsi::init_py()
-}
-if (!require(RRembo)) {
-  # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-  install_and_load_packages("testthat", quiet = TRUE)
-  install_and_load_packages("pkgload", quiet = TRUE)
-  install_and_load_packages("devtools", quiet = TRUE)
-  devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
-  library("RRembo")
-}
-
-
-install_and_load_packages(packages = c(# https://github.com/tidyverse/vroom/issues/538
-                                       "progress",
-                                       "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
-                                       "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-                                       "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-                                       "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-                                       "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "dplyr", "magrittr",
-                                       "rstudioapi",
-                                       "lhs", "sensitivity",
-                                       "progressr", "doFuture", "promises",
-                                       # # Active subspace method
-                                       "concordance", "BASS", "zipfR",
-                                       # To plot the best map, and save it to a file
-                                       "mapview", "webshot",
-                                       # File-locking, for multi-process
-                                       "flock",
-                                       "adaptMCMC", "data.table"), update = TRUE)#
-
-}else{
-libsToLoad<-c("progress",
-"car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
-"geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-"ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-"viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-"GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-"mvtnorm", "dplyr", "magrittr",
-"rstudioapi",
-"lhs", "sensitivity",
-"progressr", "doFuture", "promises",
-"concordance", "BASS", "zipfR",
-"mapview", "webshot",
-"flock",
-"adaptMCMC", "data.table","RRembo",
-"testthat","pkgload","devtools"
+packages <- c(
+  # https://github.com/tidyverse/vroom/issues/538
+  "progress",
+  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+  "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+  "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+  "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+  "mvtnorm", "dplyr", "magrittr",
+  "rstudioapi",
+  "lhs", "sensitivity",
+  "progressr", "doFuture", "promises",
+  # # Active subspace method
+  "concordance", "BASS", "zipfR",
+  # To plot the best map, and save it to a file
+  "mapview", "webshot",
+  # File-locking, for multi-process
+  "flock",
+  "adaptMCMC", "data.table"
 )
-
-for(ll in 1:length(libsToLoad))
-{
-  library(libsToLoad[ll],character.only = TRUE)
+# Bertrand's computer has issues loading and installing packages
+if (Sys.getenv("USERNAME")=="bn267") {
+  for(ll in 1:length(packages)) {
+    library(libsToLoad[ll], character.only = TRUE)
+  }
+} else {
   
+  if (!require(dgpsi)) {
+    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+    install_and_load_packages("testthat", quiet = TRUE)
+    install_and_load_packages("pkgload", quiet = TRUE)
+    install_and_load_packages("devtools", quiet = TRUE)
+    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
+    library("dgpsi")
+    dgpsi::init_py()
+  }
+  if (!require(RRembo)) {
+    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+    install_and_load_packages("testthat", quiet = TRUE)
+    install_and_load_packages("pkgload", quiet = TRUE)
+    install_and_load_packages("devtools", quiet = TRUE)
+    devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
+    library("RRembo")
+  }
+  
+  install_and_load_packages(packages = packages, update = TRUE)
 }
-}
-
-#install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
-#                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-#                                        "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-#                                        "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-#                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-#                                        "mvtnorm", "dplyr", "magrittr",
-#                                        "rstudioapi",
-#                                        "lhs", "sensitivity",
-#                                        "progressr", "doFuture", "promises",
-#                                        # # Active subspace method
-#                                        "concordance", "BASS", "zipfR",
-#                                        # To plot the best map, and save it to a file
-#                                        "mapview", "webshot",
-#                                        # File-locking, for multi-process
-#                                        "flock",
-#                                        "adaptMCMC", "data.table"), update = TRUE)
-
-
-
 
 
 NAME_CONVERSION <- get_name_conversion()
