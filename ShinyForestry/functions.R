@@ -2820,6 +2820,27 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
                    normalizePath(file.path(getwd(), "myRlibrary"))))
   repo <- "https://cran.rstudio.com/"
   
+  # On Windows, don't ask the user to build from source
+  sysinf <- Sys.info()
+  if (!is.null(sysinf)){
+    os <- sysinf['sysname']
+    if (os == 'Darwin')
+      os <- "osx"
+  } else { ## mystery machine
+    os <- .Platform$OS.type
+    if (grepl("^darwin", R.version$os))
+      os <- "osx"
+    if (grepl("linux-gnu", R.version$os))
+      os <- "linux"
+  }
+  if (os == "Windows") {
+    type <- "win.binary"
+  } else if (os == "osx") {
+    type <- "mac.binary"
+  } else if (os == "linux") {
+    type <- "source"
+  }
+  
   # Loop through libraries until one is writable
   error_happened <- TRUE
   i <- 1
@@ -2829,8 +2850,8 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
       # Unload packages
       sapply(packages, function(x) {tryCatch(detach(paste0("package:", x), character.only = TRUE, unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
       
-      if (update) {
-        update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = !verbose)
+      if (isTRUE(update)) {
+        update.packages(lib.loc = lib, instlib = lib, repos = repo, oldPkgs = packages, type = type, ask = FALSE, quiet = !verbose)
       }
       
       # Only load prefeR namespace
@@ -2853,7 +2874,7 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
       tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {}, warning = function(w) {})
       
       # Install packages
-      install.packages(packages_to_install, lib = lib, repos = repo, quiet = !verbose)
+      install.packages(packages_to_install, lib = lib, repos = repo, type = type, quiet = !verbose)
       
       # Load packages
       sapply(packages, library, character.only = TRUE, quietly = !verbose, lib.loc = lib)
