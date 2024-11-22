@@ -79,7 +79,7 @@ packages <- c(
 # Bertrand's computer has issues loading and installing packages
 if (Sys.getenv("USERNAME")=="bn267") {
   for(ll in 1:length(packages)) {
-    library(libsToLoad[ll], character.only = TRUE)
+    library(packages[ll], character.only = TRUE)
   }
 } else {
   
