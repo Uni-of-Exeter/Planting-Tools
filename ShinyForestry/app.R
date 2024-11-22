@@ -20,6 +20,7 @@ options(shiny.error = browser)
 options(shiny.reactlog = TRUE)
 
 ANALYSISMODE<-TRUE
+UPDATE_AND_INSTALL_PACKAGES<-FALSE
 
 RUN_BO<-FALSE
 set.seed(1)
@@ -55,6 +56,8 @@ source(normalizePath(file.path(FolderSource, "functions.R")))
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
 source(normalizePath(file.path(FolderSource, "preferTrees.R")))
 
+
+if(UPDATE_AND_INSTALL_PACKAGES){
 if (!require(dgpsi)) {
   # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
   install_and_load_packages("testthat", quiet = TRUE)
@@ -72,6 +75,8 @@ if (!require(RRembo)) {
   devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
   library("RRembo")
 }
+
+
 install_and_load_packages(packages = c(# https://github.com/tidyverse/vroom/issues/538
                                        "progress",
                                        "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
@@ -89,7 +94,53 @@ install_and_load_packages(packages = c(# https://github.com/tidyverse/vroom/issu
                                        "mapview", "webshot",
                                        # File-locking, for multi-process
                                        "flock",
-                                       "adaptMCMC", "data.table"), update = TRUE)
+                                       "adaptMCMC", "data.table"), update = TRUE)#
+
+}else{
+libsToLoad<-c("progress",
+"car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+"geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+"ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+"viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+"GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+"mvtnorm", "dplyr", "magrittr",
+"rstudioapi",
+"lhs", "sensitivity",
+"progressr", "doFuture", "promises",
+"concordance", "BASS", "zipfR",
+"mapview", "webshot",
+"flock",
+"adaptMCMC", "data.table","RRembo",
+"testthat","pkgload","devtools"
+)
+
+for(ll in 1:length(libsToLoad))
+{
+  library(libsToLoad[ll],character.only = TRUE)
+  
+}
+}
+
+#install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+#                                        "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+#                                        "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+#                                        "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+#                                        "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+#                                        "mvtnorm", "dplyr", "magrittr",
+#                                        "rstudioapi",
+#                                        "lhs", "sensitivity",
+#                                        "progressr", "doFuture", "promises",
+#                                        # # Active subspace method
+#                                        "concordance", "BASS", "zipfR",
+#                                        # To plot the best map, and save it to a file
+#                                        "mapview", "webshot",
+#                                        # File-locking, for multi-process
+#                                        "flock",
+#                                        "adaptMCMC", "data.table"), update = TRUE)
+
+
+
+
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -394,7 +445,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   # Replace Biodiversity columns with correct ones
   msg <- "Converting biodiversity from square grid cells to our shapefile polygons ..."
-  notif(msg, log_level = "info")
+  notif(msg, global_log_level = LOG_LEVEL)
   FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
                                                                               speciesprob_list = speciesprob_list,
                                                                               seer2km = seer2km,
@@ -403,7 +454,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                                                                               MAXYEAR = MAXYEAR,
                                                                               global_log_level = LOG_LEVEL)
   msg <- paste(msg, "done")
-  notif(msg, log_level = "info")
+  notif(msg, global_log_level = LOG_LEVEL)
   # Free a lot of RAM
   rm(speciesprob_list)
   
