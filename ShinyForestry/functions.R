@@ -1735,8 +1735,8 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(mean(SelectedSimMat2$Carbon) / 150,
-              colMeans(speciesMat) / 150,
+  tolvec <- c(abs(mean(SelectedSimMat2$Carbon)) / 150,
+              abs(colMeans(speciesMat)) / 150,
               mean(SelectedSimMat2$Area) / 150,
               mean(SelectedSimMat2$Visits) / 150)
   for(i in 1:length(tolvec)) {
