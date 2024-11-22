@@ -2827,7 +2827,7 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
     lib <- libs[i]
     tryCatch({
       # Unload packages
-      sapply(packages, function(x) {tryCatch(detach(paste0("package:", pkg), unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
+      sapply(packages, function(x) {tryCatch(detach(paste0("package:", pkg), character.only = TRUE, unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
       
       if (update) {
         update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = !verbose)
