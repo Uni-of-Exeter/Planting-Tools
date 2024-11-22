@@ -2813,7 +2813,7 @@ generate_unique_id <- function(used_ids_reactive, sample_space) {
   return(id)
 }
 
-install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
+install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) {
   # Load packages
   libs <- unique(c(normalizePath(.libPaths()),
                    normalizePath(Sys.getenv("R_LIBS_USER")),
@@ -2823,25 +2823,25 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
   # Loop through libraries until one is writable
   error_happened <- TRUE
   i <- 1
-  while (error_happened == TRUE && i <= length(libs)) {
+  while (isTRUE(error_happened) && i <= length(libs)) {
     lib <- libs[i]
     tryCatch({
       # Unload packages
       sapply(packages, function(x) {tryCatch(detach(paste0("package:", pkg), unload = TRUE, force = TRUE), error = function(e) {}, warning = function(w) {})})
       
       if (update) {
-        update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = quiet)
+        update.packages(lib.loc = lib, repos = repo, oldPkgs = packages, ask = FALSE, quiet = !verbose)
       }
       
       # Only load prefeR namespace
       if ("prefeR" %in% packages && !requireNamespace("prefeR", quietly = TRUE)) {
-        install.packages("prefeR", lib = lib, repos = repo, quiet = quiet)
+        install.packages("prefeR", lib = lib, repos = repo, quiet = !verbose)
         packages <- packages[packages != "prefeR"]
         loadNamespace("prefeR")
       }
       
       # Load the packages already installed
-      packages_status <- sapply(packages, require, character.only = TRUE, quietly = quiet, lib.loc = lib)
+      packages_status <- sapply(packages, require, character.only = TRUE, quietly = !verbose, lib.loc = lib)
       
       # Other packages to install
       packages_to_install <- packages[packages_status == FALSE]
@@ -2853,10 +2853,10 @@ install_and_load_packages <- function(packages, update = FALSE, quiet = FALSE) {
       tryCatch(remove.packages(packages_to_install, lib = lib), error = function(e) {}, warning = function(w) {})
       
       # Install packages
-      install.packages(packages_to_install, lib = lib, repos = repo, quiet = quiet)
+      install.packages(packages_to_install, lib = lib, repos = repo, quiet = !verbose)
       
       # Load packages
-      sapply(packages, library, character.only = TRUE, quietly = quiet, lib.loc = lib)
+      sapply(packages, library, character.only = TRUE, quietly = !verbose, lib.loc = lib)
       
       # Stop the loop if we reach here
       error_happened <- FALSE
