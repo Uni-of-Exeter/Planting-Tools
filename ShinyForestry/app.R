@@ -394,7 +394,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   # Replace Biodiversity columns with correct ones
   msg <- "Converting biodiversity from square grid cells to our shapefile polygons ..."
-  notif(msg, log_level = "info")
+  notif(msg, global_log_level = LOG_LEVEL)
   FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
                                                                               speciesprob_list = speciesprob_list,
                                                                               seer2km = seer2km,
@@ -403,7 +403,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                                                                               MAXYEAR = MAXYEAR,
                                                                               global_log_level = LOG_LEVEL)
   msg <- paste(msg, "done")
-  notif(msg, log_level = "info")
+  notif(msg, global_log_level = LOG_LEVEL)
   # Free a lot of RAM
   rm(speciesprob_list)
   
