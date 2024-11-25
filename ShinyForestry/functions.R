@@ -1942,10 +1942,12 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   return(FullTable2)
 }
 
-get_regressed_biodiversity_change <- function(biodiversity_planting,
-                                              biodiversity_no_planting,
-                                              MAXYEAR,
-                                              year_of_planting_from_0) {
+get_regressed_biodiversity <- function(biodiversity_planting,
+                                       biodiversity_no_planting,
+                                       MAXYEAR,
+                                       year_of_planting_from_0,
+                                       # Get the difference in probability (planting - not_planting)
+                                       difference = FALSE) {
   # Fit a line on (year_planting, biodiversity_planting) from (0, biodiversity_planting) to (MAXYEAR+1, biodiversity_no_planting)
   
   # tibbles are lists, but cause warnings when substracting one from another
@@ -1965,7 +1967,9 @@ get_regressed_biodiversity_change <- function(biodiversity_planting,
   result <- intercept + slope * year_of_planting_from_0
   
   # We want the change: value if we plant - value if we never plant
-  result <- result - biodiversity_no_planting
+  if (isTRUE(difference)) {
+    result <- result - biodiversity_no_planting
+  }
   
   # Return the regressed value
   return(result)
@@ -1998,10 +2002,10 @@ calculate_richness <- function(group,
                     matches(species_pattern))
   
   # Regress to find the biodiversity values for the planting year strategy
-  biodiversity_evaluated <- get_regressed_biodiversity_change(biodiversity_planting = mytable_planting,
-                                                              biodiversity_no_planting = mytable_noplanting,
-                                                              MAXYEAR = MAXYEAR,
-                                                              year_of_planting_from_0 = year_of_planting_from_0)
+  biodiversity_evaluated <- get_regressed_biodiversity(biodiversity_planting = mytable_planting,
+                                                       biodiversity_no_planting = mytable_noplanting,
+                                                       MAXYEAR = MAXYEAR,
+                                                       year_of_planting_from_0 = year_of_planting_from_0)
   
   len_col_indices_of_group <- ncol(biodiversity_evaluated)
   
@@ -2313,10 +2317,10 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
     
     
     # Biodiversity total ----
-    sum_biodiversity <- get_regressed_biodiversity_change(biodiversity_planting = biodiversity_planting,
-                                                          biodiversity_no_planting = biodiversity_no_planting,
-                                                          MAXYEAR = MAXYEAR,
-                                                          year_of_planting_from_0 = year_vector) |>
+    sum_biodiversity <- get_regressed_biodiversity(biodiversity_planting = biodiversity_planting,
+                                                   biodiversity_no_planting = biodiversity_no_planting,
+                                                   MAXYEAR = MAXYEAR,
+                                                   year_of_planting_from_0 = year_vector) |>
       colSums()
     
     # Biodiversity SD
