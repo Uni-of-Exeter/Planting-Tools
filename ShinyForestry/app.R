@@ -2276,7 +2276,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     #debug()
     cat("starting updating values based on sliders\n")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-     # # browser()
+  
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
       current_task_id <- get_latest_task_id() + 1
       set_latest_task_id(current_task_id)
@@ -3220,7 +3220,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   }, ignoreInit = TRUE)
 
   observeEvent(input$choose1, {
-  # #  browser() 
+  
     observe_event_function_YearType(choose = 1, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,

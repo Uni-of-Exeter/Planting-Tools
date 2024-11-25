@@ -1373,10 +1373,8 @@ objective_function <- function(inputs, # c(area_vector)
   }
   
   if (!is.finite(result)) {
-    browser()
-    message("area_vector=", area_vector)
-    message("area_sum_threshold=", area_sum_threshold)
-    message("area_possible_non_zero_values=", area_possible_non_zero_values)
+    msg <- paste("The objective function returned a non-finite value of", result)
+    notif(msg, log_level = "error")
   }
   
   if (isTRUE(multi_objectives)) {

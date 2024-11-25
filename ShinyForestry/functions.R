@@ -1085,7 +1085,7 @@ outputmap_calculateMatsYear <- function(input,
   # and forces the whole column of SelectedSimMat to be equal to 0 (plant at year 0)
   # Note that SelectedSimMat is only used for CO2 as for the others, 
   #SAMPLELIST<-list()
-  #browser()
+  
   for(bcc in 1:dim(SelectedSimMatYearORSavedVec)[2])
   {#if(SavedVecYearLoc[bcc]<(MAXYEAR+1)){
     
@@ -1097,7 +1097,7 @@ outputmap_calculateMatsYear <- function(input,
     if(!is.null(SAMPLELIST[[bcc]])){SelectedSimMatYearORSavedVec[,bcc] <-SAMPLELIST[[bcc]]}
     #}
   }
-  #browser()
+  
   SelectedSimMatBinary<-1*(SelectedSimMatYearORSavedVec!=(MAXYEAR+1))
   
   SVMAT <- t(matrix(SavedVecLoc, length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
@@ -1176,7 +1176,7 @@ outputmap_calculateMatsYear <- function(input,
   # Create a data frame representing the selected similarity matrix
   # SelectedSimMatBinary <- data.frame(1 * (SelectedSimMatBinary | SVMAT))
   
-  #browser()
+  
   
   if (is.null(ManualTargets)){
     SelecTargetCarbon <- input$SliderMain
@@ -1202,7 +1202,7 @@ outputmap_calculateMatsYear <- function(input,
   speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
                                                         function(x) bquote(sqrt(rowSums(SelectedSimMatBinary * (get(paste0(.(x), "MAT"))^2) / length(SavedVecYearLoc))))),
                                                  names(SpeciesListSelectedSD)))
-  #browser()
+  
   SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
                                 SelectedSimMatYearORSavedVec=SelectedSimMatYearORSavedVec,
                                 Carbon = rowSums(CarbonMATYearORSavedVec),#rowSums(SelectedSimMat * CarbonMAT),
@@ -1212,7 +1212,7 @@ outputmap_calculateMatsYear <- function(input,
                                 CarbonSD = sqrt(rowSums(CarbonMATYearORSavedVec^2)),#sqrt(rowSums(SelectedSimMat * (CarbonSDMAT^2))),
                                 speciesMatSD,
                                 VisitsSD = sqrt(rowSums(SelectedSimMatBinary * (VisitsSDMAT^2))) / length(SavedVecYearLoc))
-  #browser()
+  
   Icalc <- MultiImpl(
     TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
     EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
@@ -1278,7 +1278,7 @@ outputmap_calculateMatsYearType <- function(input,
   }
   
   SelectedSimMatYearTypeORSavedVec<-simul636YearTypeLoc
-  #browser()
+  
   #Need to transform matrix here.
   
   #We assume that if the land parcel has been clicked by the user, it overrides previous year of planting
@@ -1314,12 +1314,12 @@ outputmap_calculateMatsYearType <- function(input,
   #}
   
   #}else{
-  # browser()
+  
   CarbonMATYearTypeORSavedVec<-PrecalculatedCarbonSelectedTableTypeMean
   for (bb in 1:length(SavedVecYearTypeLoc))
   {
     if(!is.null(SAMPLELIST[[bb]])){  
-      #  browser()
+  
       CarbonMATYearTypeORSavedVec[,bb]<-0
       TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
       TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
@@ -1360,7 +1360,7 @@ outputmap_calculateMatsYearType <- function(input,
   CarbonSDMATYearTypeORSavedVec<-PrecalculatedCarbonSelectedTableTypeSD
   for (bb in 1:length(SavedVecYearTypeLoc))
   {  if(!is.null(SAMPLELIST[[bb]])){  
-    # browser()
+  
     CarbonSDMATYearTypeORSavedVec[,bb]<-0
     TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
     TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
@@ -1410,7 +1410,7 @@ outputmap_calculateMatsYearType <- function(input,
   speciesMatSD <- do.call("data.frame", setNames(lapply(names(SpeciesListSelectedSD),
                                                         function(x) bquote(sqrt(rowSums(SelectedSimMatBinary * (get(paste0(.(x), "MAT"))^2) / length(SavedVecYearTypeLoc))))),
                                                  names(SpeciesListSelectedSD)))
-  # browser()
+  
   SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMatYearTypeORSavedVec,#SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
                                 #SelectedSimMatYearTypeORSavedVec=SelectedSimMatYearTypeORSavedVec,
                                 Carbon = rowSums(CarbonMATYearTypeORSavedVec),
@@ -1422,8 +1422,8 @@ outputmap_calculateMatsYearType <- function(input,
                                 VisitsSD = sqrt(rowSums(SelectedSimMatBinary * (VisitsSDMAT^2))) / length(SavedVecYearTypeLoc))
   #  write.csv(SelectedSimMat3,file="d:\\ValuesMat.csv")
   #  save(simul636YearTypeLoc,file="d:\\SimulYearType.Rdata")
-  # browser()
-  #  #browser()
+  
+  
   Icalc <- MultiImpl(
     TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
     EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
@@ -1597,7 +1597,7 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
                                         SavedVecYearLoc,
                                         MAXYEAR) {
   
-  #browser()
+  
   simul636Loc <- matrix(1,2,length(SavedVecYearLoc))
   simul636YearLoc <- matrix(1,2,length(SavedVecYearLoc))
   #TODO
@@ -1714,7 +1714,7 @@ InitFindMaxSliderValuesYear <- function(SavedVecLoc,
   #                       # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
   #                      speciesMatSD,
   #                     VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVecLoc))
-  #browser()
+  
   SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
                                 SelectedSimMatYearORSavedVec=SelectedSimMatYearORSavedVec,
                                 Carbon = rowSums(CarbonMATYearORSavedVec85),#rowSums(SelectedSimMat * CarbonMAT),
