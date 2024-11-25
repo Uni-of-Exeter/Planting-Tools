@@ -22,35 +22,56 @@ source(normalizePath(file.path(FolderSource, "functions.R")))
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
 source(normalizePath(file.path(FolderSource, "preferTrees.R")))
 
-
-if (!require(dgpsi)) {
-  install_and_load_packages("devtools", quiet = TRUE)
-  devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
+packages <- c(
+  # https://github.com/tidyverse/vroom/issues/538
+  "progress",
+  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+  "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+  "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+  "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+  "mvtnorm", "dplyr", "magrittr",
+  "rstudioapi",
+  "lhs", "sensitivity",
+  "progressr", "doFuture", "promises",
+  # # Active subspace method
+  "concordance", "BASS", "zipfR",
+  # To plot the best map, and save it to a file
+  "mapview", "webshot",
+  # File-locking, for multi-process
+  "flock",
+  "adaptMCMC", "data.table"
+)
+# Bertrand's computer has issues loading and installing packages
+if (Sys.getenv("USERNAME")=="bn267") {
   library("dgpsi")
-  dgpsi::init_py()
-}
-if (!require(RRembo)) {
-  install_and_load_packages("devtools", quiet = TRUE)
-  devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
   library("RRembo")
+  for(ll in 1:length(packages)) {
+    library(packages[ll], character.only = TRUE)
+  }
+} else {
+  
+  if (!require(dgpsi)) {
+    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+    install_and_load_packages("testthat", quiet = TRUE)
+    install_and_load_packages("pkgload", quiet = TRUE)
+    install_and_load_packages("devtools", quiet = TRUE)
+    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "ask", quiet = TRUE)
+    library("dgpsi")
+    dgpsi::init_py()
+  }
+  if (!require(RRembo)) {
+    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+    install_and_load_packages("testthat", quiet = TRUE)
+    install_and_load_packages("pkgload", quiet = TRUE)
+    install_and_load_packages("devtools", quiet = TRUE)
+    devtools::install_github('mbinois/RRembo', upgrade = "ask", quiet = TRUE)
+    library("RRembo")
+  }
+  
+  install_and_load_packages(packages = packages, update = FALSE)
 }
-install_and_load_packages(packages = c("car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "leaflet", "sf", "ggplot2",
-                                       "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-                                       "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-                                       "viridis", "ggmap", "shinyjqui", "MASS", "shinyWidgets", "truncnorm",
-                                       "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-                                       "mvtnorm", "dplyr", "magrittr",
-                                       "rstudioapi",
-                                       "lhs", "sensitivity",
-                                       "progressr", "doFuture", "promises",
-                                       # # Active subspace method
-                                       "concordance", "BASS", "zipfR",
-                                       # To plot the best map, and save it to a file
-                                       "mapview", "webshot",
-                                       # File-locking, for multi-process
-                                       "flock",
-                                       "adaptMCMC",
-                                       "tictoc", "data.table"), update = FALSE)
+
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -109,7 +130,7 @@ message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))
 handlers(global = TRUE)
 
 # Load FullTable from file
-FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
+FullTable <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 RREMBO_CONTROL <- list(
   # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
@@ -129,55 +150,8 @@ A <- RREMBO_HYPER_PARAMETERS$A
 DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
 
 # ALREADY DONE IN THE APP (begin)
-area_possible_non_zero_values <- FullTable %>%
-  sf::st_drop_geometry() %>%
-  dplyr::select(area) %>%
-  unlist(use.names = FALSE)
-area_possible_values_dataframe <- rbind(0, area_possible_non_zero_values)
-rownames(area_possible_values_dataframe) <- NULL
 
-years_possible_values_dataframe <- 0:MAXYEAR
-years_possible_values_dataframe <- matrix(years_possible_values_dataframe,
-                                          nrow = length(years_possible_values_dataframe),
-                                          ncol = ncol(area_possible_values_dataframe))
-
-tree_specie_possible_values_dataframe <- FullTable %>%
-  sf::st_drop_geometry() %>%
-  colnames() %>%
-  grep(pattern = "TreeSpecie", x = ., value = TRUE) %>%
-  gsub(pattern = ".*TreeSpecie(.*?)_.*", x = ., replacement = "\\1", perl = TRUE) %>%
-  gsub(pattern = ".*TreeSpecie(.*)", x = ., replacement = "\\1", perl = TRUE) %>%
-  unique()
-tree_specie_possible_values_dataframe <- matrix(tree_specie_possible_values_dataframe,
-                                                nrow = length(tree_specie_possible_values_dataframe),
-                                                ncol = ncol(area_possible_values_dataframe))
-# ALREADY DONE IN THE APP (end)
-
-group_size <- ncol(DoE_high_dimension) / 3
-indices <- 1:group_size
-# Area
-DoE_high_dimension_categorical_area <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
-                                                                       legal_values_ordered = area_possible_values_dataframe)
-colnames(DoE_high_dimension_categorical_area) <- paste0("area_parcel_id", 1:ncol(DoE_high_dimension_categorical_area))
-
-# Year of planting
-indices <- group_size + indices
-DoE_high_dimension_categorical_year <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
-                                                                       legal_values_ordered = years_possible_values_dataframe)
-colnames(DoE_high_dimension_categorical_year) <- paste0("plantingyear_parcel_id", 1:ncol(DoE_high_dimension_categorical_year))
-
-# Tree specie
-indices <- group_size + indices
-DoE_high_dimension_categorical_treespecie <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
-                                                                             legal_values_ordered = tree_specie_possible_values_dataframe)
-colnames(DoE_high_dimension_categorical_treespecie) <- paste0("treespecie_parcel_id", 1:ncol(DoE_high_dimension_categorical_treespecie))
-
-DoE_high_dimension_categorical <- cbind(DoE_high_dimension_categorical_area,
-                                        DoE_high_dimension_categorical_year,
-                                        DoE_high_dimension_categorical_treespecie)
-
-# ALREADY DONE IN THE APP (begin)
-# DECIDE OUTCOMES
+# Decide outcomes
 if (isFALSE(exists("outcomes"))) {
   message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
   while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
@@ -217,19 +191,93 @@ if (isFALSE(exists("outcomes"))) {
     }
   }
 }
-# DECIDE TREE SPECIE and SCENARIO
+# Decide tree specie and scenario
 SCENARIO <- 26
 TREE_SPECIE <- "Conifers"
 
 # Slider thresholds
 area_sum_threshold <- 15
-# outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits)
 outcomes_to_maximize_sum_threshold_vector <- c("Carbon" = 20,
                                                do.call(c, setNames(lapply(SPECIES, function(x) {runif(1)}), SPECIES)),
                                                "Visits" = 10)
-year_of_planting_min_threshold_vector <- sample(x = years_possible_values_dataframe[, 1],
-                                                size = nrow(FullTable),
-                                                replace = TRUE)
+# The threshold from tab 1 (with values in -1:MAXYEAR) corresponds to the end of the year until which planting is forbidden
+# i.e. -1 means we can plant from year 0, ..., MAXYEAR (24) means we cannot plant i.e. find column with year MAXYEAR+1 (25)
+# In order to sample effectively, we don't sample the years we cannot plant during
+year_of_max_no_planting_threshold_vector <- sample(x = -1:MAXYEAR,
+                                                   size = nrow(FullTable),
+                                                   replace = TRUE)
+year_of_planting_min_threshold_vector <- 
+
+# Possible values for area, and tree specie (years later)
+area_possible_non_zero_values <- FullTable %>%
+  sf::st_drop_geometry() %>%
+  dplyr::select(area) %>%
+  unlist(use.names = FALSE)
+area_possible_values_dataframe <- rbind(0, area_possible_non_zero_values)
+rownames(area_possible_values_dataframe) <- NULL
+
+# years_possible_values_dataframe <- 0:MAXYEAR
+# years_possible_values_dataframe <- matrix(years_possible_values_dataframe,
+#                                           nrow = length(years_possible_values_dataframe),
+#                                           ncol = ncol(area_possible_values_dataframe))
+
+tree_specie_possible_values_dataframe <- FullTable %>%
+  sf::st_drop_geometry() %>%
+  colnames() %>%
+  grep(pattern = "TreeSpecie", x = ., value = TRUE) %>%
+  gsub(pattern = ".*TreeSpecie(.*?)_.*", x = ., replacement = "\\1", perl = TRUE) %>%
+  gsub(pattern = ".*TreeSpecie(.*)", x = ., replacement = "\\1", perl = TRUE) %>%
+  unique()
+tree_specie_possible_values_dataframe <- matrix(tree_specie_possible_values_dataframe,
+                                                nrow = length(tree_specie_possible_values_dataframe),
+                                                ncol = ncol(area_possible_values_dataframe))
+
+# Turn area to categorical values
+group_size <- ncol(DoE_high_dimension) / 3
+indices <- 1:group_size
+DoE_high_dimension_categorical_area <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
+                                                                       legal_values_ordered = area_possible_values_dataframe)
+colnames(DoE_high_dimension_categorical_area) <- paste0("area_parcel_id", 1:ncol(DoE_high_dimension_categorical_area))
+
+# Possible values for year, and turn to categorical values
+DoE_high_dimension_categorical_year <- matrix(NA,
+                                              nrow = length(tree_specie_possible_values_dataframe),
+                                              ncol = ncol(area_possible_values_dataframe))
+indices <- group_size + indices
+## Per parcel, uniformly sample over the allowed planting years (from minimum_specified_in_strategy to MAXYEAR)
+for (i in indices) {
+  # Loop over parcels
+  parcel_idx <- i - min(indices) + 1
+  can_we_plant_vector <- (as.numeric(DoE_high_dimension_categorical_area[, parcel_idx]) == 0)
+  
+  years_possible_values_dataframe <- sapply(1:nrow(DoE_high_dimension_categorical_area), function(j) {
+    if (isTRUE(can_we_plant_vector[j])) {
+      return(sample(x = year_of_planting_min_threshold_vector[j]:MAXYEAR, size = 1))
+    } else {
+      return(invisible())
+    }
+  }) |>
+    unlist() |>
+    cbind()
+  
+  DoE_high_dimension_categorical_year[, parcel_idx] <- continuous_to_multi_categorical(values = DoE_high_dimension[, i, drop = FALSE],
+                                                                                       legal_values_ordered = years_possible_values_dataframe)
+  
+}
+
+DoE_high_dimension_categorical_year <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
+                                                                       legal_values_ordered = years_possible_values_dataframe)
+colnames(DoE_high_dimension_categorical_year) <- paste0("plantingyear_parcel_id", 1:ncol(DoE_high_dimension_categorical_year))
+
+# Turn tree specie to categorical values
+indices <- group_size + indices
+DoE_high_dimension_categorical_treespecie <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
+                                                                             legal_values_ordered = tree_specie_possible_values_dataframe)
+colnames(DoE_high_dimension_categorical_treespecie) <- paste0("treespecie_parcel_id", 1:ncol(DoE_high_dimension_categorical_treespecie))
+
+DoE_high_dimension_categorical <- cbind(DoE_high_dimension_categorical_area,
+                                        DoE_high_dimension_categorical_year,
+                                        DoE_high_dimension_categorical_treespecie)
 # ALREADY DONE IN THE APP (end)
 
 # Look at a single strategy (pick any, 1 is for the example)
