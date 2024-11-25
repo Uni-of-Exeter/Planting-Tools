@@ -1521,7 +1521,6 @@ server <- function(input, output, session,
       #                          input_areaSlider_multiplicative_coefficient = TRUE,
       #                         alpha=alphaLVL)
     
-      browser()
       MaxVals<-InitFindMaxSliderValuesYear(SelectedVector(),
                                            AreaSelected,
                                            CarbonSelected,
