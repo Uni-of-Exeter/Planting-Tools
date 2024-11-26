@@ -1814,7 +1814,6 @@ InitFindMaxSliderValuesYearType_NegativeVals <- function(SavedVecLoc,
                                         PrecalcCarbonAllExtentsType,
                                         PrecalcCarbonAllExtentsSDType) {
   
-  browser()
   simul636Loc <- matrix(1,2,length(SavedVecYearLoc))
   simul636YearLoc <- matrix(1,2,length(SavedVecYearLoc))
   #TODO
@@ -1931,7 +1930,6 @@ InitFindMaxSliderValuesYearType_NegativeVals <- function(SavedVecLoc,
   #                       # redsquirrelSD = sqrt(rowSums(SelectedSimMat * (RedSquirrelSDMAT^2))) / length(SavedVec),
   #                      speciesMatSD,
   #                     VisitsSD = sqrt(rowSums(SelectedSimMat * (VisitsSDMAT^2))) / length(SavedVecLoc))
-  #browser()
   SelectedSimMat2 <- data.frame(SelectedSimMat=SelectedSimMat,SelectedSimMatBinary=SelectedSimMatBinary,
                                 SelectedSimMatYearORSavedVec=SelectedSimMatYearORSavedVec,
                                 Carbon = rowSums(CarbonMATYearORSavedVec85),#rowSums(SelectedSimMat * CarbonMAT),
