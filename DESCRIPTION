@@ -1,9 +1,12 @@
+# progress is required on Ubuntu: https://github.com/tidyverse/vroom/issues/538
 Imports:
-  # Planting-Tools app
+  progress,
   car,
   shinyjs,
   shiny,
   shinyjqui,
+  shiny.fluent,
+  reactlog,
   leaflet,
   sf,
   ggplot2,
@@ -15,6 +18,7 @@ Imports:
   tidyverse,
   gsubfn,
   ggpubr,
+  htmltools,
   comprehenr,
   Rtsne,
   mclust,
@@ -22,8 +26,8 @@ Imports:
   jsonlite,
   viridis,
   ggmap,
-  shinyjqui,
   MASS,
+  mgcv,
   shinyWidgets,
   truncnorm,
   GGally,
@@ -34,36 +38,30 @@ Imports:
   arrow,
   lwgeom,
   mvtnorm,
-  # Planting-Tools timothee with Bayesian Optimization
+  dplyr,
+  magrittr,
+  rstudioapi,
   lhs,
   sensitivity,
   devtools,
-  future,
   progressr,
-  doFuture,
-  BASS,
   concordance,
+  BASS,
   zipfR,
-  DiceOptim,
-  reticulate,
-  # For coding
-  beepr,
-  # MCA
-  FactoMineR,
-  # To plot the best map, and save it to a file
   leaflet,
   mapview,
   webshot,
-  # Necessary for RRembo
+  beepr,
+  FactoMineR,
   eaf,
   RRembo,
-  # # Optimize the acquisition functin with parallel multi-start
-  # doFuture,
-  # doRNG,
-  # GPvecchia,
-  rstudioapi,
-  dgpsi
+  doFuture,
+  promises,
+  doRNG,
+  dgpsi,
+  flock,
+  adaptMCMC,
+  data.table
 Remotes:
-  # Force the development version of dgpsi
   mingdeyu/dgpsi-R,
   mbinois/RRembo
