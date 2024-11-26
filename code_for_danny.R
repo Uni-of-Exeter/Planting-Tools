@@ -206,20 +206,19 @@ outcomes_to_maximize_sum_threshold_vector <- c("Carbon" = 20,
 year_of_max_no_planting_threshold_vector <- sample(x = -1:MAXYEAR,
                                                    size = nrow(FullTable),
                                                    replace = TRUE)
-year_of_planting_min_threshold_vector <- 
+names(year_of_max_no_planting_threshold_vector) <- paste0("area_parcel_id", 1:length(year_of_max_no_planting_threshold_vector))
+year_of_planting_min_threshold_vector <- year_of_max_no_planting_threshold_vector + 1
 
 # Possible values for area, and tree specie (years later)
 area_possible_non_zero_values <- FullTable %>%
   sf::st_drop_geometry() %>%
   dplyr::select(area) %>%
   unlist(use.names = FALSE)
+# Prevent potential miscalculations
+area_possible_non_zero_values[year_of_max_no_planting_threshold_vector == MAXYEAR] <- 0
 area_possible_values_dataframe <- rbind(0, area_possible_non_zero_values)
 rownames(area_possible_values_dataframe) <- NULL
 
-# years_possible_values_dataframe <- 0:MAXYEAR
-# years_possible_values_dataframe <- matrix(years_possible_values_dataframe,
-#                                           nrow = length(years_possible_values_dataframe),
-#                                           ncol = ncol(area_possible_values_dataframe))
 
 tree_specie_possible_values_dataframe <- FullTable %>%
   sf::st_drop_geometry() %>%
@@ -241,32 +240,26 @@ colnames(DoE_high_dimension_categorical_area) <- paste0("area_parcel_id", 1:ncol
 
 # Possible values for year, and turn to categorical values
 DoE_high_dimension_categorical_year <- matrix(NA,
-                                              nrow = length(tree_specie_possible_values_dataframe),
-                                              ncol = ncol(area_possible_values_dataframe))
+                                              nrow = nrow(DoE_high_dimension),
+                                              ncol = length(indices))
 indices <- group_size + indices
 ## Per parcel, uniformly sample over the allowed planting years (from minimum_specified_in_strategy to MAXYEAR)
 for (i in indices) {
   # Loop over parcels
   parcel_idx <- i - min(indices) + 1
-  can_we_plant_vector <- (as.numeric(DoE_high_dimension_categorical_area[, parcel_idx]) == 0)
   
-  years_possible_values_dataframe <- sapply(1:nrow(DoE_high_dimension_categorical_area), function(j) {
-    if (isTRUE(can_we_plant_vector[j])) {
-      return(sample(x = year_of_planting_min_threshold_vector[j]:MAXYEAR, size = 1))
-    } else {
-      return(invisible())
-    }
-  }) |>
-    unlist() |>
-    cbind()
+  # If we can plant, map uniformly to all possible years
+  if (as.numeric(year_of_max_no_planting_threshold_vector[parcel_idx]) < MAXYEAR) {
+    years_possible_values_dataframe <- cbind(year_of_planting_min_threshold_vector[parcel_idx]:MAXYEAR)
+  } else {
+    # Otherwise, we skip this later anyway, but map all values to the same category
+    years_possible_values_dataframe <- cbind(MAXYEAR + 1)
+  }
   
-  DoE_high_dimension_categorical_year[, parcel_idx] <- continuous_to_multi_categorical(values = DoE_high_dimension[, i, drop = FALSE],
-                                                                                       legal_values_ordered = years_possible_values_dataframe)
+  DoE_high_dimension_categorical_year[, parcel_idx] <- as.numeric(continuous_to_multi_categorical(values = DoE_high_dimension[, i, drop = FALSE],
+                                                                                                  legal_values_ordered = years_possible_values_dataframe))
   
 }
-
-DoE_high_dimension_categorical_year <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
-                                                                       legal_values_ordered = years_possible_values_dataframe)
 colnames(DoE_high_dimension_categorical_year) <- paste0("plantingyear_parcel_id", 1:ncol(DoE_high_dimension_categorical_year))
 
 # Turn tree specie to categorical values
@@ -687,7 +680,7 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
   
   return(list("sum_carbon" = sum_carbon,
               "sum_carbon_sd" = sum_carbon_sd,
-              "richness" = richness,
+              "sum_richness" = richness,
               "sum_biodiversity" = sum_biodiversity,
               "sum_biodiversity_sd" = sum_biodiversity_sd,
               "sum_visits" = sum_visits,
