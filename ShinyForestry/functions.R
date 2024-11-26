@@ -2145,9 +2145,10 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
       
     }
   }
+  rm(FullTable2)
   # Convert back to sf object
-  FullTable2 <- cbind(FullTable, richnesses)
-  return(FullTable2)
+  FullTable <- cbind(FullTable, richnesses)
+  return(FullTable)
 }
 
 get_regressed_biodiversity <- function(biodiversity_planting,
