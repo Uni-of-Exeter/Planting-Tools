@@ -2168,7 +2168,7 @@ get_regressed_biodiversity <- function(biodiversity_planting,
   }
   
   # Calculate the slope
-  slope <- (biodiversity_no_planting - biodiversity_planting) / (MAXYEAR + 1 - 0)
+  slope <- (biodiversity_no_planting - biodiversity_planting) / (MAXYEAR - 0)
   
   # The intercept is simply the planting value at X = 0
   intercept <- biodiversity_planting
