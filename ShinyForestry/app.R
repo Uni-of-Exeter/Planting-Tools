@@ -1520,8 +1520,8 @@ server <- function(input, output, session,
       #                           VisitsSelectedSD,
       #                          input_areaSlider_multiplicative_coefficient = TRUE,
       #                         alpha=alphaLVL)
-    
-      MaxVals<-InitFindMaxSliderValuesYear(SelectedVector(),
+
+      MaxVals<-InitFindMaxSliderValuesYearType_NegativeVals(SelectedVector(),
                                            AreaSelected,
                                            CarbonSelected,
                                            CarbonSelectedYear,
@@ -1536,7 +1536,9 @@ server <- function(input, output, session,
                                            input_areaSlider_multiplicative_coefficient = TRUE,
                                            alpha=alphaLVL,
                                            ClickedVectorYear(),
-                                           MAXYEAR=MAXYEAR)
+                                           MAXYEAR=MAXYEAR,
+                                           PrecalcCarbonAllExtentsType=PrecalcCarbonAllExtentsType,
+                                           PrecalcCarbonAllExtentsSDType=PrecalcCarbonAllExtentsSDType)
       
       #MaxValsReactive(MaxVals)
       MaxMinValsReactiveVector(c(MaxVals$CarbonMax,unlist(MaxVals$bioMaxList),MaxVals$AreaMax,MaxVals$VisistMax))
