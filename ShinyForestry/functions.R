@@ -3032,7 +3032,7 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
                    normalizePath(file.path(getwd(), "myRlibrary"))))
   repo <- "https://cran.rstudio.com/"
   
-  # On Windows, don't ask the user to build from source
+  # On Windows, don't build from source
   sysinf <- Sys.info()
   if (!is.null(sysinf)){
     os <- sysinf['sysname']

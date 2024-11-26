@@ -131,7 +131,6 @@ CalculatedFilesFolder<-normalizePath(file.path(FolderSource, "CalculatedFiles"))
 
 
 if(Sys.getenv("USERNAME")=="bn267"){
-### CHANGED!!!
 DataFilesFolder <- "d:\\JulesOP\\"
 PROJdir<-system.file("proj/proj.db", package = "sf")
 PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
