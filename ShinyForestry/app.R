@@ -181,11 +181,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   climatecells <- read.csv(normalizePath(file.path(DataFilesFolder, "climate_cells.csv")))
 }
 
-message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))))
+notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))), global_log_level = LOG_LEVEL, file_suffix = "")
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")))) {
   Sys.sleep(5)
 }
-message(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to unzip and load files..."))
+notif(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to unzip and load files..."), global_log_level = LOG_LEVEL, file_suffix = "")
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))) {
   UnZipDirName <- normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp"))
@@ -196,7 +196,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
     Sys.sleep(1)
   }
   
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "unzipped. Loading files..." ))
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "unzipped. Loading files..." ), global_log_level = LOG_LEVEL, file_suffix = "")
   shconv <- sf::st_read(normalizePath(file.path(UnZipDirName, "land_parcels.shp")))
   if (is.null(shconv$extent)) {
     shconv$extent <- "NoExtent"
@@ -207,11 +207,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   shconv <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
 }
 
-message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))))
+notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))), global_log_level = LOG_LEVEL, file_suffix = "")
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))) {
   Sys.sleep(5)
 }
-message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file if FullTableMerged.geojson does not exist..."))
+notif(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file if FullTableMerged.geojson does not exist..."), global_log_level = LOG_LEVEL, file_suffix = "")
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))) {
   sf_use_s2(FALSE)
@@ -222,7 +222,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                   "try-error")) {
     Sys.sleep(1)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ))
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ), global_log_level = LOG_LEVEL, file_suffix = "")
   
   # Turn decision units to individual parcels, by making all valid ones (i.e. that are != -1) get a unique id instead
   indices <- which(AllUnits != -1)
@@ -424,11 +424,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   rm(speciesprob_list)
   
   # Outcomes
-  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
+  notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))), global_log_level = LOG_LEVEL, file_suffix = "")
   while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
     Sys.sleep(5)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."), global_log_level = LOG_LEVEL, file_suffix = "")
   
   # Read the outcomes from the Elicitor app
   while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))),
@@ -436,7 +436,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                   "try-error")) {
     Sys.sleep(1)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."), global_log_level = LOG_LEVEL, file_suffix = "")
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
@@ -540,10 +540,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 }
 
-message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ...")))
+notif(paste("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))), global_log_level = LOG_LEVEL, file_suffix = "")
 FullTable <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
-message("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done")))
+notif(paste("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))), global_log_level = LOG_LEVEL, file_suffix = "")
 
 handlers(global = TRUE)
 
@@ -675,11 +675,11 @@ ConvertSample <- sample(1:NSamp, 200)
 
 # Outcomes
 if (isFALSE(exists("outcomes"))) {
-  message(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
+  notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))), global_log_level = LOG_LEVEL, file_suffix = "")
   while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
     Sys.sleep(5)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."), global_log_level = LOG_LEVEL, file_suffix = "")
   
   # Read the outcomes from the Elicitor app
   while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
@@ -687,7 +687,7 @@ if (isFALSE(exists("outcomes"))) {
                   "try-error")) {
     Sys.sleep(1)
   }
-  message(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."), global_log_level = LOG_LEVEL, file_suffix = "")
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
@@ -2751,9 +2751,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 SelectedFullTableRow(selectedfulltablerowvalue)
                 SelectedVector(selectedvectorvalue)
                 
-                message(current_task_id, " [INFO] Bayesian optimization finished successfully.")
-                showNotification(current_task_id, " [INFO] Bayesian optimization finished successfully.")
-                message(current_task_id, " [INFO] sum_carbon=", col_sums[1])
+                notif(paste(current_task_id, "Bayesian optimization finished successfully"), global_log_level = LOG_LEVEL)
+                showNotification(paste(current_task_id, "[INFO] Bayesian optimization finished successfully"))
+                notif(paste(current_task_id, "sum_carbon=", col_sums[1]), global_log_level = LOG_LEVEL, file_suffix = "")
                 
               }
               bayesian_optimization_finished(TRUE)
