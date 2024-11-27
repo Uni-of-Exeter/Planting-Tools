@@ -207,71 +207,17 @@ outcomes_to_maximize_sum_threshold_vector <- c("Carbon" = 20,
 year_of_max_no_planting_threshold_vector <- sample(x = -1:MAXYEAR,
                                                    size = nrow(FullTable),
                                                    replace = TRUE)
-names(year_of_max_no_planting_threshold_vector) <- paste0("area_parcel_id", 1:length(year_of_max_no_planting_threshold_vector))
-year_of_planting_min_threshold_vector <- year_of_max_no_planting_threshold_vector + 1
 
-# Possible values for area, and tree specie (years later)
-area_possible_non_zero_values <- FullTable %>%
-  sf::st_drop_geometry() %>%
-  dplyr::select(area) %>%
-  unlist(use.names = FALSE)
-# Prevent potential miscalculations
-area_possible_non_zero_values[year_of_max_no_planting_threshold_vector == MAXYEAR] <- 0
-area_possible_values_dataframe <- rbind(0, area_possible_non_zero_values)
-rownames(area_possible_values_dataframe) <- NULL
-
-
-tree_specie_possible_values_dataframe <- FullTable %>%
-  sf::st_drop_geometry() %>%
-  colnames() %>%
-  grep(pattern = "TreeSpecie", x = ., value = TRUE) %>%
-  gsub(pattern = ".*TreeSpecie(.*?)_.*", x = ., replacement = "\\1", perl = TRUE) %>%
-  gsub(pattern = ".*TreeSpecie(.*)", x = ., replacement = "\\1", perl = TRUE) %>%
-  unique()
-tree_specie_possible_values_dataframe <- matrix(tree_specie_possible_values_dataframe,
-                                                nrow = length(tree_specie_possible_values_dataframe),
-                                                ncol = ncol(area_possible_values_dataframe))
-
-# Turn area to categorical values
-group_size <- ncol(DoE_high_dimension) / 3
-indices <- 1:group_size
-DoE_high_dimension_categorical_area <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
-                                                                       legal_values_ordered = area_possible_values_dataframe)
-colnames(DoE_high_dimension_categorical_area) <- paste0("area_parcel_id", 1:ncol(DoE_high_dimension_categorical_area))
-
-# Possible values for year, and turn to categorical values
-DoE_high_dimension_categorical_year <- matrix(NA,
-                                              nrow = nrow(DoE_high_dimension),
-                                              ncol = length(indices))
-indices <- group_size + indices
-## Per parcel, uniformly sample over the allowed planting years (from minimum_specified_in_strategy to MAXYEAR)
-for (i in indices) {
-  # Loop over parcels
-  parcel_idx <- i - min(indices) + 1
-  
-  # If we can plant, map uniformly to all possible years
-  if (as.numeric(year_of_max_no_planting_threshold_vector[parcel_idx]) < MAXYEAR) {
-    years_possible_values_dataframe <- cbind(year_of_planting_min_threshold_vector[parcel_idx]:MAXYEAR)
-  } else {
-    # Otherwise, we skip this later anyway, but map all values to the same category
-    years_possible_values_dataframe <- cbind(MAXYEAR + 1)
-  }
-  
-  DoE_high_dimension_categorical_year[, parcel_idx] <- as.numeric(continuous_to_multi_categorical(values = DoE_high_dimension[, i, drop = FALSE],
-                                                                                                  legal_values_ordered = years_possible_values_dataframe))
-  
-}
-colnames(DoE_high_dimension_categorical_year) <- paste0("plantingyear_parcel_id", 1:ncol(DoE_high_dimension_categorical_year))
-
-# Turn tree specie to categorical values
-indices <- group_size + indices
-DoE_high_dimension_categorical_treespecie <- continuous_to_multi_categorical(values = DoE_high_dimension[, indices],
-                                                                             legal_values_ordered = tree_specie_possible_values_dataframe)
-colnames(DoE_high_dimension_categorical_treespecie) <- paste0("treespecie_parcel_id", 1:ncol(DoE_high_dimension_categorical_treespecie))
-
-DoE_high_dimension_categorical <- cbind(DoE_high_dimension_categorical_area,
-                                        DoE_high_dimension_categorical_year,
-                                        DoE_high_dimension_categorical_treespecie)
+DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = DoE_high_dimension,
+                                                                                                     RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+                                                                                                     FullTable_arg = FullTable,
+                                                                                                     MAXYEAR_arg = MAXYEAR,
+                                                                                                     SPECIES_arg = SPECIES,
+                                                                                                     # typically input$AreaSlider
+                                                                                                     area_sum_threshold_numeric = 15,
+                                                                                                     
+                                                                                                     # typically ClickedVector()
+                                                                                                     year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
 # ALREADY DONE IN THE APP (end)
 
 # Look at a single strategy (pick any, 1 is for the example)
