@@ -995,13 +995,14 @@ continuous_to_multi_categorical <- function(values,
     # Ensure that each value falls within a valid quantile range
     # if we need to use the highest category, i.e. (row[i] == quantiles[j + 1])
     # Assign the corresponding legal value for the category
-    condition <- values >= quantiles[j] & (values < quantiles[j+1] | j==num_categories)
+    condition <- values >= quantiles[j] & (values < quantiles[j + 1] | j == num_categories)
     solutions[condition] <- legal_values_ordered[j, col(values)[condition]]
   }
   
   return(solutions)
   
 }
+
 
 
 generate_samples_RRembo <- function(d, lower, upper, budget = 100,
