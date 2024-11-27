@@ -895,7 +895,8 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
 
     #}  }
 }
-###########################################################
+
+
 outputmap_calculateMats <- function(input,
                                     SavedVecLoc,
                                     simul636Loc,
@@ -1030,8 +1031,8 @@ outputmap_calculateMats <- function(input,
            SelecTargetBioList))
 }
 
-################### This is function outputmap_calculateMats adapted to the case where
-################### HERE CHANGE
+# This is function outputmap_calculateMats adapted to the case where
+# HERE CHANGE
 outputmap_calculateMatsYear <- function(input,
                                         SavedVecLoc,
                                         simul636YearLoc,
@@ -1229,8 +1230,7 @@ outputmap_calculateMatsYear <- function(input,
                 SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
            SelecTargetBioList,SAMPLELIST=SAMPLELIST))
 }
-
-################### This is function outputmap_calculateMats adapted to the case where
+# This is function outputmap_calculateMats adapted to the case where
 outputmap_calculateMatsYearType <- function(input,
                                             SavedVecLoc,
                                             simul636YearTypeLoc,
@@ -1789,7 +1789,7 @@ add_suffix_to_duplicates <- function(vec) {
   }
   return(vec)
 }
-########################
+
 InitFindMaxSliderValuesYearType_NegativeVals <- function(SavedVecLoc,
                                         AreaSelected,
                                         CarbonSelected,
@@ -1997,7 +1997,7 @@ InitFindMaxSliderValuesYearType_NegativeVals <- function(SavedVecLoc,
 
 
 
-#########################
+
 check_targets_met <- function(PROBAMAT, target, nb_targets_met) {
   n_metrics <- ncol(PROBAMAT)
   # in case it is a vector

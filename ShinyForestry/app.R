@@ -761,7 +761,7 @@ SliderNames<- c("SliderMain",
                 "AreaSlider","VisitsSlider")
 
 
-##################### Precalculate simul636 table with years
+#### Precalculate simul636 table with years
 AllExtents<-sort(unique(FullTable$extent))
 
 
@@ -3103,7 +3103,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           mapp<-addPolygons(mapp,data=FullTable$geometry,
                             layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
           removeControl(mapp,layerId="legend")
-          ############################################################################# TO CHANGE PREF ELICITATION           
+          #### TO CHANGE PREF ELICITATION           
           
         
           addControlText <- ""
@@ -3281,7 +3281,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            ClickedVectorYear=ClickedVectorYear)
   })
   
-#################################################################### TO CHANGE PREF ELICITATION  
+  #### TO CHANGE PREF ELICITATION  
   
   observeEvent({input$map_shape_click}, {
     click <- input$map_shape_click
@@ -3436,7 +3436,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         }else{}
         
       #}
-      ############################################
       
       
       
@@ -3682,7 +3681,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     }
     
   })
-#############################
 
   for (spe in SPECIES) {
     local({
@@ -3730,13 +3728,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
     })
   }
-    
-    
-  
-  
-  
-  
-############################  
   
   observeEvent(input$Area_plus,{
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
