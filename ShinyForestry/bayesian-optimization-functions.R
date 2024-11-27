@@ -956,8 +956,8 @@ continuous_to_multi_categorical <- function(values,
   for(j in 1:num_categories) {
     # Ensure that each value falls within a valid quantile range
     # if we need to use the highest category, i.e. (row[i] == quantiles[j + 1])
-    condition <- isTRUE(quantiles[j] <= values) & isTRUE(values < quantiles[j + 1]) | isTRUE(j == num_categories)
     # Assign the corresponding legal value for the category
+    condition <- values >= quantiles[j] & (values < quantiles[j+1] | j==num_categories)
     solutions[condition] <- legal_values_ordered[j, col(values)[condition]]
   }
   
