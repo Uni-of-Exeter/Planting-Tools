@@ -198,7 +198,6 @@ TREE_SPECIE <- "Conifers"
 # Slider thresholds
 area_sum_threshold <- 15
 outcomes_to_maximize_sum_threshold_vector <- c("Carbon" = 20,
-                                               do.call(c, setNames(lapply(SPECIES, function(x) {runif(1)}), SPECIES)),
                                                do.call(c, setNames(lapply(SPECIES, function(x) {rnorm(1, 100, 100)}), SPECIES)),
                                                "Visits" = 10)
 # The threshold from tab 1 (with values in -1:MAXYEAR) corresponds to the end of the year until which planting is forbidden
