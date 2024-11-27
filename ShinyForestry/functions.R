@@ -469,7 +469,6 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
   
   return(two_strategies_that_meet_all_targets)
 }
-######################################################
 
 observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
                                    input,
@@ -717,8 +716,6 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
       
     }  }
 }
-##########################################################
-######################################################
 
 observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
                                    input,
