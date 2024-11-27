@@ -375,7 +375,7 @@ RRembo_defaults <- function(d, D, init,
 RRembo_project_low_dimension_to_high_dimension_basic <- function(DoE_low_dimension, A, global_log_level = LOG_LEVEL) {
   if (ncol(A) != ncol(DoE_low_dimension)) {
     msg <- paste0("In RRembo_project_low_dimension_to_high_dimension_basic(), matrix sizes are not compatible for the product.",
-                   "A has dimensions ", paste(dim(A), collapse = "x"),
+                  "A has dimensions ", paste(dim(A), collapse = "x"),
                   " but t(DoE_low_dimension) has dimensions ", paste(dim(t(DoE_low_dimension)), collapse = "x"))
     notif(msg, log_level = "error", global_log_level = global_log_level)
     stop(paste("[ERROR]", msg))
