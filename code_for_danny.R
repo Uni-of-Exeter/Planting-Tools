@@ -311,12 +311,12 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
   # Carbon ----
   small_fulltable <- FullTable %>%
     dplyr::select(area, year, treespecie,
-                    (
-                      contains("Carbon") &
-                        contains(c("Mean", "SD")) &
-                        contains(paste0("Scenario", SCENARIO)) &
-                        contains("PlantingYear")
-                    ))
+                  (
+                    contains("Carbon") &
+                      contains(c("Mean", "SD")) &
+                      contains(paste0("Scenario", SCENARIO)) &
+                      contains("PlantingYear")
+                  ))
   
   # sum_carbon <- small_fulltable %>%
   #   dplyr::select(contains(c("area", "year", "treespecie", "Mean"), ignore.case = FALSE)) %>%
