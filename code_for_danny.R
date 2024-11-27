@@ -709,41 +709,83 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
 #                                times = 5)
 
 
-
-
 alpha <- 0.99
+area_names <- paste0("area_parcel_", 1:group_size)
+plantingyear_names <- paste0("plantingyear_parcel_", 1:group_size)
+treespecie_names <- paste0("treespecie_parcel_", 1:group_size)
+
 Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha))){
   #strategy in high-dim continuous space
+  x <- matrix(x, ncol=length(x))
   strategy_cont <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = x, A = A)
   group_size <- ncol(strategy_cont) / 3
   # Area
-  strategy_area <- continuous_to_multi_categorical(values = strategy_cont[, 1:group_size],
+  strategy_area <- continuous_to_multi_categorical(values = strategy_cont[, 1:group_size, drop=F],
                                                    legal_values_ordered = area_possible_values_dataframe)
-  colnames(strategy_area) <- paste0("area_parcel_", 1:group_size)
   # Year of planting
-  strategy_year <- continuous_to_multi_categorical(values = strategy_cont[, (group_size+1):(2*group_size)],
+  strategy_year <- continuous_to_multi_categorical(values = strategy_cont[, (group_size+1):(2*group_size), drop=F],
                                                    legal_values_ordered = years_possible_values_dataframe)
-  colnames(strategy_year) <- paste0("plantingyear_parcel_", 1:group_size)
   # Tree specie
-  strategy_treespecie <- continuous_to_multi_categorical(values = strategy_cont[, (2*group_size+1):(3*group_size)],
+  strategy_treespecie <- continuous_to_multi_categorical(values = strategy_cont[, (2*group_size+1):(3*group_size),drop=F],
                                                          legal_values_ordered = tree_specie_possible_values_dataframe)
-  colnames(strategy_treespecie) <- paste0("treespecie_parcel_", 1:group_size)
+  colnames(strategy_area) <- area_names
+  colnames(strategy_year) <- plantingyear_names
+  colnames(strategy_treespecie) <- treespecie_names
   
   strategy <- cbind(strategy_area, strategy_year, strategy_treespecie)
+  
+  #Assumption that year_of_planting_min_threshold_vector has meaning of 0 = no restriction, 1 = cant plant in year 0 can in year 1, 2 = cant plant in years 0 or 1, can in 2 etc
+  strategy_year <- as.integer(as.vector(strategy_year))
+  bad_years <- strategy_year < year_of_planting_min_threshold_vector
+  if(any(bad_years)){
+    #planting in prohibited year
+    diff <- year_of_planting_min_threshold_vector[bad_years]-strategy_year[bad_years]
+    return(sum(diff))
+  }
   outcomes <- get_outcomes_from_strategy(parameter_vector=strategy[1,])
   if(outcomes$sum_area > area_sum_threshold){
     return((outcomes$sum_area-area_sum_threshold)/0.001)
   }
-  if(any(strategy_year < year_of_planting_min_threshold_vector)){
-    #planting in prohibited year
-    return(max(year_of_planting_min_threshold_vector-strategy_year))
-  }
-  #carbon
-  imp_carbon <- (outcomes_to_maximize_sum_threshold_vector["Carbon"] - outcomes$sum_carbon)/(outcomes$sum_carbon_sd)
-  #visits
-  imp_visits <- (outcomes_to_maximize_sum_threshold_vector["Visits"] - outcomes$sum_visits)/(outcomes$sum_visits_sd)
-  #richness has no sd
-  imp_richness <- outcomes_to_maximize_sum_threshold_vector[SPECIES %in% NAME_CONVERSION$Group] - outcomes$sum_richness
-  outcomes_to_maximize_sum_threshold_vector #targets for species but where does richness come in?
+  # Pre-fetch thresholds and SDs for carbon and visits
+  thresholds <- outcomes_to_maximize_sum_threshold_vector[c("Carbon", "Visits")]
+  sds_carbon_visits <- c(outcomes$sum_carbon_sd, outcomes$sum_visits_sd)
+  val_carbon_visits <- c(outcomes$sum_carbon, outcomes$sum_visits)
+  implausibilities_carbon_visits <- (thresholds - val_carbon_visits) / sds_carbon_visits
+  
+  #richness has no sd, so divide by very small number for now (it will have sd)
+  imp_richness <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes_to_maximize_sum_threshold_vector) %in% c(NAME_CONVERSION$Group, "All")] - outcomes$richness)/(.01)
+  implausibilities <- c(implausibilities_carbon_visits, imp_richness)
   #biodiversity
+  if(!is.null(outcomes$sum_biodiversity)){
+    #handle species names
+    imp_bio <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes_to_maximize_sum_threshold_vector) %in% NAME_CONVERSION$Specie] - outcomes$sum_biodiversity)/(outcomes$sum_biodiversity_sd)
+    implausibilities <- c(implausibilities, imp_bio)
+  }
+  return(max(implausibilities))
 }
+
+#debug(Implausibility)
+
+profvis({Implausibility(x=rep(1,6))})
+
+tic()
+Implausibility(x=rep(1,6))
+toc()
+
+LogDens <- function(x, ThisLevels, FinalLevels, BoxLimits){
+  timp <- Implausibility(x, FinalLevels)
+  ifelse(all(timp<=ThisLevels), 1, -Inf)
+}
+
+print("Full PTMCMC-Slice Started")
+tic()
+print("Find target compatible space")
+#profvis({
+EmbeddingSamples <- ImplausibilitySampler(Implausibility=Implausibility, dims=6, method="slice", targetLevels=-sqrt(alpha/(1-alpha)), 
+                                          control.list=list(num.mutations=10, num.iterations=10, BoxLimits=cbind(rep(0,6),rep(1,6)), 
+                                                            debug.mode=FALSE))
+#})
+print("Generate 100 uniform samples")
+tSams <- SampleSpace(MySampler2tiny,control.list=list(debug.mode=TRUE), niter = 100)
+toc()
+
