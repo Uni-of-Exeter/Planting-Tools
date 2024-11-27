@@ -942,6 +942,44 @@ continuous_to_categorical <- function(values,
   return(result)
 }
 
+# continuous_to_multi_categorical <- function(values,
+#                                             legal_values_ordered) {
+#   # Get the number of categories based on the number of rows in legal_values_ordered
+#   num_categories <- nrow(legal_values_ordered)
+# 
+#   # Define quantile breakpoints based on the number of categories
+#   quantiles <- quantile(values, probs = seq(0, 1, length.out = num_categories + 1), na.rm = TRUE)
+# 
+#   # Apply the transformation to each row of the matrix
+#   solutions <- apply(values, 1, function(row, quantiles, legal_values_ordered) {
+# 
+#     # Initialize a new row of character vectors (to hold categorical values)
+#     new_row <- character(length(row))
+# 
+#     # For each value (column) in the row, assign it to the corresponding category
+#     for (i in 1:length(row)) {
+#       for (j in 1:num_categories) {
+#         # Ensure that each value falls within a valid quantile range
+#         condition1 <- isTRUE(quantiles[j] <= row[i] && row[i] < quantiles[j + 1])
+#         # if we need to use the highest category, i.e. (row[i] == quantiles[j + 1])
+#         condition2 <- isTRUE(j == num_categories)
+#         if (condition1 || condition2) {
+#           # Assign the corresponding legal value for the category
+#           new_row[i] <- legal_values_ordered[j, i]
+#           break
+#         }
+#       }
+#     }
+# 
+#     return(new_row)
+#   }, quantiles = quantiles, legal_values_ordered = legal_values_ordered)
+# 
+#   # Transpose the result to match the original matrix structure
+#   solutions <- t(solutions)
+# 
+#   return(solutions)
+# }
+
 continuous_to_multi_categorical <- function(values,
                                             legal_values_ordered) {
   # Get the number of categories based on the number of rows in legal_values_ordered
