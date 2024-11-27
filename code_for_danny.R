@@ -199,6 +199,7 @@ TREE_SPECIE <- "Conifers"
 area_sum_threshold <- 15
 outcomes_to_maximize_sum_threshold_vector <- c("Carbon" = 20,
                                                do.call(c, setNames(lapply(SPECIES, function(x) {runif(1)}), SPECIES)),
+                                               do.call(c, setNames(lapply(SPECIES, function(x) {rnorm(1, 100, 100)}), SPECIES)),
                                                "Visits" = 10)
 # The threshold from tab 1 (with values in -1:MAXYEAR) corresponds to the end of the year until which planting is forbidden
 # i.e. -1 means we can plant from year 0, ..., MAXYEAR (24) means we cannot plant i.e. find column with year MAXYEAR+1 (25)
