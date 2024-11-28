@@ -2686,14 +2686,14 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
   
   # End ----
   
-  return(list("sum_carbon" = sum_carbon,
+  return(list("sum_area" = sum(area_vector),
+              "sum_carbon" = sum_carbon,
               "sum_carbon_sd" = sum_carbon_sd,
               "richness" = richness,
               "sum_biodiversity" = sum_biodiversity,
               "sum_biodiversity_sd" = sum_biodiversity_sd,
               "sum_visits" = sum_visits,
-              "sum_visits_sd" = sum_visits_sd,
-              "sum_area" = sum(area_vector)
+              "sum_visits_sd" = sum_visits_sd
   ))
 }
 
