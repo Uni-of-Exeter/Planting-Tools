@@ -231,23 +231,23 @@ DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_str
 parameter_vector <- DoE_high_dimension_categorical[1, ]
 
 
-# tic()
-# a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ])
-# toc()
-# 
-# tic()
-# a <- apply(DoE_high_dimension_categorical[1:10, ],
-#            1,
-#            get_outcomes_from_strategy)
-# toc()
-# 
-# microbenchmark::microbenchmark(a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ]),
-#                                times = 10)
-# 
-# microbenchmark::microbenchmark(a <- apply(DoE_high_dimension_categorical[1:10, ],
-#                                           1,
-#                                           get_outcomes_from_strategy),
-#                                times = 5)
+tictoc::tic()
+a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ])
+tictoc::toc()
+
+tictoc::tic()
+a <- apply(DoE_high_dimension_categorical[1:10, ],
+           1,
+           get_outcomes_from_strategy)
+tictoc::toc()
+
+microbenchmark::microbenchmark(a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ]),
+                               times = 10)
+
+microbenchmark::microbenchmark(a <- apply(DoE_high_dimension_categorical[1:10, ],
+                                          1,
+                                          get_outcomes_from_strategy),
+                               times = 5)
 
 
 alpha <- 0.99
