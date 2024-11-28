@@ -142,14 +142,6 @@ RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
                                            init = list(n = 100), budget = 100,
                                            control = RREMBO_CONTROL,
                                            global_log_level = LOG_LEVEL)
-# ALREADY DONE IN THE APP (end)
-
-DoE_low_dimension <- lhs::randomLHS(10, RREMBO_HYPER_PARAMETERS$d)
-
-A <- RREMBO_HYPER_PARAMETERS$A
-DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
-
-# ALREADY DONE IN THE APP (begin)
 
 # Decide outcomes
 if (isFALSE(exists("outcomes"))) {
@@ -214,6 +206,13 @@ outcomes_to_maximize_sum_threshold_vector <- c("Carbon" = 20,
 year_of_max_no_planting_threshold_vector <- sample(x = -1:MAXYEAR,
                                                    size = nrow(FullTable),
                                                    replace = TRUE)
+
+
+
+DoE_low_dimension <- lhs::randomLHS(10, RREMBO_HYPER_PARAMETERS$d)
+
+A <- RREMBO_HYPER_PARAMETERS$A
+DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
 
 DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = DoE_high_dimension,
                                                                                                      RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
