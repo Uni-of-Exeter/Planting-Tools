@@ -2585,17 +2585,24 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           names(SelecTargetCarbon) <- "Carbon"
           names(SelecTargetVisits) <- "Visits"
           
-          msg <- "Updating SelectedFullTableRow before BO ..."
-          notif(msg, log_level = "debug")
-          
           SelectedFullTableRow(
             tmpYearType$SelectedSimMat2[CONDITION_SEL,][SelecdMinRows[SelecRow],]
           )
           SelectedVector(SelectedMins)
-          msg <- paste(msg, "done")
-          notif(msg, log_level = "debug")
+        } else {
+          ZeroSelected<-tmpYearType$SelectedSimMat2[1,]
+          ZeroSelected<-replace(ZeroSelected,1:(length(SavedVecYearType)),-1)
+          ZeroSelected<-replace(ZeroSelected,(length(SavedVecYearType)+1):(2*length(SavedVecYearType)),"NoPlanting")
 
-          if(RUN_BO){          
+          ZeroSelected[1,(2*length(SavedVecYearType)+1):dim(ZeroSelected)[2]]<-0
+          names(ZeroSelected)<-names(tmpYearType$SelectedSimMat2)
+          SelectedFullTableRow(ZeroSelected)
+          TOSAVE<-list(YEAR=as.numeric(ZeroSelected[1, 1:(length(SavedVecYearType))]),
+                       TYPE=as.character(ZeroSelected[1, (length(SavedVecYearType)+1):(2*length(SavedVecYearType))])
+          )
+          SelectedVector(TOSAVE)
+        }
+        if(RUN_BO){          
           
           if (current_task_id != get_latest_task_id()) {
             notif(paste("Task", current_task_id, "cancelled."))
@@ -2617,49 +2624,52 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           }
           tolvec <- tolvecReactive()
           
+          # Slider values are AreaSliderVal(), CarbonSliderVal(), BioSliderVal...(), VisitsSliderVal()
+          BioSliderVals <- setNames(sapply(paste0("BioSliderVal", SPECIES), function(x){get(x)()}), SPECIES)
+          
           # We can plant at this year + 1, in each parcel
           # ClickedVector contains -1 for no planting, and 0...MAXYEAR for year after (strictly) which we can plant
-          year_of_planting_min_threshold <- ClickedVector()
+          year_of_planting_min_threshold_vector <- ClickedVector()
           # https://shiny.posit.co/r/articles/improve/nonblocking/index.html
-          bayesian_optimization_extendedtask <- ExtendedTask$new(function(
-            seed,
-            FullTable,
-            area_sum_threshold,
-            outcomes_to_maximize_sum_threshold_vector,
-            # outcomes_to_minimize_sum_threshold_vector = NULL,
-            global_log_level,
-            PLOT,
-            
-            BAYESIAN_OPTIMIZATION_ITERATIONS,
-            # progressr_object_arg,
-            # progressr_object = progressor(steps = max_loop_progress_bar, message = "Bayesian optimization"),
-            BAYESIAN_OPTIMIZATION_BATCH_SIZE,
-            PENALTY_COEFFICIENT,
-            EXPLORATION,
-            EXPLORATION_COEFFICIENT,
-            
-            preference_weight_area,
-            preference_weights_maximize,
-            # preference_weights_minimize = rep(1, length(c())),
-            
-            current_task_id,
-            
-            CUSTOM_DESIGN_POINTS_STRATEGIES,
-            DESIGN_POINTS_STRATEGY,
-            
-            CONSTRAINED_INPUTS,
-            
-            RREMBO_CONTROL,
-            RREMBO_HYPER_PARAMETERS,
-            RREMBO_SMART,
-            
-            # GP
-            KERNEL, # matern2.5 or sexp
-            NUMBER_OF_VECCHIA_NEIGHBOURS,
-            
-            tolvec,
-            alpha
-          ) {
+          bayesian_optimization_extendedtask <- ExtendedTask$new(function(seed,
+                                                                          FullTable,
+                                                                          area_sum_threshold,
+                                                                          MAXYEAR,
+                                                                          year_of_planting_min_threshold_vector,
+                                                                          outcomes_to_maximize_sum_threshold_vector,
+                                                                          # outcomes_to_minimize_sum_threshold_vector = NULL,
+                                                                          global_log_level,
+                                                                          PLOT,
+                                                                          
+                                                                          BAYESIAN_OPTIMIZATION_ITERATIONS,
+                                                                          # progressr_object_arg,
+                                                                          # progressr_object = progressor(steps = max_loop_progress_bar, message = "Bayesian optimization"),
+                                                                          BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+                                                                          PENALTY_COEFFICIENT,
+                                                                          EXPLORATION,
+                                                                          EXPLORATION_COEFFICIENT,
+                                                                          
+                                                                          preference_weight_area,
+                                                                          preference_weights_maximize,
+                                                                          # preference_weights_minimize = rep(1, length(c())),
+                                                                          
+                                                                          current_task_id,
+                                                                          
+                                                                          CUSTOM_DESIGN_POINTS_STRATEGIES,
+                                                                          DESIGN_POINTS_STRATEGY,
+                                                                          
+                                                                          CONSTRAINED_INPUTS,
+                                                                          
+                                                                          RREMBO_CONTROL,
+                                                                          RREMBO_HYPER_PARAMETERS,
+                                                                          RREMBO_SMART,
+                                                                          
+                                                                          # GP
+                                                                          KERNEL, # matern2.5 or sexp
+                                                                          NUMBER_OF_VECCHIA_NEIGHBOURS,
+                                                                          
+                                                                          tolvec,
+                                                                          alpha) {
             future_promise(expr = {
               bo_results <- bayesian_optimization(
                 # session = session,
@@ -2772,60 +2782,47 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           #   # min = 0,
           #   # max = BAYESIAN_OPTIMIZATION_ITERATIONS * 3,
           #   expr = {
-              # my_progressr_object <- progressor(steps = 5 * 3, message = "Bayesian optimization")
+          # my_progressr_object <- progressor(steps = 5 * 3, message = "Bayesian optimization")
           bayesian_optimization_extendedtask$invoke(
-                seed = 1,
-                FullTable = FullTable,
-                area_sum_threshold = SelecTargetArea,
-                outcomes_to_maximize_sum_threshold_vector = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetVisits),
-                # outcomes_to_minimize_sum_threshold_vector = NULL,
-                global_log_level = LOG_LEVEL,
-                PLOT = FALSE,
-                
-                BAYESIAN_OPTIMIZATION_ITERATIONS = 5,
-                # progressr_object = function(amount = 0, message = "") {},
-                # progressr_object_arg = my_progressr_object,
-                BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
-                PENALTY_COEFFICIENT = 1000,
-                # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
-                EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
-                EXPLORATION_COEFFICIENT = 0,
-                
-                preference_weight_area = preference_weight_area,
-                preference_weights_maximize = mypref,
-                # preference_weights_minimize = rep(1, length(c())),
-                
-                current_task_id = current_task_id,
-                
-                CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
-                DESIGN_POINTS_STRATEGY = "expected improvement",
-                
-                CONSTRAINED_INPUTS = TRUE,
-                
-                RREMBO_CONTROL = RREMBO_CONTROL,
-                RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
-                RREMBO_SMART = FALSE,
-                
-                # GP
-                KERNEL = "matern2.5", # matern2.5 or sexp
-                NUMBER_OF_VECCHIA_NEIGHBOURS = 20,
-                
-                tolvec = tolvec,
-                alpha = alphaLVL
-              )
-          }
-        } else {
-          ZeroSelected<-tmpYearType$SelectedSimMat2[1,]
-          ZeroSelected<-replace(ZeroSelected,1:(length(SavedVecYearType)),-1)
-          ZeroSelected<-replace(ZeroSelected,(length(SavedVecYearType)+1):(2*length(SavedVecYearType)),"NoPlanting")
-
-          ZeroSelected[1,(2*length(SavedVecYearType)+1):dim(ZeroSelected)[2]]<-0
-          names(ZeroSelected)<-names(tmpYearType$SelectedSimMat2)
-          SelectedFullTableRow(ZeroSelected)
-          TOSAVE<-list(YEAR=as.numeric(ZeroSelected[1, 1:(length(SavedVecYearType))]),
-                       TYPE=as.character(ZeroSelected[1, (length(SavedVecYearType)+1):(2*length(SavedVecYearType))])
+            seed = 1,
+            FullTable = FullTable,
+            area_sum_threshold = AreaSliderVal(),
+            outcomes_to_maximize_sum_threshold_vector = c(CarbonSliderVal(), BioSliderVals, VisitsSliderVal()),
+            # outcomes_to_minimize_sum_threshold_vector = NULL,
+            global_log_level = LOG_LEVEL,
+            PLOT = FALSE,
+            
+            BAYESIAN_OPTIMIZATION_ITERATIONS = 5,
+            # progressr_object = function(amount = 0, message = "") {},
+            # progressr_object_arg = my_progressr_object,
+            BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
+            PENALTY_COEFFICIENT = 1000,
+            # PENALTY_COEFFICIENT = 10 * max(FullTable %>% select(contains("Mean"))),
+            EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
+            EXPLORATION_COEFFICIENT = 0,
+            
+            preference_weight_area = preference_weight_area,
+            preference_weights_maximize = mypref,
+            # preference_weights_minimize = rep(1, length(c())),
+            
+            current_task_id = current_task_id,
+            
+            CUSTOM_DESIGN_POINTS_STRATEGIES = c("expected improvement", "probability of improvement"),
+            DESIGN_POINTS_STRATEGY = "expected improvement",
+            
+            CONSTRAINED_INPUTS = TRUE,
+            
+            RREMBO_CONTROL = RREMBO_CONTROL,
+            RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+            RREMBO_SMART = FALSE,
+            
+            # GP
+            KERNEL = "matern2.5", # matern2.5 or sexp
+            NUMBER_OF_VECCHIA_NEIGHBOURS = 20,
+            
+            tolvec = tolvec,
+            alpha = alphaLVL
           )
-          SelectedVector(TOSAVE)
         }
       }
     }
