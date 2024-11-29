@@ -411,7 +411,7 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
                                                                        N_TARGETS_ARG3,
                                                                        TARGETS_ARG2,
                                                                        prior_list,
-                                                                       global_log_level = LOG_LEVEL) {
+                                                                       limit_log_level = LOG_LEVEL) {
   N_TARGETS <- N_TARGETS_ARG3
   TARGETS <- TARGETS_ARG2
   indices_strategies_meet_all_targets <- which(VecNbMet0() == N_TARGETS)
@@ -448,7 +448,7 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
     }
     # We couldn't find enough target-compatible strategies to avoid preference strategy duplication
     if (i == 10) {
-      notif("We couldn't find enough target-compatible strategies to avoid preference strategy duplication", log_level = "warning", global_log_level = global_log_level)
+      notif("We couldn't find enough target-compatible strategies to avoid preference strategy duplication", log_level = "warning", limit_log_level = limit_log_level)
     }
     
     # temp is SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
@@ -2697,7 +2697,7 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
   ))
 }
 
-convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob_list,jncc100,climatecells, MAXYEAR = MAXYEAR, global_log_level = LOG_LEVEL) {
+convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob_list,jncc100,climatecells, MAXYEAR = MAXYEAR, limit_log_level = LOG_LEVEL) {
   
   # Take the Biodiversity probabilities from Matlab
   # and merge them with BristolFullTableMerged.geojson
@@ -2787,9 +2787,9 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   polygons_jules$polygon_id_jules <- seq_along(polygons_jules$geometry)
   # TODO: parallelize? Filter -> check how Bertrand does it
   msg <- "Intersecting biodiversity square cells and the shapefile's polygons ..."
-  notif(msg, global_log_level = global_log_level)
+  notif(msg, limit_log_level = limit_log_level)
   intersection <- st_intersection(polygons_bio, polygons_jules)
-  notif(paste(msg, "done"), global_log_level = global_log_level)
+  notif(paste(msg, "done"), limit_log_level = limit_log_level)
   
   # Look at the area difference rowwise for mutate
   compute_difference_area <- function(geom1, geom2) {
@@ -2865,7 +2865,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   
   if (any(FullTable$area_diff >= 1)) {
     msg <- "The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference"
-    notif(msg, log_level = "warning", global_log_level = global_log_level)
+    notif(msg, log_level = "warning", limit_log_level = limit_log_level)
   }
   
   FullTable <- FullTable %>% dplyr::select(-area_diff) %>% st_as_sf()

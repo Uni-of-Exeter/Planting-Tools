@@ -416,7 +416,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                                                                               jncc100 = jncc100,
                                                                               climatecells = climatecells,
                                                                               MAXYEAR = MAXYEAR,
-                                                                              global_log_level = LOG_LEVEL)
+                                                                              limit_log_level = LOG_LEVEL)
   msg <- paste(msg, "done")
   notif(msg)
   # Free a lot of RAM
@@ -616,7 +616,7 @@ RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
                                            D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
                                            init = list(n = 100), budget = 100,
                                            control = RREMBO_CONTROL,
-                                           global_log_level = LOG_LEVEL)
+                                           limit_log_level = LOG_LEVEL)
 
 # for (aaa in 1:NSamp) {
 #   pp <- runif(1)
@@ -2638,7 +2638,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                                                           year_of_planting_min_threshold_vector,
                                                                           outcomes_to_maximize_sum_threshold_vector,
                                                                           # outcomes_to_minimize_sum_threshold_vector = NULL,
-                                                                          global_log_level,
+                                                                          limit_log_level,
                                                                           PLOT,
                                                                           
                                                                           BAYESIAN_OPTIMIZATION_ITERATIONS,
@@ -2678,7 +2678,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 area_sum_threshold = area_sum_threshold,
                 outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
                 # outcomes_to_minimize_sum_threshold_vector = NULL,
-                global_log_level = global_log_level,
+                limit_log_level = limit_log_level,
                 PLOT = PLOT,
                 
                 BAYESIAN_OPTIMIZATION_ITERATIONS = BAYESIAN_OPTIMIZATION_ITERATIONS,
@@ -2720,7 +2720,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               # Check if this result is invalid (i.e. a newer task has started)
               if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
                 msg <- paste0("task ", current_task_id, " The previous Bayesian optimization has been cancelled.")
-                notif(msg, global_log_level = global_log_level)
+                notif(msg, limit_log_level = limit_log_level)
                 showNotification(msg)
                 return()
               } else { # If the result is valid (i.e. there are no new tasks started)
@@ -2768,7 +2768,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               error <- .
               msg <- paste0("task ", current_task_id, " future_promise resulted in the error: ", error)
               showNotification(paste("[ERROR]", msg))
-              notif(msg, log_level = "error", global_log_level = global_log_level)
+              notif(msg, log_level = "error", limit_log_level = limit_log_level)
               bayesian_optimization_finished(TRUE)
             }
           })
@@ -2789,7 +2789,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             area_sum_threshold = AreaSliderVal(),
             outcomes_to_maximize_sum_threshold_vector = c(CarbonSliderVal(), BioSliderVals, VisitsSliderVal()),
             # outcomes_to_minimize_sum_threshold_vector = NULL,
-            global_log_level = LOG_LEVEL,
+            limit_log_level = LOG_LEVEL,
             PLOT = FALSE,
             
             BAYESIAN_OPTIMIZATION_ITERATIONS = 5,
@@ -3075,7 +3075,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
            #                                                                                                N_TARGETS_ARG3 = N_TARGETS,
             #                                                                                               TARGETS_ARG2 = TARGETS,
              #                                                                                              prior_list = prior_list,
-              #                                                                                             global_log_level = LOG_LEVEL)
+              #                                                                                             limit_log_level = LOG_LEVEL)
         SelectedLine[[1]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1, 1],],
                                   TYPE=datAll2$TYPE[ LinesToCompare[1, 1],],
                                   OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 1],])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]

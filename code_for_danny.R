@@ -141,7 +141,7 @@ RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
                                            D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
                                            init = list(n = 100), budget = 100,
                                            control = RREMBO_CONTROL,
-                                           global_log_level = LOG_LEVEL)
+                                           limit_log_level = LOG_LEVEL)
 
 # Decide outcomes
 if (isFALSE(exists("outcomes"))) {
