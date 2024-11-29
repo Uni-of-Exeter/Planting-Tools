@@ -180,11 +180,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   climatecells <- read.csv(normalizePath(file.path(DataFilesFolder, "climate_cells.csv")))
 }
 
-notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))), global_log_level = LOG_LEVEL, file_suffix = "")
+notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")))) {
   Sys.sleep(5)
 }
-notif(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to unzip and load files..."), global_log_level = LOG_LEVEL, file_suffix = "")
+notif(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "found. Trying to unzip and load files..."))
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))) {
   UnZipDirName <- normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp"))
@@ -195,7 +195,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
     Sys.sleep(1)
   }
   
-  notif(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "unzipped. Loading files..." ), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "land_parcels.shp.zip")), "unzipped. Loading files..." ))
   shconv <- sf::st_read(normalizePath(file.path(UnZipDirName, "land_parcels.shp")))
   if (is.null(shconv$extent)) {
     shconv$extent <- "NoExtent"
@@ -206,11 +206,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   shconv <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
 }
 
-notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))), global_log_level = LOG_LEVEL, file_suffix = "")
+notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))))
 while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")))) {
   Sys.sleep(5)
 }
-notif(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file if FullTableMerged.geojson does not exist..."), global_log_level = LOG_LEVEL, file_suffix = "")
+notif(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file if FullTableMerged.geojson does not exist..."))
 
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))) {
   sf_use_s2(FALSE)
@@ -221,7 +221,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                   "try-error")) {
     Sys.sleep(1)
   }
-  notif(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "loaded, processing..." ))
   
   # Turn decision units to individual parcels, by making all valid ones (i.e. that are != -1) get a unique id instead
   indices <- which(AllUnits != -1)
@@ -409,7 +409,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   # Replace Biodiversity columns with correct ones
   msg <- "Converting biodiversity from square grid cells to our shapefile polygons ..."
-  notif(msg, global_log_level = LOG_LEVEL)
+  notif(msg)
   FullTable <- convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable(Elicitor_table = FullTable,
                                                                               speciesprob_list = speciesprob_list,
                                                                               seer2km = seer2km,
@@ -418,16 +418,16 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                                                                               MAXYEAR = MAXYEAR,
                                                                               global_log_level = LOG_LEVEL)
   msg <- paste(msg, "done")
-  notif(msg, global_log_level = LOG_LEVEL)
+  notif(msg)
   # Free a lot of RAM
   rm(speciesprob_list)
   
   # Outcomes
-  notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
   while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
     Sys.sleep(5)
   }
-  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
   
   # Read the outcomes from the Elicitor app
   while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))),
@@ -435,7 +435,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
                   "try-error")) {
     Sys.sleep(1)
   }
-  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
@@ -539,10 +539,10 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 }
 
-notif(paste("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))), global_log_level = LOG_LEVEL, file_suffix = "")
+notif(paste("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))))
 FullTable <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
-notif(paste("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))), global_log_level = LOG_LEVEL, file_suffix = "")
+notif(paste("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
 
 handlers(global = TRUE)
 
@@ -554,7 +554,7 @@ NSamp <- 5000
 
 #Now the random sample contains the year of planting/
 msg <- paste0("Sampling ", NSamp, " random strategies ...")
-notif(msg, global_log_level = LOG_LEVEL, file_suffix = "")
+notif(msg)
 
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 Uniqunits <- unique(FullTable$units)
@@ -656,7 +656,7 @@ for (aaa in 1:NSamp) {
 }
 
 msg <- paste(msg, "done")
-notif(msg, global_log_level = LOG_LEVEL, file_suffix = "")
+notif(msg)
 
 Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
@@ -674,11 +674,11 @@ ConvertSample <- sample(1:NSamp, 200)
 
 # Outcomes
 if (isFALSE(exists("outcomes"))) {
-  notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json"))))
   while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
     Sys.sleep(5)
   }
-  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "found. Trying to load file..."))
   
   # Read the outcomes from the Elicitor app
   while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
@@ -686,7 +686,7 @@ if (isFALSE(exists("outcomes"))) {
                   "try-error")) {
     Sys.sleep(1)
   }
-  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."), global_log_level = LOG_LEVEL, file_suffix = "")
+  notif(paste(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")), "loaded, processing..."))
   
   outsomes_biodiversity_indices <- sapply(outcomes, function (x) x$category == "Biodiversity")
   SPECIES_ENGLISH <- unique(sapply(outcomes[outsomes_biodiversity_indices], function(x) x$`sub-category`))
@@ -2323,7 +2323,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         VisitsSelectedSD <- VisitsSelectedSD0()
         
         if (current_task_id != get_latest_task_id()) {
-          notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+          notif(paste("Task", current_task_id, "cancelled."))
           return()
         }
         
@@ -2474,7 +2474,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       #  SubsetMeetTargets[["Area"]]<-tmpYearType$SelectedSimMat2[["Area"]][CONDITION_SEL]
         
         if (current_task_id != get_latest_task_id()) {
-          notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+          notif(paste("Task", current_task_id, "cancelled."))
           return()
         }
       
@@ -2542,7 +2542,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           }
           
           if (current_task_id != get_latest_task_id()) {
-            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+            notif(paste("Task", current_task_id, "cancelled."))
             return()
           }
 
@@ -2571,7 +2571,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           SelecRow <- which.min(result)
           
           if (current_task_id != get_latest_task_id()) {
-            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+            notif(paste("Task", current_task_id, "cancelled."))
             return()
           }
           
@@ -2588,24 +2588,24 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           names(SelecTargetVisits) <- "Visits"
           
           msg <- "Updating SelectedFullTableRow before BO ..."
-          notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
+          notif(msg, log_level = "debug")
           
           SelectedFullTableRow(
             tmpYearType$SelectedSimMat2[CONDITION_SEL,][SelecdMinRows[SelecRow],]
           )
           SelectedVector(SelectedMins)
+          msg <- paste(msg, "done")
+          notif(msg, log_level = "debug")
 
           if(RUN_BO){          
-          msg <- paste(msg, "done")
-          notif(msg, log_level = "debug", global_log_level = LOG_LEVEL)
           
           if (current_task_id != get_latest_task_id()) {
-            notif(paste("Task", current_task_id, "cancelled."), global_log_level = LOG_LEVEL)
+            notif(paste("Task", current_task_id, "cancelled."))
             return()
           }
           
           msg <- paste0("task ", current_task_id, " BO future start")
-          notif(msg, global_log_level = LOG_LEVEL)
+          notif(msg)
           bayesian_optimization_finished(FALSE)
           
           if (isFALSE(is.null(infpref_reactive()))) {
@@ -2750,9 +2750,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 SelectedFullTableRow(selectedfulltablerowvalue)
                 SelectedVector(selectedvectorvalue)
                 
-                notif(paste(current_task_id, "Bayesian optimization finished successfully"), global_log_level = LOG_LEVEL)
+                notif(paste(current_task_id, "Bayesian optimization finished successfully"))
                 showNotification(paste(current_task_id, "[INFO] Bayesian optimization finished successfully"))
-                notif(paste(current_task_id, "sum_carbon=", col_sums[1]), global_log_level = LOG_LEVEL, file_suffix = "")
+                notif(paste(current_task_id, "sum_carbon=", col_sums[1]))
                 
               }
               bayesian_optimization_finished(TRUE)
