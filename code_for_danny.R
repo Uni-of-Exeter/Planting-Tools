@@ -193,7 +193,7 @@ TREE_SPECIE <- "Conifers"
 area_sum_threshold <- 15
 
 ## CarbonSliderVal()
-## setNames(lapply(paste0("BioSliderVal", SPECIES), function(x){get(x)()}), SPECIES)
+## setNames(sapply(paste0("BioSliderVal", SPECIES), function(x){get(x)()}), SPECIES)
 ## VisitsSliderVal
 outcomes_to_maximize_sum_threshold_vector <- c("Carbon" = 20,
                                                do.call(c, setNames(lapply(SPECIES, function(x) {rnorm(1, 100, 100)}), SPECIES)),
