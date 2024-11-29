@@ -51,9 +51,9 @@ unlink(base::normalizePath(file.path(FolderSource, "task_id*"), mustWork = FALSE
 
 # Overridden in server() block, necessary for source(...)
 SESSION_FILE_SUFFIX <- ""
-source(normalizePath(file.path(FolderSource, "functions.R")))
-source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")))
-source(normalizePath(file.path(FolderSource, "preferTrees.R")))
+source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
+source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
+source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = TRUE)
 
 
 packages <- c(
