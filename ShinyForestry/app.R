@@ -2278,7 +2278,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     #debug()
     cat("starting updating values based on sliders\n")
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
+    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1&(bayesian_optimization_finished()))) {
   
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
       current_task_id <- get_latest_task_id() + 1
@@ -2294,7 +2294,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
       SavedVecYearType <- ClickedVectorYearType()
       PreviousSavedVecYearType<-PreviousClickedVectorYearType()
-      
       
       if (!is.null(SavedVecYearType)) {
         
@@ -2502,7 +2501,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           PreviousFourUniqueRowsReactive(seq(1,LengthVec))
         }else{FourUniqueRowsReactive(NULL)
           PreviousFourUniqueRowsReactive(NULL)}
-
         if (dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] > 0) {
           if (max(tmpYearType$SelectedSimMat2$Carbon) != min(tmpYearType$SelectedSimMat2$Carbon)) {
             DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon) - min(tmpYearType$SelectedSimMat2$Carbon))
