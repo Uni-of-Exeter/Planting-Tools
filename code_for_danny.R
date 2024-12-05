@@ -322,8 +322,8 @@ print("Full PTMCMC-Slice Started")
 tictoc::tic()
 print("Find target compatible space")
 #profvis({
-EmbeddingSamples <- ImplausibilitySampler(Implausibility=Implausibility, dims=6, method="slice", targetLevels=-sqrt(alpha/(1-alpha)), 
-                                          control.list=list(num.mutations=10, num.iterations=10, BoxLimits=cbind(rep(0,6),rep(1,6)), 
+EmbeddingSamples <- ImplausibilitySampler(Implausibility=Implausibility, dims=6, method="slice", targetLevels=-sqrt(alpha/(1-alpha)),
+                                          control.list=list(num.mutations=10, num.iterations=10, BoxLimits=cbind(rep(0,6),rep(1,6)),
                                                             debug.mode=FALSE))
 #})
 print("Generate 100 uniform samples")
