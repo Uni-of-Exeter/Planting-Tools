@@ -466,8 +466,11 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
   # Turn Area to categorical values
   group_size <- ncol(DoE_high_dimension_rowwise_matrix) / 3
   indices <- 1:group_size
+  DoE_high_dimension_rowwise_matrix_area_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices],
+                                                               1,
+                                                               normalize_minmax))
   
-  DoE_high_dimension_categorical_area <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix[, indices],
+  DoE_high_dimension_categorical_area <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_area_normalized,
                                                                          legal_values_ordered = area_possible_values_dataframe)
   colnames(DoE_high_dimension_categorical_area) <- paste0("area_parcel_id", 1:ncol(DoE_high_dimension_categorical_area))
   
@@ -476,11 +479,15 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
                                                 nrow = nrow(DoE_high_dimension_rowwise_matrix),
                                                 ncol = length(indices))
   indices <- group_size + indices
+  DoE_high_dimension_rowwise_matrix_year_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices],
+                                                               1,
+                                                               normalize_minmax))
+  
   ## Per parcel, map uniformly over the allowed planting years (from minimum_specified_in_strategy to MAXYEAR)
   for (i in indices) {
     # Loop over parcels
     parcel_idx <- i - min(indices) + 1
-    
+
     # If we can plant, map uniformly to all possible years
     if (as.numeric(year_of_max_no_planting_threshold_vector[parcel_idx]) < MAXYEAR) {
       years_possible_values_dataframe <- cbind(year_of_planting_min_threshold_vector[parcel_idx]:MAXYEAR)
@@ -488,16 +495,19 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
       # Otherwise, we skip this later anyway, but map all values to the same category
       years_possible_values_dataframe <- cbind(MAXYEAR + 1)
     }
-    
-    DoE_high_dimension_categorical_year[, parcel_idx] <- as.numeric(continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix[, i, drop = FALSE],
+
+    DoE_high_dimension_categorical_year[, parcel_idx] <- as.numeric(continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_year_normalized[, parcel_idx, drop = FALSE],
                                                                                                     legal_values_ordered = years_possible_values_dataframe))
-    
   }
+  
   colnames(DoE_high_dimension_categorical_year) <- paste0("plantingyear_parcel_id", 1:ncol(DoE_high_dimension_categorical_year))
   
   # Turn Tree Specie to categorical values
   indices <- group_size + indices
-  DoE_high_dimension_categorical_treespecie <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix[, indices],
+  DoE_high_dimension_rowwise_matrix_tree_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices],
+                                                               1,
+                                                               normalize_minmax))
+  DoE_high_dimension_categorical_treespecie <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_tree_normalized,
                                                                                legal_values_ordered = tree_specie_possible_values_dataframe)
   colnames(DoE_high_dimension_categorical_treespecie) <- paste0("treespecie_parcel_id", 1:ncol(DoE_high_dimension_categorical_treespecie))
   
