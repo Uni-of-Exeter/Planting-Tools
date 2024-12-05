@@ -413,7 +413,7 @@ RRembo_project_low_dimension_to_high_dimension_original <- function(DoE_low_dime
 
 transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
     DoE_high_dimension_rowwise_matrix,
-    RREMBO_HYPER_PARAMETERS,
+    RREMBO_HYPER_PARAMETERS_arg,
     FullTable_arg = FullTable,
     MAXYEAR_arg = MAXYEAR,
     SPECIES_arg = SPECIES,
@@ -432,6 +432,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
   FullTable <- FullTable_arg
   MAXYEAR <- MAXYEAR_arg
   SPECIES <- SPECIES_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
   
   # The threshold from tab 1 (with values in -1:MAXYEAR) corresponds to the end of the year until which planting is forbidden
   # i.e. -1 means we can plant from year 0, ..., MAXYEAR (24) means we cannot plant i.e. find column with year MAXYEAR+1 (25)
