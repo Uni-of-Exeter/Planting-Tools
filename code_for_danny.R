@@ -260,21 +260,30 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha))){
   #strategy in high-dim continuous space
   x <- matrix(x, ncol=length(x))
   strategy_cont <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = x, A = A)
-  # Area
-  strategy_area <- continuous_to_multi_categorical(values = strategy_cont[, 1:group_size, drop=F],
-                                                   legal_values_ordered = area_possible_values_dataframe)
-  # Year of planting
-  strategy_year <- continuous_to_multi_categorical(values = strategy_cont[, (group_size+1):(2*group_size), drop=F],
-                                                   legal_values_ordered = years_possible_values_dataframe)
-  # Tree specie
-  strategy_treespecie <- continuous_to_multi_categorical(values = strategy_cont[, (2*group_size+1):(3*group_size),drop=F],
-                                                         legal_values_ordered = tree_specie_possible_values_dataframe)
-  colnames(strategy_area) <- area_names
-  colnames(strategy_year) <- plantingyear_names
-  colnames(strategy_treespecie) <- treespecie_names
-  
-  strategy <- cbind(strategy_area, strategy_year, strategy_treespecie)
-  
+  # group_size <- ncol(strategy_cont) / 3
+  # # Area
+  # strategy_area <- continuous_to_multi_categorical(values = strategy_cont[, 1:group_size, drop=F],
+  #                                                  legal_values_ordered = area_possible_values_dataframe)
+  # # Year of planting
+  # strategy_year <- continuous_to_multi_categorical(values = strategy_cont[, (group_size+1):(2*group_size), drop=F],
+  #                                                  legal_values_ordered = years_possible_values_dataframe)
+  # # Tree specie
+  # strategy_treespecie <- continuous_to_multi_categorical(values = strategy_cont[, (2*group_size+1):(3*group_size),drop=F],
+  #                                                        legal_values_ordered = tree_specie_possible_values_dataframe)
+  # colnames(strategy_area) <- area_names
+  # colnames(strategy_year) <- plantingyear_names
+  # colnames(strategy_treespecie) <- treespecie_names
+  #
+  # strategy <- cbind(strategy_area, strategy_year, strategy_treespecie)
+
+  strategy <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = strategy_cont,
+                                                                                 RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+                                                                                 FullTable_arg = FullTable,
+                                                                                 MAXYEAR_arg = MAXYEAR,
+                                                                                 SPECIES_arg = SPECIES,
+                                                                                 area_sum_threshold_numeric = area_sum_threshold,
+                                                                                 year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+
   #Assumption that year_of_planting_min_threshold_vector has meaning of 0 = no restriction, 1 = cant plant in year 0 can in year 1, 2 = cant plant in years 0 or 1, can in 2 etc
   strategy_year <- as.numeric(strategy[, grep("plantingyear", colnames(strategy))])
   bad_years <- strategy_year < year_of_planting_min_threshold_vector
