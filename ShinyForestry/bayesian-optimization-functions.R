@@ -425,6 +425,10 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
     year_of_max_no_planting_threshold_vector
 ) {
   
+  if (is.null(dim(DoE_high_dimension_rowwise_matrix))) {
+    DoE_high_dimension_rowwise_matrix <- matrix(DoE_high_dimension_rowwise_matrix, nrow = 1)
+  }
+  
   FullTable <- FullTable_arg
   MAXYEAR <- MAXYEAR_arg
   SPECIES <- SPECIES_arg
@@ -987,6 +991,11 @@ continuous_to_multi_categorical <- function(values,
   
   # Define quantile breakpoints based on the number of categories
   quantiles <- quantile(values, probs = seq(0, 1, length.out = num_categories + 1), na.rm = TRUE)
+  
+  # Ensure we are dealing with a matrix/data.frame (so that nrow does not throw an error)
+  if (is.null(dim(values))) {
+    values <- matrix(values, nrow = 1)
+  }
   
   # Apply the transformation to each row of the matrix
   solutions <- matrix(NA, nrow=nrow(values), ncol=ncol(values))
