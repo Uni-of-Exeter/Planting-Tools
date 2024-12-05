@@ -23,6 +23,8 @@ ANALYSISMODE<-TRUE
 
 RUN_BO<-FALSE
 set.seed(1)
+#fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
+FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1))
 
 
 if(Sys.getenv("USERNAME")=="bn267"){
@@ -836,6 +838,10 @@ for (ext in AllExtents)
   
 }
 }
+#save(PrecalcCarbonAllExtents,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtents.RData")
+#save(PrecalcCarbonAllExtentsSD,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtentsSD.RData")
+#save(PrecalcCarbonAllExtentsType,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtentsType.RData")
+#save(PrecalcCarbonAllExtentsSDType,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtentsSDType.RData")
 
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
@@ -1043,6 +1049,10 @@ server <- function(input, output, session,
   Limits_Direction_Clusters_Reactive<-reactiveVal(NULL)
   Selected_Point_In_Cluster_To_Display_Reactive<-reactiveVal(1)
   
+  
+  PrefWeightsAlreadyCalculatedNbRows<-reactiveVal(0)
+  FirstTimeClickOnPreferencesReactive<-reactiveVal(TRUE)
+
   infpref_reactive <- reactiveVal()
   pref_reactive <- reactiveVal()
   
@@ -1906,8 +1916,13 @@ server <- function(input, output, session,
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
         #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
         cat(Set_To_Cluster$Carbon)
-      
-        TSNE_RESULTS<-Rtsne::Rtsne(scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
+        #browser()
+        if(is.null(infpref_reactive())){Weights_To_Use<-rep(1,length(NamesOUTPUTS))}else{
+          Weights_To_Use<-sqrt(abs(infpref_reactive()))
+          
+        }
+        Weights_To_Use_MAT<-t(matrix(Weights_To_Use,dim(Set_To_Cluster)[2],dim(Set_To_Cluster)[1]))
+        TSNE_RESULTS<-Rtsne::Rtsne(Weights_To_Use_MAT*scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
         #mgcvObjectTsneToData<-vector("list",length(NamesOUTPUTS))
         #mgcvObjectDataTotsne<-vector("list",2)
         #As we cannot directly invert tsne, we fit a GAM to each output individually (we would need to have an inversion model with correlation).
@@ -2024,7 +2039,7 @@ server <- function(input, output, session,
   
   # If we are not on Tab Exploration, clustering Resets.
   observe({
-    if((input$tabs=="Maps")){
+    if((input$tabs=="Maps")|(input$tabs=="Preferences")){
  
   ClusteringDone(FALSE)  
   Clustering_Category_VectorReactive(NULL)
@@ -2831,7 +2846,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   
   
   observeEvent(input$tabs == "Preferences", {
-
+#browser()
+    if(FirstTimeClickOnPreferencesReactive()){
     SavedVec <- ClickedVector()
     SavedVecYear <- ClickedVectorYear()
     SavedVecYearType <- ClickedVectorYearType()  
@@ -2881,7 +2897,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         SpeciesListSelectedSD[var_name] <- list(value())
       }
       VisitsSelectedSD <- VisitsSelectedSD0()
-      
+      #browser()
       tmp <- outputmap_calculateMats(input = input,
                                      SavedVecLoc = SavedVec,
                                      simul636Loc = simul636,
@@ -2923,7 +2939,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                                      SavedVecYearTypeLoc=ClickedVectorYearType(),
                                                      #PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
                                                      SAMPLELIST=Simul636YearTypeOverrideReactive(),
-                                                     MAXYEAR=MAXYEAR
+                                                     MAXYEAR=MAXYEAR,
+                                                     CONCATENATION_SIM_MAT=TRUE
       )
       
       
@@ -2940,10 +2957,10 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       SelectedSimMat2[["OUTPUTS"]]<-tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))]
       names(SelectedSimMat2[["OUTPUTS"]])<-names(tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))])
       
-      
+      #browser()
       
       SelectedSimMatGlobal <<- SelectedSimMat2
-      
+      SelectedSimMatGlobal_YearType_Concatenation<<-tmpYearType$SelectedSimMat2_YearType_Concatenation
       Icalc <- tmpYearType$Icalc
       
     #  PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
@@ -2997,9 +3014,10 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       SubsetMeetTargetsUnique<-(list(YEAR=SubsetMeetTargets$YEAR[uniqueRows,],TYPE=SubsetMeetTargets$TYPE[uniqueRows,],
                                            OUTPUTS=SubsetMeetTargets$OUTPUTS[uniqueRows,]))
       
-     
-      if (dim(SubsetMeetTargetsUnique$YEAR)[1] >= 250)
-      {
+      SubsetMeetTargetsReactive(SubsetMeetTargets)
+      SubsetMeetTargetsReactiveUnique(SubsetMeetTargetsUnique)
+     # if (dim(SubsetMeetTargetsUnique$YEAR)[1] >= 250)
+      #{
         
       prior_list_temp <- list()
       # Carbon prior
@@ -3048,22 +3066,37 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
 #      UniqueBinCodes <- unique(DatBinaryCode)
       
-   
+      #first, we look at the pre-recorded set
+      if(dim(FIXED_STRATEGIES_LIST$YEAR)[1]!=0){
+        LinesToCompare<-list(YEAR=FIXED_STRATEGIES_LIST$YEAR[1:2,],
+                             TYPE=FIXED_STRATEGIES_LIST$TYPE[1:2,],
+                             OUTPUTS=FIXED_STRATEGIES_LIST$OUTPUTS[1:2,])
+      }
+      #THEN, we look in the target compatible samples because I want to 
+       else{if(dim(SubsetMeetTargetsUnique$YEAR)[1]>=2){
       
-      RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],length(ConvertSample),replace=F)
-      datAll2<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
+      RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],2,replace=F)
+      
+      LinesToCompare<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
                     TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
                     OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
+       }else{
+         RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
+         LinesToCompare<-list(YEAR=SelectedSimMatGlobal$YEAR[RandomSubsetIndices,],
+                              TYPE=SelectedSimMatGlobal$TYPE[RandomSubsetIndices,],
+                              OUTPUTS=SelectedSimMatGlobal$OUTPUTS[RandomSubsetIndices,])
+       }
 
-        NbRoundsMax(MaxRounds)
+      }
+        #  NbRoundsMax(MaxRounds)
         
-        LinesToCompare <- matrix(1, MaxRounds, 2)
-        LinesToCompare[1, ] <- sample(1:dim(datAll2$YEAR)[1], 2, replace = F)
-        CurrentRound(1)
+#        LinesToCompare <- matrix(0, 0, 2)
+        #LinesToCompare[1, ] <- sample(1:dim(datAll2$YEAR)[1], 2, replace = F)
+        #CurrentRound(1)
              
         LinesToCompareReactive(LinesToCompare)
         SelectedLine <- list()
-        pref_reactive(prefObject(data = datAll2$OUTPUTS[LinesToCompare[1,],],
+        pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
                                  priors = prior_list))
         # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
         # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
@@ -3075,14 +3108,20 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
            #                                                                                                N_TARGETS_ARG3 = N_TARGETS,
             #                                                                                               TARGETS_ARG2 = TARGETS,
              #                                                                                              prior_list = prior_list,
-              #                                                                                             limit_log_level = LOG_LEVEL)
-        SelectedLine[[1]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1, 1],],
-                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 1],],
-                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 1],])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
-        SelectedLine[[2]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1,2],],
-                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 2],],
-                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 2],])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
-        
+#              #                                                                                             limit_log_level = LOG_LEVEL)
+#        SelectedLine[[1]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1, 1],],
+#                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 1],],
+#                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 1],])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+#        SelectedLine[[2]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1,2],],
+#                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 2],],
+#                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 2],])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+              #                                                                                             global_log_level = LOG_LEVEL)
+        SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[1,],
+                                  OUTPUTS=LinesToCompare$OUTPUTS[1,])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+        SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[2,],
+                                  TYPE=LinesToCompare$TYPE[2,],
+                                  OUTPUTS=LinesToCompare$OUTPUTS[2,])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+
         for (aai in 1:2) {
           
           TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
@@ -3195,18 +3234,19 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         
         shinyjs::enable("choose1")
         shinyjs::enable("choose2")
+        FirstTimeClickOnPreferencesReactive(FALSE)
         
-      } else {
-        listMaps[[1]] <- listMaps[[1]] %>%
-          addControl(html = paste0("<p> Elicitation Not Possible as there are not enough samples that meet some of the targets
-                                              </p>"), position = "topright")
-        listMaps[[2]] <- listMaps[[2]] %>%
-          addControl(html = paste0("<p> Elicitation Not Possible as there are not enough samples that meet some of the targets
-                                              </p>"), position = "topright")
-        shinyjs::disable("choose1")
-        shinyjs::disable("choose2")
-      }
-      
+      #} #else {
+        #listMaps[[1]] <- listMaps[[1]] %>%
+        #  addControl(html = paste0("<p> Elicitation Not Possible as there are not enough samples that meet some of the targets
+        #                                      </p>"), position = "topright")
+        #listMaps[[2]] <- listMaps[[2]] %>%
+        #  addControl(html = paste0("<p> Elicitation Not Possible as there are not enough samples that meet some of the targets
+        #                                      </p>"), position = "topright")
+        #shinyjs::disable("choose1")
+       # shinyjs::disable("choose2")
+      #}
+    
     }
     
     listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, listMaps = listMaps)
@@ -3215,10 +3255,10 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})
     
     
-  }, ignoreInit = TRUE)
+  }}, ignoreInit = TRUE)
 
   observeEvent(input$choose1, {
-  
+ # browser()
     observe_event_function_YearType(choose = 1, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,
@@ -3244,10 +3284,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            TARGETS_ARG1 = TARGETS,
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours,
-                           ClickedVectorYear=ClickedVectorYear)
+                           ClickedVectorYear=ClickedVectorYear,
+                           ClickedVectorYearType=ClickedVectorYearType)
   })
 
   observeEvent(input$choose2, {
+  #  browser()
     observe_event_function_YearType(choose = 2, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,
@@ -3273,10 +3315,21 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            TARGETS_ARG1 = TARGETS,
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours,
-                           ClickedVectorYear=ClickedVectorYear)
+                           ClickedVectorYear=ClickedVectorYear,
+                           ClickedVectorYearType=ClickedVectorYearType)
   })
-  
-  #### TO CHANGE PREF ELICITATION  
+### If we are not on the Preference tab and some new data has been added, then re-update the weights
+### Note that there could be more data than is actually used in the preferences. Then we take the max
+### value in pref_reactive()$prefs as the last row that is used.
+  observeEvent(input$tabs,{
+if(!is.null(pref_reactive()$prefs)){
+  if((PrefWeightsAlreadyCalculatedNbRows()<max(pref_reactive()$prefs))&(input$tabs != "Preferences"))
+  {
+    pref_reactive()$update()
+    PrefWeightsAlreadyCalculatedNbRows(max(pref_reactive()$prefs))
+    infpref_reactive( pref_reactive()$posterior_mean)
+  }}
+  })
   
   observeEvent({input$map_shape_click}, {
     click <- input$map_shape_click
