@@ -309,9 +309,9 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha))){
 
 profvis({Implausibility(x=rep(1,6))})
 
-tic()
+tictoc::tic()
 Implausibility(x=rep(1,6))
-toc()
+tictoc::toc()
 
 LogDens <- function(x, ThisLevels, FinalLevels, BoxLimits){
   timp <- Implausibility(x, FinalLevels)
@@ -319,7 +319,7 @@ LogDens <- function(x, ThisLevels, FinalLevels, BoxLimits){
 }
 
 print("Full PTMCMC-Slice Started")
-tic()
+tictoc::tic()
 print("Find target compatible space")
 #profvis({
 EmbeddingSamples <- ImplausibilitySampler(Implausibility=Implausibility, dims=6, method="slice", targetLevels=-sqrt(alpha/(1-alpha)), 
@@ -328,5 +328,5 @@ EmbeddingSamples <- ImplausibilitySampler(Implausibility=Implausibility, dims=6,
 #})
 print("Generate 100 uniform samples")
 tSams <- SampleSpace(MySampler2tiny,control.list=list(debug.mode=TRUE), niter = 100)
-toc()
+tictoc::toc()
 
