@@ -425,6 +425,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
     year_of_max_no_planting_threshold_vector
 ) {
   
+  # Ensure we are dealing with a matrix/data.frame (so that nrow does not throw an error)
   if (is.null(dim(DoE_high_dimension_rowwise_matrix))) {
     DoE_high_dimension_rowwise_matrix <- matrix(DoE_high_dimension_rowwise_matrix, nrow = 1)
   }
