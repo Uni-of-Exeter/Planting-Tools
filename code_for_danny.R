@@ -293,7 +293,7 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha))){
   implausibilities_carbon_visits <- (thresholds - val_carbon_visits) / sds_carbon_visits
   
   #richness has no sd, so divide by very small number for now (it will have sd)
-  imp_richness <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes_to_maximize_sum_threshold_vector) %in% c(NAME_CONVERSION$Group, "All")] - outcomes$richness)/(.01)
+  imp_richness <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes_to_maximize_sum_threshold_vector) %in% c(NAME_CONVERSION$Group, "All")] - outcomes$sum_richness)/(.01)
   implausibilities <- c(implausibilities_carbon_visits, imp_richness)
   #biodiversity
   if(!is.null(outcomes$sum_biodiversity)){
