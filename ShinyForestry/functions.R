@@ -2254,7 +2254,7 @@ get_richness_from_fulltable <- function(strategy_vector, FullTable_arg = FullTab
     setDT()
   
   # Melt the data table to convert from wide to long format
-  melted_dt <- melt(small_fulltable_dt, 
+  melted_dt <- data.table::melt(small_fulltable_dt, 
                     id.vars = c("area", "year", "treespecie", "parcel_id"), 
                     measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
                     variable.name = "column_name", 
@@ -2464,7 +2464,7 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
       setDT()
     
     # Melt the data table to convert from wide to long format
-    melted_dt <- melt(small_fulltable_dt, 
+    melted_dt <- data.table::melt(small_fulltable_dt, 
                       id.vars = c("area", "year", "treespecie", "parcel_id"), 
                       measure.vars = grep("_Planting", colnames(small_fulltable_dt), value = TRUE), 
                       variable.name = "column_name", 
@@ -2495,7 +2495,7 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
       setDT()
     
     # Melt the data table to convert from wide to long format
-    melted_dt <- melt(small_fulltable_dt, 
+    melted_dt <- data.table::melt(small_fulltable_dt, 
                       id.vars = c("area", "year", "treespecie", "parcel_id"), 
                       measure.vars = grep("_NoPlanting", colnames(small_fulltable_dt), value = TRUE), 
                       variable.name = "column_name", 
@@ -2657,7 +2657,7 @@ get_outcomes_from_strategy <- function(parameter_vector, FullTable_arg = FullTab
     setDT()
   
   # Melt the data table to convert from wide to long format
-  melted_dt <- melt(small_fulltable_dt, 
+  melted_dt <- data.table::melt(small_fulltable_dt, 
                     id.vars = c("area", "year", "treespecie", "parcel_id"), 
                     measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
                     variable.name = "column_name", 
