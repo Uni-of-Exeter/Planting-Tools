@@ -220,8 +220,7 @@ DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_str
                                                                                                      MAXYEAR_arg = MAXYEAR,
                                                                                                      SPECIES_arg = SPECIES,
                                                                                                      # typically input$AreaSlider
-                                                                                                     area_sum_threshold_numeric = 15,
-                                                                                                     
+                                                                                                     area_sum_threshold_numeric = area_sum_threshold,
                                                                                                      # typically ClickedVector()
                                                                                                      year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
 # ALREADY DONE IN THE APP (end)
@@ -250,15 +249,17 @@ microbenchmark::microbenchmark(a <- apply(DoE_high_dimension_categorical[1:10, ]
 
 
 alpha <- 0.99
+group_size <- nrow(A) / 3
 area_names <- paste0("area_parcel_", 1:group_size)
 plantingyear_names <- paste0("plantingyear_parcel_", 1:group_size)
 treespecie_names <- paste0("treespecie_parcel_", 1:group_size)
 
 Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha))){
+  year_of_planting_min_threshold_vector <- year_of_max_no_planting_threshold_vector + 1
+  
   #strategy in high-dim continuous space
   x <- matrix(x, ncol=length(x))
   strategy_cont <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = x, A = A)
-  group_size <- ncol(strategy_cont) / 3
   # Area
   strategy_area <- continuous_to_multi_categorical(values = strategy_cont[, 1:group_size, drop=F],
                                                    legal_values_ordered = area_possible_values_dataframe)
