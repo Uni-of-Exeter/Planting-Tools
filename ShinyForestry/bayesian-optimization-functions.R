@@ -692,11 +692,11 @@ get_outcomes_from_strategy <- function(parameter_vector,
       setDT()
     
     # Melt the data table to convert from wide to long format
-    melted_dt <- melt(small_fulltable_dt, 
-                      id.vars = c("area", "year", "treespecie", "parcel_id"), 
-                      measure.vars = grep("_Planting", colnames(small_fulltable_dt), value = TRUE), 
-                      variable.name = "column_name", 
-                      value.name = "biodiversity")
+    melted_dt <- data.table::melt(small_fulltable_dt, 
+                                  id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                  measure.vars = grep("_Planting", colnames(small_fulltable_dt), value = TRUE), 
+                                  variable.name = "column_name", 
+                                  value.name = "biodiversity")
     
     # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
     melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*?)_Scenario.*", "\\1", column_name)]
@@ -723,11 +723,11 @@ get_outcomes_from_strategy <- function(parameter_vector,
       setDT()
     
     # Melt the data table to convert from wide to long format
-    melted_dt <- melt(small_fulltable_dt, 
-                      id.vars = c("area", "year", "treespecie", "parcel_id"), 
-                      measure.vars = grep("_NoPlanting", colnames(small_fulltable_dt), value = TRUE), 
-                      variable.name = "column_name", 
-                      value.name = "biodiversity")
+    melted_dt <- data.table::melt(small_fulltable_dt, 
+                                  id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                  measure.vars = grep("_NoPlanting", colnames(small_fulltable_dt), value = TRUE), 
+                                  variable.name = "column_name", 
+                                  value.name = "biodiversity")
     
     # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
     melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*?)_Scenario.*", "\\1", column_name)]
@@ -885,11 +885,11 @@ get_outcomes_from_strategy <- function(parameter_vector,
     setDT()
   
   # Melt the data table to convert from wide to long format
-  melted_dt <- melt(small_fulltable_dt, 
-                    id.vars = c("area", "year", "treespecie", "parcel_id"), 
-                    measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
-                    variable.name = "column_name", 
-                    value.name = "richness")
+  melted_dt <- data.table::melt(small_fulltable_dt, 
+                                id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
+                                variable.name = "column_name", 
+                                value.name = "richness")
   
   # Extract the column name's tree specie
   melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
