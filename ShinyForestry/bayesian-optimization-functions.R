@@ -464,6 +464,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
   # Turn Area to categorical values
   group_size <- ncol(DoE_high_dimension_rowwise_matrix) / 3
   indices <- 1:group_size
+  
   DoE_high_dimension_categorical_area <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix[, indices],
                                                                          legal_values_ordered = area_possible_values_dataframe)
   colnames(DoE_high_dimension_categorical_area) <- paste0("area_parcel_id", 1:ncol(DoE_high_dimension_categorical_area))
@@ -998,7 +999,7 @@ continuous_to_multi_categorical <- function(values,
   }
   
   # Apply the transformation to each row of the matrix
-  solutions <- matrix(NA, nrow=nrow(values), ncol=ncol(values))
+  solutions <- matrix(NA, nrow = nrow(values), ncol = ncol(values))
   
   for(j in 1:num_categories) {
     # Ensure that each value falls within a valid quantile range
@@ -1009,7 +1010,6 @@ continuous_to_multi_categorical <- function(values,
   }
   
   return(solutions)
-  
 }
 
 
@@ -2029,7 +2029,7 @@ notif <- function(msg,
     "info" = 3,
     "debug" = 4,
   )
-
+  
   if (log_level > limit_log_level) return()
   
   if (isFALSE(rbind)) {
