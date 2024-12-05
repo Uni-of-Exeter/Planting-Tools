@@ -276,7 +276,7 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha))){
   strategy <- cbind(strategy_area, strategy_year, strategy_treespecie)
   
   #Assumption that year_of_planting_min_threshold_vector has meaning of 0 = no restriction, 1 = cant plant in year 0 can in year 1, 2 = cant plant in years 0 or 1, can in 2 etc
-  strategy_year <- as.integer(as.vector(strategy_year))
+  strategy_year <- as.numeric(strategy[, grep("plantingyear", colnames(strategy))])
   bad_years <- strategy_year < year_of_planting_min_threshold_vector
   if(any(bad_years)){
     #planting in prohibited year
