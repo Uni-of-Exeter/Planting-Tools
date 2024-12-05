@@ -380,7 +380,7 @@ RRembo_project_low_dimension_to_high_dimension_basic <- function(DoE_low_dimensi
     notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
-  DoE_high_dimension <- t(tcrossprod(A, as.matrix(DoE_low_dimension)))
+  DoE_high_dimension <- tcrossprod(as.matrix(DoE_low_dimension), A)
   return(DoE_high_dimension)
 }
 
