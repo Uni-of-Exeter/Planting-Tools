@@ -1003,23 +1003,31 @@ continuous_to_multi_categorical <- function(values,
   num_categories <- nrow(legal_values_ordered)
   
   # Define quantile breakpoints based on the number of categories
-  quantiles <- quantile(values, probs = seq(0, 1, length.out = num_categories + 1), na.rm = TRUE)
+  # quantiles <- quantile(values, probs = seq(0, 1, length.out = num_categories + 1), na.rm = TRUE)
+  cutoffs <- seq(0, 1, length.out = num_categories + 1)
   
   # Ensure we are dealing with a matrix/data.frame (so that nrow does not throw an error)
   if (is.null(dim(values))) {
     values <- matrix(values, nrow = 1)
   }
   
-  # Apply the transformation to each row of the matrix
-  solutions <- matrix(NA, nrow = nrow(values), ncol = ncol(values))
+  indices <- findInterval(values, cutoffs, rightmost.closed = TRUE)
   
-  for(j in 1:num_categories) {
-    # Ensure that each value falls within a valid quantile range
-    # if we need to use the highest category, i.e. (row[i] == quantiles[j + 1])
-    # Assign the corresponding legal value for the category
-    condition <- values >= quantiles[j] & (values < quantiles[j + 1] | j == num_categories)
-    solutions[condition] <- legal_values_ordered[j, col(values)[condition]]
-  }
+  solutions <- sapply(1:ncol(legal_values_ordered), function(col) {
+    legal_values_ordered[indices[col], col]
+  })
+  solutions <- matrix(solutions, nrow = nrow(values), ncol = ncol(values))
+  
+  # # Apply the transformation to each row of the matrix
+  # solutions <- matrix(NA, nrow = nrow(values), ncol = ncol(values))
+  # 
+  # for(j in 1:num_categories) {
+  #   # Ensure that each value falls within a valid quantile range
+  #   # if we need to use the highest category, i.e. (row[i] == quantiles[j + 1])
+  #   # Assign the corresponding legal value for the category
+  #   condition <- values >= quantiles[j] & (values < quantiles[j + 1] | j == num_categories)
+  #   solutions[condition] <- legal_values_ordered[j, col(values)[condition]]
+  # }
   
   return(solutions)
 }
