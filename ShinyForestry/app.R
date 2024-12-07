@@ -1025,6 +1025,7 @@ server <- function(input, output, session,
   # Use the local (session) variables instead of global ones
   source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
   source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = TRUE)
   
   # Value to control the long-running task (Bayesian optimization in Tab 1)
   # We track the task ID. If it changes, the previous long-running task gets cancelled.
