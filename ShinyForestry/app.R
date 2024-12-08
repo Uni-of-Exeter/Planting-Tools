@@ -2347,21 +2347,21 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           return()
         }
         
-        tmp <- outputmap_calculateMats(input = input,
-                                       SavedVecLoc = SavedVec,
-                                       simul636Loc = simul636,
-                                       AreaSelected = AreaSelected,
-                                       CarbonSelected = CarbonSelected,
-                                       # RedSquirrelSelected = RedSquirrelSelected,
-                                       SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                       VisitsSelected = VisitsSelected,
-                                       CarbonSelectedSD = CarbonSelectedSD,
-                                       # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                       SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                       VisitsSelectedSD = VisitsSelectedSD,
-                                       alphaLVL=alphaLVL,
-                                       tolvec=tolvecReactive(),
-                                       MAXYEAR=MAXYEAR)
+     #   tmp <- outputmap_calculateMats(input = input,
+      #                                 SavedVecLoc = SavedVec,
+      #                                 simul636Loc = simul636,
+      #                                 AreaSelected = AreaSelected,
+      #                                 CarbonSelected = CarbonSelected,
+      #                                 # RedSquirrelSelected = RedSquirrelSelected,
+      #                                 SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+      #                                 VisitsSelected = VisitsSelected,
+      #                                 CarbonSelectedSD = CarbonSelectedSD,
+      #                                 # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+      #                                 SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+      #                                 VisitsSelectedSD = VisitsSelectedSD,
+      #                                 alphaLVL=alphaLVL,
+      #                                 tolvec=tolvecReactive(),
+      #                                 MAXYEAR=MAXYEAR)
         
         
         ########## same function with Year
@@ -2452,7 +2452,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         for (iii in 1:length(SPECIES)) {
           x<-SPECIES[iii]
           var_name <- paste0("SelecTargetBio", x)
-          value <- tmp[[var_name]]
+          value <- tmpYearType[[var_name]]
           assign(var_name, value)
           
           condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
@@ -2844,7 +2844,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             tolvec = tolvec,
             alpha = alphaLVL
           )
-        }
+          }
       }
     }
     cat("ended updating values based on sliders\n")
