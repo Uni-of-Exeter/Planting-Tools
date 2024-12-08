@@ -1,5 +1,6 @@
 # Created and maintained by Bertrand Nortier and Timothée Bacri
-
+library(profvis)
+library(htmlwidgets)
 # Ubuntu packages needed
 # sudo apt-get -y --no-install-recommends install libcurl4-openssl-dev
 # sudo apt-get -y --no-install-recommends install libfontconfig1-dev
@@ -552,7 +553,7 @@ STDMEAN <- 0.05
 STDSTD <- 0.01
 
 # Random sampling
-NSamp <- 5000
+NSamp <- 2000
 
 #Now the random sample contains the year of planting/
 msg <- paste0("Sampling ", NSamp, " random strategies ...")
@@ -2300,8 +2301,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     #debug()
     cat("starting updating values based on sliders\n")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1&(bayesian_optimization_finished()))) {
-  
+   #  p<-profvis({
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
+  
       current_task_id <- get_latest_task_id() + 1
       set_latest_task_id(current_task_id)
       
@@ -2394,6 +2396,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         #SelecTargetVisits <- tmp$SelecTargetVisits
         #PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
 
+
         tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                                        SavedVecLoc = SavedVecYearType,
                                                        simul636YearTypeLoc = simul636YearType,
@@ -2421,7 +2424,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                                        MAXYEAR=MAXYEAR
         )
         
-        
+      
+        tt<-proc.time()
         
         ######## With Year
         #SelectedSimMat2 <- tmpYear$SelectedSimMat2[,-(1:(2*dim(simul636Year)[2]))]#tmpYear$SelectedSimMat2
@@ -2474,8 +2478,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
 
         
         CONDITION_SEL<-ifelse(apply((Icalc$IVEC*t(matrix(2*((AboveTargets-0.5)),dim(Icalc$IVEC)[2],dim(Icalc$IVEC)[1])))<=ILevel,1,prod),TRUE,FALSE)
-        
-        
+       
         SubsetMeetTargets <-list()
         SubsetMeetTargets[["YEAR"]]<- SelectedSimMat2$YEAR[CONDITION_SEL,]
         SubsetMeetTargets[["TYPE"]]<- SelectedSimMat2$TYPE[CONDITION_SEL,]
@@ -2623,6 +2626,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           )
           SelectedVector(TOSAVE)
         }
+        cat(proc.time()-tt)
+        cat("\n")
+      
         if(RUN_BO){          
           
           if (current_task_id != get_latest_task_id()) {
@@ -2844,9 +2850,17 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             tolvec = tolvec,
             alpha = alphaLVL
           )
-          }
+        }
+      
       }
-    }
+     #end of profvis
+    #  })
+   #   saveWidget(p, "d:\\profvis_output.html")
+    
+      
+  }
+
+    
     cat("ended updating values based on sliders\n")
       }, ignoreInit = TRUE)
   
