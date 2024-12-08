@@ -20,6 +20,7 @@ options(shiny.error = browser)
 options(shiny.reactlog = TRUE)
 
 ANALYSISMODE<-TRUE
+SHOW_TITLES_ON_CLUSTERING_PAGE<-FALSE
 
 RUN_BO<-FALSE
 set.seed(1)
@@ -55,8 +56,7 @@ unlink(base::normalizePath(file.path(FolderSource, "task_id*"), mustWork = FALSE
 SESSION_FILE_SUFFIX <- ""
 source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
-source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = TRUE)
-
+source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 
 packages <- c(
   # https://github.com/tidyverse/vroom/issues/538
@@ -891,13 +891,16 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                           ,
                                           tabPanel("Alternative Approaches", id = "Alt",verticalLayout(
                                             fluidPage(fluidRow(
-                                              column(10,verbatimTextOutput("ZeroText"),column(2,)))),
+                                              if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
+                                              column(10,verbatimTextOutput("ZeroText"),column(2,))}
+                                              )),
                                             fluidPage(fluidRow(
                                               column(5,
-                                                     verticalLayout(verbatimTextOutput("FirstMapTxt"), jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
+                                                     verticalLayout(
+                                                       if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FirstMapTxt")}, jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
                                               ),
                                               column(5,
-                                                     verticalLayout(verbatimTextOutput("SecondMapTxt"), jqui_resizable(leafletOutput("map3", height = 400, width = "100%")))
+                                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("SecondMapTxt")}, jqui_resizable(leafletOutput("map3", height = 400, width = "100%")))
                                               ),
                                               column(2, verticalLayout(verbatimTextOutput("TargetText"),
                                                                        #  selectInput("chooseGrouping", "Grouping Type:", c("Carbon level"), "Carbon level"),
@@ -906,10 +909,10 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                             ),
                                             fluidRow(
                                               column(5,
-                                                     verticalLayout(verbatimTextOutput("ThirdMapTxt"), jqui_resizable(leafletOutput("map4", height = 400, width = "100%")))
+                                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("ThirdMapTxt")}, jqui_resizable(leafletOutput("map4", height = 400, width = "100%")))
                                               ),
                                               column(5,
-                                                     verticalLayout(verbatimTextOutput("FourthMapTxt"), jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
+                                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FourthMapTxt")}, jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
                                               ),
                                               column(2, "")
                                             )
@@ -1891,7 +1894,8 @@ server <- function(input, output, session,
   })
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
-  observe({ if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
+  observe({
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
  
     #Define local variables in advance
 
@@ -1917,7 +1921,7 @@ server <- function(input, output, session,
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
         #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
         cat(Set_To_Cluster$Carbon)
-        #browser()
+
         if(is.null(infpref_reactive())){Weights_To_Use<-rep(1,length(NamesOUTPUTS))}else{
           Weights_To_Use<-sqrt(abs(infpref_reactive()))
           
@@ -2050,8 +2054,8 @@ server <- function(input, output, session,
   
 ### Update the map rendering on Alternative Approaches
   observe({
+    
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches") && (ClusteringDone())) {
-
       YearSelect<-YearSelectReactive()
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
@@ -2231,6 +2235,7 @@ server <- function(input, output, session,
     input$random
     input$tabs
   }, {
+    
     FourUniqueRowsClusteringLoc<-FourUniqueRowsClusteringReactive()
     Clustering_Category_VectorLoc<-Clustering_Category_VectorReactive()
     
@@ -2291,7 +2296,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     # disable sliders while it is running
     # disable Year select
     # disable tabs click
-    
+
     #debug()
     cat("starting updating values based on sliders\n")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1&(bayesian_optimization_finished()))) {
@@ -2847,8 +2852,10 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   
   
   observeEvent(input$tabs == "Preferences", {
-#browser()
+
     if(FirstTimeClickOnPreferencesReactive()){
+ 
+
     SavedVec <- ClickedVector()
     SavedVecYear <- ClickedVectorYear()
     SavedVecYearType <- ClickedVectorYearType()  
@@ -2898,7 +2905,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         SpeciesListSelectedSD[var_name] <- list(value())
       }
       VisitsSelectedSD <- VisitsSelectedSD0()
-      #browser()
+
       tmp <- outputmap_calculateMats(input = input,
                                      SavedVecLoc = SavedVec,
                                      simul636Loc = simul636,
@@ -2958,7 +2965,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       SelectedSimMat2[["OUTPUTS"]]<-tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))]
       names(SelectedSimMat2[["OUTPUTS"]])<-names(tmpYearType$SelectedSimMat2[,-(1:(2*(dim(simul636YearType[["YEAR"]])[2])))])
       
-      #browser()
       
       SelectedSimMatGlobal <<- SelectedSimMat2
       SelectedSimMatGlobal_YearType_Concatenation<<-tmpYearType$SelectedSimMat2_YearType_Concatenation
@@ -3118,6 +3124,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
 #                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 2],])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
               #                                                                                             global_log_level = LOG_LEVEL)
         SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[1,],
+                                  TYPE=LinesToCompare$TYPE[1,],
                                   OUTPUTS=LinesToCompare$OUTPUTS[1,])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
         SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[2,],
                                   TYPE=LinesToCompare$TYPE[2,],
@@ -3259,7 +3266,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   }}, ignoreInit = TRUE)
 
   observeEvent(input$choose1, {
- # browser()
+ 
     observe_event_function_YearType(choose = 1, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,
@@ -3290,7 +3297,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   })
 
   observeEvent(input$choose2, {
-  #  browser()
     observe_event_function_YearType(choose = 2, # 1 for input$choose1, 2 for input$choose2
                            input = input,
                            output = output,
@@ -3323,6 +3329,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
 ### Note that there could be more data than is actually used in the preferences. Then we take the max
 ### value in pref_reactive()$prefs as the last row that is used.
   observeEvent(input$tabs,{
+
 if(!is.null(pref_reactive()$prefs)){
   if((PrefWeightsAlreadyCalculatedNbRows()<max(pref_reactive()$prefs))&(input$tabs != "Preferences"))
   {
@@ -3423,7 +3430,6 @@ if(!is.null(pref_reactive()$prefs)){
   # This part updates the map on the cluster exploration page.  
   observe({
     
-      
 
       if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Exploration") && (ClusteringDone())) {
         Selected_Cluster_To_Display_Loc<-Selected_Cluster_To_Display_Reactive()
