@@ -109,6 +109,93 @@ if (Sys.getenv("USERNAME")=="bn267") {
   install_and_load_packages(packages = packages, update = TRUE)
 }
 
+# install_and_load_packages(c("remotes", "desc"), verbose = TRUE)
+# # On Windows, don't build from source
+# sysinf <- Sys.info()
+# if (!is.null(sysinf)){
+#   os <- sysinf['sysname']
+#   if (os == 'Darwin')
+#     os <- "osx"
+# } else { ## mystery machine
+#   os <- .Platform$OS.type
+#   if (grepl("^darwin", R.version$os))
+#     os <- "osx"
+#   if (grepl("linux-gnu", R.version$os))
+#     os <- "linux"
+# }
+# if (os == "Windows") {
+#   type <- "win.binary"
+# } else if (os == "osx") {
+#   type <- "mac.binary"
+# } else if (os == "linux") {
+#   type <- "source"
+# }
+# remotes::install_deps(pkgdir = FolderSource,
+#                       repos = 'https://cran.rstudio.com',
+#                       quiet = isTRUE(LOG_LEVEL %in% c("warning", "error", "none")),
+#                       upgrade = "always",
+#                       type = type)
+# # Read the DESCRIPTION file
+# desc <- desc::desc(file = normalizePath(file.path(FolderSource, "DESCRIPTION")))
+# 
+# # Get the package names from Imports
+# imported_pkgs <- desc$get_deps()$package[desc$get_deps()$type == "Imports"]
+# 
+# # Load each package
+# tmp <- sapply(imported_pkgs, library, character.only = TRUE)
+# rm(tmp)
+
+
+
+# packages <- c(
+#   "progress",
+#   "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+#   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
+#   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
+#   "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+#   "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+#   "mvtnorm", "dplyr", "magrittr",
+#   "rstudioapi",
+#   "lhs", "sensitivity",
+#   "progressr", "doFuture", "promises",
+#   # # Active subspace method
+#   "concordance", "BASS", "zipfR",
+#   # To plot the best map, and save it to a file
+#   "mapview", "webshot",
+#   # File-locking, for multi-process
+#   "flock",
+#   "adaptMCMC", "data.table"
+# )
+# # Bertrand's computer has issues loading and installing packages
+# if (Sys.getenv("USERNAME")=="bn267") {
+#   library("dgpsi")
+#   library("RRembo")
+#   for(ll in 1:length(packages)) {
+#     library(packages[ll], character.only = TRUE)
+#   }
+# } else {
+#   
+#   if (!require(dgpsi)) {
+#     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+#     install_and_load_packages("testthat", verbose = TRUE)
+#     install_and_load_packages("pkgload", verbose = TRUE)
+#     install_and_load_packages("devtools", verbose = TRUE)
+#     devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
+#     library("dgpsi")
+#     dgpsi::init_py()
+#   }
+#   if (!require(RRembo)) {
+#     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+#     install_and_load_packages("testthat", verbose = TRUE)
+#     install_and_load_packages("pkgload", verbose = TRUE)
+#     install_and_load_packages("devtools", verbose = TRUE)
+#     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
+#     library("RRembo")
+#   }
+#   
+#   install_and_load_packages(packages = packages, update = TRUE)
+# }
+
 
 NAME_CONVERSION <- get_name_conversion()
 

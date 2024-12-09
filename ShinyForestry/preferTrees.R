@@ -274,18 +274,16 @@ update <- function(p, method = "adapt", nbatch = 1000, ncpu = 1, .DEBUG=FALSE, .
   #Start at the prior mean for (in lieu of a derivative-based optimisation to start at map)
   prior_mean <- unlist(lapply(p$priors, function(e) e$mean))
   # Run the MCMC via the method
-  #debug()
   if(method== "adapt"){
-    #samples <- MCMC.parallel(p=fun, n=(10*nbatch)+1000, init=prior_mean, n.chain=4, n.cpu=4, adapt=1000, acc.rate = 0.2)
-    samples <- MCMC(p=fun, n=(10*nbatch)+1000, init=prior_mean, adapt=1000, acc.rate = 0.2)
+    samples <- MCMC.parallel(p=fun, n=(10*nbatch)+1000, init=prior_mean, n.chain=4, n.cpu=4, adapt=1000, acc.rate = 0.2)
+    #samples <- MCMC(p=fun, n=(10*nbatch)+1000, init=prior_mean, adapt=1000, acc.rate = 0.2)
     if(.DEBUG)
       return(samples)
     else{
-      #tsams <- samples[[1]]$samples[-c(1:1000),] #-1000 removes burnin
-      tsams <- samples$samples[-c(1:1000),] #-1000 removes burnin
-      #for(i in 2:length(samples)){
-      #  tsams <- rbind(tsams, samples[[i]]$samples[-c(1:1000),])
-      #}
+      tsams <- samples[[1]]$samples[-c(1:1000),] #-1000 removes burnin
+      for(i in 2:length(samples)){
+        tsams <- rbind(tsams, samples[[i]]$samples[-c(1:1000),])
+      }
       tsams <- tsams[which(c(1:nrow(tsams))%%10==0),]#Thin every 10
       posterior_mean <- apply(tsams, MARGIN=2, FUN=mean)
       return(posterior_mean)
