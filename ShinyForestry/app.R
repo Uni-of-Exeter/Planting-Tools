@@ -1,6 +1,8 @@
 # Created and maintained by Bertrand Nortier and Timothée Bacri
-library(profvis)
-library(htmlwidgets)
+
+#library(profvis)
+#library(htmlwidgets)
+
 # Ubuntu packages needed
 # sudo apt-get -y --no-install-recommends install libcurl4-openssl-dev
 # sudo apt-get -y --no-install-recommends install libfontconfig1-dev
@@ -108,93 +110,6 @@ if (Sys.getenv("USERNAME")=="bn267") {
   
   install_and_load_packages(packages = packages, update = TRUE)
 }
-
-# install_and_load_packages(c("remotes", "desc"), verbose = TRUE)
-# # On Windows, don't build from source
-# sysinf <- Sys.info()
-# if (!is.null(sysinf)){
-#   os <- sysinf['sysname']
-#   if (os == 'Darwin')
-#     os <- "osx"
-# } else { ## mystery machine
-#   os <- .Platform$OS.type
-#   if (grepl("^darwin", R.version$os))
-#     os <- "osx"
-#   if (grepl("linux-gnu", R.version$os))
-#     os <- "linux"
-# }
-# if (os == "Windows") {
-#   type <- "win.binary"
-# } else if (os == "osx") {
-#   type <- "mac.binary"
-# } else if (os == "linux") {
-#   type <- "source"
-# }
-# remotes::install_deps(pkgdir = FolderSource,
-#                       repos = 'https://cran.rstudio.com',
-#                       quiet = isTRUE(LOG_LEVEL %in% c("warning", "error", "none")),
-#                       upgrade = "always",
-#                       type = type)
-# # Read the DESCRIPTION file
-# desc <- desc::desc(file = normalizePath(file.path(FolderSource, "DESCRIPTION")))
-# 
-# # Get the package names from Imports
-# imported_pkgs <- desc$get_deps()$package[desc$get_deps()$type == "Imports"]
-# 
-# # Load each package
-# tmp <- sapply(imported_pkgs, library, character.only = TRUE)
-# rm(tmp)
-
-
-
-# packages <- c(
-#   "progress",
-#   "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
-#   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-#   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-#   "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-#   "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-#   "mvtnorm", "dplyr", "magrittr",
-#   "rstudioapi",
-#   "lhs", "sensitivity",
-#   "progressr", "doFuture", "promises",
-#   # # Active subspace method
-#   "concordance", "BASS", "zipfR",
-#   # To plot the best map, and save it to a file
-#   "mapview", "webshot",
-#   # File-locking, for multi-process
-#   "flock",
-#   "adaptMCMC", "data.table"
-# )
-# # Bertrand's computer has issues loading and installing packages
-# if (Sys.getenv("USERNAME")=="bn267") {
-#   library("dgpsi")
-#   library("RRembo")
-#   for(ll in 1:length(packages)) {
-#     library(packages[ll], character.only = TRUE)
-#   }
-# } else {
-#   
-#   if (!require(dgpsi)) {
-#     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-#     install_and_load_packages("testthat", verbose = TRUE)
-#     install_and_load_packages("pkgload", verbose = TRUE)
-#     install_and_load_packages("devtools", verbose = TRUE)
-#     devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
-#     library("dgpsi")
-#     dgpsi::init_py()
-#   }
-#   if (!require(RRembo)) {
-#     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-#     install_and_load_packages("testthat", verbose = TRUE)
-#     install_and_load_packages("pkgload", verbose = TRUE)
-#     install_and_load_packages("devtools", verbose = TRUE)
-#     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
-#     library("RRembo")
-#   }
-#   
-#   install_and_load_packages(packages = packages, update = TRUE)
-# }
 
 
 NAME_CONVERSION <- get_name_conversion()
@@ -966,12 +881,13 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                        ),
                                        conditionalPanel(
                                          condition = "input.Trigger == true",
+                                         verticalLayout(sliderInput("YearPref","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                          fluidRow(
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), actionButton("choose1", "choose"))
                                            ),
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), actionButton("choose2", "choose"))
                                            )
-                                         )),
+                                         ))),
                                        conditionalPanel(
                                          condition = "input.Trigger == false", fluidRow(column(12, jqui_resizable(plotOutput("plotOP1"))))
                                        )
@@ -2961,7 +2877,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     SavedVecYear <- ClickedVectorYear()
     SavedVecYearType <- ClickedVectorYearType()  
     # TO CHANGE LATER
-    YearSelect<-YearSelectReactive()
+    YearSelect<-input$YearPref-STARTYEAR
     
     SelectedDropdown <- input$inSelect
     
@@ -3007,21 +2923,21 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       }
       VisitsSelectedSD <- VisitsSelectedSD0()
 
-      tmp <- outputmap_calculateMats(input = input,
-                                     SavedVecLoc = SavedVec,
-                                     simul636Loc = simul636,
-                                     AreaSelected = AreaSelected,
-                                     CarbonSelected = CarbonSelected,
-                                     # RedSquirrelSelected = RedSquirrelSelected,
-                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                     VisitsSelected = VisitsSelected,
-                                     CarbonSelectedSD = CarbonSelectedSD,
-                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD,
-                                     alphaLVL = alphaLVL,
-                                     input_areaSlider_multiplicative_coefficient = FALSE,
-                                     tolvec=tolvecReactive())
+     # tmp <- outputmap_calculateMats(input = input,
+      #                               SavedVecLoc = SavedVec,
+      #                               simul636Loc = simul636,
+      #                               AreaSelected = AreaSelected,
+      #                               CarbonSelected = CarbonSelected,
+      #                               # RedSquirrelSelected = RedSquirrelSelected,
+      #                               SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+      #                               VisitsSelected = VisitsSelected,
+      #                               CarbonSelectedSD = CarbonSelectedSD,
+      #                               # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+      #                               SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+      #                               VisitsSelectedSD = VisitsSelectedSD,
+      #                               alphaLVL = alphaLVL,
+     #                                input_areaSlider_multiplicative_coefficient = FALSE,
+    #                                 tolvec=tolvecReactive())
       
       
       tmpYearType <- outputmap_calculateMatsYearType(input = input,
@@ -3184,11 +3100,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
        else{if(dim(SubsetMeetTargetsUnique$YEAR)[1]>=2){
       
       RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],2,replace=F)
-      
+      #browser()
       LinesToCompare<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
                     TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
                     OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
        }else{
+         ##browser()
          RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
          LinesToCompare<-list(YEAR=SelectedSimMatGlobal$YEAR[RandomSubsetIndices,],
                               TYPE=SelectedSimMatGlobal$TYPE[RandomSubsetIndices,],
@@ -3426,6 +3343,65 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            ClickedVectorYear=ClickedVectorYear,
                            ClickedVectorYearType=ClickedVectorYearType)
   })
+  
+### the year slider on the preference tab is changed, then change the land parcels displayed.  
+  observeEvent(input$YearPref,
+               {# if the first two maps have been displayed on the pref tabs
+                 if(!FirstTimeClickOnPreferencesReactive()){
+                 SavedVecYearType <- ClickedVectorYearType()  
+                YearSelect<-input$YearPref-STARTYEAR   
+                listMaps <- list()
+                
+                SelectedDropdown <- input$inSelect
+                
+                listMaps[[1]]<-leafletProxy("ClusterPage")
+                listMaps[[2]]<-leafletProxy("ClusterPage2")
+                 LinesToCompare<-LinesToCompareReactive()
+                 SelectedLine<-list()
+                # browser()
+                 
+                 CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
+                 
+                 TwoLinesToCompareTemp<-list(YEAR=LinesToCompare$YEAR[,paste0("SelectedSimMat.YEAR.",1:length(SavedVecYearType))],
+                                      TYPE=LinesToCompare$TYPE[,paste0("SelectedSimMat.TYPE.",1:length(SavedVecYearType))],
+                                      OUTPUTS=LinesToCompare$OUTPUTS)
+                 
+                 SelectedLine[[1]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare-1,],
+                                           TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare-1,],
+                                           OUTPUTS=TwoLinesToCompareTemp$OUTPUTS[CurrentLengthLinesToCompare-1,])
+                 SelectedLine[[2]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare,],
+                                           TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare,],
+                                           OUTPUTS=TwoLinesToCompareTemp$OUTPUTS[CurrentLengthLinesToCompare,])
+                 
+                 
+
+                 
+                 for (aai in 1:2) {
+                   
+                   TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+                   TypeB<-(SelectedLine[[aai]]$TYPE=="Deciduous")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+                   BlockedCells<-(SavedVecYearType>=YearSelect)
+                   mapp<-listMaps[[aai]]
+                   removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
+                   COLOURS<-rep("transparent",length(TypeA))
+                   
+                   COLOURS[TypeA]<-"purple"
+                   COLOURS[TypeB]<-"green"
+                   COLOURS[BlockedCells]<-"red"
+                   mapp<-addPolygons(mapp,data=FullTable$geometry,
+                                     layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+                   
+                 }
+                 
+               
+                 listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, listMaps = listMaps)
+                 }
+                 
+})
+                 
+              
+  
+  
 ### If we are not on the Preference tab and some new data has been added, then re-update the weights
 ### Note that there could be more data than is actually used in the preferences. Then we take the max
 ### value in pref_reactive()$prefs as the last row that is used.

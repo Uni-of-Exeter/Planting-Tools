@@ -752,7 +752,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
   SavedVec <- ClickedVector()
   SavedVecYear <- ClickedVectorYear()
   SavedVecYearType <- ClickedVectorYearType()
-  YearSelect<-input$YearSelect-STARTYEAR
+  YearSelect<-input$YearPref-STARTYEAR
 
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
@@ -902,7 +902,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
         #            OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
       
       #LinesToCompare[CR, ] <- sample(1:dim(datAll2$YEAR)[1], 2, replace = F)
-      
+     
       LinesToCompareReactive(LinesToCompare)
       
       CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
