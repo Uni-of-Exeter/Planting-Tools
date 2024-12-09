@@ -274,7 +274,8 @@ update <- function(p, method = "adapt", nbatch = 1000, .DEBUG=FALSE, ...){
   # Run the MCMC via the method
   if(method== "adapt"){
     #samples <- MCMC.parallel(p=fun, n=(10*nbatch)+1000, init=prior_mean, n.chain=4, n.cpu=4, adapt=1000, acc.rate = 0.2)
-    samples <- MCMC(p=fun, n=(10*nbatch)+1000, init=prior_mean, adapt=1000, acc.rate = 0.2)    if(.DEBUG)
+    samples <- MCMC(p=fun, n=(10*nbatch)+1000, init=prior_mean, adapt=1000, acc.rate = 0.2)
+    if(.DEBUG)
       return(samples)
     else{
       #tsams <- samples[[1]]$samples[-c(1:1000),] #-1000 removes burnin
