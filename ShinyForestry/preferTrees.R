@@ -221,14 +221,13 @@ prefObject <- function(data = NA, priors = list(), ...) PrefElicitClass(data = d
 #' @param p A PrefElicitClass instance.
 #' @param method The type of MCMC used for inference: Plan for adaptive MCMC and Parallel tempering. Types are `adapt` and `ptmcmc`
 #' @param nbatch If using Monte Carlo estimates, the number of posterior samples (note difference to prefeR). Defaults to 1000. 
-#' @param ncpu # Number of cores to use in the MCMC
 #' @param ... other arguments to MCMC method
 #' @return Vector of weight representing the posterior mean, and posterior samples (in some form tbd)
 #' @importFrom stats optim
 #' @import adaptMCMC
 #' @import ptmc
 #' @export
-update <- function(p, method = "adapt", nbatch = 1000, ncpu = 1, .DEBUG=FALSE, ...){
+update <- function(p, method = "adapt", nbatch = 1000, .DEBUG=FALSE, ...){
   # Basic escape if data missing
   if (any(is.na(p$data))){
     if (length(p$data) == 1) {
