@@ -1,32 +1,83 @@
-
 # Generate unconstrained legal inputs
-generate_legal_samples <- function(n, k, legal_non_zero_values, random_or_maximin_lhs) {
-  # maximinLHS takes too long when n and k are too large, randomLHS is almost instantaneous
-  if (random_or_maximin_lhs == "maximin") {
-    values <- lhs::maximinLHS(n, k)
-  } else if (random_or_maximin_lhs == "random") {
-    values <- lhs::randomLHS(n, k)
+generate_legal_samples <- function(n,
+                                   random_or_maximin_lhs = "random",
+                                   FullTable_arg,
+                                   limit_log_level = LOG_LEVEL,
+                                   RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                   MAXYEAR_arg = MAXYEAR,
+                                   SPECIES_arg = SPECIES,
+                                   area_sum_threshold_numeric_arg,
+                                   year_of_max_no_planting_threshold_vector_arg) {
+  
+  FullTable <- FullTable_arg
+  area_sum_threshold <- area_sum_threshold_numeric_arg
+  year_of_max_no_planting_threshold_vector <- year_of_max_no_planting_threshold_vector_arg
+  MAXYEAR <- MAXYEAR_arg
+  SPECIES <- SPECIES_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  A <- RREMBO_HYPER_PARAMETERS$A
+  d <- ncol(A)
+  D <- nrow(A)
+  
+  if (is.null(RREMBO_HYPER_PARAMETERS)) {
+    msg <- "generate_legal_samples() has been called without specifying the argument RREMBO_HYPER_PARAMETERS_arg"
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    stop(paste("[ERROR]", msg))
   }
-  # Turn values between 0 and 1 to legal area values by rounding then multiplying
-  values <- continuous_to_categorical(values,
-                                      legal_non_zero_values)
-  return(values)
+  
+  # maximinLHS takes too long when n and d are too large, randomLHS is almost instantaneous
+  msg <- paste("RREMBO generating data. Generate data part 1 (", random_or_maximin_lhs, "and map to higher dimension) ...")
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  if (random_or_maximin_lhs == "maximin") {
+    DoE_low_dimension <- lhs::maximinLHS(n, d)
+  } else if (random_or_maximin_lhs == "random") {
+    DoE_low_dimension <- lhs::randomLHS(n, d)
+  }
+  
+  notif("Map to higher dimension ...", log_level = "debug", limit_log_level = limit_log_level)
+  DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
+  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+  
+  DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = DoE_high_dimension,
+                                                                                                       RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                                                                                       FullTable_arg = FullTable,
+                                                                                                       MAXYEAR_arg = MAXYEAR,
+                                                                                                       SPECIES_arg = SPECIES,
+                                                                                                       year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+  notif(paste("generate_legal_samples() done"), log_level = "debug", limit_log_level = limit_log_level)
+  return(list(sample_low_dimension = DoE_low_dimension,
+              sample_high_dimension = DoE_high_dimension,
+              sample_high_dimension_categorical = DoE_high_dimension_categorical))
 }
 
-generate_legal_unique_samples <- function(n, k,
-                                          d = 6, # effective dimension for Random Embeddings
-                                          legal_non_zero_values,
-                                          max_threshold = NULL,
+generate_legal_unique_samples <- function(n,
                                           max_attempts = 10,
-                                          constrained = FALSE,
+                                          constrained_area_sum = FALSE,
                                           previous_values = NULL,
+                                          FullTable_arg,
+                                          limit_log_level = LOG_LEVEL,
+                                          RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                          MAXYEAR_arg = MAXYEAR,
+                                          SPECIES_arg = SPECIES,
+                                          area_sum_threshold_numeric_arg,
+                                          year_of_max_no_planting_threshold_vector_arg,
                                           RRembo = FALSE,
-                                          RRembo_hyper_parameters = NULL,
                                           RRembo_smart = FALSE,
-                                          current_task_id,
-                                          limit_log_level = LOG_LEVEL) {
+                                          random_or_maximin_lhs = "random",
+                                          current_task_id) {
   
-  if (isTRUE(RRembo) && is.null(RRembo_hyper_parameters)) {
+  FullTable <- FullTable_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  A <- RREMBO_HYPER_PARAMETERS$A
+  MAXYEAR <- MAXYEAR_arg
+  SPECIES <- SPECIES_arg
+  area_sum_threshold <- area_sum_threshold_numeric_arg
+  year_of_max_no_planting_threshold_vector <- year_of_max_no_planting_threshold_vector_arg
+  A <- RREMBO_HYPER_PARAMETERS$A
+  d <- ncol(A)
+  D <- nrow(A)
+  
+  if (isTRUE(RRembo) && is.null(RREMBO_HYPER_PARAMETERS)) {
     msg <- "generate_legal_unique_samples() has been called without specifying the argument RRembo_hyper_parameters"
     notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
@@ -37,15 +88,13 @@ generate_legal_unique_samples <- function(n, k,
   valid_samples_low_dimension <- if (n > 3e5) dplyr::tibble() else data.frame()
   valid_samples_high_dimension <- if (n > 3e5) dplyr::tibble() else data.frame()
   
-  constraint_function <- function(row, max_threshold) {
-    sum(row) <= max_threshold
+  area_constraint_function <- function(row, area_sum_threshold_numeric) {
+    sum(row) <= area_sum_threshold_numeric
   }
   
   # If there are too many data or dimensions, use lhs::randomLHS instead of lhs::maximinLHS
-  random_or_maximin_lhs <- if (k <= 15 && n <= 500) "maximin" else "random"
+  random_or_maximin_lhs <- if (D <= 15 && n <= 500) "maximin" else "random"
   use_dplyr <- isTRUE(n > 3e5)
-  # TODO REMBO with dplyr
-  if (isTRUE(RRembo)) use_dplyr <- FALSE
   
   while (nrow(valid_samples) < n && attempts <= max_attempts) {
     if (current_task_id != get_latest_task_id()) {
@@ -59,10 +108,10 @@ generate_legal_unique_samples <- function(n, k,
       number_of_rows_left_to_generate <- n - nrow(valid_samples)
     } else {
       number_of_rows_left_to_generate <- n
-      valid_samples <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = k))
+      valid_samples <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = D))
       if (isTRUE(RRembo)) {
         valid_samples_low_dimension <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = d))
-        valid_samples_high_dimension <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = k))
+        valid_samples_high_dimension <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = D))
       }
     }
     
@@ -74,7 +123,7 @@ generate_legal_unique_samples <- function(n, k,
     } else if (random_or_maximin_lhs == "random") {
       rows <- 2 * number_of_rows_left_to_generate
     }
-    if (isFALSE(constrained)) {
+    if (isFALSE(constrained_area_sum)) {
       rows <- 4 * rows
     }
     use_dplyr <- isTRUE(rows > 3e5)
@@ -84,95 +133,105 @@ generate_legal_unique_samples <- function(n, k,
     if (current_task_id != get_latest_task_id()) {
       return()
     }
-    if (isTRUE(RRembo)) {
-      
-      if (isTRUE(RRembo_smart)) {
-        msg <- "generate_legal_unique_samples() -> generate_samples_RRembo() ..."
-        notif(msg, log_level = "debug", limit_log_level = limit_log_level)
-        samples <- generate_samples_RRembo(d = d,
-                                           lower = rep(0, k),
-                                           upper = rep(1, k),
-                                           legal_non_zero_values = legal_non_zero_values,
-                                           RRembo_hyper_parameters = RRembo_hyper_parameters,
-                                           limit_log_level = limit_log_level)
-        notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
-      } else {
-        msg <- "generate_legal_unique_samples() -> generate_samples_RRembo_basic() ..."
-        notif(msg, log_level = "debug", limit_log_level = limit_log_level)
-        if (attempts > 1) {
-          temp <- lhs::optAugmentLHS(lhs = valid_samples, m = number_of_rows_left_to_generate, mult = 1)
-          # Only take the new rows
-          temp <- temp[(length(valid_samples) + 1):length(temp), ]
-          temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = samples, A = A)
-          # Turn values between 0 and 1 to legal area values by rounding then multiplying
-          temp_high_dimension_categorical <- continuous_to_categorical(values = temp_high_dimension,
-                                                                       legal_non_zero_values = legal_non_zero_values)
-          samples <- list(sample_low_dimension = temp,
-                          sample_high_dimension = temp_high_dimension,
-                          sample_high_dimension_categorical = temp_high_dimension_categorical)
-        } else {
-          samples <- generate_samples_RRembo_basic(d = d,
-                                                   D = k,
-                                                   legal_non_zero_values = legal_non_zero_values,
-                                                   RRembo_hyper_parameters = RRembo_hyper_parameters,
-                                                   limit_log_level = limit_log_level)
-        }
-        notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
-      }
-      
-      samples_low_dimension <- samples$sample_low_dimension
-      samples_high_dimension <- samples$sample_high_dimension
-      samples <- samples$sample_high_dimension_categorical
-      
+    
+    if (isTRUE(RRembo_smart)) {
+      msg <- "generate_legal_unique_samples() -> generate_samples_RRembo() ..."
+      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+      samples <- generate_samples_RRembo(d = d,
+                                         lower = rep(0, D),
+                                         upper = rep(1, D),
+                                         legal_non_zero_values = legal_non_zero_values,
+                                         RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                         limit_log_level = limit_log_level)
+      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
     } else {
-      
       msg <- "generate_legal_unique_samples() -> generate_legal_samples() ..."
       notif(msg, log_level = "debug", limit_log_level = limit_log_level)
-      samples <- generate_legal_samples(rows, k, legal_non_zero_values, random_or_maximin_lhs)
+      if (attempts > 1) {
+        temp <- lhs::optAugmentLHS(lhs = valid_samples, m = rows, mult = 1)
+        
+        # Only take the new rows
+        temp <- temp[(length(valid_samples) + 1):length(temp), ]
+        temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = samples, A = A)
+        
+        # Turn values between 0 and 1 to legal area values by rounding then multiplying
+        temp_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = temp_high_dimension,
+                                                                                                              RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                                                                                              FullTable_arg = FullTable,
+                                                                                                              MAXYEAR_arg = MAXYEAR,
+                                                                                                              SPECIES_arg = SPECIES,
+                                                                                                              year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+        
+        samples <- list(sample_low_dimension = temp,
+                        sample_high_dimension = temp_high_dimension,
+                        sample_high_dimension_categorical = temp_high_dimension_categorical)
+      } else {
+        samples <- generate_legal_samples(n = rows,
+                                          limit_log_level = limit_log_level,
+                                          RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                          FullTable_arg = FullTable,
+                                          MAXYEAR_arg = MAXYEAR,
+                                          SPECIES_arg = SPECIES,
+                                          area_sum_threshold_numeric = area_sum_threshold,
+                                          year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+      }
       notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
-      
     }
+    
+    samples_low_dimension <- samples$sample_low_dimension
+    samples_high_dimension <- samples$sample_high_dimension
+    samples <- samples$sample_high_dimension_categorical
     if (current_task_id != get_latest_task_id()) {
       return()
     }
     
-    # Add samples to valid_samples, and filter on the threshold if isTRUE(constrained)
-    if (isTRUE(constrained)) {
-      if (is.null(max_threshold)) {
-        msg <- "generate_legal_unique_samples was called with constrained=TRUE but no value for max_threshold"
+    good_colnames_low_dim <- 1:d
+    good_colnames_high_dim <- colnames(samples)
+    
+    # Add samples to valid_samples, and filter on the area_sum_threshold if isTRUE(constrained_area_sum)
+    if (isTRUE(constrained_area_sum)) {
+      if (is.null(area_sum_threshold)) {
+        msg <- "generate_legal_unique_samples was called with constrained_area_sum = TRUE but no value for area_sum_threshold_numeric_arg"
         notif(msg, log_level = "error", limit_log_level = limit_log_level)
         stop(paste("[ERROR]", msg))
       }
-      # Remove rows where the sum is less than max_threshold
+      # Remove rows where the sum is less than area_sum_threshold
       # If we are using maximinLHS, valid_samples is an empty data.frame/tibble
-      if (isFALSE(use_dplyr)) {
-        indices_to_keep <- apply(samples, 1, constraint_function, max_threshold = max_threshold)
+      # if (isFALSE(use_dplyr)) {
+        browser()
+        colnames_samples <- colnames(samples)
+        area_cols <- grep("area", colnames_samples)
+        samples_area_numeric <- samples[, area_cols, drop = FALSE]
+        # apply works naturally on columns, so either pass 2 or transpose after
+        samples_area_numeric <- apply(samples_area_numeric, 2, as.numeric)
+        
+        indices_to_keep <- apply(samples_area_numeric, 1, area_constraint_function, area_sum_threshold_numeric = area_sum_threshold)
         # There are problems with rbind when the column names are empty and/or different
-        colnames(valid_samples) <- colnames(samples) <- 1:k
+        colnames(valid_samples) <- good_colnames_high_dim
         valid_samples <- rbind(valid_samples,
-                               samples[indices_to_keep, ])
+                               samples[indices_to_keep, , drop = FALSE])
         if (isTRUE(RRembo)) {
-          colnames(valid_samples_low_dimension) <- colnames(samples_low_dimension) <- 1:d
-          colnames(valid_samples_high_dimension) <- colnames(samples_high_dimension) <- 1:k
+          colnames(valid_samples_low_dimension) <- good_colnames_low_dim
+          colnames(valid_samples_high_dimension) <- good_colnames_high_dim
           valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
-                                               samples_low_dimension[indices_to_keep, ])
+                                               samples_low_dimension[indices_to_keep, , drop = FALSE])
           valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
-                                                samples_high_dimension[indices_to_keep, ])
+                                                samples_high_dimension[indices_to_keep, , drop = FALSE])
         }
-      } else {
-        # TODO: indices_to_keep with dplyr when RRembo
-        # dplyr is faster on very large values of n
-        suppressMessages({
-          valid_samples <- valid_samples %>%
-            as_tibble(.name_repair = "minimal") %>%
-            bind_rows(samples %>% as_tibble(.name_repair = "minimal")) %>%
-            mutate(row_sum = rowSums(across(everything()))) %>%
-            filter(row_sum <= max_threshold) %>%
-            dplyr::select(-row_sum)
-        })
-      }
+      # } else {
+      #   # TODO: indices_to_keep with dplyr when RRembo
+      #   # dplyr is faster on very large values of n
+      #   suppressMessages({
+      #     valid_samples <- valid_samples %>%
+      #       as_tibble(.name_repair = "minimal") %>%
+      #       bind_rows(samples %>% as_tibble(.name_repair = "minimal")) %>%
+      #       mutate(row_sum = rowSums(across(everything()))) %>%
+      #       filter(row_sum <= max_threshold) %>%
+      #       dplyr::select(-row_sum)
+      #   })
+      # }
     } else {
-      if (isFALSE(use_dplyr)) {
+      # if (isFALSE(use_dplyr)) {
         valid_samples <- rbind(valid_samples,
                                samples)
         if (isTRUE(RRembo)) {
@@ -181,18 +240,18 @@ generate_legal_unique_samples <- function(n, k,
           valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
                                                 samples_high_dimension)
         }
-      } else {
-        # TODO: indices_to_keep with dplyr with RRembo
-        # dplyr is faster on very large values of n
-        suppressMessages({
-          valid_samples <- valid_samples %>%
-            as_tibble(.name_repair = "minimal") %>%
-            bind_rows(samples %>% as_tibble(.name_repair = "minimal"))
-        })
-        # if (isTRUE(RRembo)) {
-        #   
-        # }
-      }
+      # } else {
+      #   # TODO: indices_to_keep with dplyr with RRembo
+      #   # dplyr is faster on very large values of n
+      #   suppressMessages({
+      #     valid_samples <- valid_samples %>%
+      #       as_tibble(.name_repair = "minimal") %>%
+      #       bind_rows(samples %>% as_tibble(.name_repair = "minimal"))
+      #   })
+      #   # if (isTRUE(RRembo)) {
+      #   #   
+      #   # }
+      # }
     }
     
     # Remove duplicate rows (unlikely to happen, but just in case)
@@ -418,9 +477,6 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
     MAXYEAR_arg = MAXYEAR,
     SPECIES_arg = SPECIES,
     
-    # typically input$AreaSlider  
-    area_sum_threshold_numeric,
-    
     # typically ClickedVector()
     year_of_max_no_planting_threshold_vector
 ) {
@@ -466,7 +522,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
   # Turn Area to categorical values
   group_size <- ncol(DoE_high_dimension_rowwise_matrix) / 3
   indices <- 1:group_size
-  DoE_high_dimension_rowwise_matrix_area_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices],
+  DoE_high_dimension_rowwise_matrix_area_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE],
                                                                1,
                                                                normalize_minmax))
   
@@ -479,32 +535,35 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
                                                 nrow = nrow(DoE_high_dimension_rowwise_matrix),
                                                 ncol = length(indices))
   indices <- group_size + indices
-  DoE_high_dimension_rowwise_matrix_year_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices],
+  DoE_high_dimension_rowwise_matrix_year_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE],
                                                                1,
                                                                normalize_minmax))
   
   ## Per parcel, map uniformly over the allowed planting years (from minimum_specified_in_strategy to MAXYEAR)
+  # microbenchmark::microbenchmark({
+  year_of_max_no_planting_threshold_vector <- as.numeric(year_of_max_no_planting_threshold_vector)
   for (i in indices) {
     # Loop over parcels
     parcel_idx <- i - min(indices) + 1
-
+    
     # If we can plant, map uniformly to all possible years
-    if (as.numeric(year_of_max_no_planting_threshold_vector[parcel_idx]) < MAXYEAR) {
-      years_possible_values_dataframe <- cbind(year_of_planting_min_threshold_vector[parcel_idx]:MAXYEAR)
+    if (year_of_max_no_planting_threshold_vector[parcel_idx] < MAXYEAR) {
+      years_possible_values_dataframe <- matrix(year_of_planting_min_threshold_vector[parcel_idx]:MAXYEAR, ncol = 1)
     } else {
       # Otherwise, we skip this later anyway, but map all values to the same category
-      years_possible_values_dataframe <- cbind(MAXYEAR + 1)
+      years_possible_values_dataframe <- matrix(MAXYEAR + 1, ncol = 1)
     }
-
-    DoE_high_dimension_categorical_year[, parcel_idx] <- as.numeric(continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_year_normalized[, parcel_idx, drop = FALSE],
-                                                                                                    legal_values_ordered = years_possible_values_dataframe))
+    DoE_high_dimension_categorical_year[, parcel_idx] <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_year_normalized[, parcel_idx, drop = FALSE],
+                                                                                         legal_values_ordered = years_possible_values_dataframe)
   }
+  # },
+  # times = 200)
   
   colnames(DoE_high_dimension_categorical_year) <- paste0("plantingyear_parcel_id", 1:ncol(DoE_high_dimension_categorical_year))
   
   # Turn Tree Specie to categorical values
   indices <- group_size + indices
-  DoE_high_dimension_rowwise_matrix_tree_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices],
+  DoE_high_dimension_rowwise_matrix_tree_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE],
                                                                1,
                                                                normalize_minmax))
   DoE_high_dimension_categorical_treespecie <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_tree_normalized,
@@ -1133,61 +1192,6 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
               Amat = A))
 }
 
-generate_samples_RRembo_basic <- function(d, D, budget = 100,
-                                          legal_non_zero_values,
-                                          # control = list(Atype = "isotropic",
-                                          #                reverse = TRUE,
-                                          #                bxsize = NULL,
-                                          #                testU = TRUE,
-                                          #                standard = FALSE, 
-                                          #                maxitOptA = 100,
-                                          #                lightreturn = FALSE,
-                                          #                warping = "Psi",
-                                          #                designtype = "unif",
-                                          #                tcheckP = 1e-04,
-                                          #                roll = F,
-                                          #                inneroptim = "pso",
-                                          #                popsize = 80, 
-                                          #                gen = 40),
-                                          init = NULL,
-                                          # init$n, init$Amat
-                                          RRembo_hyper_parameters = NULL,
-                                          limit_log_level = LOG_LEVEL) {
-  
-  if (is.null(RRembo_hyper_parameters)) {
-    msg <- "generate_samples_RRembo_basic() has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
-    stop(paste("[ERROR]", msg))
-  }
-  
-  A <- Amat <- RRembo_hyper_parameters$A
-  n.init <- RRembo_hyper_parameters$n.init
-  
-  
-  msg <- "RREMBO generating data. Generate data part 1 (randomLHS and map to higher dimension) ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
-  DoE_low_dimension <- lhs::randomLHS(n.init, d)
-  DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
-  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
-  
-  # Turn values between 0 and 1 to legal area values by rounding then multiplying
-  
-  msg <- "RREMBO generating data. Generate data part 2 (map to categorical values) ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
-  DoE_high_dimension_categorical <- continuous_to_categorical(values = DoE_high_dimension,
-                                                              legal_non_zero_values = legal_non_zero_values)
-  
-  DoE_high_dimension_categorical <- continuous_to_multi_categorical(values = DoE_high_dimension,
-                                                                    legal_non_zero_values = legal_non_zero_values)
-  
-  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
-  notif(paste("generate_samples_RRembo_basic() done"), log_level = "debug", limit_log_level = limit_log_level)
-  
-  return(list(sample_high_dimension = DoE_high_dimension,
-              sample_high_dimension_categorical = DoE_high_dimension_categorical,
-              sample_low_dimension = DoE_low_dimension,
-              Amat = A))
-}
 
 EI_Rembo <- function(x, model, mval = -10, RRembo_hyper_parameters = NULL,
                      batch_size = 1,
@@ -2218,7 +2222,8 @@ bayesian_optimization <- function(
       # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
       reverse = FALSE),
     RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
-                                              init = list(n = 10 * nrow(FullTable)), budget = 100,
+                                              init = list(n = 10 * nrow(FullTable)),
+                                              budget = 100,
                                               control = list(
                                                 # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
                                                 designtype = "LHS",
