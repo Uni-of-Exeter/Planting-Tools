@@ -18,7 +18,7 @@ ShinyForestry/ElicitorOutput/Parcels.geojson
 ShinyForestry/JulesOP/Fishnet_1km_to_SEER_net2km*
 ShinyForestry/JulesOP/beta*
 ShinyForestry/JulesOP/Correspondance*
-
+ShinyForestry/CalculatedFiles/
 *.gif
 *.mov
 *.avi
