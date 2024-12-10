@@ -255,7 +255,20 @@ area_names <- paste0("area_parcel_", 1:group_size)
 plantingyear_names <- paste0("plantingyear_parcel_", 1:group_size)
 treespecie_names <- paste0("treespecie_parcel_", 1:group_size)
 
-Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha))){
+Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
+                           MAXYEAR_arg = MAXYEAR,
+                           SPECIES_arg = SPECIES,
+                           area_sum_threshold_numeric = area_sum_threshold,
+                           year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                           RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS) {
+  
+  MAXYEAR <- MAXYEAR_arg
+  SPECIES <- SPECIES_arg
+  area_sum_threshold <- area_sum_threshold_numeric
+  year_of_max_no_planting_threshold_vector <- year_of_max_no_planting_threshold_vector_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  A <- RREMBO_HYPER_PARAMETERS$A
+  
   year_of_planting_min_threshold_vector <- year_of_max_no_planting_threshold_vector + 1
   
   #strategy in high-dim continuous space
