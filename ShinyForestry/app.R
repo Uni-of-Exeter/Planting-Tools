@@ -864,7 +864,7 @@ for (ext in AllExtents)
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
 
-ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
+ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)),
                 tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(fluidRow(
                                             column(9,
