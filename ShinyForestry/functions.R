@@ -959,15 +959,15 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
           ############################################################################# TO CHANGE PREF ELICITATION           
           
         
-          addControlText <- ""
-          for (i in 1:length(SPECIES)) {
-            specie_latin <- SPECIES[i]
-            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-            selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
-            selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
-            addControlText <- paste0(addControlText, specie_english, ": ", 
-                                     round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
-          }
+         # addControlText <- ""
+        #  for (i in 1:length(SPECIES)) {
+        #    specie_latin <- SPECIES[i]
+        #    specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+        #    selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
+        #    selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
+        #    addControlText <- paste0(addControlText, specie_english, ": ", 
+        #                             round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
+        #  }
         
           
           #mapp<-
@@ -979,18 +979,28 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
           #                                "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
           #                                "</p>"), position = "topright",layerId="legend")
           if(aai==1){
-            PrefTextA(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                             sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
-                             addControlText,
-                             "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
-                             "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                             "\u00B1",sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD) ))}else{
-                               PrefTextB(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                                                sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
-                                                addControlText,
-                                                "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
-                                                "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                                                "\u00B1", sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD)))
+            PrefTextA(
+              FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                            SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                            SPECIES,SPECIES_ENGLISH,
+                            SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                            SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                            SelectedLine[[aai]]$OUTPUTS$Area,
+                            SelectedLine[[aai]]$OUTPUTS$Visits,
+                            SelectedLine[[aai]]$OUTPUTS$VisitsSD)
+              
+            )}else{
+                               PrefTextB(
+                                 FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                                               SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                                               SPECIES,SPECIES_ENGLISH,
+                                               SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                                               SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                                               SelectedLine[[aai]]$OUTPUTS$Area,
+                                               SelectedLine[[aai]]$OUTPUTS$Visits,
+                                               SelectedLine[[aai]]$OUTPUTS$VisitsSD) 
+                                 
+                               )
                                
                              }
           
@@ -3351,12 +3361,13 @@ Plus_Or_Minus_Button<-function(Selected_Cluster_To_Display_Loc,
 #This function returns the html code for formatted control
 FormattedControl<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs, Area, Visits, VisitsSD)
 {
+  sizeBlock<-"100px"
   addControlText <- ""
   for (i in 1:length(SPECIES)) {
     specie_latin <- SPECIES[i]
     if (specie_latin == "All") 
-    {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>All Species Richness</span>")}else 
-    {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>",SPECIES_ENGLISH[i],"</span>")}
+    {specie_english <-paste0("<span style='display: inline-block; width: ",sizeBlock,";'>All Biodiversity</span>")}else 
+    {specie_english <-paste0("<span style='display: inline-block; width: ",sizeBlock,";'>",SPECIES_ENGLISH[i],"</span>")}
     selectedBiospecie <- BioMeans[[specie_latin]]
     selectedBioSDspecie <- BioSDs[[paste0( specie_latin,"SD")]]
     if(!is.null(selectedBiospecie)){
@@ -3365,16 +3376,45 @@ FormattedControl<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioS
   }
   
   addControlText<-paste0("<p>
-                                          <span style='display: inline-block; width: 140px;'>
+                                          <span style='display: inline-block; width: ",sizeBlock,";'>
 Carbon</span>: ", round(Carbon,2)#round(sum(CarbonMeanCalc), 2)
          , "\u00B1",sprintf("%.2f",2*CarbonSD)#round(2*sqrt(sum(CarbonVarCalc)), 2)
          , "<br>",
          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
          addControlText,
-         "<span style='display: inline-block; width: 140px;'>Area Planted</span>: ", round(Area, 2), "<br>",
-         "<span style='display: inline-block; width: 140px;'>Visitors</span>: ", round(Visits, 2), "\u00B1",sprintf("%.2f",2*VisitsSD),
+         "<span style='display: inline-block; width: ",sizeBlock,";'>Area Planted</span>: ", round(Area, 2), "<br>",
+         "<span style='display: inline-block; width: ",sizeBlock,";'>Visitors</span>: ", round(Visits, 2), "\u00B1",
+         sprintf("%.2f",2*VisitsSD),
          "</p>")
   return(addControlText)
   
 }
-
+FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs, Area, Visits, VisitsSD)
+{
+  
+  addControlText <- NULL
+  for (i in 1:length(SPECIES)) {
+    specie_latin <- SPECIES[i]
+    specie_english <- if (specie_latin == "All") "All Biodiversity" else SPECIES_ENGLISH[i]
+    selectedBiospecie <- BioMeans[[specie_latin]]
+    selectedBioSDspecie <- BioSDs[[paste0( specie_latin,"SD")]]
+    #  addControlText <- paste0(addControlText, specie_english, ": ", 
+    #                          round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+    addControlText <-c(addControlText,
+                       sprintf("%-17s :%.2f\u00B1%.2f\n",specie_english,selectedBiospecie,2 * selectedBioSDspecie))
+    
+    #paste0(addControlText, specie_english, ": ", 
+     #                        round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
+  }
+ 
+  addControlText<-c(sprintf("%-17s :%.2f\u00B1%.2f\n","Carbon", Carbon, 2*CarbonSD), 
+                    addControlText,
+                    sprintf("%-17s :%.4f\n",  "Area Planted: ", Area),
+                    sprintf("%-17s :%.2f\u00B1%.2f\n","Visitors", Visits, 2*VisitsSD)
+                    
+                    )
+  
+  addControlText<-paste0(addControlText, collapse = "")
+  
+  return(addControlText)
+}

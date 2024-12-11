@@ -3213,17 +3213,15 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           #### TO CHANGE PREF ELICITATION           
           
         
-          addControlText <- ""
-          for (i in 1:length(SPECIES)) {
-            specie_latin <- SPECIES[i]
-            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-            selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
-            selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
-          #  addControlText <- paste0(addControlText, specie_english, ": ", 
-           #                          round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-            addControlText <- paste0(addControlText, specie_english, ": ", 
-                                     round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
-          }
+         # addControlText <- ""
+        #  for (i in 1:length(SPECIES)) {
+        ##    specie_latin <- SPECIES[i]
+        #    specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+        #    selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
+        #    selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
+        #    addControlText <- paste0(addControlText, specie_english, ": ", 
+        #                             round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
+        #  }
         
           
           #mapp<-
@@ -3235,21 +3233,29 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           #                                "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
           #                                "</p>"), position = "topright",layerId="legend")
           if(aai==1){
-          PrefTextA(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                           sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
-                 addControlText,
-                 "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
-                 "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                 "\u00B1",
-                 sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD) ))}else{
-                   PrefTextB(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                                    sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
-                                    addControlText,
-                                    "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
-                                    "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                                    "\u00B1", 
-                                    sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD)
-                                    ))
+          #### 
+
+          PrefTextA(
+            FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                          SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                          SPECIES,SPECIES_ENGLISH,
+                          SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                          SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                          SelectedLine[[aai]]$OUTPUTS$Area,
+                          SelectedLine[[aai]]$OUTPUTS$Visits,
+                          SelectedLine[[aai]]$OUTPUTS$VisitsSD
+                          )
+            
+          )}else{
+                   PrefTextB( FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                                            SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                                            SPECIES,SPECIES_ENGLISH,
+                                            SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                                            SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                                            SelectedLine[[aai]]$OUTPUTS$Area,
+                                            SelectedLine[[aai]]$OUTPUTS$Visits,
+                                            SelectedLine[[aai]]$OUTPUTS$VisitsSD
+                   ))
                    
                  }
           
