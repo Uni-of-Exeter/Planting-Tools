@@ -845,6 +845,8 @@ for (ext in AllExtents)
         }
           
           }
+
+      #cat(paste0(abb,"  ",bcc,"\n"))
     }
     
   }
@@ -1939,13 +1941,13 @@ server <- function(input, output, session,
         
       }else{
       
-        cat("starting clustering\n")
+        #cat("starting clustering\n")
         
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
         NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
         #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
-        cat(Set_To_Cluster$Carbon)
+        #cat(Set_To_Cluster$Carbon)
 
         if(is.null(infpref_reactive())){Weights_To_Use<-rep(1,length(NamesOUTPUTS))}else{
           Weights_To_Use<-sqrt(abs(infpref_reactive()))
@@ -1969,13 +1971,13 @@ server <- function(input, output, session,
           
         #}
         
-        cat(TSNE_RESULTS$Y)
+        #cat(TSNE_RESULTS$Y)
       
         MClust_RESULTS<-NULL
         MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)#,modelNames=c("VVV"))
-        cat(MClust_RESULTS$classification)
-        cat("\n")
-        cat("\n")
+        #cat(MClust_RESULTS$classification)
+        #cat("\n")
+        #cat("\n")
         #cat(MClust_RESULTS$parameters$variance)
         Clustering_Results_Object_Reactive(MClust_RESULTS)
         Clustering_Category_VectorReactive(MClust_RESULTS$classification)
@@ -1991,7 +1993,7 @@ server <- function(input, output, session,
         DataClustersClassified<-vector("list",length(unique(Clustering_Category_VectorReactive())))
       
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
-          cat(Basis_Clustering[[ii]])
+          #cat(Basis_Clustering[[ii]])
 
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
           DataClustersClassified[[ii]]<-DataCluster
@@ -2014,7 +2016,7 @@ server <- function(input, output, session,
          #   }else{Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]}
         #    
          #   }
-          cat(Basis_Clustering[[ii]])
+          #cat(Basis_Clustering[[ii]])
           Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
          
           if(!is.null(dim(DataCluster))){
@@ -2041,7 +2043,7 @@ server <- function(input, output, session,
         ClusteringDone(TRUE)
         
         
-        cat("ending clustering\n")
+        #cat("ending clustering\n")
         
         
       }
@@ -2107,7 +2109,7 @@ server <- function(input, output, session,
           SelectedRows<-list(YEAR=NULL,TYPE=NULL,OUTPUTS=NULL)
           LISTSeparatedClusters<-vector("list",length(unique(Clustering_Category_VectorLoc)))
         for (ii in 1:length(unique(Clustering_Category_VectorLoc))){
-          cat(ii)
+          #cat(ii)
           LISTSeparatedClusters[[ii]]<-list(YEAR=SubsetMeetTargetsUnique$YEAR[Clustering_Category_VectorLoc==ii,],TYPE=SubsetMeetTargetsUnique$TYPE[Clustering_Category_VectorLoc==ii,],
                                             OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[Clustering_Category_VectorLoc==ii,])
           SelectedRows$YEAR<-rbind(SelectedRows$YEAR,LISTSeparatedClusters[[ii]]$YEAR[FourUniqueRowsClusteringLoc[ii],])
@@ -2323,7 +2325,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     # disable tabs click
 
     #debug()
-    cat("starting updating values based on sliders\n")
+    #cat("starting updating values based on sliders\n")
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1&(bayesian_optimization_finished()))) {
    #  p<-profvis({
       # Increment the task ID every time. To allow the bayesian optimization to stop if this code is triggered again
@@ -2650,8 +2652,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           )
           SelectedVector(TOSAVE)
         }
-        cat(proc.time()-tt)
-        cat("\n")
+        #cat(proc.time()-tt)
+        #cat("\n")
       
         if(RUN_BO){          
           
@@ -2885,7 +2887,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   }
 
     
-    cat("ended updating values based on sliders\n")
+    #cat("ended updating values based on sliders\n")
       }, ignoreInit = TRUE)
   
   
