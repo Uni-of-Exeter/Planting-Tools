@@ -636,14 +636,14 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
           specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
           selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
         }
         listMaps[[aai]] <- listMaps[[aai]]%>%  
-          addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",round(2*SelectedTreeCarbonSD,2),"<br>",
+          addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",sprintf("%.2f",2*SelectedTreeCarbonSD),"<br>",
                                    # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
                                    addControlText,
                                    "Area Planted: ",round(SelectedArea,2),"<br>",
-                                   "Visitors: ",round(SelectedVisits,2),"\u00B1",round(2*SelectedVisitsSD,2),
+                                   "Visitors: ",round(SelectedVisits,2),"\u00B1",sprintf("%.2f",2*SelectedVisitsSD),
                                    "</p>"), position = "topright")
       }
       listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
@@ -930,7 +930,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
           COLOURS[BlockedCells]<-"red"
           mapp<-addPolygons(mapp,data=FullTable$geometry,
                             layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
-          removeControl(mapp,layerId="legend")
+          #removeControl(mapp,layerId="legend")
           ############################################################################# TO CHANGE PREF ELICITATION           
           
         
@@ -941,18 +941,36 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
             selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
             selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
             addControlText <- paste0(addControlText, specie_english, ": ", 
-                                     round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+                                     round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
           }
         
           
-          mapp<-
-            addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                                          round(2*SelectedLine[[aai]]$OUTPUTS$CarbonSD, 2), "<br>",
-                                          addControlText,
-                                          "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "<br>",
-                                          "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                                          "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
-                                          "</p>"), position = "topright",layerId="legend")
+          #mapp<-
+          #  addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+          #                                round(2*SelectedLine[[aai]]$OUTPUTS$CarbonSD, 2), "<br>",
+          #                                addControlText,
+          #                                "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "<br>",
+          #                                "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+          #                                "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
+          #                                "</p>"), position = "topright",layerId="legend")
+          if(aai==1){
+            PrefTextA(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+                             sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
+                             addControlText,
+                             "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
+                             "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+                             "\u00B1",sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD) ))}else{
+                               PrefTextB(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+                                                sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
+                                                addControlText,
+                                                "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
+                                                "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+                                                "\u00B1", sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD)))
+                               
+                             }
+          
+          
+          
           listMaps[[aai]]<-mapp
         
     

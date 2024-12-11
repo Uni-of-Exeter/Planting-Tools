@@ -786,7 +786,19 @@ load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.R
 load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
 load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
 }else{
-
+  if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))){
+    file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
+  }
+  if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))){
+    file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
+  }
+  if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))){
+    file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
+  }
+  if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))){
+    file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+  }
+  
 
 for (ext in AllExtents)
 {
@@ -840,11 +852,13 @@ for (ext in AllExtents)
   
   
 }
+  
+  save(PrecalcCarbonAllExtents,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
+  save(PrecalcCarbonAllExtentsSD,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
+  save(PrecalcCarbonAllExtentsType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
+  save(PrecalcCarbonAllExtentsSDType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+  
 }
-#save(PrecalcCarbonAllExtents,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtents.RData")
-#save(PrecalcCarbonAllExtentsSD,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtentsSD.RData")
-#save(PrecalcCarbonAllExtentsType,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtentsType.RData")
-#save(PrecalcCarbonAllExtentsSDType,file="C:\\Users\\bn267\\OneDrive - University of Exeter\\Documents\\GitHub\\Planting-Tools\\ShinyForestry\\CalculatedFiles\\PrecalcCarbonAllExtentsSDType.RData")
 
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
@@ -883,9 +897,13 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                          condition = "input.Trigger == true",
                                          verticalLayout(sliderInput("YearPref","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                          fluidRow(
-                                           column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), actionButton("choose1", "choose"))
+                                           column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), 
+                                                                    verbatimTextOutput("PrefTextChoiceA"),
+                                                                    actionButton("choose1", "choose"))
                                            ),
-                                           column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), actionButton("choose2", "choose"))
+                                           column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), 
+                                                                    verbatimTextOutput("PrefTextChoiceB"),
+                                                                    actionButton("choose2", "choose"))
                                            )
                                          ))),
                                        conditionalPanel(
@@ -894,10 +912,10 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                      ))
                                           ,
                                           tabPanel("Alternative Approaches", id = "Alt",verticalLayout(
-                                            fluidPage(fluidRow(
+                                            fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                               if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
                                               column(10,verbatimTextOutput("ZeroText"),column(2,))}
-                                              )),
+                                              ))),
                                             fluidPage(fluidRow(
                                               column(5,
                                                      verticalLayout(
@@ -1096,6 +1114,8 @@ server <- function(input, output, session,
   Text2 <- reactiveVal("")
   Text3 <- reactiveVal("")
   Text4 <- reactiveVal("")
+  PrefTextA <- reactiveVal("")
+  PrefTextB <- reactiveVal("")
 
   # # Add TextN <- reactiveVal("") for each specie
   # for (i in 1:N_SPECIES) {
@@ -1142,6 +1162,8 @@ server <- function(input, output, session,
   output$SecondMapTxt <- renderText({Text2()})
   output$ThirdMapTxt <- renderText({Text3()})
   output$FourthMapTxt <- renderText({Text4()})
+  output$PrefTextChoiceA <- renderText({PrefTextA()})
+  output$PrefTextChoiceB <- renderText({PrefTextB()})
   
   
   output$Analysis<-renderPlot({
@@ -1865,17 +1887,17 @@ server <- function(input, output, session,
             selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
             if(!is.null(selectedBiospecie)){
               addControlText <- paste0(addControlText, specie_english, ": ", 
-                                       round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")}
+                                       round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")}
           }
 
           mapp<-
             addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon,2)#round(sum(CarbonMeanCalc), 2)
-                                          , "\u00B1", round(2*SFTR$CarbonSD, 2)#round(2*sqrt(sum(CarbonVarCalc)), 2)
+                                          , "\u00B1",sprintf("%.2f",2*SFTR$CarbonSD)#round(2*sqrt(sum(CarbonVarCalc)), 2)
                                           , "<br>",
                                           # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
                                           addControlText,
                                           "Area Planted: ", round(SFTR$Area, 2), "<br>",
-                                          "Visitors: ", round(SFTR$Visits, 2), "\u00B1", round(2*SFTR$VisitsSD, 2),
+                                          "Visitors: ", round(SFTR$Visits, 2), "\u00B1",sprintf("%.2f",2*SFTR$VisitsSD),
                                           "</p>"), position = "topright",layerId="legend")
           
           
@@ -2158,14 +2180,14 @@ server <- function(input, output, session,
             selectedBiospecie <- SFTR$OUTPUTS[[specie_latin]]
             selectedBioSDspecie <- SFTR$OUTPUTS[[paste0( specie_latin,"SD")]]
             addControlText <- paste0(addControlText, specie_english, ": ", 
-                                     round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+                                     round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
           }
           
           mapp<-
-            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", round(2*SFTR$OUTPUTS$CarbonSD, 2), "<br>",
+            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$CarbonSD), "<br>",
                                           addControlText,
                                           "Area Planted: ", round(SFTR$OUTPUTS$Area, 2), "<br>",
-                                          "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", round(2*SFTR$OUTPUTS$VisitsSD, 2),
+                                          "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$VisitsSD),
                                           "</p>"), position = "topright",layerId="legend")
           
           ifelse(Selected_Cluster_To_Display_Reactive()==ii,
@@ -3172,19 +3194,40 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
             selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
+          #  addControlText <- paste0(addControlText, specie_english, ": ", 
+           #                          round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
             addControlText <- paste0(addControlText, specie_english, ": ", 
-                                     round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+                                     round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
           }
         
           
-          mapp<-
-            addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                                          round(2*SelectedLine[[aai]]$OUTPUTS$CarbonSD, 2), "<br>",
-                                          addControlText,
-                                          "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "<br>",
-                                          "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                                          "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
-                                          "</p>"), position = "topright",layerId="legend")
+          #mapp<-
+          #  addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+          #                                round(2*SelectedLine[[aai]]$OUTPUTS$CarbonSD, 2), "<br>",
+          #                                addControlText,
+          #                                "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "<br>",
+          #                                "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+          #                                "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
+          #                                "</p>"), position = "topright",layerId="legend")
+          if(aai==1){
+          PrefTextA(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+                           sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
+                 addControlText,
+                 "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
+                 "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+                 "\u00B1",
+                 sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD) ))}else{
+                   PrefTextB(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+                                    sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
+                                    addControlText,
+                                    "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
+                                    "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+                                    "\u00B1", 
+                                    sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD)
+                                    ))
+                   
+                 }
+          
           listMaps[[aai]]<-mapp
         
       #    SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVec)]
@@ -3549,17 +3592,17 @@ if(!is.null(pref_reactive()$prefs)){
               selectedBiospecie <- SelectedRowToDisplay$OUTPUTS[[specie_latin]]
               selectedBioSDspecie <- SelectedRowToDisplay$OUTPUTS[[paste0( specie_latin,"SD")]]
               addControlText <- paste0(addControlText, specie_english, ": ", 
-                                      round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+                                      round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
             }
             
             if(length(unique(Clustering_Category_VectorReactive()))>=4){
             mapp<-
               addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedRowToDisplay$OUTPUTS$Carbon, 2), "\u00B1", 
-                                            round(2*SelectedRowToDisplay$OUTPUTS$CarbonSD, 2), "<br>",
+                                            sprintf("%.2f",2*SelectedRowToDisplay$OUTPUTS$CarbonSD), "<br>",
                                             addControlText,
                                             "Area Planted: ", round(SelectedRowToDisplay$OUTPUTS$Area, 4), "<br>",
                                             "Visitors: ", round(SelectedRowToDisplay$OUTPUTS$Visits, 2), 
-                                            "\u00B1", round(2*SelectedRowToDisplay$OUTPUTS$VisitsSD, 2),
+                                            "\u00B1", sprintf("%.2f",2*SelectedRowToDisplay$OUTPUTS$VisitsSD),
                                             "</p>"), position = "topright",layerId="legend")
             }
             
@@ -3695,15 +3738,15 @@ if(!is.null(pref_reactive()$prefs)){
             if (SPECIES[i] == "All") {
               specie_english <- "All species"
             }
-            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
           }
           
           map <- map %>%
-            addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", round(2*SelectedTreeCarbonSD, 2), "<br>",
+            addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", sprintf("%.2f",2*SelectedTreeCarbonSD), "<br>",
                                      # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
                                      addControlText,
                                      "Area Planted: ", round(SelectedArea, 2), "<br>",
-                                     "Visitors: ", round(SelectedVisits, 2), "\u00B1", round(2*SelectedVisitsSD, 2),
+                                     "Visitors: ", round(SelectedVisits, 2), "\u00B1", sprintf("%.2f",2*SelectedVisitsSD),
                                      "</p>"), position = "topright",layerId="legend")
         }
         #} else { map <- map %>%
