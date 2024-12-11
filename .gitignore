@@ -27,3 +27,6 @@ ShinyForestry/DownScalingImages/
 *.mp3
 *.mp4
 *.mkv
+/ShinyForestry/CalculatedFiles
+/ShinyForestry/ElicitorOutput/old
+/ShinyForestry/ElicitorOutput/saved new ex
