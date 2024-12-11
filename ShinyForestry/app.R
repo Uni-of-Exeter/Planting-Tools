@@ -873,7 +873,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                                    jqui_resizable(div(
                                                      style = "width: 80%; height: 400px;",
                                                      leafletOutput("map", width = "100%", height = "100%"),
-                                                     sliderInput("YearSelect","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+                                                     sliderInput("YearSelect","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
                                                                  0+STARTYEAR,step=1,width = "100%",sep = "")
                                                      
                                                    )
@@ -896,7 +896,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                        ),
                                        conditionalPanel(
                                          condition = "input.Trigger == true",
-                                         verticalLayout(sliderInput("YearPref","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
+                                         verticalLayout(sliderInput("YearPref","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                          fluidRow(
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), 
                                                                     verbatimTextOutput("PrefTextChoiceA"),
@@ -913,7 +913,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                      ))
                                           ,
                                           tabPanel("Alternative Approaches", id = "Alt",verticalLayout(
-                                            fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
+                                            fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                               if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
                                               column(10,verbatimTextOutput("ZeroText"),column(2,))}
                                               ))),
@@ -954,7 +954,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                                             id = "sliderYearExplorationClusterTop",
                                                               style = "flex: 1; display: flex;align-items: center; 
                                                                 justify-content: center;",
-                                                            sliderInput("YearSelectClusterExplorationSlider","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+                                                            sliderInput("YearSelectClusterExplorationSlider","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
                                                                         0+STARTYEAR,step=1,width = "100%",sep = "")
                                                              ),
                                                           div(
