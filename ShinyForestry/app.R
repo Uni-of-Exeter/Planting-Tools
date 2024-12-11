@@ -845,7 +845,6 @@ for (ext in AllExtents)
         }
           
           }
-      cat(paste0(abb,"  ",bcc,"\n"))
     }
     
   }
