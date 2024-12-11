@@ -630,21 +630,46 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
             }
           }
         }
-        addControlText <- ""
+        #addControlText <- ""
+        #for (i in 1:length(SPECIES)) {
+        #  specie_latin <- SPECIES[i]
+        #  specie_english <- SPECIES_ENGLISH[i]
+        #  selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+        #  selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+        #  addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
+        #}
+        
+        
+       BioMean <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
+        colnames(BioMean) <- SPECIES
+        BioSD <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
+        colnames(BioSD) <- paste0(SPECIES,"SD")
+        
         for (i in 1:length(SPECIES)) {
           specie_latin <- SPECIES[i]
-          specie_english <- SPECIES_ENGLISH[i]
           selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
           selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-          addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
+          BioMean[specie_latin]<-selectedBiospecie
+          BioSD[paste0(specie_latin,"SD")]<-selectedBioSDspecie
         }
+        
+        
         listMaps[[aai]] <- listMaps[[aai]]%>%  
-          addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",sprintf("%.2f",2*SelectedTreeCarbonSD),"<br>",
-                                   # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
-                                   addControlText,
-                                   "Area Planted: ",round(SelectedArea,2),"<br>",
-                                   "Visitors: ",round(SelectedVisits,2),"\u00B1",sprintf("%.2f",2*SelectedVisitsSD),
-                                   "</p>"), position = "topright")
+         # addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",sprintf("%.2f",2*SelectedTreeCarbonSD),"<br>",
+          #                         # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
+          #                         addControlText,
+           #                        "Area Planted: ",round(SelectedArea,2),"<br>",
+           #                        "Visitors: ",round(SelectedVisits,2),"\u00B1",sprintf("%.2f",2*SelectedVisitsSD),
+            #                       "</p>"), position = "topright")
+          addControl(map,html =   FormattedControl(SelectedTreeCarbon,
+                                                   SelectedTreeCarbonSD,
+                                                   SPECIES,
+                                                   SPECIES_ENGLISH,
+                                                   BioMean,
+                                                   BioSD, 
+                                                   SelectedArea, 
+                                                   SelectedVisits, SelectedVisitsSD), position = "topright",layerId="legend")
+        
       }
       listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
                                      SelectedDropdown = SelectedDropdown,
@@ -3322,3 +3347,34 @@ Plus_Or_Minus_Button<-function(Selected_Cluster_To_Display_Loc,
   
   
 }
+
+#This function returns the html code for formatted control
+FormattedControl<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs, Area, Visits, VisitsSD)
+{
+  addControlText <- ""
+  for (i in 1:length(SPECIES)) {
+    specie_latin <- SPECIES[i]
+    if (specie_latin == "All") 
+    {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>All Species Richness</span>")}else 
+    {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>",SPECIES_ENGLISH[i],"</span>")}
+    selectedBiospecie <- BioMeans[[specie_latin]]
+    selectedBioSDspecie <- BioSDs[[paste0( specie_latin,"SD")]]
+    if(!is.null(selectedBiospecie)){
+      addControlText <- paste0(addControlText, specie_english, ": ", 
+                               round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")}
+  }
+  
+  addControlText<-paste0("<p>
+                                          <span style='display: inline-block; width: 140px;'>
+Carbon</span>: ", round(Carbon,2)#round(sum(CarbonMeanCalc), 2)
+         , "\u00B1",sprintf("%.2f",2*CarbonSD)#round(2*sqrt(sum(CarbonVarCalc)), 2)
+         , "<br>",
+         # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+         addControlText,
+         "<span style='display: inline-block; width: 140px;'>Area Planted</span>: ", round(Area, 2), "<br>",
+         "<span style='display: inline-block; width: 140px;'>Visitors</span>: ", round(Visits, 2), "\u00B1",sprintf("%.2f",2*VisitsSD),
+         "</p>")
+  return(addControlText)
+  
+}
+
