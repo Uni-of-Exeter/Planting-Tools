@@ -374,7 +374,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
   map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
   map<-addLegend(map, colors = c(rgb(128,0,128,alpha = 128, maxColorValue = 255),rgb(0,128,0,alpha = 128, maxColorValue = 255)),#c("purple", "green"), 
                  labels = c("Conifer", "Deciduous"), 
-                 title = "Tree Type", 
+                 title = "Tree type", 
                  position = "bottomright", 
                  opacity = 1)
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
@@ -3371,7 +3371,7 @@ FormattedControl<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioS
   for (i in 1:length(SPECIES)) {
     specie_latin <- SPECIES[i]
     if (specie_latin == "All") 
-    {specie_english <-paste0("<span style='display: inline-block; width: ",sizeBlock,";'>All Biodiversity</span>")}else 
+    {specie_english <-paste0("<span style='display: inline-block; width: ",sizeBlock,";'>All biodiversity</span>")}else 
     {specie_english <-paste0("<span style='display: inline-block; width: ",sizeBlock,";'>",SPECIES_ENGLISH[i],"</span>")}
     selectedBiospecie <- BioMeans[[specie_latin]]
     selectedBioSDspecie <- BioSDs[[paste0( specie_latin,"SD")]]
@@ -3387,7 +3387,7 @@ Carbon</span>: ", round(Carbon,2)#round(sum(CarbonMeanCalc), 2)
          , "<br>",
          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
          addControlText,
-         "<span style='display: inline-block; width: ",sizeBlock,";'>Area Planted</span>: ", round(Area, 2), "<br>",
+         "<span style='display: inline-block; width: ",sizeBlock,";'>Area planted</span>: ", round(Area, 2), "<br>",
          "<span style='display: inline-block; width: ",sizeBlock,";'>Visitors</span>: ", round(Visits, 2), "\u00B1",
          sprintf("%.2f",2*VisitsSD),
          "</p>")
@@ -3400,7 +3400,7 @@ FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs,
   addControlText <- NULL
   for (i in 1:length(SPECIES)) {
     specie_latin <- SPECIES[i]
-    specie_english <- if (specie_latin == "All") "All Biodiversity" else SPECIES_ENGLISH[i]
+    specie_english <- if (specie_latin == "All") "All biodiversity" else SPECIES_ENGLISH[i]
     selectedBiospecie <- BioMeans[[specie_latin]]
     selectedBioSDspecie <- BioSDs[[paste0( specie_latin,"SD")]]
     #  addControlText <- paste0(addControlText, specie_english, ": ", 
@@ -3414,7 +3414,7 @@ FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs,
  
   addControlText<-c(sprintf("%-17s :%.2f\u00B1%.2f\n","Carbon", Carbon, 2*CarbonSD), 
                     addControlText,
-                    sprintf("%-17s :%.4f\n",  "Area Planted: ", Area),
+                    sprintf("%-17s :%.4f\n",  "Area planted: ", Area),
                     sprintf("%-17s :%.2f\u00B1%.2f\n","Visitors", Visits, 2*VisitsSD)
                     
                     )

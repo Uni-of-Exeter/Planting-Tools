@@ -733,7 +733,7 @@ AboveTargets[N_TARGETS-1]<-FALSE
 # )
 # Add sliderInput("BioSliderSPECIE", "Average SPECIE % increase:", min = 0, max = 36, value = 25) for each specie
 
-verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
+verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree carbon stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
                            lapply(SPECIES, function(x, fulltable, NAME_CONVERSION_ARG) {
                              NAME_CONVERSION <- NAME_CONVERSION_ARG
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
@@ -743,7 +743,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                              
                              # If it is a group
                              if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
-                               text <- paste0("Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
+                               text <- paste0("Species richness (", get_pretty_group(x, NAME_CONVERSION), ")")
                              } else {
                                # If it is a specie
                                text <- get_english_specie_from_specie(x, NAME_CONVERSION)
@@ -758,7 +758,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                                                        value = .(value),
                                                        step = 0.5)))
                            }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
-                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=1)),
+                           list(sliderInput("AreaSlider", HTML("Area planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=1)),
                            list(sliderInput("VisitsSlider", "Recreation (average visits per month):", min = 0, max = 750, value = 400)))
 #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
 SliderNames<- c("SliderMain",
@@ -906,11 +906,11 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                          fluidRow(
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), 
                                                                     verbatimTextOutput("PrefTextChoiceA"),
-                                                                    actionButton("choose1", "choose"))
+                                                                    actionButton("choose1", "Choose"))
                                            ),
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), 
                                                                     verbatimTextOutput("PrefTextChoiceB"),
-                                                                    actionButton("choose2", "choose"))
+                                                                    actionButton("choose2", "Choose"))
                                            )
                                          ))),
                                        conditionalPanel(
@@ -918,7 +918,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                        )
                                      ))
                                           ,
-                                          tabPanel("Alternative Approaches", id = "Alt",verticalLayout(
+                                          tabPanel("Alternative approaches", id = "Alt",verticalLayout(
                                             fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                               if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
                                               column(10,verbatimTextOutput("ZeroText"),column(2,))}
@@ -948,7 +948,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                             )
                                           )
                                           ),
-                                          if (ANALYSISMODE){tabPanel("Clustering Analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
+                                          if (ANALYSISMODE){tabPanel("Clustering analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
                                           tabPanel("Exploration",
                                                 fluidPage(
                                                   
@@ -1139,7 +1139,7 @@ server <- function(input, output, session,
     NAME_CONVERSION <- NAME_CONVERSION_ARG1
     
     text <- paste0("Targets:\n",
-                   "Tree Carbon: ", as.numeric(CarbonSliderVal()))
+                   "Tree carbon: ", as.numeric(CarbonSliderVal()))
     # A for loop over the reactive values causes an issue: only the last reactive value
     # takes effect and therefore overwrites other reactive values, i.e. all bioSliderValSPECIE take
     # the same value. I have to work with a list for it to work.
@@ -1148,14 +1148,14 @@ server <- function(input, output, session,
     #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
     # }
     for (i in 1:length(SPECIES)) {
-      specie_english <- if (SPECIES[i] == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+      specie_english <- if (SPECIES[i] == "All") "All species richness" else SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
       text <- paste0(text, "\n", get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", as.numeric(BioSliderValSpecie()))
     }
     
     text <- paste0(text,
                    # "\nRed Squirrel: ", as.numeric(bioSliderVal()),
-                   "\nArea Planted: ", as.numeric(AreaSliderVal()),
+                   "\nArea planted: ", as.numeric(AreaSliderVal()),
                    "\nVisits: ", as.numeric(VisitsSliderVal()))
   })
   
@@ -1941,7 +1941,7 @@ the 'Choose' button below that option:"})
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
   observe({
-    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches")&&(!ClusteringDone())) {
  
     #Define local variables in advance
 
@@ -2101,7 +2101,7 @@ the 'Choose' button below that option:"})
 ### Update the map rendering on Alternative Approaches
   observe({
     
-    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches") && (ClusteringDone())) {
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches") && (ClusteringDone())) {
       YearSelect<-YearSelectReactive()
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
