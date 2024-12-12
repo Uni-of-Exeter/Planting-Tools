@@ -2066,10 +2066,10 @@ InitFindMaxSliderValuesYearType_NegativeVals <- function(SavedVecLoc,
   #   SelectedSimMat2[specie_name] <- value
   # }
   
-  tolvec <- c(abs(mean(SelectedSimMat2$Carbon)) / 150,
+  tolvec <- c("Carbon" = abs(mean(SelectedSimMat2$Carbon)) / 150,
               abs(colMeans(speciesMat)) / 150,
-              mean(SelectedSimMat2$Area) / 150,
-              mean(SelectedSimMat2$Visits) / 150)
+              "Area" = mean(SelectedSimMat2$Area) / 150,
+              "Visits" = mean(SelectedSimMat2$Visits) / 150)
   for(i in 1:length(tolvec)) {
     # tolvec is a named vector, so tolvec[i] == 0 produces a named vector with the value, not the value directly
     # this causes a bug, isTRUE returns the boolean only
