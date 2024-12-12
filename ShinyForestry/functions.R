@@ -372,7 +372,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
     
   }  
   map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
-  map<-addLegend(map, colors = c("purple", "green"), 
+  map<-addLegend(map, colors = c(rgb(128,0,128,alpha = 128, maxColorValue = 255),rgb(0,128,0,alpha = 128, maxColorValue = 255)),#c("purple", "green"), 
                  labels = c("Conifer", "Deciduous"), 
                  title = "Tree Type", 
                  position = "bottomright", 

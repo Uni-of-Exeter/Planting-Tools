@@ -1171,7 +1171,7 @@ server <- function(input, output, session,
   output$FourthMapTxt <- renderText({Text4()})
   output$PrefTextChoiceA <- renderText({PrefTextA()})
   output$PrefTextChoiceB <- renderText({PrefTextB()})
-  output$PrefText<-renderText({"Tells us more about your preferences:"})
+  output$PrefText<-renderText({"Tell us more about your preferences:"})
   
   output$Analysis<-renderPlot({
    
