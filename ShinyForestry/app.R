@@ -94,18 +94,18 @@ if (Sys.getenv("USERNAME")=="bn267") {
   
   if (!require(dgpsi)) {
     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", quiet = TRUE)
-    install_and_load_packages("pkgload", quiet = TRUE)
-    install_and_load_packages("devtools", quiet = TRUE)
+    install_and_load_packages("testthat", verbose = FALSE)
+    install_and_load_packages("pkgload", verbose = FALSE)
+    install_and_load_packages("devtools", verbose = FALSE)
     devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
     library("dgpsi")
     dgpsi::init_py()
   }
   if (!require(RRembo)) {
     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", quiet = TRUE)
-    install_and_load_packages("pkgload", quiet = TRUE)
-    install_and_load_packages("devtools", quiet = TRUE)
+    install_and_load_packages("testthat", verbose = FALSE)
+    install_and_load_packages("pkgload", verbose = FALSE)
+    install_and_load_packages("devtools", verbose = FALSE)
     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
     library("RRembo")
   }
