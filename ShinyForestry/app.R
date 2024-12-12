@@ -742,7 +742,7 @@ AboveTargets[N_TARGETS-1]<-FALSE
 # )
 # Add sliderInput("BioSliderSPECIE", "Average SPECIE % increase:", min = 0, max = 36, value = 25) for each specie
 
-verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
+verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree carbon stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
                            lapply(SPECIES, function(x, fulltable, NAME_CONVERSION_ARG) {
                              NAME_CONVERSION <- NAME_CONVERSION_ARG
                              # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
@@ -752,12 +752,12 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                              
                              # If it is a group
                              if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
-                               text <- paste0("Change in Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
+                               text <- paste0("Species richness (", get_pretty_group(x, NAME_CONVERSION), ")")
                              } else {
                                # If it is a specie
                                text <- get_english_specie_from_specie(x, NAME_CONVERSION)
                                text <- get_pretty_english_specie(text, NAME_CONVERSION)
-                               text <- paste(text, " (Change in Presence, %):")
+                               text <- paste(text, " (Presence, %):")
                              }
                              
                              return(bquote(sliderInput(paste0("BioSlider", .(x)),
@@ -767,7 +767,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                                                        value = .(value),
                                                        step = 0.5)))
                            }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
-                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=0.1)),
+                           list(sliderInput("AreaSlider", HTML("Area planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=1)),
                            list(sliderInput("VisitsSlider", "Recreation (average visits per month):", min = 0, max = 750, value = 400)))
 #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
 SliderNames<- c("SliderMain",
@@ -854,6 +854,8 @@ for (ext in AllExtents)
         }
           
           }
+
+      #cat(paste0(abb,"  ",bcc,"\n"))
     }
     
   }
@@ -871,16 +873,20 @@ for (ext in AllExtents)
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
 
-ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
+ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)),
                 tabsetPanel(id = "tabs",
-                                          tabPanel("Maps", fluidPage(fluidRow(
+                                          tabPanel("Maps", fluidPage(
+                                            tags$head(
+                                              tags$style(HTML("#PrefText {background-color: white;padding: 0px;border: 2px solid white;font-size: 1em; font-weight: bold; margin-bottom: 0;}"))
+                                            ),
+                                            fluidRow(
                                             column(9,
                                                    selectInput("inSelect", "area", sort(unique(c(FullTable$extent, FullTableNotAvail$extent))), 
                                                                FullTable$extent[1]),
                                                    jqui_resizable(div(
                                                      style = "width: 80%; height: 400px;",
                                                      leafletOutput("map", width = "100%", height = "100%"),
-                                                     sliderInput("YearSelect","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+                                                     sliderInput("YearSelect","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
                                                                  0+STARTYEAR,step=1,width = "100%",sep = "")
                                                      
                                                    )
@@ -903,15 +909,17 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                        ),
                                        conditionalPanel(
                                          condition = "input.Trigger == true",
-                                         verticalLayout(sliderInput("YearPref","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
+                                         verticalLayout(
+                                          verbatimTextOutput("PrefText"),
+                                           sliderInput("YearPref","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                          fluidRow(
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), 
                                                                     verbatimTextOutput("PrefTextChoiceA"),
-                                                                    actionButton("choose1", "choose"))
+                                                                    actionButton("choose1", "Choose"))
                                            ),
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), 
                                                                     verbatimTextOutput("PrefTextChoiceB"),
-                                                                    actionButton("choose2", "choose"))
+                                                                    actionButton("choose2", "Choose"))
                                            )
                                          ))),
                                        conditionalPanel(
@@ -919,8 +927,8 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                        )
                                      ))
                                           ,
-                                          tabPanel("Alternative Approaches", id = "Alt",verticalLayout(
-                                            fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
+                                          tabPanel("Alternative approaches", id = "Alt",verticalLayout(
+                                            fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                               if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
                                               column(10,verbatimTextOutput("ZeroText"),column(2,))}
                                               ))),
@@ -949,7 +957,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                             )
                                           )
                                           ),
-                                          if (ANALYSISMODE){tabPanel("Clustering Analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
+                                          if (ANALYSISMODE){tabPanel("Clustering analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
                                           tabPanel("Exploration",
                                                 fluidPage(
                                                   
@@ -961,7 +969,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat"),
                                                             id = "sliderYearExplorationClusterTop",
                                                               style = "flex: 1; display: flex;align-items: center; 
                                                                 justify-content: center;",
-                                                            sliderInput("YearSelectClusterExplorationSlider","planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
+                                                            sliderInput("YearSelectClusterExplorationSlider","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
                                                                         0+STARTYEAR,step=1,width = "100%",sep = "")
                                                              ),
                                                           div(
@@ -1144,7 +1152,7 @@ server <- function(input, output, session,
     NAME_CONVERSION <- NAME_CONVERSION_ARG1
     
     text <- paste0("Targets:\n",
-                   "Tree Carbon: ", as.numeric(CarbonSliderVal()))
+                   "Tree carbon: ", as.numeric(CarbonSliderVal()))
     # A for loop over the reactive values causes an issue: only the last reactive value
     # takes effect and therefore overwrites other reactive values, i.e. all bioSliderValSPECIE take
     # the same value. I have to work with a list for it to work.
@@ -1153,15 +1161,15 @@ server <- function(input, output, session,
     #   text <- paste0(text, "\n", x, ": ", as.numeric(BioSliderValSpecie()))
     # }
     for (i in 1:length(SPECIES)) {
-      specie_english <- if (SPECIES[i] == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+      specie_english <- if (SPECIES[i] == "All") "All species richness" else SPECIES_ENGLISH[i]
       BioSliderValSpecie <- reactive_list[[i]]
       text <- paste0(text, "\n", get_pretty_english_specie(specie_english, NAME_CONVERSION), ": ", as.numeric(BioSliderValSpecie()))
     }
     
     text <- paste0(text,
                    # "\nRed Squirrel: ", as.numeric(bioSliderVal()),
-                   "\nArea Planted: ", as.numeric(AreaSliderVal()),
-                   "\nVisits/km^2: ", as.numeric(VisitsSliderVal()))
+                   "\nArea planted: ", as.numeric(AreaSliderVal()),
+                   "\nVisits: ", as.numeric(VisitsSliderVal()))
   })
   
   ColorLighteningFactor <- reactiveVal(0.5)
@@ -1176,7 +1184,8 @@ server <- function(input, output, session,
   output$FourthMapTxt <- renderText({Text4()})
   output$PrefTextChoiceA <- renderText({PrefTextA()})
   output$PrefTextChoiceB <- renderText({PrefTextB()})
-  
+  output$PrefText<-renderText({"Tell us more about your preferences.  Please look at the two planting strategies below and indicate which you would prefer if these were the only two options by selecting
+the 'Choose' button below that option:"})
   
   output$Analysis<-renderPlot({
    
@@ -1611,7 +1620,7 @@ server <- function(input, output, session,
         if (is.nan(max_bioslider) || is.na(max_bioslider)) {
           max_bioslider <- 0
         }
-        updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 0.0001)
+        updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 1)
       }
       # max_areaslider <- trunc(100*sum(AreaSelected))/100
       max_areaslider <- MaxVals$AreaMax
@@ -1891,26 +1900,38 @@ server <- function(input, output, session,
           }
           
           SFTR<-SelectedFullTableRow()
-          addControlText <- ""
-          for (i in 1:length(SPECIES)) {
-            specie_latin <- SPECIES[i]
-            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-            selectedBiospecie <- SFTR[[specie_latin]]
-            selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
-            if(!is.null(selectedBiospecie)){
-              addControlText <- paste0(addControlText, specie_english, ": ", 
-                                       round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")}
-          }
-
+ #         addControlText <- ""
+#          for (i in 1:length(SPECIES)) {
+#            specie_latin <- SPECIES[i]
+#             if (specie_latin == "All") 
+#             {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>All Species Richness</span>")}else 
+#                  {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>",SPECIES_ENGLISH[i],"</span>")}
+#            selectedBiospecie <- SFTR[[specie_latin]]
+#            selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
+#            if(!is.null(selectedBiospecie)){
+#              addControlText <- paste0(addControlText, specie_english, ": ", 
+#                                       round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")}
+#          }
+#
+#          mapp<-
+#            addControl(mapp,html = paste0("<p>
+#                                          <span style='display: inline-block; width: 140px;'>
+#Carbon</span>: ", round(SFTR$Carbon,2)#round(sum(CarbonMeanCalc), 2)
+#                                          , "\u00B1",sprintf("%.2f",2*SFTR$CarbonSD)#round(2*sqrt(sum(CarbonVarCalc)), 2)
+#                                          , "<br>",
+#                                          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+#                                          addControlText,
+#                                          "<span style='display: inline-block; width: 140px;'>Area Planted</span>: ", round(SFTR$Area, 2), "<br>",
+#                                          "<span style='display: inline-block; width: 140px;'>Visitors</span>: ", round(SFTR$Visits, 2), "\u00B1",sprintf("%.2f",2*SFTR$VisitsSD),
+#                                          "</p>"), position = "topright",layerId="legend")
+      # browser()   
           mapp<-
-            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$Carbon,2)#round(sum(CarbonMeanCalc), 2)
-                                          , "\u00B1",sprintf("%.2f",2*SFTR$CarbonSD)#round(2*sqrt(sum(CarbonVarCalc)), 2)
-                                          , "<br>",
-                                          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-                                          addControlText,
-                                          "Area Planted: ", round(SFTR$Area, 2), "<br>",
-                                          "Visitors: ", round(SFTR$Visits, 2), "\u00B1",sprintf("%.2f",2*SFTR$VisitsSD),
-                                          "</p>"), position = "topright",layerId="legend")
+            addControl(mapp,html =   FormattedControl(SFTR$Carbon,SFTR$CarbonSD,
+                           SPECIES,
+                           SPECIES_ENGLISH,SFTR[SPECIES],SFTR[paste0(SPECIES,"SD")], 
+                           SFTR$Area, SFTR$Visits, SFTR$VisitsSD), position = "topright",layerId="legend")
+          
+
           
           
         }
@@ -1933,7 +1954,7 @@ server <- function(input, output, session,
   
   # Run clustering if we click on "Exploration" and Clustering has not been done yet
   observe({
-    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches")&&(!ClusteringDone())) {
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches")&&(!ClusteringDone())) {
  
     #Define local variables in advance
 
@@ -1952,13 +1973,13 @@ server <- function(input, output, session,
         
       }else{
       
-        cat("starting clustering\n")
+        #cat("starting clustering\n")
         
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
         NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
         #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
-        cat(Set_To_Cluster$Carbon)
+        #cat(Set_To_Cluster$Carbon)
 
         if(is.null(infpref_reactive())){Weights_To_Use<-rep(1,length(NamesOUTPUTS))}else{
           Weights_To_Use<-sqrt(abs(infpref_reactive()))
@@ -1982,13 +2003,13 @@ server <- function(input, output, session,
           
         #}
         
-        cat(TSNE_RESULTS$Y)
+        #cat(TSNE_RESULTS$Y)
       
         MClust_RESULTS<-NULL
         MClust_RESULTS<-mclust::Mclust(TSNE_RESULTS$Y,G=4)#,modelNames=c("VVV"))
-        cat(MClust_RESULTS$classification)
-        cat("\n")
-        cat("\n")
+        #cat(MClust_RESULTS$classification)
+        #cat("\n")
+        #cat("\n")
         #cat(MClust_RESULTS$parameters$variance)
         Clustering_Results_Object_Reactive(MClust_RESULTS)
         Clustering_Category_VectorReactive(MClust_RESULTS$classification)
@@ -2004,7 +2025,7 @@ server <- function(input, output, session,
         DataClustersClassified<-vector("list",length(unique(Clustering_Category_VectorReactive())))
       
         for(ii in 1:length(unique(Clustering_Category_VectorReactive()))){
-          cat(Basis_Clustering[[ii]])
+          #cat(Basis_Clustering[[ii]])
 
           DataCluster<-TSNE_RESULTS$Y[Clustering_Category_VectorReactive()==ii,]
           DataClustersClassified[[ii]]<-DataCluster
@@ -2027,7 +2048,7 @@ server <- function(input, output, session,
          #   }else{Basis_Clustering[[ii]]<-MClust_RESULTS$parameters$variance$orientation[, , ii]}
         #    
          #   }
-          cat(Basis_Clustering[[ii]])
+          #cat(Basis_Clustering[[ii]])
           Mean_Clusters[[ii]]<-MClust_RESULTS$parameters$mean[,ii]
          
           if(!is.null(dim(DataCluster))){
@@ -2054,7 +2075,7 @@ server <- function(input, output, session,
         ClusteringDone(TRUE)
         
         
-        cat("ending clustering\n")
+        #cat("ending clustering\n")
         
         
       }
@@ -2093,7 +2114,7 @@ server <- function(input, output, session,
 ### Update the map rendering on Alternative Approaches
   observe({
     
-    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative Approaches") && (ClusteringDone())) {
+    if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches") && (ClusteringDone())) {
       YearSelect<-YearSelectReactive()
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
@@ -2120,7 +2141,7 @@ server <- function(input, output, session,
           SelectedRows<-list(YEAR=NULL,TYPE=NULL,OUTPUTS=NULL)
           LISTSeparatedClusters<-vector("list",length(unique(Clustering_Category_VectorLoc)))
         for (ii in 1:length(unique(Clustering_Category_VectorLoc))){
-          cat(ii)
+          #cat(ii)
           LISTSeparatedClusters[[ii]]<-list(YEAR=SubsetMeetTargetsUnique$YEAR[Clustering_Category_VectorLoc==ii,],TYPE=SubsetMeetTargetsUnique$TYPE[Clustering_Category_VectorLoc==ii,],
                                             OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[Clustering_Category_VectorLoc==ii,])
           SelectedRows$YEAR<-rbind(SelectedRows$YEAR,LISTSeparatedClusters[[ii]]$YEAR[FourUniqueRowsClusteringLoc[ii],])
@@ -2185,22 +2206,34 @@ server <- function(input, output, session,
           SFTR$YEAR<-SelectedRows$YEAR[ii,]
           SFTR$TYPE<-SelectedRows$TYPE[ii,]
           SFTR$OUTPUTS<-SelectedRows$OUTPUTS[ii,]
-          addControlText <- ""
-          for (i in 1:length(SPECIES)) {
-            specie_latin <- SPECIES[i]
-            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-            selectedBiospecie <- SFTR$OUTPUTS[[specie_latin]]
-            selectedBioSDspecie <- SFTR$OUTPUTS[[paste0( specie_latin,"SD")]]
-            addControlText <- paste0(addControlText, specie_english, ": ", 
-                                     round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
-          }
+          #addControlText <- ""
+          #for (i in 1:length(SPECIES)) {
+          #  specie_latin <- SPECIES[i]
+          #  specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+          #  selectedBiospecie <- SFTR$OUTPUTS[[specie_latin]]
+          #  selectedBioSDspecie <- SFTR$OUTPUTS[[paste0( specie_latin,"SD")]]
+          #  addControlText <- paste0(addControlText, specie_english, ": ", 
+          #                           round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
+          #}
           
+          #mapp<-
+          #  addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$CarbonSD), "<br>",
+          #                                addControlText,
+          #                                "Area Planted: ", round(SFTR$OUTPUTS$Area, 2), "<br>",
+          #                                "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$VisitsSD),
+          #                                "</p>"), position = "topright",layerId="legend")
           mapp<-
-            addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$CarbonSD), "<br>",
-                                          addControlText,
-                                          "Area Planted: ", round(SFTR$OUTPUTS$Area, 2), "<br>",
-                                          "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$VisitsSD),
-                                          "</p>"), position = "topright",layerId="legend")
+            addControl(mapp,html =   FormattedControl(SFTR$OUTPUTS$Carbon,SFTR$OUTPUTS$CarbonSD,
+                                                      SPECIES,
+                                                      SPECIES_ENGLISH,SFTR$OUTPUTS[SPECIES],SFTR$OUTPUTS[paste0(SPECIES,"SD")], 
+                                                      SFTR$OUTPUTS$Area, SFTR$OUTPUTS$Visits, SFTR$OUTPUTS$VisitsSD), position = "topright",layerId="legend")
+          
+          
+          
+          
+          
+          
+          
           
           ifelse(Selected_Cluster_To_Display_Reactive()==ii,
           mapp<-
@@ -2663,8 +2696,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           )
           SelectedVector(TOSAVE)
         }
-        cat(proc.time()-tt)
-        cat("\n")
+        #cat(proc.time()-tt)
+        #cat("\n")
       
         if(RUN_BO){          
           
@@ -2837,7 +2870,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   }
 
     
-    cat("ended updating values based on sliders\n")
+    #cat("ended updating values based on sliders\n")
       }, ignoreInit = TRUE)
   
   
@@ -3139,17 +3172,15 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           #### TO CHANGE PREF ELICITATION           
           
         
-          addControlText <- ""
-          for (i in 1:length(SPECIES)) {
-            specie_latin <- SPECIES[i]
-            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-            selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
-            selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
-          #  addControlText <- paste0(addControlText, specie_english, ": ", 
-           #                          round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
-            addControlText <- paste0(addControlText, specie_english, ": ", 
-                                     round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
-          }
+         # addControlText <- ""
+        #  for (i in 1:length(SPECIES)) {
+        ##    specie_latin <- SPECIES[i]
+        #    specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+        #    selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
+        #    selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
+        #    addControlText <- paste0(addControlText, specie_english, ": ", 
+        #                             round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
+        #  }
         
           
           #mapp<-
@@ -3161,21 +3192,29 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           #                                "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
           #                                "</p>"), position = "topright",layerId="legend")
           if(aai==1){
-          PrefTextA(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                           sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
-                 addControlText,
-                 "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
-                 "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                 "\u00B1",
-                 sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD) ))}else{
-                   PrefTextB(paste0("Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-                                    sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$CarbonSD), "\n",
-                                    addControlText,
-                                    "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "\n",
-                                    "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-                                    "\u00B1", 
-                                    sprintf("%.2f",2*SelectedLine[[aai]]$OUTPUTS$VisitsSD)
-                                    ))
+          #### 
+
+          PrefTextA(
+            FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                          SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                          SPECIES,SPECIES_ENGLISH,
+                          SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                          SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                          SelectedLine[[aai]]$OUTPUTS$Area,
+                          SelectedLine[[aai]]$OUTPUTS$Visits,
+                          SelectedLine[[aai]]$OUTPUTS$VisitsSD
+                          )
+            
+          )}else{
+                   PrefTextB( FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                                            SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                                            SPECIES,SPECIES_ENGLISH,
+                                            SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                                            SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                                            SelectedLine[[aai]]$OUTPUTS$Area,
+                                            SelectedLine[[aai]]$OUTPUTS$Visits,
+                                            SelectedLine[[aai]]$OUTPUTS$VisitsSD
+                   ))
                    
                  }
           
@@ -3536,25 +3575,40 @@ if(!is.null(pref_reactive()$prefs)){
             removeControl(mapp,layerId="legend")
           
             
-            addControlText <- ""
-            for (i in 1:length(SPECIES)) {
-              specie_latin <- SPECIES[i]
-              specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-              selectedBiospecie <- SelectedRowToDisplay$OUTPUTS[[specie_latin]]
-              selectedBioSDspecie <- SelectedRowToDisplay$OUTPUTS[[paste0( specie_latin,"SD")]]
-              addControlText <- paste0(addControlText, specie_english, ": ", 
-                                      round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
-            }
+           # addControlText <- ""
+          #  for (i in 1:length(SPECIES)) {
+          #    specie_latin <- SPECIES[i]
+          #    specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+          #    selectedBiospecie <- SelectedRowToDisplay$OUTPUTS[[specie_latin]]
+          #    selectedBioSDspecie <- SelectedRowToDisplay$OUTPUTS[[paste0( specie_latin,"SD")]]
+          #    addControlText <- paste0(addControlText, specie_english, ": ", 
+          #                            round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
+          #  }
             
             if(length(unique(Clustering_Category_VectorReactive()))>=4){
-            mapp<-
-              addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedRowToDisplay$OUTPUTS$Carbon, 2), "\u00B1", 
-                                            sprintf("%.2f",2*SelectedRowToDisplay$OUTPUTS$CarbonSD), "<br>",
-                                            addControlText,
-                                            "Area Planted: ", round(SelectedRowToDisplay$OUTPUTS$Area, 4), "<br>",
-                                            "Visitors: ", round(SelectedRowToDisplay$OUTPUTS$Visits, 2), 
-                                            "\u00B1", sprintf("%.2f",2*SelectedRowToDisplay$OUTPUTS$VisitsSD),
-                                            "</p>"), position = "topright",layerId="legend")
+            #mapp<-
+            #  addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedRowToDisplay$OUTPUTS$Carbon, 2), "\u00B1", 
+            #                                sprintf("%.2f",2*SelectedRowToDisplay$OUTPUTS$CarbonSD), "<br>",
+            #                                addControlText,
+            #                                "Area Planted: ", round(SelectedRowToDisplay$OUTPUTS$Area, 4), "<br>",
+            #                                "Visitors: ", round(SelectedRowToDisplay$OUTPUTS$Visits, 2), 
+            #                                "\u00B1", sprintf("%.2f",2*SelectedRowToDisplay$OUTPUTS$VisitsSD),
+            #                                "</p>"), position = "topright",layerId="legend")
+            
+              mapp<-
+                addControl(mapp,html =   FormattedControl(SelectedRowToDisplay$OUTPUTS$Carbon,
+                                                          SelectedRowToDisplay$OUTPUTS$CarbonSD,
+                                                          SPECIES,
+                                                          SPECIES_ENGLISH,
+                                                          SelectedRowToDisplay$OUTPUTS[SPECIES],
+                                                          SelectedRowToDisplay$OUTPUTS[paste0(SPECIES,"SD")], 
+                                                          SelectedRowToDisplay$OUTPUTS$Area, 
+                                                          SelectedRowToDisplay$OUTPUTS$Visits, SelectedRowToDisplay$OUTPUTS$VisitsSD), position = "topright",layerId="legend")
+              
+              
+              
+              
+            
             }
             
           }
@@ -3680,25 +3734,54 @@ if(!is.null(pref_reactive()$prefs)){
             map <- addPolygons(map, data = SELGEORemaining, color = SELGEORemaining$color, layerId = ~SELGEORemaining$layerId, weight = UnitPolygonColours)
           }
           
-          addControlText <- ""
+         # addControlText <- ""
+          #for (i in 1:length(SPECIES)) {
+          #  specie_latin <- SPECIES[i]
+          #  specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+          #  selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+          #  selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+          #  if (SPECIES[i] == "All") {
+          #    specie_english <- "All species"
+          #  }
+          #  addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
+          #}
+          
+         # map <- map %>%
+          #  addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", sprintf("%.2f",2*SelectedTreeCarbonSD), "<br>",
+           #                          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
+            #                         addControlText,
+             #                        "Area Planted: ", round(SelectedArea, 2), "<br>",
+              #                       "Visitors: ", round(SelectedVisits, 2), "\u00B1", sprintf("%.2f",2*SelectedVisitsSD),
+               #                      "</p>"), position = "topright",layerId="legend")
+          
+          
+          BioMean <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
+          colnames(BioMean) <- SPECIES
+          BioSD <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
+          colnames(BioSD) <- paste0(SPECIES,"SD")
+         
           for (i in 1:length(SPECIES)) {
             specie_latin <- SPECIES[i]
-            specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
             selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
             selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-            if (SPECIES[i] == "All") {
-              specie_english <- "All species"
-            }
-            addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
+            BioMean[specie_latin]<-selectedBiospecie
+            BioSD[paste0(specie_latin,"SD")]<-selectedBioSDspecie
           }
           
-          map <- map %>%
-            addControl(html = paste0("<p>Carbon: ", round(SelectedTreeCarbon, 2), "\u00B1", sprintf("%.2f",2*SelectedTreeCarbonSD), "<br>",
-                                     # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-                                     addControlText,
-                                     "Area Planted: ", round(SelectedArea, 2), "<br>",
-                                     "Visitors: ", round(SelectedVisits, 2), "\u00B1", sprintf("%.2f",2*SelectedVisitsSD),
-                                     "</p>"), position = "topright",layerId="legend")
+          map<-
+            addControl(map,html =   FormattedControl(SelectedTreeCarbon,
+                                                      SelectedTreeCarbonSD,
+                                                      SPECIES,
+                                                      SPECIES_ENGLISH,
+                                                      BioMean,
+                                                      BioSD, 
+                                                      SelectedArea, 
+                                                      SelectedVisits, SelectedVisitsSD), position = "topright",layerId="legend")
+          
+          
+          
+          
+          
         }
         #} else { map <- map %>%
         #  addControl(html = paste0("<p> Targets Cannot be met</p>"), position = "topright")
