@@ -106,6 +106,8 @@ if (Sys.getenv("USERNAME")=="bn267") {
     install_and_load_packages("testthat", verbose = FALSE)
     install_and_load_packages("pkgload", verbose = FALSE)
     install_and_load_packages("devtools", verbose = FALSE)
+    # RRembo needs mvtnorm loaded
+    install_and_load_packages("mvtnorm", verbose = FALSE)
     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
     library("RRembo")
   }
