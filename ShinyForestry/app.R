@@ -868,7 +868,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                 tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(
                                             tags$head(
-                                              tags$style(HTML("#PrefText {background-color: white;padding: 0px;border: 2px solid white;font-size: 1.5em; font-weight: bold; margin-bottom: 0;}"))
+                                              tags$style(HTML("#PrefText {background-color: white;padding: 0px;border: 2px solid white;font-size: 1em; font-weight: bold; margin-bottom: 0;}"))
                                             ),
                                             fluidRow(
                                             column(9,
@@ -1171,7 +1171,8 @@ server <- function(input, output, session,
   output$FourthMapTxt <- renderText({Text4()})
   output$PrefTextChoiceA <- renderText({PrefTextA()})
   output$PrefTextChoiceB <- renderText({PrefTextB()})
-  output$PrefText<-renderText({"Tell us more about your preferences:"})
+  output$PrefText<-renderText({"Tell us more about your preferences.  Please look at the two planting strategies below and indicate which you would prefer if these were the only two options by selecting
+the 'Choose' button below that option:"})
   
   output$Analysis<-renderPlot({
    
