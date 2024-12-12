@@ -52,7 +52,7 @@ generate_legal_samples <- function(n,
 
 generate_legal_unique_samples <- function(n,
                                           max_attempts = 10,
-                                          constrained_area_sum = FALSE,
+                                          area_sum_is_constrained = FALSE,
                                           previous_values = NULL,
                                           FullTable_arg,
                                           limit_log_level = LOG_LEVEL,
@@ -123,7 +123,7 @@ generate_legal_unique_samples <- function(n,
     } else if (random_or_maximin_lhs == "random") {
       rows <- 2 * number_of_rows_left_to_generate
     }
-    if (isFALSE(constrained_area_sum)) {
+    if (isFALSE(area_sum_is_constrained)) {
       rows <- 4 * rows
     }
     use_dplyr <- isTRUE(rows > 3e5)
@@ -188,17 +188,16 @@ generate_legal_unique_samples <- function(n,
     good_colnames_low_dim <- 1:d
     good_colnames_high_dim <- colnames(samples)
     
-    # Add samples to valid_samples, and filter on the area_sum_threshold if isTRUE(constrained_area_sum)
-    if (isTRUE(constrained_area_sum)) {
+    # Add samples to valid_samples, and filter on the area_sum_threshold if isTRUE(area_sum_is_constrained)
+    if (isTRUE(area_sum_is_constrained)) {
       if (is.null(area_sum_threshold)) {
-        msg <- "generate_legal_unique_samples was called with constrained_area_sum = TRUE but no value for area_sum_threshold_numeric_arg"
+        msg <- "generate_legal_unique_samples was called with area_sum_is_constrained = TRUE but no value for area_sum_threshold_numeric_arg"
         notif(msg, log_level = "error", limit_log_level = limit_log_level)
         stop(paste("[ERROR]", msg))
       }
       # Remove rows where the sum is less than area_sum_threshold
       # If we are using maximinLHS, valid_samples is an empty data.frame/tibble
       # if (isFALSE(use_dplyr)) {
-        browser()
         colnames_samples <- colnames(samples)
         area_cols <- grep("area", colnames_samples)
         samples_area_numeric <- samples[, area_cols, drop = FALSE]
@@ -304,9 +303,9 @@ generate_legal_unique_samples <- function(n,
   }
   
   if (isTRUE(RRembo)) {
-    return(list(valid_samples_high_dimension_categorical = valid_samples,
-                valid_samples_low_dimension = as.matrix(valid_samples_low_dimension),
-                valid_samples_high_dimension = as.matrix(valid_samples_high_dimension)))
+    return(list(valid_samples_low_dimension = as.matrix(valid_samples_low_dimension),
+                valid_samples_high_dimension = as.matrix(valid_samples_high_dimension),
+                valid_samples_high_dimension_categorical = valid_samples))
   } else {
     return(list(valid_samples_high_dimension_categorical = valid_samples))
   }
@@ -578,7 +577,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
 }
 
 get_outcomes_from_strategy <- function(parameter_vector,
-                                       FullTable_arg = FullTable,
+                                       FullTable_arg,
                                        SPECIES_arg = SPECIES,
                                        SCENARIO_arg = SCENARIO,
                                        MAXYEAR_arg = MAXYEAR) {
@@ -1766,14 +1765,13 @@ batch_selection <- function(acquisition_values, batch_size = 1) {
   return(order(acquisition_values, decreasing = TRUE)[1:batch_size])
 }
 
-objective_function <- function(inputs, # c(area_vector)
+objective_function <- function(inputs, # c(area, year_planting, tree_specie)
                                area_sum_threshold, # number
-                               area_possible_non_zero_values, # vector
-                               outcomes_to_minimize_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
-                               outcomes_to_minimize_SD_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
+                               year_of_max_no_planting_threshold_vector, # vector
+                               FullTable_arg,
+                               SCENARIO_ARG = SCENARIO,
+                               MAXYEAR_ARG = MAXYEAR,
                                outcomes_to_minimize_sum_threshold_vector = NULL, # vector
-                               outcomes_to_maximize_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
-                               outcomes_to_maximize_SD_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
                                outcomes_to_maximize_sum_threshold_vector = NULL, # vector
                                penalty_coefficient_arg = PENALTY_COEFFICIENT,
                                preference_weight_area = -1, # Minimize -> negative
@@ -1784,47 +1782,22 @@ objective_function <- function(inputs, # c(area_vector)
                                alpha = 0.9,
                                multi_objectives = FALSE) {
   
+  FullTable <- FullTable_arg
+  SCENARIO <- SCENARIO_ARG
+  MAXYEAR <- MAXYEAR_ARG
   number_of_locations <- length(inputs)
   
   penalty_coefficient <- penalty_coefficient_arg
   
   # Retrieve variables from vector
-  idx <- 1:number_of_locations
-  area_vector <- inputs[idx]
-  
-  # idx <- max(idx) + 1:number_of_locations
-  # years_vector <- inputs[idx]
+  outcomes <- get_outcomes_from_strategy(parameter_vector = inputs,
+                                         FullTable_arg = FullTable)
   
   objectives <- c()
   result <- 0
   cantelli_threshold <- - sqrt(alpha / (1 - alpha))
   
   ## Penalties to make the variables binary instead of continuous
-  
-  # Where Area is zero, ignore
-  indices_of_non_zero_area <- which(area_vector != 0)
-  # Area
-  area_vector <- area_vector[indices_of_non_zero_area]
-  area_possible_non_zero_values <- area_possible_non_zero_values[indices_of_non_zero_area]
-  # Years
-  # years_vector <- years_vector[indices_of_non_zero_area]
-  # years_possible_non_zero_values <- years_possible_non_zero_values[indices_of_non_zero_area]
-  
-  # Other outcomes to maximize
-  if (is.null(outcomes_to_maximize_matrix) == FALSE) {
-    outcomes_to_maximize_matrix <- outcomes_to_maximize_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-    outcomes_to_maximize_SD_matrix <- outcomes_to_maximize_SD_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-  }
-  # Other outsomes to minimize
-  if (is.null(outcomes_to_minimize_matrix) == FALSE) {
-    outcomes_to_minimize_matrix <- outcomes_to_minimize_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-    outcomes_to_minimize_SD_matrix <- outcomes_to_minimize_SD_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-    # dplyr::mutate(across(everything(), ~ (.x - min(.x)) / (max(.x) - min(.x))))
-  }
   
   # # Add a penalty based on distances to closest acceptable values
   # values <- area_vector
@@ -1837,10 +1810,11 @@ objective_function <- function(inputs, # c(area_vector)
   #   result <- result + 2 * penalty_coefficient_arg * min(distance_to_zero, distance_to_non_zero)
   # }
   
+  
   ## Penalties for deviating from the thresholds
   
-  # Area and a penalty to avoid going above the target
-  vector_sum <- sum(area_vector)
+  # Area
+  vector_sum <- outcomes$sum_area
   threshold <- area_sum_threshold
   penalty <- penalty_coefficient * max(0, vector_sum - threshold)
   # Minimize -> negative
@@ -1853,91 +1827,92 @@ objective_function <- function(inputs, # c(area_vector)
     result <- result + penalty
   }
   
-  
-  # # Do something similar for other outcomes (minimize, avoid going above the threshold)
-  # if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) > 0) {
-  #   for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
-  #     vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
-  #     threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-  #     penalty <- penalty_coefficient * max(0, vector_sum - threshold)
-  #     if (exploration == FALSE) {
-  #       objectives <- c(objectives, vector_sum + penalty)
-  #       result <- result + vector_sum + penalty
-  #     } else {
-  #       objectives <- c(objectives, penalty)
-  #       result <- result + penalty
-  #     }
-  #   }
-  # }
-  # # Do something similar for other outcomes (maximize, avoid going below the threshold)
-  # if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) > 0) {
-  #   for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
-  #     vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
-  #     threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-  #     penalty <- penalty_coefficient * min(0, vector_sum - threshold)
-  #     if (exploration == FALSE) {
-  #       objectives <- c(objectives, - vector_sum - penalty)
-  #       result <- result - vector_sum - penalty
-  #     } else {
-  #       objectives <- c(objectives, - penalty)
-  #       result <- result - penalty
-  #     }
-  #   }
-  # }
-  # Do something similar for other outcomes (minimize, avoid going above the threshold)
-  if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) &&
-      is.null(outcomes_to_minimize_SD_matrix) == FALSE && nrow(outcomes_to_minimize_SD_matrix)> 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
-      vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_minimize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-      # Minimize -> negative
-      preference_weight <- - preference_weights_minimize[outcome_idx]
-      outcome_name <- colnames(outcomes_to_minimize_matrix)[outcome_idx]
-      # minus outcome and threshold, because the standard formula handles the case of maximizing the outcome, but here we minimize
-      implausibility <- Impl(Target = - threshold,
-                             EY = - vector_sum,
-                             SDY = vector_sum_sd,
-                             alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
-      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
-      if (exploration == FALSE) {
-        objectives <- c(objectives, vector_sum - penalty)
-        result <- result + preference_weight * vector_sum - penalty
-      } else {
-        objectives <- c(objectives, penalty)
-        result <- result - penalty
-      }
-    }
+  # Carbon
+  vector_sum <- outcomes$sum_carbon
+  vector_sum_sd <- outcomes$sum_carbon_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Carbon"]
+  preference_weight <- preference_weights_maximize["Carbon"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Carbon"])$Im
+  penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
+  if (exploration == FALSE) {
+    objectives <- c(objectives, - preference_weight * vector_sum - penalty)
+    result <- result - preference_weight * vector_sum - penalty
+  } else {
+    objectives <- c(objectives, - penalty)
+    result <- result + penalty
   }
-  # Do something similar for other outcomes (maximize, avoid going below the threshold)
-  if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) &&
-      is.null(outcomes_to_maximize_SD_matrix) == FALSE && nrow(outcomes_to_maximize_SD_matrix) > 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
-      vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_maximize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-      preference_weight <- preference_weights_maximize[outcome_idx]
+  
+  # Richness
+  if (isFALSE(is.null(outcomes$sum_richness))) {
+    
+    for (group in names(outcomes$sum_richness)) {
+      
+      vector_sum <- outcomes$sum_richness[group]
+      vector_sum_sd <- 0
+      threshold <- outcomes_to_maximize_sum_threshold_vector[group]
+      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
+      preference_weight <- preference_weights_maximize[group]
       implausibility <- Impl(Target = threshold,
                              EY = vector_sum,
-                             SDY = vector_sum_sd,
+                             SDY = 0,
                              alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
-      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
+                             tol = tolvec[group])$Im
       if (exploration == FALSE) {
-        # objectives <- c(objectives, - vector_sum - penalty)
-        # result <- result - vector_sum - penalty
         objectives <- c(objectives, - preference_weight * vector_sum - penalty)
         result <- result - preference_weight * vector_sum - penalty
       } else {
-        # objectives <- c(objectives, - penalty)
-        # result <- result - penalty
         objectives <- c(objectives, - penalty)
         result <- result + penalty
       }
     }
+  }
+  
+  # Biodiversity
+  if (isFALSE(is.null(outcomes$sum_biodiversity))) {
+    
+    for (specie in names(outcomes$sum_biodiversity)) {
+      
+      vector_sum <- outcomes$sum_biodiversity[specie]
+      vector_sum_sd <- outcomes$sum_biodiversity_sd[specie]
+      threshold <- outcomes_to_maximize_sum_threshold_vector[specie]
+      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
+      preference_weight <- preference_weights_maximize[specie]
+      implausibility <- Impl(Target = threshold,
+                             EY = vector_sum,
+                             SDY = vector_sum_sd,
+                             alpha = alpha,
+                             tol = tolvec[specie])$Im
+      if (exploration == FALSE) {
+        objectives <- c(objectives, - preference_weight * vector_sum - penalty)
+        result <- result - preference_weight * vector_sum - penalty
+      } else {
+        objectives <- c(objectives, - penalty)
+        result <- result + penalty
+      }
+    }
+  }
+  
+  # Visits
+  vector_sum <- outcomes$sum_visits
+  vector_sum_sd <- outcomes$sum_visits_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Visits"]
+  preference_weight <- preference_weights_maximize["Visits"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Visits"])$Im
+  penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
+  if (exploration == FALSE) {
+    objectives <- c(objectives, - preference_weight * vector_sum - penalty)
+    result <- result - preference_weight * vector_sum - penalty
+  } else {
+    objectives <- c(objectives, - penalty)
+    result <- result + penalty
   }
   
   if (!is.finite(result)) {
@@ -2191,8 +2166,11 @@ set_latest_task_id <- function(task_id, file_suffix = SESSION_FILE_SUFFIX) {
 
 bayesian_optimization <- function(
     seed = 1,
-    FullTable,
+    FullTable_arg,
+    MAXYEAR,
+    SCENARIO,
     area_sum_threshold,
+    year_of_max_no_planting_threshold_vector,
     outcomes_to_maximize_sum_threshold_vector = NULL,
     outcomes_to_minimize_sum_threshold_vector = NULL,
     limit_log_level = LOG_LEVEL,
@@ -2221,15 +2199,7 @@ bayesian_optimization <- function(
       designtype = "LHS",
       # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
       reverse = FALSE),
-    RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
-                                              init = list(n = 10 * nrow(FullTable)),
-                                              budget = 100,
-                                              control = list(
-                                                # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
-                                                designtype = "LHS",
-                                                # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
-                                                reverse = FALSE),
-                                              limit_log_level = LOG_LEVEL),
+    RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
     RREMBO_SMART = FALSE,
     
     # GP
@@ -2239,6 +2209,9 @@ bayesian_optimization <- function(
     tolvec,
     alpha = alphaLVL
 ) {
+  FullTable <- FullTable_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  
   pb <- progressr_object
   notif(paste0("task ", current_task_id, ", Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
   # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
@@ -2249,128 +2222,42 @@ bayesian_optimization <- function(
   
   # Setup parameters ----
   set.seed(seed)
-  # Number of locations/dimensions
-  number_of_locations <- k <- nrow(FullTable)
+  # Number of dimensions
+  number_of_locations <- RREMBO_HYPER_PARAMETERS$D
   # Number of sample points
   # Generate 10 * the dimension of the input
-  n <- 10 * k
+  n <- 10 * number_of_locations
   begin <- Sys.time()
-  
-  # Parameters to optimize on
-  area_possible_non_zero_values <- FullTable %>%
-    sf::st_drop_geometry() %>%
-    dplyr::select(area) %>%
-    unlist(use.names = FALSE)
-  area_possible_values <- rbind(0, area_possible_non_zero_values)
-  rownames(area_possible_values) <- NULL
-  
-  years_possible_values <- 0:(MAXYEAR+1)
-  
-  tree_species_possible_values <- FullTable %>%
-    sf::st_drop_geometry() %>%
-    dplyr::select(dplyr::starts_with("Bio_Mean")) %>%
-    colnames() %>%
-    gsub(pattern = ".*Specie(.*?)_Scenario.*", x = ., replacement = "\\1", perl = TRUE) %>%
-    unique()
-  
-  
-  # Outcomes to maximize
-  outcomes_to_maximize_matrix <- outcomes_to_maximize_SD_matrix <- c()
-  if (!is.null(outcomes_to_maximize_sum_threshold_vector)) {
-    for (name in names(outcomes_to_maximize_sum_threshold_vector)) {
-      # All can match with Allophyes_oxyacanthae
-      if (name == "All") {
-        outcomes_to_maximize_matrix <- dplyr::bind_cols(outcomes_to_maximize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("BioMean_All"))
-        outcomes_to_maximize_SD_matrix <- dplyr::bind_cols(outcomes_to_maximize_SD_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("BioSD_All"))
-        # Carbon is named "Jules" in FullTable, but can take e.g. "JulesMeanY2"
-      } else if (name == "Carbon") {
-        outcomes_to_maximize_matrix <- dplyr::bind_cols(outcomes_to_maximize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("Carbon_Mean_Scenario26_TreeSpecieConifers"))
-        outcomes_to_maximize_SD_matrix <- dplyr::bind_cols(outcomes_to_maximize_SD_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("Carbon_SD_Scenario26_TreeSpecieConifers"))
-      } else {
-        outcomes_to_maximize_matrix <- dplyr::bind_cols(outcomes_to_maximize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select(contains(name) & contains("Mean")))
-        outcomes_to_maximize_SD_matrix <- dplyr::bind_cols(outcomes_to_maximize_SD_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select(contains(name) & contains("SD")))
-      }
-    }
-  }
-  # Outcomes to minimize
-  outcomes_to_minimize_matrix <- outcomes_to_minimize_SD_matrix <- c()
-  if (!is.null(outcomes_to_minimize_sum_threshold_vector)) {
-    for (name in names(outcomes_to_minimize_sum_threshold_vector)) {
-      # All can match with Allophyes_oxyacanthae
-      if (name == "All") {
-        outcomes_to_minimize_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("BioMean_All"))
-        outcomes_to_minimize_SD_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("BioSD_All"))
-        # Carbon is named "Jules" in FullTable, but can take e.g. "JulesMeanY2"
-      } else if (name == "Carbon") {
-        outcomes_to_minimize_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("Carbon_Mean_Scenario26_TreeSpecieConifers"))
-        outcomes_to_minimize_SD_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("Carbon_SD_Scenario26_TreeSpecieConifers"))
-      } else {
-        outcomes_to_minimize_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select(contains(name) & contains("Mean")))
-        outcomes_to_minimize_SD_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select(contains(name) & contains("SD")))
-      }
-    }
-  }
-  carbon_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select("Carbon_Mean_Scenario26_TreeSpecieConifers") %>% unlist(use.names = FALSE)
   
   # Generate inputs + outputs ----
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
   notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs..."), limit_log_level = limit_log_level)
-  obj_inputs_full_constrained <- generate_legal_unique_samples(10 * 4, k,
-                                                               legal_non_zero_values = area_possible_non_zero_values,
-                                                               max_threshold = area_sum_threshold,
-                                                               constrained = CONSTRAINED_INPUTS,
+  obj_inputs_full_constrained <- generate_legal_unique_samples(n = 10 * 4,
+                                                               FullTable_arg = FullTable,
+                                                               MAXYEAR_arg = MAXYEAR,
+                                                               SPECIES_arg = SPECIES,
+                                                               area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                               year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                               area_sum_is_constrained = CONSTRAINED_INPUTS,
                                                                RRembo = TRUE,
-                                                               RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                               RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                RRembo_smart = RREMBO_SMART,
                                                                current_task_id = current_task_id,
                                                                limit_log_level = limit_log_level)
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
-  obj_inputs_full_unconstrained <- generate_legal_unique_samples(10 * 4, k,
-                                                                 legal_non_zero_values = area_possible_non_zero_values,
-                                                                 max_threshold = area_sum_threshold,
-                                                                 constrained = FALSE,
+  obj_inputs_full_unconstrained <- generate_legal_unique_samples(n = 10 * 4,
+                                                                 FullTable_arg = FullTable,
+                                                                 MAXYEAR_arg = MAXYEAR,
+                                                                 SPECIES_arg = SPECIES,
+                                                                 area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                                 year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                                 area_sum_is_constrained = FALSE,
                                                                  RRembo = TRUE,
-                                                                 RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                                 RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                  RRembo_smart = RREMBO_SMART,
                                                                  current_task_id = current_task_id,
                                                                  limit_log_level = limit_log_level)
@@ -2380,9 +2267,9 @@ bayesian_optimization <- function(
   }
   
   # Add a strategy that plants everywhere, and one that plants nowhere, to handle the case when the user has some extreme thresholds
-  obj_inputs_full_maximum_planting_high_dim_categorical <- area_possible_non_zero_values
-  obj_inputs_full_maximum_planting_high_dim <- area_possible_non_zero_values
-  obj_inputs_full_maximum_planting_low_dim <- area_possible_non_zero_values
+  # obj_inputs_full_maximum_planting_high_dim_categorical <- area_possible_non_zero_values
+  # obj_inputs_full_maximum_planting_high_dim <- area_possible_non_zero_values
+  # obj_inputs_full_maximum_planting_low_dim <- area_possible_non_zero_values
   
   obj_inputs_full <- list(valid_samples_high_dimension_categorical = rbind(obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
                                                                            obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical),
@@ -2390,14 +2277,16 @@ bayesian_optimization <- function(
                                                               obj_inputs_full_unconstrained$valid_samples_low_dimension),
                           valid_samples_high_dimension = rbind(obj_inputs_full_constrained$valid_samples_high_dimension,
                                                                obj_inputs_full_unconstrained$valid_samples_high_dimension))
-  
   obj_inputs <- obj_inputs_full$valid_samples_high_dimension_categorical
+  
   obj_outputs <- apply(obj_inputs, 1, objective_function,
                        area_sum_threshold = area_sum_threshold,
-                       area_possible_non_zero_values = area_possible_non_zero_values,
-                       outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
-                       outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
+                       FullTable_arg = FullTable,
+                       SCENARIO_ARG = SCENARIO,
+                       MAXYEAR_ARG = MAXYEAR,
+                       year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector,
                        outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
+                       outcomes_to_minimize_sum_threshold_vector = outcomes_to_minimize_sum_threshold_vector,
                        exploration = EXPLORATION,
                        penalty_coefficient_arg = PENALTY_COEFFICIENT,
                        preference_weight_area = preference_weight_area,
@@ -2452,15 +2341,19 @@ bayesian_optimization <- function(
     if (current_task_id != get_latest_task_id()) {
       return(FALSE)
     }
-    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(50, k,
-                                                                                legal_non_zero_values = area_possible_non_zero_values,
-                                                                                max_threshold = area_sum_threshold,
-                                                                                constrained = CONSTRAINED_INPUTS,
+    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(n = 50,
+                                                                                FullTable_arg = FullTable,
+                                                                                MAXYEAR_arg = MAXYEAR,
+                                                                                SPECIES_arg = SPECIES,
+                                                                                area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                                                year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                                                area_sum_is_constrained = CONSTRAINED_INPUTS,
                                                                                 RRembo = TRUE,
-                                                                                RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                                                RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                                 RRembo_smart = RREMBO_SMART,
                                                                                 current_task_id = current_task_id,
                                                                                 limit_log_level = limit_log_level)
+    
     if (current_task_id != get_latest_task_id()) {
       return(FALSE)
     }
@@ -2511,7 +2404,7 @@ bayesian_optimization <- function(
     lowest_gp_mean_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.min(gp_means), ]
     
     optimization_inital_values <- rbind(best_initial_acquisition_value_obj_input_for_gp,
-                                        lowest_gp_mean_obj_input_for_gp)
+                                        lowest_gp_mean_obj_input_for_gp) |> unique()
     
     time_batch_trick <- Sys.time() - begin_inside
     # if (rstudioapi::isBackgroundJob()) {
@@ -2526,7 +2419,7 @@ bayesian_optimization <- function(
     pb(message = msg)
     notif(paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), limit_log_level = limit_log_level)
     
-    best_inputs_for_gp <- matrix(NA, nrow = 2, ncol = 6)
+    best_inputs_for_gp <- matrix(NA, nrow = nrow(optimization_inital_values), ncol = ncol(optimization_inital_values))
     for (i in 1:nrow(optimization_inital_values)) {
       optimization_inital_value <- optimization_inital_values[i, ]
       if (isTRUE(RREMBO_SMART)) {
@@ -2569,23 +2462,31 @@ bayesian_optimization <- function(
                                                                                           A = RREMBO_HYPER_PARAMETERS$A,
                                                                                           Amat = RREMBO_HYPER_PARAMETERS$Amat,
                                                                                           Aind = RREMBO_HYPER_PARAMETERS$Aind,
-                                                                                          upper = rep(1, k),
-                                                                                          lower = rep(0, k))
+                                                                                          upper = rep(1, RREMBO_HYPER_PARAMETERS$D),
+                                                                                          lower = rep(0, RREMBO_HYPER_PARAMETERS$D))
       } else {
         best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_original(DoE_low_dimension = best_inputs_for_gp,
                                                                                           A = RREMBO_HYPER_PARAMETERS$A,
                                                                                           Amat = RREMBO_HYPER_PARAMETERS$Amat,
                                                                                           Aind = RREMBO_HYPER_PARAMETERS$Aind,
-                                                                                          upper = rep(1, k),
-                                                                                          lower = rep(0, k))
+                                                                                          upper = rep(1, RREMBO_HYPER_PARAMETERS$D),
+                                                                                          lower = rep(0, RREMBO_HYPER_PARAMETERS$D))
       }
     } else {
       best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = best_inputs_for_gp,
                                                                                      A = RREMBO_HYPER_PARAMETERS$A)
     }
-    best_inputs <- continuous_to_categorical(values = best_inputs_continuous,
-                                             legal_non_zero_values = area_possible_non_zero_values)
-    best_inputs <- matrix(best_inputs, ncol = k)
+    
+    best_inputs <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(
+      DoE_high_dimension_rowwise_matrix = best_inputs_continuous,
+      RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+      FullTable_arg = FullTable,
+      MAXYEAR_arg = MAXYEAR,
+      SPECIES_arg = SPECIES,
+      year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector
+    )
+    
+    best_inputs <- matrix(best_inputs, ncol = RREMBO_HYPER_PARAMETERS$D)
     
     msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
     notif(msg, limit_log_level = limit_log_level)
@@ -2599,13 +2500,15 @@ bayesian_optimization <- function(
     begin_inside <- Sys.time()
     best_outputs <- apply(best_inputs, 1, objective_function,
                           area_sum_threshold = area_sum_threshold,
-                          area_possible_non_zero_values = area_possible_non_zero_values,
-                          outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
-                          outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
+                          FullTable_arg = FullTable,
+                          SCENARIO_ARG = SCENARIO,
+                          MAXYEAR_ARG = MAXYEAR,
+                          year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector,
                           outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
+                          outcomes_to_minimize_sum_threshold_vector = outcomes_to_minimize_sum_threshold_vector,
                           exploration = EXPLORATION,
                           penalty_coefficient_arg = PENALTY_COEFFICIENT,
-                          preference_weight_area = 1,
+                          preference_weight_area = preference_weight_area,
                           preference_weights_maximize = preference_weights_maximize,
                           tolvec = tolvec,
                           alpha = alpha)
@@ -2656,41 +2559,21 @@ bayesian_optimization <- function(
   
   end <- Sys.time()
   
-  # Update the other (non-area) outcomes
-  area_vector <- obj_inputs[which.min(obj_outputs), ]
-  indices_zero <- which(area_vector == 0)
-  if (isFALSE(is.null(outcomes_to_maximize_matrix))) {
-    outcomes_to_maximize_matrix <- outcomes_to_maximize_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-    outcomes_to_maximize_SD_matrix <- outcomes_to_maximize_SD_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-  }
-  if (isFALSE(is.null(outcomes_to_minimize_matrix))) {
-    outcomes_to_minimize_matrix <- outcomes_to_minimize_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-    outcomes_to_minimize_SD_matrix <- outcomes_to_minimize_SD_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-  }
-  
   # Gather results ----
   if (isTRUE(EXPLORATION)) {
     
     legal_output_indices <- which(obj_outputs == 0)
     legal_inputs <- obj_inputs[legal_output_indices, ]
     
-    area_vectors <- legal_inputs
+    outcomes_list <- lapply(1:nrow(legal_inputs), function(i) {
+      return(get_outcomes_from_strategy(legal_inputs[i, ],
+                                        FullTable_arg = FullTable))
+    })
     
-    locations_ignored_idx <- apply(area_vectors, 1, function(row) {which(row == 0)})
-    if (nrow(area_vectors) > 0) {
-      carbon_vectors <- do.call(rbind, lapply(1:nrow(area_vectors), function(x) carbon_possible_non_zero_values))
-    } else {
-      carbon_vectors <- data.frame()
-    }
-    
-    if (length(locations_ignored_idx) > 0) {
-      for (i in 1:nrow(carbon_vectors)) {
-        carbon_vectors[i, locations_ignored_idx[[i]]] <- 0
-      }
+    sum_area <- sum_carbon <- 0
+    for (outcome_list in outcomes_list) {
+      sum_area <- sum_area + outcome_list$sum_area
+      sum_carbon <- sum_carbon + outcome_list$sum_carbon
     }
     
     time_per_solution <- difftime(end, begin, units = "secs")
@@ -2707,10 +2590,10 @@ bayesian_optimization <- function(
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
       "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
-      "Σarea summary" = paste0(round(summary(rowSums(area_vectors), 1), 2), collapse = "; "),
+      "Σarea summary" = paste0(round(sum_area, 2), collapse = "; "),
       "area max" = area_sum_threshold,
-      "Σcarbon summary" = paste0(round(summary(rowSums(carbon_vectors), 1), 2), collapse = "; "),
-      "carbon min" = outcomes_to_maximize_sum_threshold_vector[1],
+      "Σcarbon summary" = paste0(round(sum_carbon, 2), collapse = "; "),
+      "carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
       # "sum area_invalidness" = sum(diff_area_possible, na.rm = TRUE),
       # "obj_value" = paste0(obj_outputs[legal_output_indices], collapse = "; "),
       # "exploration coefficient" = EXPLORATION_COEFFICIENT,
@@ -2734,7 +2617,7 @@ bayesian_optimization <- function(
     # Sum area / Sum carbon
     if (isTRUE(PLOT)) {
       
-      carbon_vectors <- matrix(carbon_possible_non_zero_values, ncol = k, nrow = nrow(obj_inputs), byrow = TRUE)
+      carbon_vectors <- matrix(carbon_possible_non_zero_values, ncol = RREMBO_HYPER_PARAMETERS$D, nrow = nrow(obj_inputs), byrow = TRUE)
       carbon_vectors[obj_inputs == 0] <- 0
       
       carbonareasums <- data.frame(sumarea = rowSums(obj_inputs), sumcarbon = rowSums(carbon_vectors)) |> unique()
@@ -2891,7 +2774,10 @@ bayesian_optimization <- function(
         mapview::mapshot(file = "tab2-map.png")
     }
   } else if (isFALSE(EXPLORATION)) {
-    area_vector <- obj_inputs[which.min(obj_outputs), ]
+    
+    obj_input <- obj_inputs[which.min(obj_outputs), ]
+    outcome <- get_outcomes_from_strategy(parameter_vector = obj_input,
+                                          FullTable_arg = FullTable)
     
     if (isTRUE(PLOT)) {
       # Map
@@ -3034,26 +2920,14 @@ bayesian_optimization <- function(
         gganimate::anim_save(filename = "tab1-area-obj.gif")
     }
     
-    locations_ignored_idx <- which(area_vector == 0)
-    carbon_vector <- carbon_possible_non_zero_values
-    carbon_vector[locations_ignored_idx] <- 0
-    
-    notif_msg1 <- cbind("area" = area_vector,
-                        # "area_invalidness" = diff_area_possible,
-                        "carbon" = carbon_vector
-    )
-    rownames(notif_msg1) <- rep("", nrow(notif_msg1))
-    # print(notif_msg1)
-    # notif(notif_msg1, quiet = FALSE, rbind  = TRUE, limit_log_level = limit_log_level)
-    
-    notif_msg2 <- rbind(
+    notif_msg <- rbind(
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
       "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
-      "Σarea" = sum(area_vector),
+      "Σarea" = outcome$sum_area,
       "area max" = area_sum_threshold,
-      "Σcarbon" = sum(carbon_vector),
-      "carbon min" = outcomes_to_maximize_sum_threshold_vector[1],
+      "Σcarbon" = outcome$sum_carbon,
+      "carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
       # "sum area_invalidness" = sum(diff_area_possible, na.rm = TRUE),
       "obj_value" = min(obj_outputs),
       "preference weight area" = preference_weight_area,
@@ -3071,67 +2945,94 @@ bayesian_optimization <- function(
       "constrained inputs" = CONSTRAINED_INPUTS,
       "total time" = paste(round(end - begin, 1), units(end - begin))
     )
-    # print(notif_msg2)
-    notif(notif_msg2, rbind  = TRUE, limit_log_level = limit_log_level)
+    # print(notif_msg)
+    notif(notif_msg, rbind  = TRUE, limit_log_level = limit_log_level)
   }
   
   # End the function ----
   # Return nothing (NULL) if constraints are not respected
   all_constraints_are_respected <- TRUE
-  vector_sum <- sum(area_vector)
-  threshold <- area_sum_threshold
-  all_constraints_are_respected <- isTRUE(max(0, vector_sum - threshold) > 0)
   
+  outcome <- get_outcomes_from_strategy(parameter_vector = obj_inputs[which.min(obj_outputs), ],
+                                        FullTable_arg = FullTable)
   cantelli_threshold <- - sqrt(alpha / (1 - alpha))
   
-  # Do something similar for other outcomes (minimize, avoid going above the threshold)
-  if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) &&
-      is.null(outcomes_to_minimize_SD_matrix) == FALSE && nrow(outcomes_to_minimize_SD_matrix)> 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
-      vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_minimize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-      preference_weight <- preference_weights_minimize[outcome_idx]
-      # minus outcome and threshold, because the standard formula handles the case of maximizing the outcome, but here we minimize
-      implausibility <- Impl(Target = - threshold,
-                             EY = - vector_sum,
-                             SDY = vector_sum_sd,
+  # Area
+  vector_sum <- outcome$sum_area
+  threshold <- area_sum_threshold
+  if (vector_sum > threshold) {
+    all_constraints_are_respected <- FALSE
+  }
+  
+  # Carbon
+  vector_sum <- outcome$sum_carbon
+  vector_sum_sd <- outcome$sum_carbon_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Carbon"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Carbon"])$Im
+  if (implausibility > cantelli_threshold) {
+    all_constraints_are_respected <- FALSE
+  }
+  
+  # Richness
+  if (isFALSE(is.null(outcome$sum_richness))) {
+    
+    for (group in names(outcome$sum_richness)) {
+      
+      vector_sum <- outcome$sum_richness[group]
+      vector_sum_sd <- 0
+      threshold <- outcomes_to_maximize_sum_threshold_vector[group]
+      implausibility <- Impl(Target = threshold,
+                             EY = vector_sum,
+                             SDY = 0,
                              alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
+                             tol = tolvec[group])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
       }
     }
   }
-  # Do something similar for other outcomes (maximize, avoid going below the threshold)
-  if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) &&
-      is.null(outcomes_to_maximize_SD_matrix) == FALSE && nrow(outcomes_to_maximize_SD_matrix) > 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
-      vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_maximize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-      preference_weight <- preference_weights_maximize[outcome_idx]
+  
+  # Biodiversity
+  if (isFALSE(is.null(outcome$sum_biodiversity))) {
+    
+    for (specie in names(outcome$sum_biodiversity)) {
+      
+      vector_sum <- outcome$sum_biodiversity[specie]
+      vector_sum_sd <- outcome$sum_biodiversity_sd[specie]
+      threshold <- outcomes_to_maximize_sum_threshold_vector[specie]
       implausibility <- Impl(Target = threshold,
                              EY = vector_sum,
                              SDY = vector_sum_sd,
                              alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
+                             tol = tolvec[specie])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
       }
     }
   }
   
+  # Visits
+  vector_sum <- outcome$sum_visits
+  vector_sum_sd <- outcome$sum_visits_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Visits"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Visits"])$Im
+  if (implausibility > cantelli_threshold) {
+    all_constraints_are_respected <- FALSE
+  }
+  
+  
   if (isFALSE(all_constraints_are_respected)) {
-    return()
+    return(NA)
   } else {
-    return(list(area_vector = obj_inputs[which.min(obj_outputs), ],
-                outcomes_to_maximize = outcomes_to_maximize_matrix,
-                outcomes_to_maximize_SD = outcomes_to_maximize_SD_matrix,
-                outcomes_to_minimize = outcomes_to_minimize_matrix,
-                outcomes_to_minimize_SD = outcomes_to_minimize_SD_matrix,
+    return(list(strategy_vector = obj_inputs[which.min(obj_outputs), ],
                 time = time,
                 gp_metrics = gp_metric))
   }
