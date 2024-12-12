@@ -347,6 +347,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
     map<-  addTiles(map) 
     map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
                    lng2 = max_x2, lat2 =max_y2) #%>%
+ 
     
   }else{
     for(ii in 1: length(ListMaps)){
@@ -371,7 +372,11 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
     
   }  
   map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
-  
+  map<-addLegend(map, colors = c("purple", "green"), 
+                 labels = c("Conifer", "Deciduous"), 
+                 title = "Tree Type", 
+                 position = "bottomright", 
+                 opacity = 1)
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
 
