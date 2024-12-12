@@ -743,12 +743,12 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                              
                              # If it is a group
                              if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
-                               text <- paste0("Change in Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
+                               text <- paste0("Species Richness (", get_pretty_group(x, NAME_CONVERSION), ")")
                              } else {
                                # If it is a specie
                                text <- get_english_specie_from_specie(x, NAME_CONVERSION)
                                text <- get_pretty_english_specie(text, NAME_CONVERSION)
-                               text <- paste(text, " (Change in Presence, %):")
+                               text <- paste(text, " (Presence, %):")
                              }
                              
                              return(bquote(sliderInput(paste0("BioSlider", .(x)),
@@ -758,7 +758,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon Stored (t
                                                        value = .(value),
                                                        step = 0.5)))
                            }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
-                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=0.1)),
+                           list(sliderInput("AreaSlider", HTML("Area Planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=1)),
                            list(sliderInput("VisitsSlider", "Recreation (average visits per month):", min = 0, max = 750, value = 400)))
 #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
 SliderNames<- c("SliderMain",
@@ -866,7 +866,11 @@ JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 
 
 ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)),
                 tabsetPanel(id = "tabs",
-                                          tabPanel("Maps", fluidPage(fluidRow(
+                                          tabPanel("Maps", fluidPage(
+                                            tags$head(
+                                              tags$style(HTML("#PrefText {background-color: white;padding: 0px;border: 2px solid white;font-size: 1.5em; font-weight: bold; margin-bottom: 0;}"))
+                                            ),
+                                            fluidRow(
                                             column(9,
                                                    selectInput("inSelect", "area", sort(unique(c(FullTable$extent, FullTableNotAvail$extent))), 
                                                                FullTable$extent[1]),
@@ -896,7 +900,9 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                        ),
                                        conditionalPanel(
                                          condition = "input.Trigger == true",
-                                         verticalLayout(sliderInput("YearPref","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
+                                         verticalLayout(
+                                          verbatimTextOutput("PrefText"),
+                                           sliderInput("YearPref","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                          fluidRow(
                                            column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), 
                                                                     verbatimTextOutput("PrefTextChoiceA"),
@@ -1150,7 +1156,7 @@ server <- function(input, output, session,
     text <- paste0(text,
                    # "\nRed Squirrel: ", as.numeric(bioSliderVal()),
                    "\nArea Planted: ", as.numeric(AreaSliderVal()),
-                   "\nVisits/km^2: ", as.numeric(VisitsSliderVal()))
+                   "\nVisits: ", as.numeric(VisitsSliderVal()))
   })
   
   ColorLighteningFactor <- reactiveVal(0.5)
@@ -1165,7 +1171,7 @@ server <- function(input, output, session,
   output$FourthMapTxt <- renderText({Text4()})
   output$PrefTextChoiceA <- renderText({PrefTextA()})
   output$PrefTextChoiceB <- renderText({PrefTextB()})
-  
+  output$PrefText<-renderText({"Tells us more about your preferences:"})
   
   output$Analysis<-renderPlot({
    
@@ -1600,7 +1606,7 @@ server <- function(input, output, session,
         if (is.nan(max_bioslider) || is.na(max_bioslider)) {
           max_bioslider <- 0
         }
-        updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 0.0001)
+        updateSliderInput(session, bioslider, max = max_bioslider, value = max_bioslider, step = 1)
       }
       # max_areaslider <- trunc(100*sum(AreaSelected))/100
       max_areaslider <- MaxVals$AreaMax
