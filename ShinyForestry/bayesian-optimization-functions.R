@@ -2214,10 +2214,10 @@ bayesian_optimization <- function(
   
   pb <- progressr_object
   notif(paste0("task ", current_task_id, ", Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
-  # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
-  #   tryCatch({dgpsi::init_py(verb = VERBOSE)},
-  #            error = function(e) {warning(e);stop(reticulate::py_last_error())})
-  # }
+  if (isFALSE(reticulate::py_module_available("dgpsi"))) {
+    tryCatch({dgpsi::init_py(verb = TRUE)},
+             error = function(e) {warning(e);stop(reticulate::py_last_error())})
+  }
   # shiny::showNotification("Starting a search for the best strategy ...", duration = 10)
   
   # Setup parameters ----
