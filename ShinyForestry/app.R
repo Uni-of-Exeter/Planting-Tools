@@ -113,8 +113,7 @@ if (Sys.getenv("USERNAME")=="bn267") {
     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
     library("RRembo")
   }
-  
-  install_and_load_packages(packages = packages, update = TRUE)
+  install_and_load_packages(packages = packages, update = FALSE)
 }
 dgpsi::init_py()
 
