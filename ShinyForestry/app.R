@@ -1164,7 +1164,9 @@ server <- function(input, output, session,
                    SCENARIO_ARG = SCENARIO) {
   set.seed(1)
   
-  future::plan(future::multisession, workers = 3)
+  if (RUN_BO) {
+    future::plan(future::multisession, workers = 4)
+  }
   
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Preferences")
@@ -2817,7 +2819,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         #cat(proc.time()-tt)
         #cat("\n")
       
-        if(RUN_BO){          
+        if(RUN_BO){
           
           if (current_task_id != get_latest_task_id()) {
             notif(paste("Task", current_task_id, "cancelled."))
@@ -4225,7 +4227,9 @@ if(!is.null(pref_reactive()$prefs)){
   # On session close, delete temporary files and delete the extra processes
   session$onSessionEnded(function() {
     unlink(paste0("*", SESSION_FILE_SUFFIX, "*"))
-    plan(sequential)
+    if (RUN_BO) {
+      plan(sequential)
+    }
   })
 }
 
