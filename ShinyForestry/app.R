@@ -1401,7 +1401,7 @@ the 'Choose' button below that option:"})
   #})
   
   output$DownScalingImage<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\9do3f4.gif"), 
+    list(src = paste0(DownscalingImagesFolder,"\\9do9xt.gif"), 
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
