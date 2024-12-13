@@ -102,7 +102,6 @@ if (Sys.getenv("USERNAME")=="bn267") {
     install_and_load_packages("devtools", verbose = FALSE)
     devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
     library("dgpsi")
-    dgpsi::init_py()
   }
   if (!require(RRembo)) {
     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
@@ -117,7 +116,7 @@ if (Sys.getenv("USERNAME")=="bn267") {
   
   install_and_load_packages(packages = packages, update = TRUE)
 }
-
+dgpsi::init_py()
 
 NAME_CONVERSION <- get_name_conversion()
 
