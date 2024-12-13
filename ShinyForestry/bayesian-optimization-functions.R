@@ -1744,7 +1744,7 @@ acquisition_function <- function(gp_predicted_means,
     result <- pnorm(Z)
   }
   
-  if (batch_size > 1 && isTRUE(multiple_data_points)) {
+  if (batch_size > 1) {
     result <- batch_selection(result, batch_size)
   }
   
