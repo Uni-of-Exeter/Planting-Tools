@@ -318,7 +318,7 @@ get_name_conversion <- function() {
   return(NAME_CONVERSION)
 }
 
-BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
+BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth,PrintLegend=TRUE)
 {
   
   #ListMaps<-shconv[shconv$extent==SelectedMap,]$shape[[1]]
@@ -343,8 +343,8 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
       }
     }
     
-    map<-leaflet(options = leafletOptions(attributionControl = TRUE))  %>% addTiles(attribution = NULL) %>% htmlwidgets::onRender("function(el, x) {this.attributionControl.setPosition('bottomleft');}")
-    map<-  addTiles(map) 
+    map<-leaflet(options =leafletOptions(attributionControl = TRUE))  %>% addTiles(attribution = NULL,options=tileOptions(opacity = 0.3)) %>% htmlwidgets::onRender("function(el, x) {this.attributionControl.setPosition('bottomleft');}")
+    map<-  addTiles(map,options=tileOptions(opacity = 0.3)) 
     map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
                    lng2 = max_x2, lat2 =max_y2) #%>%
  
@@ -365,18 +365,24 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
         }
       }
     }
-    map<-leaflet(options = leafletOptions(attributionControl = TRUE))  %>% addTiles(attribution = NULL) %>% htmlwidgets::onRender("function(el, x) {this.attributionControl.setPosition('bottomleft');}")
-    map<-  addTiles(map) 
+    map<-leaflet(options = leafletOptions(attributionControl = TRUE))  %>% addTiles(attribution = NULL,options=tileOptions(opacity = 0.3)) %>% htmlwidgets::onRender("function(el, x) {this.attributionControl.setPosition('bottomleft');}")
+    map<-  addTiles(map,options=tileOptions(opacity = 0.3)) 
     map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
                    lng2 = max_x2, lat2 =max_y2) 
     
   }  
-  map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = 0.5)
-  map<-addLegend(map, colors = c(rgb(128,0,128,alpha = 128, maxColorValue = 255),rgb(0,128,0,alpha = 128, maxColorValue = 255)),#c("purple", "green"), 
-                 labels = c("Conifer", "Deciduous"), 
-                 title = "Tree type", 
+  map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = GREY_BACKGROUND_OPACITY)
+  if(PrintLegend){
+  map<-addLegend(map, colors = c(
+                               rgb(17,119,51,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255),#rgb(128,0,128,alpha = 128, maxColorValue = 255),
+                                 rgb(68,170,152,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255),
+                               rgb(128,128,128,alpha = min(trunc(1.5*255*NOTAVAIL_OPACITY),255), maxColorValue = 255),#rgb(0,128,0,alpha = 128, maxColorValue = 255)
+                               rgb(255,0,0,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255)
+                                 ),#c("purple", "green"), 
+                 labels = c("Conifer", "Deciduous","Not available","Blocked"), 
+                 title = "Planting type", 
                  position = "bottomright", 
-                 opacity = 1)
+                 opacity = 1)}
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
 
@@ -384,7 +390,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth)
 map_sell_not_avail <- function(FullTableNotAvail,
                                SelectedDropdown,
                                listMaps = NULL,
-                               map = NULL,NotAvailColour="black") {
+                               map = NULL,NotAvailColour="grey") {
   if (dim(FullTableNotAvail)[1]>0) { 
     SELLNOTAVAIL <- FullTableNotAvail$extent==SelectedDropdown
   } else {
@@ -394,11 +400,14 @@ map_sell_not_avail <- function(FullTableNotAvail,
     SELGEO <- FullTableNotAvail$geometry[SELLNOTAVAIL]
     for (iii in 1:length(SELGEO)) {
       if (is.null(map) && !is.null(listMaps)) {
-        listMaps[[1]]<-addPolygons(listMaps[[1]],data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,fillColor=NotAvailColour,weight=1)
-        listMaps[[2]]<-addPolygons(listMaps[[2]],data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,fillColor=NotAvailColour,weight=1)
+        listMaps[[1]]<-addPolygons(listMaps[[1]],data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,
+                                   fillColor=NotAvailColour,weight=1,fillOpacity = NOTAVAIL_OPACITY)
+        listMaps[[2]]<-addPolygons(listMaps[[2]],data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,
+                                   fillColor=NotAvailColour,weight=1,fillOpacity = NOTAVAIL_OPACITY)
         
       } else if (!is.null(map) && is.null(listMaps)) {
-        map<-addPolygons(map,data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,fillColor=NotAvailColour,weight=1)
+        map<-addPolygons(map,data=SELGEO,layerId=paste0("NotAvail"),color=NotAvailColour,
+                         fillColor=NotAvailColour,weight=1,fillOpacity = NOTAVAIL_OPACITY)
       }
     }
   }
@@ -611,10 +620,14 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
             if(SavedVec[iii]==1){
               
               if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color =ClickedCols[iii],weight=UnitPolygonColours)
+                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),
+                                               lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),
+                                               color =ClickedCols[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
               }else{
                 for(kk in 1:length(SELGEO[[iii]])) {
-                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),color =ClickedCols[iii],weight=UnitPolygonColours)
+                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),
+                                                 lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),
+                                                 color =ClickedCols[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
                 }
                 
               }
@@ -623,10 +636,14 @@ observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for inpu
             else{
               if(SwitchedOnCells[iii]==1){
                 if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii],weight=UnitPolygonColours)
+                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),
+                                                 lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),
+                                                 color=FullColVec[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
                 }else{
                   for(kk in 1:length(SELGEO[[iii]])) {
-                    listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),color=FullColVec[iii],weight=UnitPolygonColours)
+                    listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),
+                                                   lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),
+                                                   color=FullColVec[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
                     
                   }
                   
@@ -955,11 +972,11 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
           removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
           COLOURS<-rep("transparent",length(TypeA))
           
-          COLOURS[TypeA]<-"purple"
-          COLOURS[TypeB]<-"green"
+          COLOURS[TypeA]<-"#117733"#"purple"
+          COLOURS[TypeB]<-"#44AA99"#green"
           COLOURS[BlockedCells]<-"red"
           mapp<-addPolygons(mapp,data=FullTable$geometry,
-                            layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+                            layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
           #removeControl(mapp,layerId="legend")
           ############################################################################# TO CHANGE PREF ELICITATION           
           

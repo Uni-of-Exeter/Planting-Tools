@@ -24,12 +24,15 @@ options(shiny.reactlog = TRUE)
 options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 
 ANALYSISMODE<-TRUE
-SHOW_TITLES_ON_CLUSTERING_PAGE<-FALSE
+SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
 RUN_BO<-FALSE
 set.seed(1)
 #fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
 FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1))
+POLYGON_OPACITY<-0.6
+GREY_BACKGROUND_OPACITY<-0.3
+NOTAVAIL_OPACITY<-0.7
 
 
 if(Sys.getenv("USERNAME")=="bn267"){
@@ -768,7 +771,7 @@ verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree carbon stored (t
                                                        step = 0.5)))
                            }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
                            list(sliderInput("AreaSlider", HTML("Area planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=1)),
-                           list(sliderInput("VisitsSlider", "Recreation (average visits per month):", min = 0, max = 750, value = 400)))
+                           list(sliderInput("VisitsSlider", "Recreation (visits per month):", min = 0, max = 750, value = 400)))
 #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
 SliderNames<- c("SliderMain",
                 paste0("BioSlider", SPECIES),
@@ -927,36 +930,159 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                        )
                                      ))
                                           ,
-                                          tabPanel("Alternative approaches", id = "Alt",verticalLayout(
-                                            fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
-                                              if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
-                                              column(10,verbatimTextOutput("ZeroText"),column(2,))}
-                                              ))),
-                                            fluidPage(fluidRow(
-                                              column(5,
-                                                     verticalLayout(
-                                                       if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FirstMapTxt")}, jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
-                                              ),
-                                              column(5,
-                                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("SecondMapTxt")}, jqui_resizable(leafletOutput("map3", height = 400, width = "100%")))
-                                              ),
-                                              column(2, verticalLayout(verbatimTextOutput("TargetText"),
-                                                                       #  selectInput("chooseGrouping", "Grouping Type:", c("Carbon level"), "Carbon level"),
-                                                                       actionButton("random", "Randomize!"))
+                                          tabPanel("Alternative approaches", id = "Alt",
+                                                   
+                                      
+                                            ######################  
+                                              
+                                            jqui_resizable(
+                                              div(
+                                                id = "Resizable-container",
+                                                style = "display: grid; grid-template-columns: 3fr 1fr; grid-template-rows: auto auto 1fr; height: 100%; 
+                                                width: 100%; overflow: hidden;",
+                                                
+                                                # Slider
+                                                div(
+                                                  id = "slider-container",
+                                                  style = "width: 100%; padding: 10px 10px; grid-column: 1 / span 2;",  # Make the slider span both columns
+                                                  sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = "")
+                                                ),
+                                                div(
+                                                  id = "slider-text",
+                                                  style = "width: 100%; padding: 0px; grid-column: 1 / span 2;",  # Make the text output span both columns
+                                                  if (SHOW_TITLES_ON_CLUSTERING_PAGE) {column(10,verbatimTextOutput("ZeroText"),column(2,))}
+                                                  #verbatimTextOutput("sliderValueText")
+                                                ),
+                                                div(
+                                                  style = "display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr  auto 1fr; gap: 5px; 
+                                                  grid-column: 1; grid-row: 3; height: 100%;",
+                                                  # First map and its text box
+                                                  div(
+                                                    style = "grid-row: 1; grid-column: 1; width: 100%;",
+                                                    if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FirstMapTxt")}
+                                                  ),
+                                                  div(
+                                                    style = "grid-row: 2; grid-column: 1; width: 100%; height: 100%;",
+                                                    leafletOutput("map2", height = 250, width = "100%")
+                                                  ),
+                                                  # Second map and its text box
+                                                 div(
+                                                    style = "grid-row: 1; grid-column: 2; width: 100%;",
+                                                    if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("SecondMapTxt")}
+                                                  ),
+                                                  div(
+                                                    style = "grid-row: 2; grid-column: 2; width: 100%; height: 100%;",
+                                                    leafletOutput("map3", height = 250, width = "100%")
+                                                  ),
+                                            #      
+                                            #      # Third map and its text box
+                                                  div(
+                                                    style = "grid-row: 3; grid-column: 1; width: 100%;",
+                                                    if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("ThirdMapTxt")}
+                                                  ),
+                                                  div(
+                                                    style = "grid-row: 4; grid-column: 1; width: 100%; height: 100%;",
+                                                    leafletOutput("map4", height = 250, width = "100%")
+                                                  ),
+                                            #      
+                                            #      # Fourth map and its text box
+                                                  div(
+                                                    style = "grid-row: 3; grid-column: 2; width: 100%;",
+                                                    if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FourthMapTxt")}
+                                                  ),
+                                                  div(
+                                                    style = "grid-row: 4; grid-column: 2; width: 100%; height: 100%;",
+                                                    leafletOutput("map5", height = 250, width = "100%")
+                                                  )
+                                                ),
+                                               # Right column with controls and legend
+                                               div(
+                                                  id = "right-column",
+                                                  style = "display: flex; flex-direction: column; padding: 0px 10px 0px 10px; background: white; 
+                                                  grid-column: 2; grid-row: 3; height: 100%;",
+                                            #      # Verbatim Text Output
+                                                 div(
+                                                    style = "margin-bottom: 10px; width: 100%;margin-top: 2px",
+                                                    verbatimTextOutput("TargetText")
+                                                  ),
+                                                  # Button
+                                                  div(
+                                                    style = "margin-bottom: 10px; text-align: center; width: 100%;",
+                                                    actionButton("random", "Randomize!")
+                                                  ),
+                                                  div(
+                                                    id = "shared-legend",
+                                                    style = "padding: 20px; border: 1px solid grey; border-radius: 2px; margin-top: 0; width: 100%;background-color: rgba(210,210,210,0.2);",
+                                                    tags$div(style = "display: flex; flex-direction: column; gap: 0px;",
+                                                             tags$div(
+                                                               style = "font-weight: bold; margin-bottom: 0px;",
+                                                               "Planting type"
+                                                             ),
+                                                             tags$div(style = "display: flex; align-items: center; gap: 10px;",
+                                                                      tags$div(style = paste0("width: 20px; height: 20px; background-color: 
+                                                                               rgba(17, 119, 51," ,trunc(255*POLYGON_OPACITY),")
+                                                                               ;")),
+                                                                      "Conifer"
+                                                             ),
+                                                             tags$div(style = "display: flex; align-items: center; gap: 10px;",
+                                                                      tags$div(style = paste0("width: 20px; height: 20px; background-color: 
+                                                                               rgba(68,170,152," ,trunc(255*POLYGON_OPACITY),")
+                                                                               ;")),
+                                                                      "Deciduous"
+                                                             ),
+                                                             tags$div(style = "display: flex; align-items: center; gap: 10px;",
+                                                                      tags$div(style = paste0("width: 20px; height: 20px; background-color: 
+                                                                               rgba(128,128,128," ,min(trunc(1.5*255*NOTAVAIL_OPACITY),255),")
+                                                                               ;")),
+                                                                      "Not available"
+                                                             ),
+                                                             tags$div(style = "display: flex; align-items: center; gap: 10px;",
+                                                                      tags$div(style = paste0("width: 20px; height: 20px; background-color: 
+                                                                               rgba(255,0,0," ,trunc(255*POLYGON_OPACITY),")
+                                                                               ;")),
+                                                                      "Blocked"
+                                                             )
+                                                             
+                                                    )
+                                                  )
+                                                )
                                               )
-                                            ),
-                                            fluidRow(
-                                              column(5,
-                                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("ThirdMapTxt")}, jqui_resizable(leafletOutput("map4", height = 400, width = "100%")))
-                                              ),
-                                              column(5,
-                                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FourthMapTxt")}, jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
-                                              ),
-                                              column(2, "")
                                             )
-                                            )
-                                          )
-                                          ),
+                                          
+                ),
+                                            
+###########################                                            
+#verticalLayout(
+#  fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
+ #                                   if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
+#                                      column(10,verbatimTextOutput("ZeroText"),column(2,))}
+#  ))),
+#  fluidPage(fluidRow(                                  
+                                            
+      #                                        column(5,
+     #                                                verticalLayout(
+       #                                                if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FirstMapTxt")}, jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
+      #                                        ),
+        #                                      column(5,
+         #                                            verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("SecondMapTxt")}, jqui_resizable(leafletOutput("map3", height = 400, width = "100%")))
+       #                                       ),
+        #                                      column(2, verticalLayout(verbatimTextOutput("TargetText"),
+         #                                                              #  selectInput("chooseGrouping", "Grouping Type:", c("Carbon level"), "Carbon level"),
+          #                                                             actionButton("random", "Randomize!"))
+           #                                   )
+              #                              ),
+              #                              fluidRow(
+               #                               column(5,
+                #                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("ThirdMapTxt")}, jqui_resizable(leafletOutput("map4", height = 400, width = "100%")))
+                 #                             ),
+                  #                            column(5,
+                   #                                  verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FourthMapTxt")}, jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
+                    #                          ),
+                     #                         column(2, "")
+                      #                      )
+                #                            )
+                                     #     )
+                                    #    ),
                                           if (ANALYSISMODE){tabPanel("Clustering analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
                                           tabPanel("Exploration",
                                                 fluidPage(
@@ -1372,6 +1498,7 @@ the 'Choose' button below that option:"})
   MaxMinValsReactiveVector<-reactiveVal(0)
   SlidersHaveBeenInitialized<-reactiveVal(rep(0,length(SliderNames)))
   MapReactive<-reactiveVal(NULL)
+  MapReactiveNoLegend<-reactiveVal(NULL)
   
   ClickedMatrixTab2Reactive<-reactiveVal(NULL)
   PreviousClickedMatrixTab2Reactive<-reactiveVal(NULL)
@@ -1885,12 +2012,13 @@ the 'Choose' button below that option:"})
           #COLOURS[Consolidated==1]<-FullColVec[Consolidated==1]
           #COLOURS[Consolidated==2]<-ClickedCols[Consolidated==2]
        
-          COLOURS[TypeA]<-"purple"
-          COLOURS[TypeB]<-"green"
+          COLOURS[TypeA]<-"#117733"#"purple"
+          COLOURS[TypeB]<-"#44AA99"#green"
           COLOURS[BlockedCells]<-"red"
           
           
-          mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
+          mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
+                            color=COLOURS,fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
           
           removeControl(mapp,layerId="legend")
           
@@ -2115,7 +2243,7 @@ the 'Choose' button below that option:"})
   observe({
     
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches") && (ClusteringDone())) {
-      YearSelect<-YearSelectReactive()
+      YearSelect<-input$YearAlt
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
       PrevSavedVecYearType<-PreviousClickedVectorYearType()
@@ -2194,10 +2322,11 @@ the 'Choose' button below that option:"})
             mapp<-leafletProxy(paste0("map",ii+1))
             removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
             COLOURS<-rep("transparent",length(Consolidated))
-            COLOURS[TypeA]<-"purple"
-            COLOURS[TypeB]<-"green"
+            COLOURS[TypeA]<-"#117733"#"purple"
+            COLOURS[TypeB]<-"#44AA99"#green"
             COLOURS[BlockedCells]<-"red"
-            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,fillColor=COLOURS,weight=1)
+            mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),color=COLOURS,
+                              fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
             
           }
           removeControl(mapp,layerId="legend")
@@ -2272,7 +2401,7 @@ the 'Choose' button below that option:"})
             mapp<-leafletProxy(paste0("map",ii+1))
             removeShape(mapp,layerId=paste0("Square",1:length(Consolidated)))
             mapp<-addPolygons(mapp,data=FullTable$geometry,layerId=paste0("Square",1:length(Consolidated)),
-                              color="transparent",fillColor="transparent")  
+                              color="transparent",fillColor="transparent",fillOpacity = POLYGON_OPACITY)  
             removeControl(mapp,layerId="legend")
             removeControl(mapp,layerId="legend2")
             #mapp<-
@@ -3163,11 +3292,11 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
           COLOURS<-rep("transparent",length(TypeA))
           
-          COLOURS[TypeA]<-"purple"
-          COLOURS[TypeB]<-"green"
+          COLOURS[TypeA]<-"#117733"#"purple"
+          COLOURS[TypeB]<-"#44AA99"#green"
           COLOURS[BlockedCells]<-"red"
           mapp<-addPolygons(mapp,data=FullTable$geometry,
-                            layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+                            layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
           removeControl(mapp,layerId="legend")
           #### TO CHANGE PREF ELICITATION           
           
@@ -3418,11 +3547,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                    removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
                    COLOURS<-rep("transparent",length(TypeA))
                    
-                   COLOURS[TypeA]<-"purple"
-                   COLOURS[TypeB]<-"green"
+                   COLOURS[TypeA]<-"#117733"#"purple"
+                   COLOURS[TypeB]<-"#44AA99"#green"
                    COLOURS[BlockedCells]<-"red"
                    mapp<-addPolygons(mapp,data=FullTable$geometry,
-                                     layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+                                     layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1
+                                     ,fillOpacity = POLYGON_OPACITY)
                    
                  }
                  
@@ -3433,6 +3563,61 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
 })
                  
               
+  
+  ### the year slider on the Alternative approaches tab is changed, then change the land parcels displayed.  
+  observeEvent(input$YearAlt,
+               {# if the first two maps have been displayed on the pref tabs
+                 if(!FirstTimeClickOnPreferencesReactive()){
+                   SavedVecYearType <- ClickedVectorYearType()  
+                   YearSelect<-input$YearPref-STARTYEAR   
+                   listMaps <- list()
+                   
+                   SelectedDropdown <- input$inSelect
+                   
+                   listMaps[[1]]<-leafletProxy("ClusterPage")
+                   listMaps[[2]]<-leafletProxy("ClusterPage2")
+                   LinesToCompare<-LinesToCompareReactive()
+                   SelectedLine<-list()
+                   # browser()
+                   
+                 #  CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
+                #   
+                #   TwoLinesToCompareTemp<-list(YEAR=LinesToCompare$YEAR[,paste0("SelectedSimMat.YEAR.",1:length(SavedVecYearType))],
+                #                               TYPE=LinesToCompare$TYPE[,paste0("SelectedSimMat.TYPE.",1:length(SavedVecYearType))],
+                #                               OUTPUTS=LinesToCompare$OUTPUTS)
+                #   
+                #   SelectedLine[[1]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare-1,],
+                #                             TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare-1,],
+                #                             OUTPUTS=TwoLinesToCompareTemp$OUTPUTS[CurrentLengthLinesToCompare-1,])
+                #   SelectedLine[[2]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare,],
+                #                             TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare,],
+                #                             OUTPUTS=TwoLinesToCompareTemp$OUTPUTS[CurrentLengthLinesToCompare,])
+                #   
+                #   
+                #   
+                #   
+                ##   for (aai in 1:2) {
+                ##     
+                ##     TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+                #     TypeB<-(SelectedLine[[aai]]$TYPE=="Deciduous")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+                #     BlockedCells<-(SavedVecYearType>=YearSelect)
+                #     mapp<-listMaps[[aai]]
+                #     removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
+                #     COLOURS<-rep("transparent",length(TypeA))
+                #     
+                #     COLOURS[TypeA]<-"purple"
+                #     COLOURS[TypeB]<-"green"
+                #     COLOURS[BlockedCells]<-"red"
+                #     mapp<-addPolygons(mapp,data=FullTable$geometry,
+                #                       layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+                #     
+                #   }
+                #   
+                #   #
+
+                 }
+                 
+               })
   
   
 ### If we are not on the Preference tab and some new data has been added, then re-update the weights
@@ -3567,11 +3752,11 @@ if(!is.null(pref_reactive()$prefs)){
               mapp<-leafletProxy(paste0("map6"))
               removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
               COLOURS<-rep("transparent",length(TypeA))
-              COLOURS[TypeA]<-"purple"
-              COLOURS[TypeB]<-"green"
+              COLOURS[TypeA]<-"#117733"#"purple"
+              COLOURS[TypeB]<-"#44AA99"#green"
               COLOURS[BlockedCells]<-"red"
               mapp<-addPolygons(mapp,data=FullTable$geometry,
-                                layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1)
+                                layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
             removeControl(mapp,layerId="legend")
           
             
@@ -3636,8 +3821,10 @@ if(!is.null(pref_reactive()$prefs)){
       SelectedVec <- SelectedVector()
       SelectedDropdown <- input$inSelect
       calcBaseMap <- BaseMap2(SelectedDropdown, layerId = "main", shconv, GreyPolygonWidth = GreyPolygonWidth)
+      calcBaseMapNoLegend <- BaseMap2(SelectedDropdown, layerId = "main", shconv, GreyPolygonWidth = GreyPolygonWidth,PrintLegend=FALSE)
+     
       map <- calcBaseMap$map
-      
+      mapNoLegend<-calcBaseMapNoLegend$map
       
       if (!is.null(SavedVec)) {
         
@@ -3731,7 +3918,11 @@ if(!is.null(pref_reactive()$prefs)){
           
           
           if (dim(SELGEORemaining)[1] > 0) {
-            map <- addPolygons(map, data = SELGEORemaining, color = SELGEORemaining$color, layerId = ~SELGEORemaining$layerId, weight = UnitPolygonColours)
+            map <- addPolygons(map, data = SELGEORemaining, color = SELGEORemaining$color, 
+                               layerId = ~SELGEORemaining$layerId, weight = UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
+            mapNoLegend <- addPolygons(mapNoLegend, data = SELGEORemaining, color = SELGEORemaining$color, 
+                               layerId = ~SELGEORemaining$layerId, weight = UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
+            
           }
           
          # addControlText <- ""
@@ -3777,6 +3968,17 @@ if(!is.null(pref_reactive()$prefs)){
                                                       BioSD, 
                                                       SelectedArea, 
                                                       SelectedVisits, SelectedVisitsSD), position = "topright",layerId="legend")
+          mapNoLegend<-
+            addControl(mapNoLegend,html =   FormattedControl(SelectedTreeCarbon,
+                                                     SelectedTreeCarbonSD,
+                                                     SPECIES,
+                                                     SPECIES_ENGLISH,
+                                                     BioMean,
+                                                     BioSD, 
+                                                     SelectedArea, 
+                                                     SelectedVisits, SelectedVisitsSD), position = "topright",layerId="legend")
+          
+          
           
           
           
@@ -3788,9 +3990,15 @@ if(!is.null(pref_reactive()$prefs)){
         #}
       }
       map <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = map)
-      CreatedBaseMap(1)
+      mapNoLegend <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail, SelectedDropdown = SelectedDropdown, map = mapNoLegend)
+      MapReactiveNoLegend(mapNoLegend)
+
       MapReactive(map)
-      MapReactive()}else{    MapReactive()
+      CreatedBaseMap(1)
+      MapReactive()
+
+      
+      }else{    MapReactive()
       }
     # ChangeSliders(FALSE)
     # shinyjs::show("tabs")
@@ -3801,7 +4009,7 @@ if(!is.null(pref_reactive()$prefs)){
   output$map2 <- renderLeaflet({
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
-      MapReactive()
+      MapReactiveNoLegend()
       
     }
   })
@@ -3810,7 +4018,7 @@ if(!is.null(pref_reactive()$prefs)){
   output$map3 <- renderLeaflet({
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
-      MapReactive()
+      MapReactiveNoLegend()
        }
   })
   # DONE TO CHANGE LATER
@@ -3818,7 +4026,7 @@ if(!is.null(pref_reactive()$prefs)){
   output$map4 <- renderLeaflet({
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
-      MapReactive()
+      MapReactiveNoLegend()
       }
     
   })
@@ -3827,7 +4035,7 @@ if(!is.null(pref_reactive()$prefs)){
   output$map5 <- renderLeaflet({
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
-      MapReactive()
+      MapReactiveNoLegend()
           }
   })
   
@@ -3835,7 +4043,7 @@ if(!is.null(pref_reactive()$prefs)){
   output$map6 <- renderLeaflet({
     
     if ((CreatedBaseMap() == 1) & (UpdatedExtent() == 1)) {
-      MapReactive()
+      MapReactiveNoLegend()
     }
   })
   
