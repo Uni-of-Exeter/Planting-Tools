@@ -2824,8 +2824,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             return()
           }
           
-          msg <- paste0("task ", current_task_id, " BO future start")
+          msg <- paste0("task ", current_task_id, " BO start")
           notif(msg)
+          showNotification(msg)
           bayesian_optimization_finished(FALSE)
           
           if (isFALSE(is.null(infpref_reactive()))) {
