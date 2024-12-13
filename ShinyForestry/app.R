@@ -1401,12 +1401,12 @@ the 'Choose' button below that option:"})
   #})
   
   output$DownScalingImage<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\ezgif.com-animated-gif-maker-4.gif"), 
+    list(src = paste0(DownscalingImagesFolder,"\\9do3f4.gif"), 
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
   output$DownScalingImage2<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\ezgif.com-animated-gif-maker-5.gif"), 
+    list(src = paste0(DownscalingImagesFolder,"\\9do1ky.gif"), 
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
