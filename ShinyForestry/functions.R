@@ -2808,9 +2808,9 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
   }
   if (os == "Windows") {
     type <- "win.binary"
-  } else if (os == "osx") {
+  } else if (tolower(os) == "osx") {
     type <- "mac.binary"
-  } else if (os == "linux") {
+  } else if (tolower(os) == "linux") {
     type <- "source"
   }
   
