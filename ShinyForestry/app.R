@@ -931,7 +931,6 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                           tabPanel("Alternative approaches", id = "Alt",
                                                    
                                       
-                                            ######################  
                                               
                                             jqui_resizable(
                                               div(
@@ -1037,7 +1036,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                           
                 ),
                                             
-###########################                                            
+
 #verticalLayout(
 #  fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
  #                                   if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
