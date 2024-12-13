@@ -2806,6 +2806,7 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
     if (grepl("linux-gnu", R.version$os))
       os <- "linux"
   }
+  type <- "source"
   if (os == "Windows") {
     type <- "win.binary"
   } else if (tolower(os) == "osx") {
@@ -2813,7 +2814,6 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
   } else if (tolower(os) == "linux") {
     type <- "source"
   }
-  
   # Loop through libraries until one is writable
   error_happened <- TRUE
   i <- 1
