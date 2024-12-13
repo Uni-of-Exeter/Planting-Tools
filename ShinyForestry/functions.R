@@ -2431,10 +2431,10 @@ get_richness_from_fulltable <- function(strategy_vector, FullTable_arg = FullTab
   
   # Melt the data table to convert from wide to long format
   melted_dt <- data.table::melt(small_fulltable_dt, 
-                    id.vars = c("area", "year", "treespecie", "parcel_id"), 
-                    measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
-                    variable.name = "column_name", 
-                    value.name = "richness")
+                                id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
+                                variable.name = "column_name", 
+                                value.name = "richness")
   
   # Extract the column name's tree specie
   melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
@@ -2866,16 +2866,16 @@ install_and_load_packages <- function(packages, update = FALSE, verbose = TRUE) 
 
 
 Plus_Or_Minus_Button<-function(Selected_Cluster_To_Display_Loc,
-                                Selected_Point_In_Cluster_To_Display_Loc,
-                                Clustering_Category_VectorLoc,
-                                SubsetMeetTargetsReactiveUniqueLoc,
-                                Projected_TSNE_Data_Clusters_Loc,
-                                Basis_Clustering_Loc,
-                                Mean_Clusters_Loc,
+                               Selected_Point_In_Cluster_To_Display_Loc,
+                               Clustering_Category_VectorLoc,
+                               SubsetMeetTargetsReactiveUniqueLoc,
+                               Projected_TSNE_Data_Clusters_Loc,
+                               Basis_Clustering_Loc,
+                               Mean_Clusters_Loc,
                                Limits_Direction_Clusters_Loc,
                                Output_Name,
                                Sign_Button
-                                )
+)
 {
   SubsetMeetTargetsUniqueInSelectedCluster<-list(YEAR=SubsetMeetTargetsReactiveUniqueLoc$YEAR[Clustering_Category_VectorLoc==Selected_Cluster_To_Display_Loc,],
                                                  TYPE=SubsetMeetTargetsReactiveUniqueLoc$YEAR[Clustering_Category_VectorLoc==Selected_Cluster_To_Display_Loc,],
@@ -2907,59 +2907,59 @@ Plus_Or_Minus_Button<-function(Selected_Cluster_To_Display_Loc,
   if(!is.null(dim(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$YEAR))){
     #we only continue if there are at least 5 points in the cluster
     if(dim(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$YEAR)[1]>=4){
-  if( Sign_Button=="+"){
-  Set_Output_GreaterOrLess_Than_current<-which(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$OUTPUTS[[Output_Name]]>
-                                           SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$OUTPUTS[[Output_Name]])
-  }else{
-    Set_Output_GreaterOrLess_Than_current<-which(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$OUTPUTS[[Output_Name]]<
-                                                   SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$OUTPUTS[[Output_Name]])
-    
-  }
-  
-  if(length(Set_Output_GreaterOrLess_Than_current)>0){
-    
-    
-    SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput<-
-      list(YEAR=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$YEAR[Set_Output_GreaterOrLess_Than_current,],
-           TYPE=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$TYPE[Set_Output_GreaterOrLess_Than_current,],
-           OUTPUTS=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$OUTPUTS[Set_Output_GreaterOrLess_Than_current,],
-           TSNE_PROJECTION=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$TSNE_PROJECTION[Set_Output_GreaterOrLess_Than_current,],
-           Basis=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$Basis,
-           MEANS=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$MEANS
-      )
-    
-    
-    #Find the one with the Carbon the closes to the current value
-      
-    if(length(Set_Output_GreaterOrLess_Than_current)>1){
       if( Sign_Button=="+"){
-      NewCoord<-SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$TSNE_PROJECTION[which.min(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$OUTPUTS[[Output_Name]]),]}else{
-        NewCoord<-SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$TSNE_PROJECTION[which.max(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$OUTPUTS[[Output_Name]]),]  
+        Set_Output_GreaterOrLess_Than_current<-which(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$OUTPUTS[[Output_Name]]>
+                                                       SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$OUTPUTS[[Output_Name]])
+      }else{
+        Set_Output_GreaterOrLess_Than_current<-which(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$OUTPUTS[[Output_Name]]<
+                                                       SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$OUTPUTS[[Output_Name]])
+        
       }
-    
- }else{NewCoord<-SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$TSNE_PROJECTION}
-    
-    Limits_Direction_SelectedCluster_Loc<-Limits_Direction_Clusters_Loc[[Selected_Cluster_To_Display_Loc]]
-    min_x_t<-Limits_Direction_SelectedCluster_Loc$min_dir1
-    min_y_t<-Limits_Direction_SelectedCluster_Loc$min_dir2
-    max_x_t<-Limits_Direction_SelectedCluster_Loc$max_dir1
-    max_y_t<-Limits_Direction_SelectedCluster_Loc$max_dir2
-    
-    NewValueOnSlider_x<-max(min((NewCoord[1]-min_x_t)/(max_x_t-min_x_t)*100,100),0)
-    NewValueOnSlider_y<-max(min((NewCoord[2]-min_y_t)/(max_y_t-min_y_t)*100,100),0) 
-    return(list(NewValueOnSlider_x=NewValueOnSlider_x,NewValueOnSlider_y=NewValueOnSlider_y,UpdateSliders=TRUE))
-
-    # this else is in the case that there are no points in the set that is greater than or less the point currently selected
-    # in terms of outcome. This means we reached the point with either the largest values (for +) or the smallest value (for -)
-    # in terms of outcome in this target compatible cluster.
-  }else{return(list(NewValueOnSlider_x=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[1],
-                    NewValueOnSlider_y=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[2],
-                    UpdateSliders=FALSE))}
-   # this else is in the case that there are only 3 or 4 points in the cluster 
-  }else{return(list(NewValueOnSlider_x=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[1],
-                   NewValueOnSlider_y=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[2],
-                   UpdateSliders=FALSE))}
-  # this else is in the case that there are only 2 points in the cluster
+      
+      if(length(Set_Output_GreaterOrLess_Than_current)>0){
+        
+        
+        SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput<-
+          list(YEAR=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$YEAR[Set_Output_GreaterOrLess_Than_current,],
+               TYPE=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$TYPE[Set_Output_GreaterOrLess_Than_current,],
+               OUTPUTS=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$OUTPUTS[Set_Output_GreaterOrLess_Than_current,],
+               TSNE_PROJECTION=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$TSNE_PROJECTION[Set_Output_GreaterOrLess_Than_current,],
+               Basis=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$Basis,
+               MEANS=SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPoint$MEANS
+          )
+        
+        
+        #Find the one with the Carbon the closes to the current value
+        
+        if(length(Set_Output_GreaterOrLess_Than_current)>1){
+          if( Sign_Button=="+"){
+            NewCoord<-SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$TSNE_PROJECTION[which.min(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$OUTPUTS[[Output_Name]]),]}else{
+              NewCoord<-SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$TSNE_PROJECTION[which.max(SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$OUTPUTS[[Output_Name]]),]  
+            }
+          
+        }else{NewCoord<-SubsetMeetTargetsUniqueInSelectedClusterWITHOUTSelectedPointGREATERorLESSOutput$TSNE_PROJECTION}
+        
+        Limits_Direction_SelectedCluster_Loc<-Limits_Direction_Clusters_Loc[[Selected_Cluster_To_Display_Loc]]
+        min_x_t<-Limits_Direction_SelectedCluster_Loc$min_dir1
+        min_y_t<-Limits_Direction_SelectedCluster_Loc$min_dir2
+        max_x_t<-Limits_Direction_SelectedCluster_Loc$max_dir1
+        max_y_t<-Limits_Direction_SelectedCluster_Loc$max_dir2
+        
+        NewValueOnSlider_x<-max(min((NewCoord[1]-min_x_t)/(max_x_t-min_x_t)*100,100),0)
+        NewValueOnSlider_y<-max(min((NewCoord[2]-min_y_t)/(max_y_t-min_y_t)*100,100),0) 
+        return(list(NewValueOnSlider_x=NewValueOnSlider_x,NewValueOnSlider_y=NewValueOnSlider_y,UpdateSliders=TRUE))
+        
+        # this else is in the case that there are no points in the set that is greater than or less the point currently selected
+        # in terms of outcome. This means we reached the point with either the largest values (for +) or the smallest value (for -)
+        # in terms of outcome in this target compatible cluster.
+      }else{return(list(NewValueOnSlider_x=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[1],
+                        NewValueOnSlider_y=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[2],
+                        UpdateSliders=FALSE))}
+      # this else is in the case that there are only 3 or 4 points in the cluster 
+    }else{return(list(NewValueOnSlider_x=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[1],
+                      NewValueOnSlider_y=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[2],
+                      UpdateSliders=FALSE))}
+    # this else is in the case that there are only 2 points in the cluster
   }else{return(list(NewValueOnSlider_x=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[1],
                     NewValueOnSlider_y=SubsetMeetTargetsUniqueInSelectedClusterCurrentSelectedPoint$TSNE_PROJECTION[2],
                     UpdateSliders=FALSE))}
@@ -2989,13 +2989,13 @@ FormattedControl<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioS
   addControlText<-paste0("<p>
                                           <span style='display: inline-block; width: ",sizeBlock,";'>
 Carbon</span>: ", round(Carbon,2)#round(sum(CarbonMeanCalc), 2)
-       #  , "\u00B1",sprintf("%.2f",2*CarbonSD)
-         , "<br>",
-         addControlText,
-         "<span style='display: inline-block; width: ",sizeBlock,";'>Area</span>: ", round(Area, 2), "<br>",
-         "<span style='display: inline-block; width: ",sizeBlock,";'>Visitors</span>: ", round(Visits, 2),
-       #"\u00B1",  sprintf("%.2f",2*VisitsSD),
-         "</p>")
+                         #  , "\u00B1",sprintf("%.2f",2*CarbonSD)
+                         , "<br>",
+                         addControlText,
+                         "<span style='display: inline-block; width: ",sizeBlock,";'>Area</span>: ", round(Area, 2), "<br>",
+                         "<span style='display: inline-block; width: ",sizeBlock,";'>Visitors</span>: ", round(Visits, 2),
+                         #"\u00B1",  sprintf("%.2f",2*VisitsSD),
+                         "</p>")
   return(addControlText)
   
 }

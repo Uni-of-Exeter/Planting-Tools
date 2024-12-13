@@ -2228,10 +2228,15 @@ the 'Choose' button below that option:"})
   })
   
 ### Update the map rendering on Alternative Approaches
-  observe({
+  observeEvent({input$YearAlt
+                input$random
+                input$tabs=="Alternative approaches"
+                Selected_Cluster_To_Display_Reactive()},
+               {
     
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches") && (ClusteringDone())) {
-      YearSelect<-input$YearAlt
+    #browser()
+        YearSelect<-input$YearAlt-STARTYEAR
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
       PrevSavedVecYearType<-PreviousClickedVectorYearType()
@@ -3552,32 +3557,32 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               
   
   ### the year slider on the Alternative approaches tab is changed, then change the land parcels displayed.  
-  observeEvent(input$YearAlt,
-               {# if the first two maps have been displayed on the pref tabs
-                 if(!FirstTimeClickOnPreferencesReactive()){
-                   SavedVecYearType <- ClickedVectorYearType()  
-                   YearSelect<-input$YearPref-STARTYEAR   
-                   listMaps <- list()
-                   
-                   SelectedDropdown <- input$inSelect
-                   
-                   listMaps[[1]]<-leafletProxy("ClusterPage")
-                   listMaps[[2]]<-leafletProxy("ClusterPage2")
-                   LinesToCompare<-LinesToCompareReactive()
-                   SelectedLine<-list()
-                   # browser()
-                   
-                 #  CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
-                #   
-                #   TwoLinesToCompareTemp<-list(YEAR=LinesToCompare$YEAR[,paste0("SelectedSimMat.YEAR.",1:length(SavedVecYearType))],
-                #                               TYPE=LinesToCompare$TYPE[,paste0("SelectedSimMat.TYPE.",1:length(SavedVecYearType))],
-                #                               OUTPUTS=LinesToCompare$OUTPUTS)
-                #   
-                #   SelectedLine[[1]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare-1,],
-                #                             TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare-1,],
-                #                             OUTPUTS=TwoLinesToCompareTemp$OUTPUTS[CurrentLengthLinesToCompare-1,])
-                #   SelectedLine[[2]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare,],
-                #                             TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare,],
+  #observeEvent(input$YearAlt,
+  #             {# if the first two maps have been displayed on the pref tabs
+  #               if(!FirstTimeClickOnPreferencesReactive()){
+  #                 SavedVecYearType <- ClickedVectorYearType()  
+  #                 YearSelect<-input$YearPref-STARTYEAR   
+  #                 listMaps <- list()
+  #                 
+  #                 SelectedDropdown <- input$inSelect
+  #                 
+  #                 listMaps[[1]]<-leafletProxy("ClusterPage")
+  #                 listMaps[[2]]<-leafletProxy("ClusterPage2")
+  #                 LinesToCompare<-LinesToCompareReactive()
+  #                 SelectedLine<-list()
+  #                 # browser()
+  #                 
+  #               #  CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
+  #              #   
+  #              #   TwoLinesToCompareTemp<-list(YEAR=LinesToCompare$YEAR[,paste0("SelectedSimMat.YEAR.",1:length(SavedVecYearType))],
+  #              #                               TYPE=LinesToCompare$TYPE[,paste0("SelectedSimMat.TYPE.",1:length(SavedVecYearType))],
+  #              #                               OUTPUTS=LinesToCompare$OUTPUTS)
+  #              #   
+  #              #   SelectedLine[[1]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare-1,],
+  #              #                             TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare-1,],
+  #              #                             OUTPUTS=TwoLinesToCompareTemp$OUTPUTS[CurrentLengthLinesToCompare-1,])
+  #              #   SelectedLine[[2]] <- list(YEAR=TwoLinesToCompareTemp$YEAR[CurrentLengthLinesToCompare,],
+  #              #                             TYPE=TwoLinesToCompareTemp$TYPE[CurrentLengthLinesToCompare,],
                 #                             OUTPUTS=TwoLinesToCompareTemp$OUTPUTS[CurrentLengthLinesToCompare,])
                 #   
                 #   
@@ -3602,9 +3607,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 #   
                 #   #
 
-                 }
+  #               }
                  
-               })
+  #             })
   
   
 ### If we are not on the Preference tab and some new data has been added, then re-update the weights
@@ -4040,7 +4045,7 @@ if(!is.null(pref_reactive()$prefs)){
   observeEvent(input$map2_click, {Selected_Cluster_To_Display_Reactive(1)  })
   observeEvent(input$map3_click, {Selected_Cluster_To_Display_Reactive(2) })
   observeEvent(input$map4_click, {Selected_Cluster_To_Display_Reactive(3)  })
-  observeEvent(input$map5_click, { Selected_Cluster_To_Display_Reactive(4) })
+  observeEvent(input$map5_click, {Selected_Cluster_To_Display_Reactive(4) })
   
   observeEvent(input$Carbon_plus,{
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && 
