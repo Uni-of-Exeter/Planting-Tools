@@ -2034,32 +2034,34 @@ notif <- function(msg,
   if (isFALSE(rbind)) {
     msg <- paste0("[", log_level_msg, "] ", msg)
   }
-  if (isTRUE(ntfy)) {
-    pad_notif_message <- function(msg, pad_character = "_") {
-      max_key_width <- max(nchar(rownames(msg)))
-      padded_notif_msg <- sapply(1:nrow(msg), function(i, max_key_width, msg) {
-        key <- rownames(msg)[i]
-        value <- msg[i]
-        # result <- sprintf("%-*s  %s", max_key_width, key, value)
-        pad_length <- max_key_width - nchar(key)
-        formatted_key <- paste0(key, strrep(pad_character, pad_length))
-        result <- paste0(formatted_key, pad_character, pad_character, value)
-        return(result)
-      }, max_key_width = max_key_width, msg = msg)
-      padded_notif_msg <- paste(padded_notif_msg, collapse = "\n")
-      return(padded_notif_msg)
+  
+  pad_notif_message <- function(msg, pad_character = "_") {
+    max_key_width <- max(nchar(rownames(msg)))
+    padded_notif_msg <- sapply(1:nrow(msg), function(i, max_key_width, msg) {
+      key <- rownames(msg)[i]
+      value <- msg[i]
+      # result <- sprintf("%-*s  %s", max_key_width, key, value)
+      pad_length <- max_key_width - nchar(key)
+      formatted_key <- paste0(key, strrep(pad_character, pad_length))
+      result <- paste0(formatted_key, pad_character, pad_character, value)
+      return(result)
+    }, max_key_width = max_key_width, msg = msg)
+    padded_notif_msg <- paste(padded_notif_msg, collapse = "\n")
+    return(padded_notif_msg)
+  }
+  
+  if (isTRUE(rbind)) {
+    # Convert the message to a string without column names like "[,1]"
+    if (isTRUE(dim(msg)[2] > 0) && is.null(colnames(msg))) {
+      colnames(msg) <- ""
     }
+    # # gsub in case msg contains strings that get quoted with \"
+    # msg <- paste(gsub('\"', '', capture.output(msg)), collapse = "\n")
     
-    if (isTRUE(rbind)) {
-      # Convert the message to a string without column names like "[,1]"
-      if (isTRUE(dim(msg)[2] > 0) && is.null(colnames(msg))) {
-        colnames(msg) <- ""
-      }
-      # # gsub in case msg contains strings that get quoted with \"
-      # msg <- paste(gsub('\"', '', capture.output(msg)), collapse = "\n")
-      
-      msg <- pad_notif_message(msg, pad_character = pad_character)
-    }
+    msg <- pad_notif_message(msg, pad_character = pad_character)
+  }
+  
+  if (isTRUE(ntfy)) {
     
     # Windows curl has problems with my ntfy server. I install the new curl in C:/curl and search for it if it exists
     # Otherwise, I use the official ntfy.sh, but it has a daily free limit that I hit quickly.
