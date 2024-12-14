@@ -2140,12 +2140,13 @@ get_latest_task_id <- function(limit_log_level = LOG_LEVEL, file_suffix = SESSIO
   task_id_filename <- normalizePath(file.path(FolderSource, paste0("task_id", file_suffix, ".txt")))
   lockfile_name <- normalizePath(file.path(FolderSource, paste0("task_id_lockfile", file_suffix)))
   
+  mylock <- flock::lock(lockfile_name)
   if (isFALSE(file.exists(task_id_filename))) {
     msg <- "get_latest_task_id() is trying to read the file task_id.txt but it does not exist"
     notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    flock::unlock(mylock)
     stop(paste("[ERROR]", msg))
   }
-  mylock <- flock::lock(lockfile_name)
   latest_task_id <- as.integer(readLines(task_id_filename))
   flock::unlock(mylock)
   file.remove(lockfile_name)
