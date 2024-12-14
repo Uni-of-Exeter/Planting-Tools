@@ -566,13 +566,16 @@ notif(msg)
 
 simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 Uniqunits <- unique(FullTable$units)
+
 handlers(
   list(
+    handler_shiny(),
     handler_progress(
       format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
+    ),
+    handler_txtprogressbar()
   ),
-  on_missing = "ignore"
+  on_missing = "warning"
 )
 plan(multisession, workers = future::availableCores() - 2)
 with_progress({
@@ -603,16 +606,6 @@ with_progress({
   pb(amount = 0)
 })
 plan(sequential)
-
-handlers(
-  list(
-    handler_shiny(),
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  ),
-  on_missing = "ignore"
-)
 
 RREMBO_CONTROL <- list(
   # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
