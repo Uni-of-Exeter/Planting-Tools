@@ -126,9 +126,6 @@ while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "decision_units.j
 }
 message(paste(normalizePath(file.path(ElicitorAppFolder, "decision_units.json")), "found. Trying to load file if FullTableMerged.geojson does not exist..."))
 
-
-handlers(global = TRUE)
-
 # Load FullTable from file
 FullTable <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))

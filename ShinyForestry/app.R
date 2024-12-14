@@ -554,8 +554,6 @@ FullTable <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMe
 FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
 notif(paste("Loading ", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
 
-handlers(global = TRUE)
-
 STDMEAN <- 0.05
 STDSTD <- 0.01
 
