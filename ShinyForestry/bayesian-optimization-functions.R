@@ -198,25 +198,25 @@ generate_legal_unique_samples <- function(n,
       # Remove rows where the sum is less than area_sum_threshold
       # If we are using maximinLHS, valid_samples is an empty data.frame/tibble
       # if (isFALSE(use_dplyr)) {
-        colnames_samples <- colnames(samples)
-        area_cols <- grep("area", colnames_samples)
-        samples_area_numeric <- samples[, area_cols, drop = FALSE]
-        # apply works naturally on columns, so either pass 2 or transpose after
-        samples_area_numeric <- apply(samples_area_numeric, 2, as.numeric)
-        
-        indices_to_keep <- apply(samples_area_numeric, 1, area_constraint_function, area_sum_threshold_numeric = area_sum_threshold)
-        # There are problems with rbind when the column names are empty and/or different
-        colnames(valid_samples) <- good_colnames_high_dim
-        valid_samples <- rbind(valid_samples,
-                               samples[indices_to_keep, , drop = FALSE])
-        if (isTRUE(RRembo)) {
-          colnames(valid_samples_low_dimension) <- good_colnames_low_dim
-          colnames(valid_samples_high_dimension) <- good_colnames_high_dim
-          valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
-                                               samples_low_dimension[indices_to_keep, , drop = FALSE])
-          valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
-                                                samples_high_dimension[indices_to_keep, , drop = FALSE])
-        }
+      colnames_samples <- colnames(samples)
+      area_cols <- grep("area", colnames_samples)
+      samples_area_numeric <- samples[, area_cols, drop = FALSE]
+      # apply works naturally on columns, so either pass 2 or transpose after
+      samples_area_numeric <- apply(samples_area_numeric, 2, as.numeric)
+      
+      indices_to_keep <- apply(samples_area_numeric, 1, area_constraint_function, area_sum_threshold_numeric = area_sum_threshold)
+      # There are problems with rbind when the column names are empty and/or different
+      colnames(valid_samples) <- good_colnames_high_dim
+      valid_samples <- rbind(valid_samples,
+                             samples[indices_to_keep, , drop = FALSE])
+      if (isTRUE(RRembo)) {
+        colnames(valid_samples_low_dimension) <- good_colnames_low_dim
+        colnames(valid_samples_high_dimension) <- good_colnames_high_dim
+        valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
+                                             samples_low_dimension[indices_to_keep, , drop = FALSE])
+        valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
+                                              samples_high_dimension[indices_to_keep, , drop = FALSE])
+      }
       # } else {
       #   # TODO: indices_to_keep with dplyr when RRembo
       #   # dplyr is faster on very large values of n
@@ -231,14 +231,14 @@ generate_legal_unique_samples <- function(n,
       # }
     } else {
       # if (isFALSE(use_dplyr)) {
-        valid_samples <- rbind(valid_samples,
-                               samples)
-        if (isTRUE(RRembo)) {
-          valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
-                                               samples_low_dimension)
-          valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
-                                                samples_high_dimension)
-        }
+      valid_samples <- rbind(valid_samples,
+                             samples)
+      if (isTRUE(RRembo)) {
+        valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
+                                             samples_low_dimension)
+        valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
+                                              samples_high_dimension)
+      }
       # } else {
       #   # TODO: indices_to_keep with dplyr with RRembo
       #   # dplyr is faster on very large values of n
