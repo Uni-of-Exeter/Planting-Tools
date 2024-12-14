@@ -2525,7 +2525,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         }
         VisitsSelectedSD <- VisitsSelectedSD0()
         
-        if (current_task_id != get_latest_task_id()) {
+        if (isTRUE(current_task_id != get_latest_task_id())) {
           notif(paste("Task", current_task_id, "cancelled."))
           return()
         }
@@ -2677,7 +2677,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       #  SubsetMeetTargets[["VisitsSD"]]<-tmpYearType$SelectedSimMat2[["VisitsSD"]][CONDITION_SEL]
       #  SubsetMeetTargets[["Area"]]<-tmpYearType$SelectedSimMat2[["Area"]][CONDITION_SEL]
         
-        if (current_task_id != get_latest_task_id()) {
+        if (isTRUE(current_task_id != get_latest_task_id())) {
           notif(paste("Task", current_task_id, "cancelled."))
           return()
         }
@@ -2744,7 +2744,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             DistSliderVisits <- (SubsetMeetTargets[["OUTPUTS"]][["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits))
           }
           
-          if (current_task_id != get_latest_task_id()) {
+          if (isTRUE(current_task_id != get_latest_task_id())) {
             notif(paste("Task", current_task_id, "cancelled."))
             return()
           }
@@ -2773,7 +2773,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           }
           SelecRow <- which.min(result)
           
-          if (current_task_id != get_latest_task_id()) {
+          if (isTRUE(current_task_id != get_latest_task_id())) {
             notif(paste("Task", current_task_id, "cancelled."))
             return()
           }
@@ -2812,7 +2812,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
         if(RUN_BO){
           
-          if (current_task_id != get_latest_task_id()) {
+          if (isTRUE(current_task_id != get_latest_task_id())) {
             notif(paste("Task", current_task_id, "cancelled."))
             return()
           }
@@ -2849,7 +2849,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               bo_results <- .
               
               # Check if this result is invalid (i.e. a newer task has started)
-              if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
+              if (isFALSE(bo_results) || isTRUE(current_task_id != get_latest_task_id())) {
                 msg <- paste0("task ", current_task_id, " The previous Bayesian optimization has been cancelled.")
                 notif(msg)
                 showNotification(msg)

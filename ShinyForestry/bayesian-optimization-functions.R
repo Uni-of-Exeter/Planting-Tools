@@ -97,7 +97,7 @@ generate_legal_unique_samples <- function(n,
   use_dplyr <- isTRUE(n > 3e5)
   
   while (nrow(valid_samples) < n && attempts <= max_attempts) {
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return()
     }
     msg <- paste0("Attempt ", attempts, "/", max_attempts, " at generating inputs (", nrow(valid_samples), "/", n, " so far)... ")
@@ -130,7 +130,7 @@ generate_legal_unique_samples <- function(n,
     # TODO REMBO with dplyr
     if (isTRUE(RRembo)) use_dplyr <- FALSE
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return()
     }
     
@@ -181,7 +181,7 @@ generate_legal_unique_samples <- function(n,
     samples_low_dimension <- samples$sample_low_dimension
     samples_high_dimension <- samples$sample_high_dimension
     samples <- samples$sample_high_dimension_categorical
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return()
     }
     
@@ -2232,7 +2232,7 @@ bayesian_optimization <- function(
   begin <- Sys.time()
   
   # Generate inputs + outputs ----
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs..."), limit_log_level = limit_log_level)
@@ -2248,7 +2248,7 @@ bayesian_optimization <- function(
                                                                RRembo_smart = RREMBO_SMART,
                                                                current_task_id = current_task_id,
                                                                limit_log_level = limit_log_level)
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   obj_inputs_full_unconstrained <- generate_legal_unique_samples(n = 10 * 4,
@@ -2264,7 +2264,7 @@ bayesian_optimization <- function(
                                                                  current_task_id = current_task_id,
                                                                  limit_log_level = limit_log_level)
   
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
@@ -2281,7 +2281,7 @@ bayesian_optimization <- function(
                                                                obj_inputs_full_unconstrained$valid_samples_high_dimension))
   obj_inputs <- obj_inputs_full$valid_samples_high_dimension_categorical
   
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
@@ -2301,7 +2301,7 @@ bayesian_optimization <- function(
                        alpha = alpha)
   notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs done"), limit_log_level = limit_log_level)
   
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
@@ -2316,7 +2316,7 @@ bayesian_optimization <- function(
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                         verb = FALSE)
   notif(paste0(msg, "done"), limit_log_level = limit_log_level)
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
@@ -2329,7 +2329,7 @@ bayesian_optimization <- function(
   pb_amount <- 0
   for (i in 1:BAYESIAN_OPTIMIZATION_ITERATIONS) {
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     set.seed(i)
@@ -2345,7 +2345,7 @@ bayesian_optimization <- function(
       message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
     }
     begin_inside <- Sys.time()
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(n = 50,
@@ -2361,7 +2361,7 @@ bayesian_optimization <- function(
                                                                                 current_task_id = current_task_id,
                                                                                 limit_log_level = limit_log_level)
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     # if (rstudioapi::isBackgroundJob()) {
@@ -2420,7 +2420,7 @@ bayesian_optimization <- function(
     msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
     notif(msg, limit_log_level = limit_log_level)
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     
@@ -2433,7 +2433,7 @@ bayesian_optimization <- function(
     best_inputs_for_gp <- matrix(NA, nrow = nrow(optimization_inital_values), ncol = ncol(optimization_inital_values))
     for (i in 1:nrow(optimization_inital_values)) {
       
-      if (current_task_id != get_latest_task_id()) {
+      if (isTRUE(current_task_id != get_latest_task_id())) {
         return(FALSE)
       }
       
@@ -2493,7 +2493,7 @@ bayesian_optimization <- function(
                                                                                      A = RREMBO_HYPER_PARAMETERS$A)
     }
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     
@@ -2508,7 +2508,7 @@ bayesian_optimization <- function(
     
     best_inputs <- matrix(best_inputs, ncol = RREMBO_HYPER_PARAMETERS$D)
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     
@@ -2541,7 +2541,7 @@ bayesian_optimization <- function(
     #   message("done")
     # }
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     
@@ -2562,7 +2562,7 @@ bayesian_optimization <- function(
     obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
     obj_outputs <- c(obj_outputs, best_outputs)
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     begin_inside <- Sys.time()
@@ -2977,7 +2977,7 @@ bayesian_optimization <- function(
     notif(notif_msg, rbind  = TRUE, limit_log_level = limit_log_level)
   }
   
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
