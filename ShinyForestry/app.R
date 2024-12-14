@@ -577,7 +577,24 @@ handlers(
   ),
   on_missing = "warning"
 )
-plan(multisession, workers = future::availableCores() - 2)
+sysinf <- Sys.info()
+if (!is.null(sysinf)){
+  os <- sysinf['sysname']
+  if (os == 'Darwin')
+    os <- "osx"
+} else { ## mystery machine
+  os <- .Platform$OS.type
+  if (grepl("^darwin", R.version$os))
+    os <- "osx"
+  if (grepl("linux-gnu", R.version$os))
+    os <- "linux"
+}
+if (tolower(os) == windows) {
+  futureplan <- future::multisession
+} else {
+  futureplan <- future::multicore
+}
+plan(futureplan, workers = min(5, round(future::availableCores() / 2)))
 with_progress({
   pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
   simul636 <- foreach(
