@@ -589,7 +589,7 @@ if (!is.null(sysinf)){
   if (grepl("linux-gnu", R.version$os))
     os <- "linux"
 }
-if (tolower(os) == windows) {
+if (tolower(os) == "windows") {
   futureplan <- future::multisession
 } else {
   futureplan <- future::multicore
