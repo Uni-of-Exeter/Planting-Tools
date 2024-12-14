@@ -2281,6 +2281,10 @@ bayesian_optimization <- function(
                                                                obj_inputs_full_unconstrained$valid_samples_high_dimension))
   obj_inputs <- obj_inputs_full$valid_samples_high_dimension_categorical
   
+  if (current_task_id != get_latest_task_id()) {
+    return(FALSE)
+  }
+  
   obj_outputs <- apply(obj_inputs, 1, objective_function,
                        area_sum_threshold = area_sum_threshold,
                        FullTable_arg = FullTable,
@@ -2296,6 +2300,7 @@ bayesian_optimization <- function(
                        tolvec = tolvec,
                        alpha = alpha)
   notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs done"), limit_log_level = limit_log_level)
+  
   if (current_task_id != get_latest_task_id()) {
     return(FALSE)
   }
@@ -2415,6 +2420,10 @@ bayesian_optimization <- function(
     msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
     notif(msg, limit_log_level = limit_log_level)
     
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
+    
     ## Optimization of acquisition function around its max and the lowest GP mean ----
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function at max(EI) and min(GP_mean) ...")
@@ -2423,6 +2432,11 @@ bayesian_optimization <- function(
     
     best_inputs_for_gp <- matrix(NA, nrow = nrow(optimization_inital_values), ncol = ncol(optimization_inital_values))
     for (i in 1:nrow(optimization_inital_values)) {
+      
+      if (current_task_id != get_latest_task_id()) {
+        return(FALSE)
+      }
+      
       optimization_inital_value <- optimization_inital_values[i, ]
       if (isTRUE(RREMBO_SMART)) {
         if (RREMBO_HYPER_PARAMETERS$control$reverse) {
@@ -2479,6 +2493,10 @@ bayesian_optimization <- function(
                                                                                      A = RREMBO_HYPER_PARAMETERS$A)
     }
     
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
+    
     best_inputs <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(
       DoE_high_dimension_rowwise_matrix = best_inputs_continuous,
       RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
@@ -2489,6 +2507,10 @@ bayesian_optimization <- function(
     )
     
     best_inputs <- matrix(best_inputs, ncol = RREMBO_HYPER_PARAMETERS$D)
+    
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
     
     msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
     notif(msg, limit_log_level = limit_log_level)
@@ -2518,6 +2540,10 @@ bayesian_optimization <- function(
     # if (rstudioapi::isBackgroundJob()) {
     #   message("done")
     # }
+    
+    if (current_task_id != get_latest_task_id()) {
+      return(FALSE)
+    }
     
     ## Diagnostics GP ----
     gp_means <- as.vector(predict(gp_model, best_inputs_for_gp)$results$mean)
@@ -2949,6 +2975,10 @@ bayesian_optimization <- function(
     )
     # print(notif_msg)
     notif(notif_msg, rbind  = TRUE, limit_log_level = limit_log_level)
+  }
+  
+  if (current_task_id != get_latest_task_id()) {
+    return(FALSE)
   }
   
   # End the function ----
