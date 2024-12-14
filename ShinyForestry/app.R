@@ -2851,13 +2851,13 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               # Check if this result is invalid (i.e. a newer task has started)
               if (isFALSE(bo_results) || current_task_id != get_latest_task_id()) {
                 msg <- paste0("task ", current_task_id, " The previous Bayesian optimization has been cancelled.")
-                notif(msg, limit_log_level = limit_log_level)
+                notif(msg)
                 showNotification(msg)
                 return(FALSE)
               } else { # If the result is valid (i.e. there are no new tasks started)
                 
                 # If no results, i.e. no feasible solution
-                if (is.na(bo_results)) {
+                if (any(is.na(bo_results))) {
                   showNotification("No feasible solution found")
                   return(NA)
                 }
