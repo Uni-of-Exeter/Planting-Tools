@@ -4242,12 +4242,49 @@ if(!is.null(pref_reactive()$prefs)){
   })
   
   # On session close, delete temporary files
-  session$onSessionEnded(function() {
+  onSessionEnded(function() {
     if (SESSION_FILE_SUFFIX != "") {
       session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
       unlink(session_files)
     }
   })
+  
+  onStop(function() {
+    if (SESSION_FILE_SUFFIX != "") {
+      session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
+      unlink(session_files)
+    }
+  })
+  # On error, kill the background processes
+  onUnhandledError(function(err) {
+    # The background processes check the task id, and end if they are not the latest task
+    set_latest_task_id(-1)
+    # Force-close background processes
+    future::plan(future::sequential)
+    
+    if (SESSION_FILE_SUFFIX != "") {
+      session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
+      unlink(session_files)
+    }
+    
+    # log the unhandled error
+    # level <- if (inherits(err, "shiny.error.fatal")) "FATAL" else "ERROR"
+    notif(paste0("onUnhandledError triggered with error: ", conditionMessage(err)), log_level = "error")
+  })
+  observeEvent(input$crash, function(){
+    # The background processes check the task id, and end if they are not the latest task
+    set_latest_task_id(-1)
+    # Force-close background processes
+    future::plan(future::sequential)
+    
+    if (SESSION_FILE_SUFFIX != "") {
+      session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
+      unlink(session_files)
+    }
+    notif("Oops, input$crash triggered: an unhandled error happened!", log_level = "error")
+    stop("Oops, input$crash triggered: an unhandled error happened!")
+  })
+  
 }
 
 shinyApp(ui, server)
