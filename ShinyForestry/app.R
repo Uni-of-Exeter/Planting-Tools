@@ -596,6 +596,7 @@ if (tolower(os) == "windows") {
 } else {
   futureplan <- future::multicore
 }
+future:::ClusterRegistry("stop")
 plan(futureplan, workers = min(5, round(future::availableCores() / 2)))
 with_progress({
   pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
