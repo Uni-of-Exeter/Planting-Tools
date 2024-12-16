@@ -2861,10 +2861,10 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           bayesian_optimization_extendedtask <- ExtendedTask$new(function(...) {
             future_promise(expr = {
               
-              notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", New process started"), limit_log_level = limit_log_level)
+              notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", New process started"))
               
               if (isTRUE(current_task_id != get_latest_task_id())) {
-                notif(paste("task", current_task_id, "cancelled."), limit_log_level = limit_log_level)
+                notif(paste("task", current_task_id, "cancelled."))
                 return(FALSE)
               }
               
