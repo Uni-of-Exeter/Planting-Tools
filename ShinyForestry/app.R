@@ -636,7 +636,7 @@ RREMBO_CONTROL <- list(
 RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
                                            # per parcel, area + year planting + tree specie
                                            D = 3 * nrow(FullTable),
-                                           init = list(n = 10 * nrow(FullTable)),
+                                           init = list(n = 1000),
                                            budget = 100,
                                            control = list(
                                              # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
