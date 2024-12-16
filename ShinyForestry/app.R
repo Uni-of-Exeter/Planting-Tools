@@ -604,7 +604,7 @@ with_progress({
     .combine = rbind,
     .inorder = TRUE,
     .options.future = list(
-      chunk.size = round(NSamp / (3 * (future::availableCores() - 1))),
+      # chunk.size = round(NSamp / (3 * (future::availableCores() - 1))),
       scheduling = 2,
       seed = TRUE
     )
