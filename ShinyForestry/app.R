@@ -2896,13 +2896,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 parcels_activation <- as.numeric(bo_results$strategy_vector[grep("area", names(bo_results$strategy_vector))])
                 parcels_activation[parcels_activation != 0] <- 1
                 
-                last_col <- ncol(bo_results$outcomes_to_maximize)
-                number_of_rows <- nrow(bo_results$outcomes_to_maximize)
-                col_sums <- c(colSums(bo_results$outcomes_to_maximize %>% dplyr::select("Carbon_Mean_Scenario26_TreeSpecieConifers")),
-                              colMeans(bo_results$outcomes_to_maximize %>% dplyr::select(-"Carbon_Mean_Scenario26_TreeSpecieConifers")))
-                col_sums_SD <- c(sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select("Carbon_SD_Scenario26_TreeSpecieConifers"))^2)) / number_of_rows,
-                                 sqrt(colSums((bo_results$outcomes_to_maximize_SD %>% dplyr::select(-"Carbon_SD_Scenario26_TreeSpecieConifers"))^2)) / number_of_rows)
-                
                 selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
                                                                     # CarbonMean, BioMeans, Area, VisitsMean
                                                                     unlist(outcome[c("sum_carbon", "sum_richness", "sum_biodiversity", "sum_area", "sum_visits")]),
