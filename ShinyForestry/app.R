@@ -2544,7 +2544,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         VisitsSelectedSD <- VisitsSelectedSD0()
         
         if (isTRUE(current_task_id != get_latest_task_id())) {
-          notif(paste("Task", current_task_id, "cancelled."))
+          notif(paste("task", current_task_id, "cancelled."))
           return()
         }
         
