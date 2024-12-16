@@ -1818,10 +1818,10 @@ objective_function <- function(inputs, # c(area, year_planting, tree_specie)
   threshold <- area_sum_threshold
   penalty <- penalty_coefficient * max(0, vector_sum - threshold)
   # Minimize -> negative
-  preference_weight <- - preference_weight_area
-  if (exploration == FALSE) {
-    objectives[1] <- vector_sum + penalty
-    result <- result + preference_weight * vector_sum + penalty
+  preference_weight <- preference_weight_area
+  if (isFALSE(exploration)) {
+    objectives[1] <- - preference_weight * vector_sum + penalty
+    result <- result - preference_weight * vector_sum + penalty
   } else {
     objectives[1] <- penalty
     result <- result + penalty
@@ -1837,12 +1837,12 @@ objective_function <- function(inputs, # c(area, year_planting, tree_specie)
                          SDY = vector_sum_sd,
                          alpha = alpha,
                          tol = tolvec["Carbon"])$Im
-  penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
-  if (exploration == FALSE) {
-    objectives <- c(objectives, - preference_weight * vector_sum - penalty)
-    result <- result - preference_weight * vector_sum - penalty
+  penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+  if (isFALSE(exploration)) {
+    objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+    result <- result - preference_weight * vector_sum + penalty
   } else {
-    objectives <- c(objectives, - penalty)
+    objectives <- c(objectives, penalty)
     result <- result + penalty
   }
   
@@ -1854,18 +1854,18 @@ objective_function <- function(inputs, # c(area, year_planting, tree_specie)
       vector_sum <- outcomes$sum_richness[group]
       vector_sum_sd <- 0
       threshold <- outcomes_to_maximize_sum_threshold_vector[group]
-      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
       preference_weight <- preference_weights_maximize[group]
       implausibility <- Impl(Target = threshold,
                              EY = vector_sum,
                              SDY = 0,
                              alpha = alpha,
                              tol = tolvec[group])$Im
-      if (exploration == FALSE) {
-        objectives <- c(objectives, - preference_weight * vector_sum - penalty)
-        result <- result - preference_weight * vector_sum - penalty
+      penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+      if (isFALSE(exploration)) {
+        objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+        result <- result - preference_weight * vector_sum + penalty
       } else {
-        objectives <- c(objectives, - penalty)
+        objectives <- c(objectives, penalty)
         result <- result + penalty
       }
     }
@@ -1879,18 +1879,18 @@ objective_function <- function(inputs, # c(area, year_planting, tree_specie)
       vector_sum <- outcomes$sum_biodiversity[specie]
       vector_sum_sd <- outcomes$sum_biodiversity_sd[specie]
       threshold <- outcomes_to_maximize_sum_threshold_vector[specie]
-      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
       preference_weight <- preference_weights_maximize[specie]
       implausibility <- Impl(Target = threshold,
                              EY = vector_sum,
                              SDY = vector_sum_sd,
                              alpha = alpha,
                              tol = tolvec[specie])$Im
-      if (exploration == FALSE) {
-        objectives <- c(objectives, - preference_weight * vector_sum - penalty)
-        result <- result - preference_weight * vector_sum - penalty
+      penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+      if (isFALSE(exploration)) {
+        objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+        result <- result - preference_weight * vector_sum + penalty
       } else {
-        objectives <- c(objectives, - penalty)
+        objectives <- c(objectives, penalty)
         result <- result + penalty
       }
     }
@@ -1906,12 +1906,12 @@ objective_function <- function(inputs, # c(area, year_planting, tree_specie)
                          SDY = vector_sum_sd,
                          alpha = alpha,
                          tol = tolvec["Visits"])$Im
-  penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
-  if (exploration == FALSE) {
-    objectives <- c(objectives, - preference_weight * vector_sum - penalty)
-    result <- result - preference_weight * vector_sum - penalty
+  penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+  if (isFALSE(exploration)) {
+    objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+    result <- result - preference_weight * vector_sum + penalty
   } else {
-    objectives <- c(objectives, - penalty)
+    objectives <- c(objectives, penalty)
     result <- result + penalty
   }
   
