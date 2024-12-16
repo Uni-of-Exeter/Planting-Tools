@@ -2216,7 +2216,7 @@ bayesian_optimization <- function(
   RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
   
   pb <- progressr_object
-  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), " Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
+  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
   # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
   #   tryCatch({dgpsi::init_py(verb = TRUE)},
   #            error = function(e) {warning(e);stop(reticulate::py_last_error())})
@@ -2236,7 +2236,8 @@ bayesian_optimization <- function(
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
-  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Generating initial inputs and outputs..."), limit_log_level = limit_log_level)
+  msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Generating initial 80 inputs and outputs...")
+  notif(msg, limit_log_level = limit_log_level)
   obj_inputs_full_constrained <- generate_legal_unique_samples(n = 10 * 4,
                                                                FullTable_arg = FullTable,
                                                                MAXYEAR_arg = MAXYEAR,
@@ -2315,7 +2316,7 @@ bayesian_optimization <- function(
                         name = KERNEL,
                         vecchia = TRUE,
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
-                        verb = FALSE)
+                        verb = TRUE)
   notif(paste0(msg, "done"), limit_log_level = limit_log_level)
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
