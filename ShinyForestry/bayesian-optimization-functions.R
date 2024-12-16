@@ -2216,7 +2216,7 @@ bayesian_optimization <- function(
   RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
   
   pb <- progressr_object
-  notif(paste0("task ", current_task_id, ", Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
+  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), " Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
   # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
   #   tryCatch({dgpsi::init_py(verb = TRUE)},
   #            error = function(e) {warning(e);stop(reticulate::py_last_error())})
@@ -2236,7 +2236,7 @@ bayesian_optimization <- function(
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
-  notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs..."), limit_log_level = limit_log_level)
+  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Generating initial inputs and outputs..."), limit_log_level = limit_log_level)
   obj_inputs_full_constrained <- generate_legal_unique_samples(n = 10 * 4,
                                                                FullTable_arg = FullTable,
                                                                MAXYEAR_arg = MAXYEAR,
@@ -2300,7 +2300,7 @@ bayesian_optimization <- function(
                        preference_weights_maximize = preference_weights_maximize,
                        tolvec = tolvec,
                        alpha = alpha)
-  notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs done"), limit_log_level = limit_log_level)
+  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Generating initial inputs and outputs done"), limit_log_level = limit_log_level)
   
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
@@ -2309,7 +2309,7 @@ bayesian_optimization <- function(
   obj_inputs_for_gp <- obj_inputs_full$valid_samples_low_dimension
   
   # Fitting GP ----
-  msg <- paste0("task ", current_task_id, ", Fitting GP...")
+  msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Fitting GP...")
   notif(msg, limit_log_level = limit_log_level)
   gp_model <- dgpsi::gp(obj_inputs_for_gp, obj_outputs,
                         name = KERNEL,
@@ -2339,7 +2339,7 @@ bayesian_optimization <- function(
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set...")
     pb(message = msg)
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
     notif(msg, limit_log_level = limit_log_level)
     
     if (rstudioapi::isBackgroundJob()) {
@@ -2418,7 +2418,7 @@ bayesian_optimization <- function(
     # if (rstudioapi::isBackgroundJob()) {
     #   message("done")
     # }
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
     notif(msg, limit_log_level = limit_log_level)
     
     if (isTRUE(current_task_id != get_latest_task_id())) {
@@ -2429,7 +2429,7 @@ bayesian_optimization <- function(
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function at max(EI) and min(GP_mean) ...")
     pb(message = msg)
-    notif(paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), limit_log_level = limit_log_level)
+    notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), limit_log_level = limit_log_level)
     
     best_inputs_for_gp <- matrix(NA, nrow = nrow(optimization_inital_values), ncol = ncol(optimization_inital_values))
     for (i in 1:nrow(optimization_inital_values)) {
@@ -2466,7 +2466,7 @@ bayesian_optimization <- function(
       # control = list(trace = VERBOSE))
       
       if (optimum$convergence != 0) {
-        msg <- paste0("task ", current_task_id, ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
+        msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
         notif(msg, log_level = "warning", limit_log_level = limit_log_level)
       }
       
@@ -2513,7 +2513,7 @@ bayesian_optimization <- function(
       return(FALSE)
     }
     
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
     notif(msg, limit_log_level = limit_log_level)
     
     ## Objective function on the new inputs ----
@@ -2557,7 +2557,7 @@ bayesian_optimization <- function(
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP... ")
     pb(message = msg)
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
     notif(msg, limit_log_level = limit_log_level)
     obj_inputs <- rbind(obj_inputs, best_inputs)
     obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
