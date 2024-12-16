@@ -4232,12 +4232,9 @@ if(!is.null(pref_reactive()$prefs)){
     
   })
   
-  # On session close, delete temporary files and delete the extra processes
+  # On session close, delete temporary files
   session$onSessionEnded(function() {
     unlink(paste0("*", SESSION_FILE_SUFFIX, "*"))
-    if (RUN_BO) {
-      plan(sequential)
-    }
   })
 }
 
