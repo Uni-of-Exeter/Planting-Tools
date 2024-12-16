@@ -2860,6 +2860,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           # https://shiny.posit.co/r/articles/improve/nonblocking/index.html
           bayesian_optimization_extendedtask <- ExtendedTask$new(function(...) {
             future_promise(expr = {
+              
+              notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", New process started"), limit_log_level = limit_log_level)
+              
+              if (isTRUE(current_task_id != get_latest_task_id())) {
+                notif(paste("task", current_task_id, "cancelled."), limit_log_level = limit_log_level)
+                return(FALSE)
+              }
+              
               bo_results <- bayesian_optimization(...)
               return(bo_results)
             }, seed = NULL) %...>% {
@@ -2867,7 +2875,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               
               # Check if this result is invalid (i.e. a newer task has started)
               if (isFALSE(bo_results) || isTRUE(current_task_id != get_latest_task_id())) {
-                msg <- paste0("task ", current_task_id, " The previous Bayesian optimization has been cancelled.")
+                msg <- paste0("task ", current_task_id, " The previous Bayesian optimization task was cancelled.")
                 notif(msg)
                 showNotification(msg)
                 return(FALSE)

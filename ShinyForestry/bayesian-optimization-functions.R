@@ -2142,7 +2142,7 @@ get_latest_task_id <- function(limit_log_level = LOG_LEVEL, file_suffix = SESSIO
   
   mylock <- flock::lock(lockfile_name)
   if (isFALSE(file.exists(task_id_filename))) {
-    msg <- "get_latest_task_id() is trying to read the file task_id.txt but it does not exist"
+    msg <- paste("get_latest_task_id() is trying to read the file", task_id_filename, "but it does not exist")
     notif(msg, log_level = "error", limit_log_level = limit_log_level)
     flock::unlock(mylock)
     stop(paste("[ERROR]", msg))
