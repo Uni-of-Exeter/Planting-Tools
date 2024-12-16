@@ -3008,6 +3008,11 @@ bayesian_optimization <- function(
                          tol = tolvec["Carbon"])$Im
   if (implausibility > cantelli_threshold) {
     all_constraints_are_respected <- FALSE
+    notif(paste("Carbon threshold =", threshold))
+    notif(paste("Carbon sum =", vector_sum))
+    notif(paste("Carbon sum sd =", vector_sum_sd))
+    notif(paste("Carbon tolvec =", tolvec["Carbon"]))
+    notif(paste("Carbon implausibility =", implausibility))
   }
   
   # Richness
