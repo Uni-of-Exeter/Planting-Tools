@@ -4244,7 +4244,7 @@ if(!is.null(pref_reactive()$prefs)){
   # On session close, delete temporary files
   session$onSessionEnded(function() {
     if (SESSION_FILE_SUFFIX != "") {
-      session_files <- paste0(base::normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
+      session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
       unlink(session_files)
     }
   })
