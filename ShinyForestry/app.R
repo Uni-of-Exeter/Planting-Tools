@@ -624,7 +624,9 @@ with_progress({
     # Avoid warning message from progressor function
   pb(amount = 0)
 })
-plan(sequential)
+if (isFALSE(RUN_BO)) {
+  plan(sequential)
+}
 
 RREMBO_CONTROL <- list(
   # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
@@ -1173,10 +1175,6 @@ server <- function(input, output, session,
                    LOG_LEVEL_ARG = LOG_LEVEL,
                    SCENARIO_ARG = SCENARIO) {
   set.seed(1)
-  
-  if (RUN_BO) {
-    future::plan(future::multisession, workers = 4)
-  }
   
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Preferences")
