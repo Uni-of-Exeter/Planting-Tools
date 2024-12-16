@@ -2300,7 +2300,7 @@ bayesian_optimization <- function(
                        preference_weights_maximize = preference_weights_maximize,
                        tolvec = tolvec,
                        alpha = alpha)
-  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Generating initial inputs and outputs done"), limit_log_level = limit_log_level)
+  notif(paste0(msg, "done"), limit_log_level = limit_log_level)
   
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
