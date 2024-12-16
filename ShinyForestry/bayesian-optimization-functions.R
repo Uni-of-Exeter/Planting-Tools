@@ -2985,6 +2985,7 @@ bayesian_optimization <- function(
   # End the function ----
   # Return nothing (NULL) if constraints are not respected
   all_constraints_are_respected <- TRUE
+  broken_constraints <- c()
   
   outcome <- get_outcomes_from_strategy(parameter_vector = obj_inputs[which.min(obj_outputs), ],
                                         FullTable_arg = FullTable)
@@ -2995,6 +2996,7 @@ bayesian_optimization <- function(
   threshold <- area_sum_threshold
   if (vector_sum > threshold) {
     all_constraints_are_respected <- FALSE
+    broken_constraints <- c(broken_constraints, "Area")
   }
   
   # Carbon
@@ -3008,6 +3010,7 @@ bayesian_optimization <- function(
                          tol = tolvec["Carbon"])$Im
   if (implausibility > cantelli_threshold) {
     all_constraints_are_respected <- FALSE
+    broken_constraints <- c(broken_constraints, "Carbon")
     notif(paste("Carbon threshold =", threshold))
     notif(paste("Carbon sum =", vector_sum))
     notif(paste("Carbon sum sd =", vector_sum_sd))
@@ -3030,6 +3033,7 @@ bayesian_optimization <- function(
                              tol = tolvec[group])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
+        broken_constraints <- c(broken_constraints, group)
       }
     }
   }
@@ -3049,6 +3053,7 @@ bayesian_optimization <- function(
                              tol = tolvec[specie])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
+        broken_constraints <- c(broken_constraints, specie)
       }
     }
   }
@@ -3064,8 +3069,14 @@ bayesian_optimization <- function(
                          tol = tolvec["Visits"])$Im
   if (implausibility > cantelli_threshold) {
     all_constraints_are_respected <- FALSE
+    broken_constraints <- c(broken_constraints, "Visits")
   }
   
+  if (isTRUE(all_constraints_are_respected)) {
+    notif("All constraints are respected")
+  } else {
+    notif(paste("The constraints on", toString(broken_constraints), "are broken."))
+  }
   
   if (isFALSE(all_constraints_are_respected)) {
     return(NA)
