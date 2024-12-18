@@ -2826,6 +2826,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             tmpYearType$SelectedSimMat2[CONDITION_SEL,][SelecdMinRows[SelecRow],]
           )
           SelectedVector(SelectedMins)
+          notif("Updated SelectedMins and SelectedFullTableRow. If case")
         } else {
           ZeroSelected<-tmpYearType$SelectedSimMat2[1,]
           ZeroSelected<-replace(ZeroSelected,1:(length(SavedVecYearType)),-1)
@@ -2838,6 +2839,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                        TYPE=as.character(ZeroSelected[1, (length(SavedVecYearType)+1):(2*length(SavedVecYearType))])
           )
           SelectedVector(TOSAVE)
+          notif("Updated SelectedMins and SelectedFullTableRow. Else case")
         }
         #cat(proc.time()-tt)
         #cat("\n")
