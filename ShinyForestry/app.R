@@ -571,7 +571,6 @@ Uniqunits <- unique(FullTable$units)
 
 handlers(
   list(
-    handler_shiny(),
     handler_progress(
       format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
     ),
@@ -1176,6 +1175,17 @@ server <- function(input, output, session,
                    LOG_LEVEL_ARG = LOG_LEVEL,
                    SCENARIO_ARG = SCENARIO) {
   set.seed(1)
+  
+  handlers(
+    list(
+      handler_shiny(),
+      handler_progress(
+        format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+      ),
+      handler_txtprogressbar()
+    ),
+    on_missing = "warning"
+  )
   
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Preferences")
