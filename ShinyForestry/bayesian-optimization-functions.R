@@ -981,11 +981,15 @@ get_outcomes_from_strategy <- function(parameter_vector,
   richness <- tmp$total_richness
   names(richness) <- tmp$colname_group
   
+  richness_sd <- sapply(richness, function(x){return(0)})
+  
+  
   # End ----
   
   return(list("sum_carbon" = sum_carbon,
               "sum_carbon_sd" = sum_carbon_sd,
               "sum_richness" = richness,
+              "sum_richness_sd" = richness_sd,
               "sum_biodiversity" = sum_biodiversity,
               "sum_biodiversity_sd" = sum_biodiversity_sd,
               "sum_visits" = sum_visits,
