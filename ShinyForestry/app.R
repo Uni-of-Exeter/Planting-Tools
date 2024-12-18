@@ -2907,18 +2907,56 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 
                 # Otherwise, a feasible solution is found
                 area_sum <- outcome$sum_area
-                parcels_activation <- as.numeric(bo_results$strategy_vector[grep("area", names(bo_results$strategy_vector))])
-                parcels_activation[parcels_activation != 0] <- 1
+                year_planting <- as.numeric(bo_results$strategy_vector[grep("plantingyear", names(bo_results$strategy_vector))])
+                treespecie <- bo_results$strategy_vector[grep("treespecie", names(bo_results$strategy_vector))]
+                indices_no_planting <- which(as.numeric(bo_results$strategy_vector[grep("area", names(bo_results$strategy_vector))]) == 0)
+                treespecie[indices_no_planting] <- "NoPlanting"
                 
-                selectedfulltablerowvalue <- as.data.frame(matrix(c(parcels_activation,
+                # TO FIX: ORDER OF SPECIES/GROUPS IS SET BY THE USER (outcomes.json), ONE DOES NOT ALWAYS COME BEFORE THE OTHER
+                # year_planting (-1:24); treespecie (NoPlanting,Conifers,Deciduous), Carbon, All, Birds, Area, Visits, CarbonSD, AllSD, BirdsSD, VisitsSD
+                selectedfulltablerowvalue <- as.data.frame(matrix(c(year_planting,
+                                                                    treespecie,
                                                                     # CarbonMean, BioMeans, Area, VisitsMean
                                                                     unlist(outcome[c("sum_carbon", "sum_richness", "sum_biodiversity", "sum_area", "sum_visits")]),
                                                                     # CarbonSD, BioSD, VisitsSD
-                                                                    unlist(outcome[c("sum_carbon_sd", "sum_biodiversity_sd", "sum_visits_sd")])),
+                                                                    unlist(outcome[c("sum_carbon_sd", "sum_richness_sd", "sum_biodiversity_sd", "sum_visits_sd")])),
                                                                   nrow = 1))
+                colnames(selectedfulltablerowvalue) <- names(tmpYearType$SelectedSimMat2)
                 
-                colnames(selectedfulltablerowvalue) <- names(SelectedMins[SelecRow, ])
-                selectedvectorvalue <- selectedfulltablerowvalue[, 1:length(parcels_activation)]
+                # Carbon, All, Birds, Area, Visits, CarbonSD, AllSD, BirdsSD, VisitsSD
+                richness_data_frame <- do.call("data.frame",
+                                               setNames(lapply(SPECIES, function(x) bquote(outcome$sum_richness[.(x)])),
+                                                        SPECIES))
+                biodiversity_data_frame <- do.call("data.frame",
+                                                   setNames(lapply(SPECIES, function(x) bquote(outcome$sum_biodiversity[.(x)])),
+                                                            SPECIES))
+                richness_sd_data_frame <- do.call("data.frame",
+                                                  setNames(lapply(SPECIES, function(x) bquote(outcome$sum_richness_sd[.(x)])),
+                                                           paste0(SPECIES, "SD")))
+                biodiversity_sd_data_frame <- do.call("data.frame",
+                                                      setNames(lapply(SPECIES, function(x) bquote(outcome$sum_biodiversity_sd[.(x)])),
+                                                               paste0(SPECIES, "SD")))
+                selectedvectorvalue_output <- data.frame("Carbon" = outcome$sum_carbon)
+                if (nrow(richness_data_frame) != 0) {
+                  selectedvectorvalue_output <- cbind(selectedvectorvalue_output, richness_data_frame)
+                }
+                if (nrow(biodiversity_data_frame) != 0) {
+                  selectedvectorvalue_output <- cbind(selectedvectorvalue_output, biodiversity_data_frame)
+                }
+                selectedvectorvalue_output <- cbind(selectedvectorvalue_output, data.frame("Area" = outcome$sum_area,
+                                                                                           "Visits" = outcome$sum_visits,
+                                                                                           "CarbonSD" = outcome$sum_carbon))
+                if (nrow(richness_sd_data_frame) != 0) {
+                  selectedvectorvalue_output <- cbind(selectedvectorvalue_output, richness_sd_data_frame)
+                }
+                if (nrow(biodiversity_sd_data_frame) != 0) {
+                  selectedvectorvalue_output <- cbind(selectedvectorvalue_output, biodiversity_sd_data_frame)
+                }
+                selectedvectorvalue_output <- cbind(selectedvectorvalue_output, data.frame("VisitsSD" = outcome$sum_visits_sd))
+                
+                selectedvectorvalue <- list(YEAR = as.data.frame(matrix(year_planting, nrow = 1)),
+                                            TYPE = as.data.frame(matrix(treespecie, nrow = 1)),
+                                            OUTPUTS = as.data.frame(matrix(selectedvectorvalue_output, nrow = 1)))
                 
                 # SelectedFullTableRow(SelectedMins[SelecRow, ])
                 # SelectedVector(SelectedMins[SelecRow, 1:length(SavedVec)])
