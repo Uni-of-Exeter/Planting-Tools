@@ -9,7 +9,7 @@
 8. Wait a few seconds / a minute for the new window to popup
 
 # Instructions for contributors
-- Code is meant to be readable by humans, not only computers, so comment your code and use meaningful variable names. Unreadable code requires a lot of time and effort to fix and modify.
+- Code is meant to be readable by humans, not only computers, so comment your code and use meaningful variable names. Unreadable code will require a lot of time and effort to fix and modify.
 - Once you are happy with your branch and want to share your changes with everybody, make a Pull Request to the `dev` branch. Daniel (or Timothée for now) will process it.
 - Once in a while, when `dev` is stable enough, `master` will be updated.
 - When working, you need to pull changes from `dev` fairly often (especially before pushing to `dev`), because you may have conflicts when you try to push to `dev` if e.g. someone else worked on the same file as you did. Dealing with file conflicts takes time.
