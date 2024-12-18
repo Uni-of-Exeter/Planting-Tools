@@ -733,8 +733,12 @@ if (isFALSE(exists("outcomes"))) {
     # If it is a group
     if (ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All")) {
       SPECIES[i] <- get_ugly_group(ugly_english_specie, NAME_CONVERSION)
-    } else {
-      # If it is a specie
+    }
+  }
+  for (i in 1:length(SPECIES_ENGLISH)) {
+    ugly_english_specie <- get_ugly_english_specie(SPECIES_ENGLISH[i], NAME_CONVERSION)
+    # If it is a specie
+    if (isFALSE(ugly_english_specie %in% c(unique(NAME_CONVERSION$Group), unique(NAME_CONVERSION$Group_pretty), "All"))) {
       SPECIES[i] <- get_specie_from_english_specie(ugly_english_specie, NAME_CONVERSION)
     }
   }
