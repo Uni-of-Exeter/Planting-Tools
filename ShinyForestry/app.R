@@ -2914,7 +2914,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 indices_no_planting <- which(as.numeric(bo_results$strategy_vector[grep("area", names(bo_results$strategy_vector))]) == 0)
                 treespecie[indices_no_planting] <- "NoPlanting"
                 
-                # TO FIX: ORDER OF SPECIES/GROUPS IS SET BY THE USER (outcomes.json), ONE DOES NOT ALWAYS COME BEFORE THE OTHER
+                # ORDER OF SPECIES/GROUPS IS SET BY THE USER (outcomes.json), GROUPS ALWAYS COME BEFORE THE SPECIES
                 # year_planting (-1:24); treespecie (NoPlanting,Conifers,Deciduous), Carbon, All, Birds, Area, Visits, CarbonSD, AllSD, BirdsSD, VisitsSD
                 selectedfulltablerowvalue <- as.data.frame(matrix(c(year_planting,
                                                                     treespecie,
@@ -2970,7 +2970,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 notif(paste(current_task_id, "sum_carbon=", outcome$sum_carbon))
                 
               }
-              bayesian_optimization_finished(TRUE)
               return(TRUE)
             } %...!% {
               error <- .
@@ -2982,9 +2981,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               
               showNotification(paste("[ERROR]", msg))
               notif(msg, log_level = "error", limit_log_level = LOG_LEVEL)
-              bayesian_optimization_finished(TRUE)
               return(FALSE)
-            }
+            } %>% 
+              finally(function() {
+                bayesian_optimization_finished(TRUE)
+                return(.)
+              })
           })
           
           # # shiny::withProgress(
@@ -3057,6 +3059,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     #cat("ended updating values based on sliders\n")
       }, ignoreInit = TRUE)
+  observe({
+    status <- bayesian_optimization_finished()
+    notif(paste("bayesian_optimization_finished() update:", status))
+    shinyjs::addClass(id = "task_status", class = if (isTRUE(status)) "finished" else "running")
+    shinyjs::removeClass(id = "task_status", class = if (isTRUE(status)) "running" else "finished")
+  })
   
   
   observeEvent(input$tabs == "Preferences", {
