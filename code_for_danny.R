@@ -217,32 +217,34 @@ DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_str
                                                                                                      FullTable_arg = FullTable,
                                                                                                      MAXYEAR_arg = MAXYEAR,
                                                                                                      SPECIES_arg = SPECIES,
-                                                                                                     # typically input$AreaSlider
-                                                                                                     area_sum_threshold_numeric = area_sum_threshold,
                                                                                                      # typically ClickedVector()
                                                                                                      year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
 # ALREADY DONE IN THE APP (end)
 
 # Look at a single strategy (pick any, 1 is for the example)
-parameter_vector <- DoE_high_dimension_categorical[1, ]
+parameter_vector <- inputs <- DoE_high_dimension_categorical[1, ]
 
 
 # tictoc::tic()
-# a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ])
+# a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ],
+#                                 FullTable_arg = FullTable)
 # tictoc::toc()
 # 
 # tictoc::tic()
 # a <- apply(DoE_high_dimension_categorical[1:10, ],
 #            1,
-#            get_outcomes_from_strategy)
+#            get_outcomes_from_strategy,
+#            FullTable_arg = FullTable),
 # tictoc::toc()
 # 
-# microbenchmark::microbenchmark(a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ]),
+# microbenchmark::microbenchmark(a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ],
+#                                                                FullTable_arg = FullTable),
 #                                times = 10)
 # 
 # microbenchmark::microbenchmark(a <- apply(DoE_high_dimension_categorical[1:10, ],
 #                                           1,
-#                                           get_outcomes_from_strategy),
+#                                           get_outcomes_from_strategy,
+#                                           FullTable_arg = FullTable),
 #                                times = 5)
 
 
@@ -288,11 +290,10 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
   # strategy <- cbind(strategy_area, strategy_year, strategy_treespecie)
 
   strategy <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = strategy_cont,
-                                                                                 RREMBO_HYPER_PARAMETERS = RREMBO_HYPER_PARAMETERS,
+                                                                                 RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                                  FullTable_arg = FullTable,
                                                                                  MAXYEAR_arg = MAXYEAR,
                                                                                  SPECIES_arg = SPECIES,
-                                                                                 area_sum_threshold_numeric = area_sum_threshold,
                                                                                  year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
 
   #Assumption that year_of_planting_min_threshold_vector has meaning of 0 = no restriction, 1 = cant plant in year 0 can in year 1, 2 = cant plant in years 0 or 1, can in 2 etc
@@ -303,7 +304,8 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
     diff <- year_of_planting_min_threshold_vector[bad_years]-strategy_year[bad_years]
     return(sum(diff))
   }
-  outcomes <- get_outcomes_from_strategy(parameter_vector=strategy[1,])
+  outcomes <- get_outcomes_from_strategy(parameter_vector=strategy[1,],
+                                         FullTable_arg = FullTable)
   if(outcomes$sum_area > area_sum_threshold){
     return((outcomes$sum_area-area_sum_threshold)/0.001)
   }
