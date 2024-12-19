@@ -891,6 +891,12 @@ for (ext in AllExtents)
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
 
 ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)),
+                tags$style(".running .status-icon { animation: spin 1s linear infinite; }
+               .running { background-color: blue; display: inline-block; padding: 10px; border-radius: 50%; }
+               .finished { background-color: green; display: inline-block; padding: 10px; border-radius: 50%; }
+               .status-icon { display: inline-block; }
+               @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }"),
+                div(id = "task_status", class = "finished", "🔄"), # Status indicator for the task
                 tabsetPanel(id = "tabs",
                                           tabPanel("Maps", fluidPage(
                                             tags$head(
