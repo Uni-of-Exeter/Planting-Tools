@@ -689,6 +689,10 @@ notif(msg)
 Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 
+# flush temporary variables simul636 and simul636Year out of RAM.
+simul636<-NULL
+simul636Year<-NULL
+gc()
 
 
 
@@ -916,10 +920,6 @@ for (ext in AllExtents)
   
 }
 
-# flush temporary variables simul636 and simul636Year out of RAM.
-simul636<-NULL
-simul636Year<-NULL
-gc()
 
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
