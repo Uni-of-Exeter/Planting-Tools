@@ -855,11 +855,11 @@ for (ext in AllExtents)
   CarbonSelectedSDYear85$geometry<-NULL
   
   
-  PrecalcCarbonAllExtents[[ext]]<-matrix(0,dim(simul636)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-  PrecalcCarbonAllExtentsSD[[ext]]<-matrix(0,dim(simul636)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+  PrecalcCarbonAllExtents[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+  PrecalcCarbonAllExtentsSD[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
 
-  PrecalcCarbonAllExtentsType[[ext]]<-matrix(0,dim(simul636)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-  PrecalcCarbonAllExtentsSDType[[ext]]<-matrix(0,dim(simul636)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+  PrecalcCarbonAllExtentsType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+  PrecalcCarbonAllExtentsSDType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
   
   PrecalcCarbonAllExtentsType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
   PrecalcCarbonAllExtentsSDType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
@@ -877,8 +877,8 @@ for (ext in AllExtents)
     for(bcc in 1:dim(PrecalcCarbonAllExtents[[ext]])[2])
     {
       
-      PrecalcCarbonAllExtents[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636Year[abb,bcc])]
-      PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636Year[abb,bcc])]
+      PrecalcCarbonAllExtents[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+      PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
 
       
       if(simul636YearType[["TYPE"]][abb,bcc]=="NoPlanting"){
@@ -915,6 +915,11 @@ for (ext in AllExtents)
   save(PrecalcCarbonAllExtentsSDType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
   
 }
+
+# flush temporary variables simul636 and simul636Year out of RAM.
+simul636<-NULL
+simul636Year<-NULL
+gc()
 
 
 JulesMean <- 0;JulesSD <- 0;SquaresLoad <- 0;Sqconv <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0;
@@ -3695,8 +3700,8 @@ if(!is.null(pref_reactive()$prefs)){
           if(SavedVecYearPriorToChange[iii]!=SavedVecYear[iii]){
             if(SavedVecYear[iii]==(MAXYEAR+1)){SAMPLELIST[iii]<-list(NULL)}else{
               if(SavedVecYear[iii]==MAXYEAR){
-                SAMPLELIST[[iii]]<-rep(29,dim(simul636Year)[1])}else{
-                  SAMPLELIST[[ iii]]<- sample((SavedVecYear[ iii]+1):(MAXYEAR+1),dim(simul636Year)[1], replace=T)
+                SAMPLELIST[[iii]]<-rep(29,dim(simul636YearType$YEAR)[1])}else{
+                  SAMPLELIST[[ iii]]<- sample((SavedVecYear[ iii]+1):(MAXYEAR+1),dim(simul636YearType$YEAR)[1], replace=T)
                   
                 }
             }
