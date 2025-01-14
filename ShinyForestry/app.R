@@ -144,6 +144,7 @@ CalculatedFilesFolder<-normalizePath(file.path(FolderSource, "CalculatedFiles"))
 
 if(Sys.getenv("USERNAME")=="bn267"){
 DataFilesFolder <- "d:\\JulesOP\\"
+ElicitorAppFolder<-"d:\\ElicitatorOutput\\"
 PROJdir<-system.file("proj/proj.db", package = "sf")
 PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
 sf_proj_search_paths(PROJdir)
@@ -802,15 +803,23 @@ PrecalcCarbonAllExtentsSD<-list()
 PrecalcCarbonAllExtentsType<-list()
 PrecalcCarbonAllExtentsSDType<-list()
 
+PrecalcCarbonAllExtentsType2Lines<-list()
+PrecalcCarbonAllExtentsSDType2Lines<-list()
+
+
 if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))&
    file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))&
    file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))&
-   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))&
+   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))&
+   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
 ){
 load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
 load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
 load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
 load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
+load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
 }else{
   if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))){
     file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
@@ -824,6 +833,13 @@ load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDTy
   if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))){
     file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
   }
+  if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))){
+    file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
+  }
+  if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))){
+    file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
+  }
+  
   
 
 for (ext in AllExtents)
@@ -844,6 +860,17 @@ for (ext in AllExtents)
 
   PrecalcCarbonAllExtentsType[[ext]]<-matrix(0,dim(simul636)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
   PrecalcCarbonAllExtentsSDType[[ext]]<-matrix(0,dim(simul636)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+  
+  PrecalcCarbonAllExtentsType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
+  PrecalcCarbonAllExtentsSDType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
+  
+  # This precalculated table is used once when the map if first displayed. We use 2 identical lines to avoid issues with the
+  # function call that expects a matrix in input.
+  
+  PrecalcCarbonAllExtentsType2Lines[[ext]][1,]<-CarbonSelectedYear85[,"Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
+  PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]<-CarbonSelectedSDYear85[,"Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
+  PrecalcCarbonAllExtentsType2Lines[[ext]][2,]<-PrecalcCarbonAllExtentsType2Lines[[ext]][1,]
+  PrecalcCarbonAllExtentsSDType2Lines[[ext]][2,]<- PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]
   
   for(abb in 1:dim(PrecalcCarbonAllExtents[[ext]])[1])
   {
@@ -884,6 +911,8 @@ for (ext in AllExtents)
   save(PrecalcCarbonAllExtentsSD,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
   save(PrecalcCarbonAllExtentsType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
   save(PrecalcCarbonAllExtentsSDType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+  save(PrecalcCarbonAllExtentsType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
+  save(PrecalcCarbonAllExtentsSDType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
   
 }
 
@@ -1057,39 +1086,7 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                             )
                                           
                 ),
-                                            
 
-#verticalLayout(
-#  fluidPage(fluidRow(verticalLayout(sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
- #                                   if (SHOW_TITLES_ON_CLUSTERING_PAGE) {
-#                                      column(10,verbatimTextOutput("ZeroText"),column(2,))}
-#  ))),
-#  fluidPage(fluidRow(                                  
-                                            
-      #                                        column(5,
-     #                                                verticalLayout(
-       #                                                if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FirstMapTxt")}, jqui_resizable(leafletOutput("map2", height = 400, width = "100%")))
-      #                                        ),
-        #                                      column(5,
-         #                                            verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("SecondMapTxt")}, jqui_resizable(leafletOutput("map3", height = 400, width = "100%")))
-       #                                       ),
-        #                                      column(2, verticalLayout(verbatimTextOutput("TargetText"),
-         #                                                              #  selectInput("chooseGrouping", "Grouping Type:", c("Carbon level"), "Carbon level"),
-          #                                                             actionButton("random", "Randomize!"))
-           #                                   )
-              #                              ),
-              #                              fluidRow(
-               #                               column(5,
-                #                                     verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("ThirdMapTxt")}, jqui_resizable(leafletOutput("map4", height = 400, width = "100%")))
-                 #                             ),
-                  #                            column(5,
-                   #                                  verticalLayout(if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FourthMapTxt")}, jqui_resizable(leafletOutput("map5", height = 400, width = "100%")))
-                    #                          ),
-                     #                         column(2, "")
-                      #                      )
-                #                            )
-                                     #     )
-                                    #    ),
                                           if (ANALYSISMODE){tabPanel("Clustering analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
                                           tabPanel("Exploration",
                                                 fluidPage(
@@ -1639,8 +1636,7 @@ the 'Choose' button below that option:"})
       CarbonSelectedYear85<-FullTable[FullTable$extent == SelectedDropdown,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
       CarbonSelectedYear85$geometry<-NULL
       
-      
-      
+
       # RedSquirrelSelected <- FullTable$BioMean_Sciurus_vulgaris[FullTable$extent == SelectedDropdown]
       SpeciesListSelected <- list()
       for (x in SPECIES) {
@@ -1778,23 +1774,23 @@ the 'Choose' button below that option:"})
       updateSliderInput(session, "AreaSlider", min=MaxVals$AreaMin,max = max_areaslider, value = MaxVals$AreaMax, step = 0.5)
       updateSliderInput(session, "VisitsSlider", max = max_visitsslider, value = max_visitsslider)
       # We now need to obtain the list of strategies from simul636 that meet the targets with the right confidence.
-      tmp <- outputmap_calculateMats(input = input,
-                                     SavedVecLoc = ClickedVector(),
-                                     simul636Loc = simul636,
-                                     AreaSelected = AreaSelected,
-                                     CarbonSelected = CarbonSelected,
-                                     # RedSquirrelSelected = RedSquirrelSelected,
-                                     SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                     VisitsSelected = VisitsSelected,
-                                     CarbonSelectedSD = CarbonSelectedSD,
-                                     # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                     SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                     VisitsSelectedSD = VisitsSelectedSD,
-                                     alphaLVL=alphaLVL,
-                                     ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider),
-                                     tolvec=tolvecReactive(),
-                                     MAXYEAR=MAXYEAR)
-      
+     # tmp <- outputmap_calculateMats(input = input,
+    #                                 SavedVecLoc = ClickedVector(),
+    #                                 simul636Loc = simul636,
+    #                                 AreaSelected = AreaSelected,
+    #                                 CarbonSelected = CarbonSelected,
+    #                                 # RedSquirrelSelected = RedSquirrelSelected,
+    #                                 SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+    #                                 VisitsSelected = VisitsSelected,
+    #                                 CarbonSelectedSD = CarbonSelectedSD,
+    #                                 # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+    #                                 SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+    #                                 VisitsSelectedSD = VisitsSelectedSD,
+    #                                 alphaLVL=alphaLVL,
+    #                                 ManualTargets=list(MaxVals$CarbonMax,MaxVals$bioMaxList,max_areaslider,max_visitsslider),
+    #                                 tolvec=tolvecReactive(),
+    #                                 MAXYEAR=MAXYEAR)
+    #  
       ########## same function with Year
   #    tmpYear <- outputmap_calculateMatsYear(input = input,
   #                                           SavedVecLoc = ClickedVector(),
@@ -1847,7 +1843,6 @@ the 'Choose' button below that option:"})
                                              SAMPLELIST=Simul636YearTypeOverrideReactive(),
                                              MAXYEAR=MAXYEAR
       )
-      
     
       ######## With Year
       SelectedSimMat2<-list()
@@ -1861,16 +1856,16 @@ the 'Choose' button below that option:"})
       SelecTargetArea <- max_areaslider
       SelecTargetVisits <- max_visitsslider
       PROBAMAT<-CalcProbaMat(Icalc$IVEC,LimitsMat,Above=AboveTargets)
-      
-      condition <- TRUE
-      for (iii in 1:length(SPECIES)) {
-        x<-SPECIES[iii]
-        var_name <- paste0("SelecTargetBio", x)
-        value <- tmp[[var_name]]
-        assign(var_name, value)
+    
+      #  condition <- TRUE
+      #for (iii in 1:length(SPECIES)) {
+      #  x<-SPECIES[iii]
+      #  var_name <- paste0("SelecTargetBio", x)
+      #  value <- tmpYearType[[var_name]]
+      #  assign(var_name, value)
         
-        condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
-      }
+      #  condition <- condition & (PROBAMAT[,iii+1] >= alphaLVL)
+      #}
       # Carbon
      # CONDITION_SEL<-(PROBAMAT[,1] >= alphaLVL) &
       #  condition &
@@ -2044,31 +2039,8 @@ the 'Choose' button below that option:"})
           }
           
           SFTR<-SelectedFullTableRow()
- #         addControlText <- ""
-#          for (i in 1:length(SPECIES)) {
-#            specie_latin <- SPECIES[i]
-#             if (specie_latin == "All") 
-#             {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>All Species Richness</span>")}else 
-#                  {specie_english <-paste0("<span style='display: inline-block; width: 140px;'>",SPECIES_ENGLISH[i],"</span>")}
-#            selectedBiospecie <- SFTR[[specie_latin]]
-#            selectedBioSDspecie <- SFTR[[paste0( specie_latin,"SD")]]
-#            if(!is.null(selectedBiospecie)){
-#              addControlText <- paste0(addControlText, specie_english, ": ", 
-#                                       round(selectedBiospecie, 2), "\u00B1",sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")}
-#          }
-#
-#          mapp<-
-#            addControl(mapp,html = paste0("<p>
-#                                          <span style='display: inline-block; width: 140px;'>
-#Carbon</span>: ", round(SFTR$Carbon,2)#round(sum(CarbonMeanCalc), 2)
-#                                          , "\u00B1",sprintf("%.2f",2*SFTR$CarbonSD)#round(2*sqrt(sum(CarbonVarCalc)), 2)
-#                                          , "<br>",
-#                                          # "Red Squirrel: ", round(SelectedBio, 2), "\u00B1", round(2*SelectedBioSD, 2), "<br>",
-#                                          addControlText,
-#                                          "<span style='display: inline-block; width: 140px;'>Area Planted</span>: ", round(SFTR$Area, 2), "<br>",
-#                                          "<span style='display: inline-block; width: 140px;'>Visitors</span>: ", round(SFTR$Visits, 2), "\u00B1",sprintf("%.2f",2*SFTR$VisitsSD),
-#                                          "</p>"), position = "topright",layerId="legend")
-      # browser()   
+
+  
           mapp<-
             addControl(mapp,html =   FormattedControl(SFTR$Carbon,SFTR$CarbonSD,
                            SPECIES,
@@ -2355,22 +2327,6 @@ the 'Choose' button below that option:"})
           SFTR$YEAR<-SelectedRows$YEAR[ii,]
           SFTR$TYPE<-SelectedRows$TYPE[ii,]
           SFTR$OUTPUTS<-SelectedRows$OUTPUTS[ii,]
-          #addControlText <- ""
-          #for (i in 1:length(SPECIES)) {
-          #  specie_latin <- SPECIES[i]
-          #  specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-          #  selectedBiospecie <- SFTR$OUTPUTS[[specie_latin]]
-          #  selectedBioSDspecie <- SFTR$OUTPUTS[[paste0( specie_latin,"SD")]]
-          #  addControlText <- paste0(addControlText, specie_english, ": ", 
-          #                           round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
-          #}
-          
-          #mapp<-
-          #  addControl(mapp,html = paste0("<p>Carbon: ", round(SFTR$OUTPUTS$Carbon, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$CarbonSD), "<br>",
-          #                                addControlText,
-          #                                "Area Planted: ", round(SFTR$OUTPUTS$Area, 2), "<br>",
-          #                                "Visitors: ", round(SFTR$OUTPUTS$Visits, 2), "\u00B1", sprintf("%.2f",2*SFTR$OUTPUTS$VisitsSD),
-          #                                "</p>"), position = "topright",layerId="legend")
           mapp<-
             addControl(mapp,html =   FormattedControl(SFTR$OUTPUTS$Carbon,SFTR$OUTPUTS$CarbonSD,
                                                       SPECIES,
@@ -2491,6 +2447,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   #DONE
   # Check if the slider values have been updated after the initialization
   observeEvent(input$SliderMain,{
+   # browser()
     SHBICurrent<-SlidersHaveBeenInitialized()
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
       for (sl in SliderNames){
@@ -3901,7 +3858,8 @@ if(!is.null(pref_reactive()$prefs)){
         AreaSelected <- AreaSelected0()
         CarbonSelected <- CarbonSelected0()
         CarbonSelectedYear<-CarbonSelectedYear0()
-        
+        CarbonSelectedYear85<-CarbonSelectedYear850()
+
         # RedSquirrelSelected <- RedSquirrelSelected0()
         SpeciesListSelected <- list()
         for (x in SPECIES) {
@@ -3912,6 +3870,7 @@ if(!is.null(pref_reactive()$prefs)){
         
         CarbonSelectedSD <- CarbonSelectedSD0()
         CarbonSelectedSDYear <- CarbonSelectedSDYear0()
+        CarbonSelectedSDYear85<-CarbonSelectedSDYear850()
         
         # RedSquirrelSelectedSD <- RedSquirrelSelectedSD0()
         SpeciesListSelectedSD <- list()
@@ -3924,23 +3883,66 @@ if(!is.null(pref_reactive()$prefs)){
         
         
         TwoRows<-matrix(1,nrow=2,ncol=dim(FullTable)[1])
-        tmp <- outputmap_calculateMats(input = input,
-                                       SavedVecLoc = TwoRows[1,],
-                                       simul636Loc = TwoRows,
-                                       AreaSelected = AreaSelected,
-                                       CarbonSelected = CarbonSelected,
-                                       # RedSquirrelSelected = RedSquirrelSelected,
-                                       SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                       VisitsSelected = VisitsSelected,
-                                       CarbonSelectedSD = CarbonSelectedSD,
-                                       # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
-                                       SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                       VisitsSelectedSD = VisitsSelectedSD,
-                                       alphaLVL = 0,tolvec=tolvecReactive()) # At the beginning we want to switch on all the sliders
+        TwoRowsYearType<-list()
+        TwoRowsYearType[["YEAR"]]<-matrix(0,2,dim(simul636YearType$YEAR)[2])
+        TwoRowsYearType[["TYPE"]]<-matrix("Deciduous",2,dim(simul636YearType$YEAR)[2])
+      #  tmp <- outputmap_calculateMats(input = input,
+      #                                 SavedVecLoc = TwoRows[1,],
+      #                                 simul636Loc = TwoRows,
+      #                                 AreaSelected = AreaSelected,
+      #                                 CarbonSelected = CarbonSelected,
+      #                                 # RedSquirrelSelected = RedSquirrelSelected,
+      #                                 SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+      #                                 VisitsSelected = VisitsSelected,
+      #                                 CarbonSelectedSD = CarbonSelectedSD,
+      #                                 # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+      #                                 SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+      #                                 VisitsSelectedSD = VisitsSelectedSD,
+      #                                 alphaLVL = 0,tolvec=tolvecReactive()) # At the beginning we want to switch on all the sliders
+       # browser()
         
+        tmpYearType <- outputmap_calculateMatsYearType(input = input,
+                                                       SavedVecLoc = TwoRows[1,],
+                                                       simul636YearTypeLoc = TwoRowsYearType,
+                                                       AreaSelected = AreaSelected,
+                                                       CarbonSelected = CarbonSelected,
+                                                       CarbonSelectedYear =CarbonSelectedYear,
+                                                       CarbonSelectedYear85 =CarbonSelectedYear85,
+                                                       # RedSquirrelSelected = RedSquirrelSelected,
+                                                       SpeciesListSelected = SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                                       VisitsSelected = VisitsSelected,
+                                                       CarbonSelectedSD = CarbonSelectedSD,
+                                                       CarbonSelectedSDYear = CarbonSelectedSDYear,
+                                                       CarbonSelectedSDYear85 = CarbonSelectedSDYear85,
+                                                       # RedSquirrelSelectedSD = RedSquirrelSelectedSD,
+                                                       SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                                       VisitsSelectedSD = VisitsSelectedSD,
+                                                       alphaLVL=alphaLVL,
+                                                       tolvec=tolvecReactive(),
+                                                       #YearSelect=input$YearSelect,
+                                                       PrecalculatedCarbonSelectedTableTypeMean=PrecalcCarbonAllExtentsType2Lines[[SelectedDropdown]],
+                                                       PrecalculatedCarbonSelectedTableTypeSD=PrecalcCarbonAllExtentsSDType2Lines[[SelectedDropdown]],
+                                                       SavedVecYearTypeLoc=ClickedVectorYearType(),
+                                                       # PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
+                                                       SAMPLELIST=Simul636YearTypeOverrideReactive(),
+                                                       MAXYEAR=MAXYEAR
+        )
+        
+        #################
+        
+ #   browser()        
         SelecRow<-1
-        SelectedMins <- tmp$SelectedSimMat2
-        SwitchedOnCells <- SelectedMins[SelecRow, 1:length(SavedVec)]
+#        SelectedMins <- tmp$SelectedSimMat2
+        SelectedMins <- tmpYearType$SelectedSimMat2
+        #SwitchedOnCells <- SelectedMins[SelecRow, 1:length(SavedVec)]
+        SwitchedOnCells <-rep(1,length(TwoRows[1,]))
+        #ToRemove<-which(names(tmpYearType$SelectedSimMat2)%in%
+        #                  c(paste0("SelectedSimMat.YEAR.",1:length(TwoRows[1,])),
+        #                           paste0("SelectedSimMat.TYPE.",1:length(TwoRows[1,])
+        #                                  )
+        #                  ))
+        #SwitchedOnCells<-data.frame(rep(1,length(TwoRows[1,])),SwitchedOnCells[,-ToRemove])      
+                        
         
         SELL <- (FullTable$extent == SelectedDropdown)
         if (!is.null(SELL)) {
