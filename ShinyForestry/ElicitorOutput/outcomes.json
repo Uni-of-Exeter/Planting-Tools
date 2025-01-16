@@ -1,38 +1,20 @@
 {
     "1": {
         "target": "No",
-        "category": "Carbon",
-        "scale": "National",
-        "sub-category": "Permanent Equivalent",
-        "metric": "Tonnes of CO2",
-        "time-period": "Set year",
-        "year": "2050"
-    },
-    "2": {
-        "target": "No",
-        "category": "Recreation",
-        "scale": "National",
-        "sub-category": "Visits",
-        "metric": "People per year",
-        "time-period": "Set year",
-        "year": "2050"
-    },
-    "3": {
-        "target": "No",
         "category": "Biodiversity",
         "scale": "National",
         "sub-category": "All",
         "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2050"
+        "year": "2027"
     },
-    "4": {
+    "2": {
         "target": "No",
         "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "Pollinators",
+        "sub-category": "Birds",
         "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2050"
+        "year": "2024"
     }
 }
