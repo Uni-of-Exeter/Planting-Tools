@@ -2565,52 +2565,118 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   }
   
   # Calculate the proportion of areas (intersection / bio)
-  FullTable <- intersection %>%
-    
-    # Calculate the areas
-    dplyr::mutate(area_bio = st_area(geometry_bio),
-                  area_jules = st_area(geometry_jules),
-                  area_intersection = st_area(geometry)) %>%
-    
-    # Calculate the ratio of areas
-    dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
-                  proportion_intersection_in_jules = area_intersection / area_jules) %>%
-    
-    # Assume uniformity, multiply probability and standard deviations by proportion
-    dplyr::mutate(dplyr::across(starts_with("Bio"),
-                                ~ .x * proportion_intersection_in_bio)) %>%
-    
-    # Reduce to 100(%) if value is above
-    # 100 and the columns need to be in the same unit
-    dplyr::mutate(dplyr::across(starts_with("Bio"),
-                                ~ pmin(.x, units::as_units(100, units(.x))))) %>%
-    
-    as_tibble() %>%
-    
-    # Group by polygon_id_jules
-    group_by(polygon_id_jules) %>%
-    summarise(
-      # For each polygon from Jules, sum over (pre-weighted) probabilities from areas that
-      # intersect and divide by the sum of proportions, to get a weighted average
-      across(starts_with("Bio_Mean"),
-             ~ sum(.x) / sum(proportion_intersection_in_bio)),
+  msg <- "Calculate the biodiversity values in shapefile cells, weighted by area ..."
+  notif(msg, limit_log_level = limit_log_level)
+  
+  # We use progression bars inside and outside of functions, and this causes problems, local({}) solves them
+  # https://github.com/futureverse/progressr/issues/105
+  with_progress({
+    FullTable <- local({
+      # 6 steps +
+      # nb_of_groups length(unique(intersection$polygon_id_jules)) * nb_BioMean_columns length(intersection %>% dplyr::select(starts_with("Bio_Mean"))) +
+      # 5 because of the new columns from mutate()
+      # pb <- progressor(steps = 6 + length(unique(intersection$polygon_id_jules)) * length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean"))) + 5, message = msg)
+      nb_groups <- length(unique(intersection$polygon_id_jules))
+      pb <- progressor(steps = 6 + nb_groups + 5, message = msg)
+      FullTable <- intersection %>%
+        
+        # Calculate the areas
+        {
+          msg <- "Calculate the areas"
+          pb(message = msg)
+          notif(paste("1/7", msg), limit_log_level = limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(area_bio = st_area(geometry_bio),
+                      area_jules = st_area(geometry_jules),
+                      area_intersection = st_area(geometry)) %>%
+        
+        # Calculate the ratio of areas
+        {
+          msg <- "Calculate the ratio of areas"
+          pb(message = msg)
+          notif(paste("2/7", msg), limit_log_level = limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
+                      proportion_intersection_in_jules = area_intersection / area_jules) %>%
+        
+        # Assume uniformity, multiply probability and standard deviations by proportion
+        {
+          msg <- "Assume uniformity, multiply probability and standard deviations by proportion"
+          pb(message = msg)
+          notif(paste("3/7", msg), limit_log_level = limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(dplyr::across(starts_with("Bio"),
+                                    ~ .x * proportion_intersection_in_bio)) %>%
+        
+        {
+          msg <- "Reduce to 100(%) if value is above"
+          pb(message = msg)
+          notif(paste("4/7", msg), limit_log_level = limit_log_level)
+          invisible(.)
+        } %>%
+        # Reduce to 100(%) if value is above
+        # 100 and the columns need to be in the same unit
+        dplyr::mutate(dplyr::across(starts_with("Bio"),
+                                    ~ pmin(.x, units::as_units(100, units(.x))))) %>%
+        
+        # Group by polygon_id_jules and average over parcels
+        {
+          msg <- "Average biodiversities across (carbon, new) parcels"
+          pb(message = msg)
+          notif(paste("5/7", msg), limit_log_level = limit_log_level)
+          invisible(.)
+        } %>%
+        as_tibble() %>%
+        group_by(polygon_id_jules) %>%
+        summarise(
+          # For each polygon from Jules, sum over (pre-weighted) probabilities from areas that
+          # intersect and divide by the sum of proportions, to get a weighted average
+          across(starts_with("Bio_Mean"),
+                 # ~ sum(.x) / sum(proportion_intersection_in_bio)),
+                 function(.x) {
+                   # # Only increase the progress bar every many iterations to avoid spending too much time printing things
+                   if (dplyr::cur_group_id() == 1) {pb(message = msg)}
+                   sum(.x) / sum(proportion_intersection_in_bio)
+                 }),
+          
+          geometry_union = st_union(geometry),
+          geometry_jules = st_union(geometry_jules),
+          
+          polygon_id_jules = mean(polygon_id_jules)
+        ) %>% 
+        
+        {
+          msg <- "Compute area differences"
+          pb(message = msg)
+          notif(paste("6/7", msg), limit_log_level = limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
+        
+        # Remove useless columns
+        as_tibble() %>%
+        dplyr::select(c(starts_with("Bio"), polygon_id_jules, area_diff)) %>%
+        
+        # Merge back to original table
+        {
+          msg <- "Merge back to original table"
+          pb(message = msg)
+          notif(paste("7/7", msg), limit_log_level = limit_log_level)
+          invisible(.)
+        } %>%
+        left_join(polygons_jules, by = "polygon_id_jules") %>%
+        
+        dplyr::select(-c(polygon_id_jules, starts_with("geometry_")))
       
-      geometry_union = st_union(geometry),
-      geometry_jules = st_union(geometry_jules),
-      
-      polygon_id_jules = mean(polygon_id_jules)
-    ) %>%
-    
-    dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
-    
-    # Remove useless columns
-    as_tibble() %>%
-    dplyr::select(c(starts_with("Bio"), polygon_id_jules, area_diff)) %>%
-    
-    # Merge back to original table
-    left_join(polygons_jules, by = "polygon_id_jules") %>%
-    
-    dplyr::select(-c(polygon_id_jules, starts_with("geometry_")))
+      pb(amount = 0)
+      return(FullTable)
+    })
+  })
+  
+  notif(paste(msg, "done"), limit_log_level = limit_log_level)
   
   # Re-order
   FullTable <- bind_cols(FullTable %>%
