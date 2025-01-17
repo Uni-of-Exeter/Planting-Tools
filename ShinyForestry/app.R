@@ -567,15 +567,13 @@ NSamp <- 2000
 msg <- paste0("Sampling ", NSamp, " random strategies ...")
 notif(msg)
 
-simul636 <- matrix(0, NSamp, dim(FullTable)[1])
 Uniqunits <- unique(FullTable$units)
 
 handlers(
   list(
     handler_progress(
       format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    ),
-    handler_txtprogressbar()
+    )
   ),
   on_missing = "warning"
 )
@@ -597,37 +595,86 @@ if (tolower(os) == "windows") {
   futureplan <- future::multicore
 }
 future:::ClusterRegistry("stop")
+
 plan(futureplan, workers = min(5, round(future::availableCores() / 2)))
 with_progress({
   pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
-  simul636 <- foreach(
+  simul636YearType <- foreach(
     aaa = 1:NSamp,
-    .combine = rbind,
+    .combine = combine_foreach_rbind,
+    .multicombine = TRUE,
     .inorder = TRUE,
     .options.future = list(
-      # chunk.size = round(NSamp / (3 * (future::availableCores() - 1))),
-      scheduling = 2,
       seed = TRUE
     )
   ) %dofuture% {
-    
+
+    # Part 1: simul636
     pp <- runif(1)
     RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
-    
-    result <- matrix(NA, nrow = 1, ncol = dim(FullTable)[1])
+
+    result <- matrix(0, nrow = 1, ncol = dim(FullTable)[1])
     for (bbb in 1:length(Uniqunits)) {
       result[1, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
     }
+    result_simul636 <- result
+
     
-    if (aaa %% 10 == 0) {pb(amount = 10)}
-    return(result)
+    
+    # Part 2: simul636Year
+    
+    # Simul636Year is populated with the year of planting
+    # once simul636Year works it will replace simul636
+    # (MAXYEAR+1) is the code for no planting
+    # Otherwise 0 to MAXYEAR is the year of planting if planted.
+    result <- result_simul636
+
+    result[1, result_simul636[1,]==0]<-(MAXYEAR+1)
+    probb<-runif(1,0.2,0.6)
+    size<-15*runif(1)
+    result[1, result_simul636[1,]!=0]<-pmin(rnbinom(sum(result_simul636[1,]),size=size,prob=probb),MAXYEAR)
+
+    result_simul636Year <- result
+
+    
+    
+    # Part 3: simul636YearType
+    
+    #### Simul636YearType is a similar table but it stops at year MAXYEAR and
+    #### instead, we pick a tree type (or no planting)
+    result <- list(YEAR=result_simul636-1,TYPE=t(apply(result_simul636,2,as.character)))
+    result[["TYPE"]][1, result_simul636[1,]==0]<-"NoPlanting"
+    probbType<-runif(1,0.5)
+    Planted<-(result_simul636[1,]==1)
+    if(sum(Planted)>0){
+      result[["TYPE"]][1, result_simul636[1,]==1]<-sample(c("Conifers","Deciduous"),sum(Planted),replace=TRUE,prob=c(probbType,1-probbType))}
+
+    probb<-runif(1,0.2,0.6)
+    size<-15*runif(1)
+    DRAW<-pmin(rnbinom(sum(result_simul636[1,]),size=size,prob=probb),MAXYEAR)
+    result$YEAR[1, result$TYPE[1,]!="NoPlanting"]<-DRAW
+
+    result_simul636YearType <- result
+
+    # End
+    if (aaa %% (ceiling(NSamp / 100)) == 0) {pb(amount = ceiling(NSamp / 100))}
+    return(result_simul636YearType)
   }
-    # Avoid warning message from progressor function
+  # Avoid warning message from progressor function
   pb(amount = 0)
 })
 if (isFALSE(RUN_BO)) {
   plan(sequential)
 }
+handlers(
+  list(
+    handler_shiny(),
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    )
+  ),
+  on_missing = "ignore"
+)
 
 RREMBO_CONTROL <- list(
   # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
@@ -646,57 +693,14 @@ RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
                                              reverse = FALSE),
                                            limit_log_level = LOG_LEVEL)
 
-# for (aaa in 1:NSamp) {
-#   pp <- runif(1)
-#   RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
-#   for (bbb in 1:length(Uniqunits)) {
-#     simul636[aaa, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
-#   }
-# }
-
-# Simul636Year is populated with the year of planting
-# once simul636Year works it will replace simul636
-# (MAXYEAR+1) is the code for no planting
-# Otherwise 0 to MAXYEAR is the year of planting if planted.
-simul636Year<-simul636
-for (aaa in 1:NSamp) {
-  
-  simul636Year[aaa,simul636[aaa,]==0]<-(MAXYEAR+1)
-  probb<-runif(1,0.2,0.6)
-  size<-15*runif(1)
-  simul636Year[aaa,simul636[aaa,]!=0]<-pmin(rnbinom(sum(simul636[aaa,]),size=size,prob=probb),MAXYEAR)
-}
-#### Simul636YearType is a similar table but it stops at year MAXYEAR and
-#### instead, we pick a tree type (or no planting)
-simul636YearType<-list(YEAR=simul636-1,TYPE=apply(simul636,2,as.character))
-for (aaa in 1:NSamp) {
-  
-  simul636YearType[["TYPE"]][aaa,simul636[aaa,]==0]<-"NoPlanting"
-  probbType<-runif(1,0.5)
-  Planted<-(simul636[aaa,]==1)
-  if(sum(Planted)>0){
-    simul636YearType[["TYPE"]][aaa,simul636[aaa,]==1]<-sample(c("Conifers","Deciduous"),sum(Planted),replace=T,prob=c(probbType,1-probbType))}
-  
-  probb<-runif(1,0.2,0.6)
-  size<-15*runif(1)
-  DRAW<-pmin(rnbinom(sum(simul636[aaa,]),size=size,prob=probb),MAXYEAR)
-  simul636YearType$YEAR[aaa,simul636YearType$TYPE[aaa,]!="NoPlanting"]<-DRAW
-}
-
 msg <- paste(msg, "done")
 notif(msg)
 
-Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
-Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636Year)[2]))
 
-# flush temporary variables simul636 and simul636Year out of RAM.
-simul636<-NULL
-simul636Year<-NULL
-gc()
+Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636YearType$YEAR)[2]))
+Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636YearType$YEAR)[2]))
 
 
-
-#hist(simul636YearType,100)
 
 alphaLVL <- 0.9
 ILevel<- -(sqrt(alphaLVL/(1-alphaLVL)))
@@ -1187,17 +1191,6 @@ server <- function(input, output, session,
                    LOG_LEVEL_ARG = LOG_LEVEL,
                    SCENARIO_ARG = SCENARIO) {
   set.seed(1)
-  
-  handlers(
-    list(
-      handler_shiny(),
-      handler_progress(
-        format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-      ),
-      handler_txtprogressbar()
-    ),
-    on_missing = "warning"
-  )
   
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Preferences")

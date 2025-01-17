@@ -3034,3 +3034,10 @@ FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs,
   
   return(addControlText)
 }
+
+# https://stackoverflow.com/questions/28348749/outptut-two-objects-using-foreach/28354056#28354056
+# Combine n data.frames using a list of n data.frames
+# Necessary in our case of foreach for parallel programming
+combine_foreach_rbind <- function(...) {
+  mapply('rbind', ..., SIMPLIFY = FALSE)
+}
