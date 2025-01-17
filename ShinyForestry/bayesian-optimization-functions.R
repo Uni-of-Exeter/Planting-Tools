@@ -2320,7 +2320,7 @@ bayesian_optimization <- function(
                         name = KERNEL,
                         vecchia = TRUE,
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
-                        verb = TRUE)
+                        verb = FALSE)
   notif(paste0(msg, "done"), limit_log_level = limit_log_level)
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
