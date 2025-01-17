@@ -116,7 +116,7 @@ if (Sys.getenv("USERNAME")=="bn267") {
   install_and_load_packages(packages = packages, update = FALSE)
 }
 if (RUN_BO) {
-  dgpsi::init_py()
+  dgpsi::init_py(verb = FALSE)
 }
 
 NAME_CONVERSION <- get_name_conversion()
