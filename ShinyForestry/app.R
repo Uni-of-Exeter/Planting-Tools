@@ -682,15 +682,9 @@ RREMBO_CONTROL <- list(
   # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
   reverse = FALSE)
 RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
-                                           # per parcel, area + year planting + tree specie
-                                           D = 3 * nrow(FullTable),
-                                           init = list(n = 1000),
-                                           budget = 100,
-                                           control = list(
-                                             # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
-                                             designtype = "LHS",
-                                             # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
-                                             reverse = FALSE),
+                                           D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                           init = list(n = 100), budget = 100,
+                                           control = RREMBO_CONTROL,
                                            limit_log_level = LOG_LEVEL)
 
 msg <- paste(msg, "done")
