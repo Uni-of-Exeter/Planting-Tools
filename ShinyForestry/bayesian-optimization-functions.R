@@ -1,34 +1,85 @@
-
 # Generate unconstrained legal inputs
-generate_legal_samples <- function(n, k, legal_non_zero_values, random_or_maximin_lhs) {
-  # maximinLHS takes too long when n and k are too large, randomLHS is almost instantaneous
-  if (random_or_maximin_lhs == "maximin") {
-    values <- lhs::maximinLHS(n, k)
-  } else if (random_or_maximin_lhs == "random") {
-    values <- lhs::randomLHS(n, k)
+generate_legal_samples <- function(n,
+                                   random_or_maximin_lhs = "random",
+                                   FullTable_arg,
+                                   limit_log_level = LOG_LEVEL,
+                                   RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                   MAXYEAR_arg = MAXYEAR,
+                                   SPECIES_arg = SPECIES,
+                                   area_sum_threshold_numeric_arg,
+                                   year_of_max_no_planting_threshold_vector_arg) {
+  
+  FullTable <- FullTable_arg
+  area_sum_threshold <- area_sum_threshold_numeric_arg
+  year_of_max_no_planting_threshold_vector <- year_of_max_no_planting_threshold_vector_arg
+  MAXYEAR <- MAXYEAR_arg
+  SPECIES <- SPECIES_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  A <- RREMBO_HYPER_PARAMETERS$A
+  d <- ncol(A)
+  D <- nrow(A)
+  
+  if (is.null(RREMBO_HYPER_PARAMETERS)) {
+    msg <- "generate_legal_samples() has been called without specifying the argument RREMBO_HYPER_PARAMETERS_arg"
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    stop(paste("[ERROR]", msg))
   }
-  # Turn values between 0 and 1 to legal area values by rounding then multiplying
-  values <- continuous_to_categorical(values,
-                                      legal_non_zero_values)
-  return(values)
+  
+  # maximinLHS takes too long when n and d are too large, randomLHS is almost instantaneous
+  msg <- paste("RREMBO generating data. Generate data part 1 (", random_or_maximin_lhs, "and map to higher dimension) ...")
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  if (random_or_maximin_lhs == "maximin") {
+    DoE_low_dimension <- lhs::maximinLHS(n, d)
+  } else if (random_or_maximin_lhs == "random") {
+    DoE_low_dimension <- lhs::randomLHS(n, d)
+  }
+  
+  notif("Map to higher dimension ...", log_level = "debug", limit_log_level = limit_log_level)
+  DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
+  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+  
+  DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = DoE_high_dimension,
+                                                                                                       RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                                                                                       FullTable_arg = FullTable,
+                                                                                                       MAXYEAR_arg = MAXYEAR,
+                                                                                                       SPECIES_arg = SPECIES,
+                                                                                                       year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+  notif(paste("generate_legal_samples() done"), log_level = "debug", limit_log_level = limit_log_level)
+  return(list(sample_low_dimension = DoE_low_dimension,
+              sample_high_dimension = DoE_high_dimension,
+              sample_high_dimension_categorical = DoE_high_dimension_categorical))
 }
 
-generate_legal_unique_samples <- function(n, k,
-                                          d = 6, # effective dimension for Random Embeddings
-                                          legal_non_zero_values,
-                                          max_threshold = NULL,
+generate_legal_unique_samples <- function(n,
                                           max_attempts = 10,
-                                          constrained = FALSE,
+                                          area_sum_is_constrained = FALSE,
                                           previous_values = NULL,
+                                          FullTable_arg,
+                                          limit_log_level = LOG_LEVEL,
+                                          RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                          MAXYEAR_arg = MAXYEAR,
+                                          SPECIES_arg = SPECIES,
+                                          area_sum_threshold_numeric_arg,
+                                          year_of_max_no_planting_threshold_vector_arg,
                                           RRembo = FALSE,
-                                          RRembo_hyper_parameters = NULL,
                                           RRembo_smart = FALSE,
-                                          current_task_id,
-                                          global_log_level = LOG_LEVEL) {
+                                          random_or_maximin_lhs = "random",
+                                          current_task_id) {
   
-  if (isTRUE(RRembo) && is.null(RRembo_hyper_parameters)) {
+  FullTable <- FullTable_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  A <- RREMBO_HYPER_PARAMETERS$A
+  MAXYEAR <- MAXYEAR_arg
+  SPECIES <- SPECIES_arg
+  area_sum_threshold <- area_sum_threshold_numeric_arg
+  year_of_max_no_planting_threshold_vector <- year_of_max_no_planting_threshold_vector_arg
+  A <- RREMBO_HYPER_PARAMETERS$A
+  d <- ncol(A)
+  D <- nrow(A)
+  
+  if (isTRUE(RRembo) && is.null(RREMBO_HYPER_PARAMETERS)) {
     msg <- "generate_legal_unique_samples() has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -37,32 +88,30 @@ generate_legal_unique_samples <- function(n, k,
   valid_samples_low_dimension <- if (n > 3e5) dplyr::tibble() else data.frame()
   valid_samples_high_dimension <- if (n > 3e5) dplyr::tibble() else data.frame()
   
-  constraint_function <- function(row, max_threshold) {
-    sum(row) <= max_threshold
+  area_constraint_function <- function(row, area_sum_threshold_numeric) {
+    sum(row) <= area_sum_threshold_numeric
   }
   
   # If there are too many data or dimensions, use lhs::randomLHS instead of lhs::maximinLHS
-  random_or_maximin_lhs <- if (k <= 15 && n <= 500) "maximin" else "random"
+  random_or_maximin_lhs <- if (D <= 15 && n <= 500) "maximin" else "random"
   use_dplyr <- isTRUE(n > 3e5)
-  # TODO REMBO with dplyr
-  if (isTRUE(RRembo)) use_dplyr <- FALSE
   
   while (nrow(valid_samples) < n && attempts <= max_attempts) {
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return()
     }
     msg <- paste0("Attempt ", attempts, "/", max_attempts, " at generating inputs (", nrow(valid_samples), "/", n, " so far)... ")
-    notif(msg, log_level = "debug", global_log_level = global_log_level)
+    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
     
     # Keep old rows if they were really random
     if (random_or_maximin_lhs == "random" && nrow(valid_samples) > 0) {
       number_of_rows_left_to_generate <- n - nrow(valid_samples)
     } else {
       number_of_rows_left_to_generate <- n
-      valid_samples <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = k))
+      valid_samples <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = D))
       if (isTRUE(RRembo)) {
         valid_samples_low_dimension <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = d))
-        valid_samples_high_dimension <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = k))
+        valid_samples_high_dimension <- if (isTRUE(use_dplyr)) dplyr::tibble() else data.frame(matrix(nrow = 0, ncol = D))
       }
     }
     
@@ -74,125 +123,134 @@ generate_legal_unique_samples <- function(n, k,
     } else if (random_or_maximin_lhs == "random") {
       rows <- 2 * number_of_rows_left_to_generate
     }
-    if (isFALSE(constrained)) {
+    if (isFALSE(area_sum_is_constrained)) {
       rows <- 4 * rows
     }
     use_dplyr <- isTRUE(rows > 3e5)
     # TODO REMBO with dplyr
     if (isTRUE(RRembo)) use_dplyr <- FALSE
     
-    if (current_task_id != get_latest_task_id()) {
-      return()
-    }
-    if (isTRUE(RRembo)) {
-      
-      if (isTRUE(RRembo_smart)) {
-        msg <- "generate_legal_unique_samples() -> generate_samples_RRembo() ..."
-        notif(msg, log_level = "debug", global_log_level = global_log_level)
-        samples <- generate_samples_RRembo(d = d,
-                                           lower = rep(0, k),
-                                           upper = rep(1, k),
-                                           legal_non_zero_values = legal_non_zero_values,
-                                           RRembo_hyper_parameters = RRembo_hyper_parameters,
-                                           global_log_level = global_log_level)
-        notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
-      } else {
-        msg <- "generate_legal_unique_samples() -> generate_samples_RRembo_basic() ..."
-        notif(msg, log_level = "debug", global_log_level = global_log_level)
-        if (attempts > 1) {
-          temp <- lhs::optAugmentLHS(lhs = valid_samples, m = number_of_rows_left_to_generate, mult = 1)
-          # Only take the new rows
-          temp <- temp[(length(valid_samples) + 1):length(temp), ]
-          temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = samples, A = A)
-          # Turn values between 0 and 1 to legal area values by rounding then multiplying
-          temp_high_dimension_categorical <- continuous_to_categorical(values = temp_high_dimension,
-                                                                       legal_non_zero_values = legal_non_zero_values)
-          samples <- list(sample_low_dimension = temp,
-                          sample_high_dimension = temp_high_dimension,
-                          sample_high_dimension_categorical = temp_high_dimension_categorical)
-        } else {
-          samples <- generate_samples_RRembo_basic(d = d,
-                                                   D = k,
-                                                   legal_non_zero_values = legal_non_zero_values,
-                                                   RRembo_hyper_parameters = RRembo_hyper_parameters,
-                                                   global_log_level = global_log_level)
-        }
-        notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
-      }
-      
-      samples_low_dimension <- samples$sample_low_dimension
-      samples_high_dimension <- samples$sample_high_dimension
-      samples <- samples$sample_high_dimension_categorical
-      
-    } else {
-      
-      msg <- "generate_legal_unique_samples() -> generate_legal_samples() ..."
-      notif(msg, log_level = "debug", global_log_level = global_log_level)
-      samples <- generate_legal_samples(rows, k, legal_non_zero_values, random_or_maximin_lhs)
-      notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
-      
-    }
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return()
     }
     
-    # Add samples to valid_samples, and filter on the threshold if isTRUE(constrained)
-    if (isTRUE(constrained)) {
-      if (is.null(max_threshold)) {
-        msg <- "generate_legal_unique_samples was called with constrained=TRUE but no value for max_threshold"
-        notif(msg, log_level = "error", global_log_level = global_log_level)
+    if (isTRUE(RRembo_smart)) {
+      msg <- "generate_legal_unique_samples() -> generate_samples_RRembo() ..."
+      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+      samples <- generate_samples_RRembo(d = d,
+                                         lower = rep(0, D),
+                                         upper = rep(1, D),
+                                         legal_non_zero_values = legal_non_zero_values,
+                                         RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                         limit_log_level = limit_log_level)
+      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+    } else {
+      msg <- "generate_legal_unique_samples() -> generate_legal_samples() ..."
+      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+      if (attempts > 1) {
+        temp <- lhs::optAugmentLHS(lhs = valid_samples, m = rows, mult = 1)
+        
+        # Only take the new rows
+        temp <- temp[(length(valid_samples) + 1):length(temp), ]
+        temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = samples, A = A)
+        
+        # Turn values between 0 and 1 to legal area values by rounding then multiplying
+        temp_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = temp_high_dimension,
+                                                                                                              RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                                                                                              FullTable_arg = FullTable,
+                                                                                                              MAXYEAR_arg = MAXYEAR,
+                                                                                                              SPECIES_arg = SPECIES,
+                                                                                                              year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+        
+        samples <- list(sample_low_dimension = temp,
+                        sample_high_dimension = temp_high_dimension,
+                        sample_high_dimension_categorical = temp_high_dimension_categorical)
+      } else {
+        samples <- generate_legal_samples(n = rows,
+                                          limit_log_level = limit_log_level,
+                                          RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                          FullTable_arg = FullTable,
+                                          MAXYEAR_arg = MAXYEAR,
+                                          SPECIES_arg = SPECIES,
+                                          area_sum_threshold_numeric = area_sum_threshold,
+                                          year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+      }
+      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+    }
+    
+    samples_low_dimension <- samples$sample_low_dimension
+    samples_high_dimension <- samples$sample_high_dimension
+    samples <- samples$sample_high_dimension_categorical
+    if (isTRUE(current_task_id != get_latest_task_id())) {
+      return()
+    }
+    
+    good_colnames_low_dim <- 1:d
+    good_colnames_high_dim <- colnames(samples)
+    
+    # Add samples to valid_samples, and filter on the area_sum_threshold if isTRUE(area_sum_is_constrained)
+    if (isTRUE(area_sum_is_constrained)) {
+      if (is.null(area_sum_threshold)) {
+        msg <- "generate_legal_unique_samples was called with area_sum_is_constrained = TRUE but no value for area_sum_threshold_numeric_arg"
+        notif(msg, log_level = "error", limit_log_level = limit_log_level)
         stop(paste("[ERROR]", msg))
       }
-      # Remove rows where the sum is less than max_threshold
+      # Remove rows where the sum is less than area_sum_threshold
       # If we are using maximinLHS, valid_samples is an empty data.frame/tibble
-      if (isFALSE(use_dplyr)) {
-        indices_to_keep <- apply(samples, 1, constraint_function, max_threshold = max_threshold)
-        # There are problems with rbind when the column names are empty and/or different
-        colnames(valid_samples) <- colnames(samples) <- 1:k
-        valid_samples <- rbind(valid_samples,
-                               samples[indices_to_keep, ])
-        if (isTRUE(RRembo)) {
-          colnames(valid_samples_low_dimension) <- colnames(samples_low_dimension) <- 1:d
-          colnames(valid_samples_high_dimension) <- colnames(samples_high_dimension) <- 1:k
-          valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
-                                               samples_low_dimension[indices_to_keep, ])
-          valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
-                                                samples_high_dimension[indices_to_keep, ])
-        }
-      } else {
-        # TODO: indices_to_keep with dplyr when RRembo
-        # dplyr is faster on very large values of n
-        suppressMessages({
-          valid_samples <- valid_samples %>%
-            as_tibble(.name_repair = "minimal") %>%
-            bind_rows(samples %>% as_tibble(.name_repair = "minimal")) %>%
-            mutate(row_sum = rowSums(across(everything()))) %>%
-            filter(row_sum <= max_threshold) %>%
-            dplyr::select(-row_sum)
-        })
+      # if (isFALSE(use_dplyr)) {
+      colnames_samples <- colnames(samples)
+      area_cols <- grep("area", colnames_samples)
+      samples_area_numeric <- samples[, area_cols, drop = FALSE]
+      # apply works naturally on columns, so either pass 2 or transpose after
+      samples_area_numeric <- apply(samples_area_numeric, 2, as.numeric)
+      
+      indices_to_keep <- apply(samples_area_numeric, 1, area_constraint_function, area_sum_threshold_numeric = area_sum_threshold)
+      # There are problems with rbind when the column names are empty and/or different
+      colnames(valid_samples) <- good_colnames_high_dim
+      valid_samples <- rbind(valid_samples,
+                             samples[indices_to_keep, , drop = FALSE])
+      if (isTRUE(RRembo)) {
+        colnames(valid_samples_low_dimension) <- good_colnames_low_dim
+        colnames(valid_samples_high_dimension) <- good_colnames_high_dim
+        valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
+                                             samples_low_dimension[indices_to_keep, , drop = FALSE])
+        valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
+                                              samples_high_dimension[indices_to_keep, , drop = FALSE])
       }
+      # } else {
+      #   # TODO: indices_to_keep with dplyr when RRembo
+      #   # dplyr is faster on very large values of n
+      #   suppressMessages({
+      #     valid_samples <- valid_samples %>%
+      #       as_tibble(.name_repair = "minimal") %>%
+      #       bind_rows(samples %>% as_tibble(.name_repair = "minimal")) %>%
+      #       mutate(row_sum = rowSums(across(everything()))) %>%
+      #       filter(row_sum <= max_threshold) %>%
+      #       dplyr::select(-row_sum)
+      #   })
+      # }
     } else {
-      if (isFALSE(use_dplyr)) {
-        valid_samples <- rbind(valid_samples,
-                               samples)
-        if (isTRUE(RRembo)) {
-          valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
-                                               samples_low_dimension)
-          valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
-                                                samples_high_dimension)
-        }
-      } else {
-        # TODO: indices_to_keep with dplyr with RRembo
-        # dplyr is faster on very large values of n
-        suppressMessages({
-          valid_samples <- valid_samples %>%
-            as_tibble(.name_repair = "minimal") %>%
-            bind_rows(samples %>% as_tibble(.name_repair = "minimal"))
-        })
-        # if (isTRUE(RRembo)) {
-        #   
-        # }
+      # if (isFALSE(use_dplyr)) {
+      valid_samples <- rbind(valid_samples,
+                             samples)
+      if (isTRUE(RRembo)) {
+        valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
+                                             samples_low_dimension)
+        valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
+                                              samples_high_dimension)
       }
+      # } else {
+      #   # TODO: indices_to_keep with dplyr with RRembo
+      #   # dplyr is faster on very large values of n
+      #   suppressMessages({
+      #     valid_samples <- valid_samples %>%
+      #       as_tibble(.name_repair = "minimal") %>%
+      #       bind_rows(samples %>% as_tibble(.name_repair = "minimal"))
+      #   })
+      #   # if (isTRUE(RRembo)) {
+      #   #   
+      #   # }
+      # }
     }
     
     # Remove duplicate rows (unlikely to happen, but just in case)
@@ -224,15 +282,16 @@ generate_legal_unique_samples <- function(n, k,
     attempts <- attempts + 1
   }
   msg <- "... generate_legal_unique_samples() -> loop done"
-  notif(msg, log_level = "debug", global_log_level = global_log_level)
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
   
   # Return the first n valid samples
   valid_samples <- as.matrix(valid_samples)
   nb_rows_to_return <- min(n, nrow(valid_samples))
   if (nrow(valid_samples) < n) {
-    warning("[WARNING] The number of rows generated with generate_legal_unique_samples is lower than expected: ",
-            nrow(valid_samples), " instead of ", n,
-            ". Maximum number of iterations (", attempts, ") reached.")
+    msg <- paste0("The number of rows generated with generate_legal_unique_samples is lower than expected: ",
+                  nrow(valid_samples), " instead of ", n,
+                  ". Maximum number of iterations (", attempts, ") reached.")
+    notif(msg, log_level = "warning", limit_log_level = limit_log_level)
   }
   # Work even if no valid samples are found
   if (nb_rows_to_return >= 1) {
@@ -244,9 +303,9 @@ generate_legal_unique_samples <- function(n, k,
   }
   
   if (isTRUE(RRembo)) {
-    return(list(valid_samples_high_dimension_categorical = valid_samples,
-                valid_samples_low_dimension = as.matrix(valid_samples_low_dimension),
-                valid_samples_high_dimension = as.matrix(valid_samples_high_dimension)))
+    return(list(valid_samples_low_dimension = as.matrix(valid_samples_low_dimension),
+                valid_samples_high_dimension = as.matrix(valid_samples_high_dimension),
+                valid_samples_high_dimension_categorical = valid_samples))
   } else {
     return(list(valid_samples_high_dimension_categorical = valid_samples))
   }
@@ -254,7 +313,7 @@ generate_legal_unique_samples <- function(n, k,
 
 RRembo_defaults <- function(d, D, init,
                             budget = 100, control,
-                            global_log_level = LOG_LEVEL) {
+                            limit_log_level = LOG_LEVEL) {
   if (is.null(control$Atype)) 
     control$Atype <- "isotropic"
   if (is.null(control$testU)) 
@@ -285,9 +344,9 @@ RRembo_defaults <- function(d, D, init,
     control$roll <- FALSE
   if (is.null(init$Amat)) {
     msg <- "RREMBO generating data. Creating the random embedding matrix A ..."
-    notif(msg, log_level = "debug", global_log_level = global_log_level)
+    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
     A <- selectA(d, D, type = control$Atype, control = list(maxit = control$maxitOptA))
-    notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
+    notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
   }
   else {
     A <- init$Amat
@@ -371,15 +430,15 @@ RRembo_defaults <- function(d, D, init,
               bxsize = bxsize))
 }
 
-RRembo_project_low_dimension_to_high_dimension_basic <- function(DoE_low_dimension, A, global_log_level = LOG_LEVEL) {
+RRembo_project_low_dimension_to_high_dimension_basic <- function(DoE_low_dimension, A, limit_log_level = LOG_LEVEL) {
   if (ncol(A) != ncol(DoE_low_dimension)) {
     msg <- paste0("In RRembo_project_low_dimension_to_high_dimension_basic(), matrix sizes are not compatible for the product.",
-                   "A has dimensions ", paste(dim(A), collapse = "x"),
+                  "A has dimensions ", paste(dim(A), collapse = "x"),
                   " but t(DoE_low_dimension) has dimensions ", paste(dim(t(DoE_low_dimension)), collapse = "x"))
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
-  DoE_high_dimension <- t(tcrossprod(A, as.matrix(DoE_low_dimension)))
+  DoE_high_dimension <- tcrossprod(as.matrix(DoE_low_dimension), A)
   return(DoE_high_dimension)
 }
 
@@ -409,6 +468,537 @@ RRembo_project_low_dimension_to_high_dimension_original <- function(DoE_low_dime
   return(DoE_high_dimension)
 }
 
+
+transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
+    DoE_high_dimension_rowwise_matrix,
+    RREMBO_HYPER_PARAMETERS_arg,
+    FullTable_arg = FullTable,
+    MAXYEAR_arg = MAXYEAR,
+    SPECIES_arg = SPECIES,
+    
+    # typically ClickedVector()
+    year_of_max_no_planting_threshold_vector
+) {
+  
+  # Ensure we are dealing with a matrix/data.frame (so that nrow does not throw an error)
+  if (is.null(dim(DoE_high_dimension_rowwise_matrix))) {
+    DoE_high_dimension_rowwise_matrix <- matrix(DoE_high_dimension_rowwise_matrix, nrow = 1)
+  }
+  
+  FullTable <- FullTable_arg
+  MAXYEAR <- MAXYEAR_arg
+  SPECIES <- SPECIES_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  
+  # The threshold from tab 1 (with values in -1:MAXYEAR) corresponds to the end of the year until which planting is forbidden
+  # i.e. -1 means we can plant from year 0, ..., MAXYEAR (24) means we cannot plant i.e. find column with year MAXYEAR+1 (25)
+  # In order to explore effectively, we don't explore the years we cannot plant during
+  names(year_of_max_no_planting_threshold_vector) <- paste0("plantingyear_parcel_id", 1:length(year_of_max_no_planting_threshold_vector))
+  year_of_planting_min_threshold_vector <- year_of_max_no_planting_threshold_vector + 1
+  
+  # Possible values for Area, and Tree Specie (Years later)
+  area_possible_non_zero_values <- FullTable %>%
+    sf::st_drop_geometry() %>%
+    dplyr::select(area) %>%
+    unlist(use.names = FALSE)
+  # Prevent potential miscalculations
+  area_possible_non_zero_values[year_of_max_no_planting_threshold_vector == MAXYEAR] <- 0
+  area_possible_values_dataframe <- rbind(0, area_possible_non_zero_values)
+  rownames(area_possible_values_dataframe) <- NULL
+  
+  
+  tree_specie_possible_values_dataframe <- FullTable %>%
+    sf::st_drop_geometry() %>%
+    colnames() %>%
+    grep(pattern = "TreeSpecie", x = ., value = TRUE) %>%
+    gsub(pattern = ".*TreeSpecie(.*?)_.*", x = ., replacement = "\\1", perl = TRUE) %>%
+    gsub(pattern = ".*TreeSpecie(.*)", x = ., replacement = "\\1", perl = TRUE) %>%
+    unique()
+  tree_specie_possible_values_dataframe <- matrix(tree_specie_possible_values_dataframe,
+                                                  nrow = length(tree_specie_possible_values_dataframe),
+                                                  ncol = ncol(area_possible_values_dataframe))
+  
+  # Turn Area to categorical values
+  group_size <- ncol(DoE_high_dimension_rowwise_matrix) / 3
+  indices <- 1:group_size
+  DoE_high_dimension_rowwise_matrix_area_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE],
+                                                               1,
+                                                               normalize_minmax))
+  
+  DoE_high_dimension_categorical_area <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_area_normalized,
+                                                                         legal_values_ordered = area_possible_values_dataframe)
+  colnames(DoE_high_dimension_categorical_area) <- paste0("area_parcel_id", 1:ncol(DoE_high_dimension_categorical_area))
+  
+  # Possible values for year, and turn to categorical values
+  DoE_high_dimension_categorical_year <- matrix(NA,
+                                                nrow = nrow(DoE_high_dimension_rowwise_matrix),
+                                                ncol = length(indices))
+  indices <- group_size + indices
+  DoE_high_dimension_rowwise_matrix_year_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE],
+                                                               1,
+                                                               normalize_minmax))
+  
+  ## Per parcel, map uniformly over the allowed planting years (from minimum_specified_in_strategy to MAXYEAR)
+  # microbenchmark::microbenchmark({
+  year_of_max_no_planting_threshold_vector <- as.numeric(year_of_max_no_planting_threshold_vector)
+  for (i in indices) {
+    # Loop over parcels
+    parcel_idx <- i - min(indices) + 1
+    
+    # If we can plant, map uniformly to all possible years
+    if (year_of_max_no_planting_threshold_vector[parcel_idx] < MAXYEAR) {
+      years_possible_values_dataframe <- matrix(year_of_planting_min_threshold_vector[parcel_idx]:MAXYEAR, ncol = 1)
+    } else {
+      # Otherwise, we skip this later anyway, but map all values to the same category
+      years_possible_values_dataframe <- matrix(MAXYEAR + 1, ncol = 1)
+    }
+    DoE_high_dimension_categorical_year[, parcel_idx] <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_year_normalized[, parcel_idx, drop = FALSE],
+                                                                                         legal_values_ordered = years_possible_values_dataframe)
+  }
+  # },
+  # times = 200)
+  
+  colnames(DoE_high_dimension_categorical_year) <- paste0("plantingyear_parcel_id", 1:ncol(DoE_high_dimension_categorical_year))
+  
+  # Turn Tree Specie to categorical values
+  indices <- group_size + indices
+  DoE_high_dimension_rowwise_matrix_tree_normalized <- t(apply(DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE],
+                                                               1,
+                                                               normalize_minmax))
+  DoE_high_dimension_categorical_treespecie <- continuous_to_multi_categorical(values = DoE_high_dimension_rowwise_matrix_tree_normalized,
+                                                                               legal_values_ordered = tree_specie_possible_values_dataframe)
+  colnames(DoE_high_dimension_categorical_treespecie) <- paste0("treespecie_parcel_id", 1:ncol(DoE_high_dimension_categorical_treespecie))
+  
+  DoE_high_dimension_categorical <- cbind(DoE_high_dimension_categorical_area,
+                                          DoE_high_dimension_categorical_year,
+                                          DoE_high_dimension_categorical_treespecie)
+  
+  return(DoE_high_dimension_categorical)
+}
+
+get_outcomes_from_strategy <- function(parameter_vector,
+                                       FullTable_arg,
+                                       SPECIES_arg = SPECIES,
+                                       SCENARIO_arg = SCENARIO,
+                                       MAXYEAR_arg = MAXYEAR) {
+  FullTable <- FullTable_arg
+  SPECIES <- SPECIES_arg
+  SCENARIO <- SCENARIO_arg
+  MAXYEAR <- MAXYEAR_arg
+  
+  
+  # Prepare data once to avoid re-doing it everywhere ----
+  FullTable <- FullTable %>%
+    sf::st_drop_geometry() %>%
+    dplyr::select(!contains("Bio_SD"), -extent, -x, -y)
+  
+  
+  
+  
+  # Area ----
+  group_size <- length(parameter_vector) / 3
+  indices <- 1:group_size
+  area_vector <- as.numeric(parameter_vector[indices])
+  indices <- indices + group_size
+  year_vector <- as.numeric(parameter_vector[indices])
+  indices <- indices + group_size
+  treespecie_vector <- parameter_vector[indices]
+  
+  FullTable <- FullTable %>%
+    mutate(area = area_vector,
+           year = year_vector,
+           treespecie = treespecie_vector)
+  
+  # Calculate outcomes (sumCarbon, sumArea, sumBiodiversity, sumVisits)
+  
+  
+  
+  # Carbon ----
+  small_fulltable <- FullTable %>%
+    dplyr::select(area, year, treespecie,
+                  (
+                    contains("Carbon") &
+                      contains(c("Mean", "SD")) &
+                      contains(paste0("Scenario", SCENARIO)) &
+                      contains("PlantingYear")
+                  ))
+  
+  # sum_carbon <- small_fulltable %>%
+  #   dplyr::select(contains(c("area", "year", "treespecie", "Mean"), ignore.case = FALSE)) %>%
+  #   rowwise() %>%
+  #   mutate(
+  #     # Check if area is 0 and ignore the row by setting sum to 0 if true
+  #     # Also set the value to 0 if the year of planting is less than the minimum specified in year_vector
+  #     # or if the tree specie is the wrong one
+  #     final_value = ifelse(area == 0,
+  #                          0,
+  #                          across(contains("PlantingYear"),
+  #                                 ~ ifelse(
+  #                                   # Correct planting year
+  #                                   (as.numeric(sub(".*PlantingYear([0-9]+).*",
+  #                                                   "\\1",
+  #                                                   cur_column())) == year) &
+  #                                     # Correct tree specie
+  #                                     (sub(".*TreeSpecie(.*?)_PlantingYear.*",
+  #                                          "\\1",
+  #                                          cur_column()) == treespecie)
+  #                                   ,
+  #                                   .,
+  #                                   0)
+  #                          ) %>%
+  #                            sum())
+  #   ) %>%
+  #   ungroup() %>%
+  #   dplyr::select(final_value) %>%
+  #   sum()
+  
+  small_fulltable_dt <- small_fulltable %>%
+    dplyr::select(area, year, treespecie, contains("Mean")) |>
+    setDT()
+  
+  melted_dt <- data.table::melt(small_fulltable_dt,
+                                id.vars = c("area", "year", "treespecie"),
+                                measure.vars = patterns("PlantingYear"),
+                                variable.name = "carbon_column",
+                                value.name = "carbon_value")
+  
+  # Extract planting year and tree specie from the column names
+  melted_dt[, col_planting_year := as.numeric(sub(".*PlantingYear([0-9]+).*", "\\1", carbon_column))]
+  melted_dt[, col_treespecie := sub(".*TreeSpecie(.*?)_PlantingYear.*", "\\1", carbon_column)]
+  
+  # Apply the conditions and calculate the sum
+  sum_carbon <- melted_dt[
+    # Filter rows where area is non-zero and conditions on planting year and species match
+    area != 0 & col_planting_year == year & col_treespecie == treespecie,
+    sum(carbon_value, na.rm = TRUE),  # Summing the matching carbon values
+    by = .(area, year, treespecie)    # Summing for each combination of area, year, and treespecie
+  ]$V1 |> sum()  # Extract the result directly
+  
+  
+  
+  
+  
+  # Carbon SD (similar to above) ----
+  small_fulltable_dt <- small_fulltable %>%
+    dplyr::select(area, year, treespecie, contains("SD")) |>
+    setDT()
+  
+  melted_dt <- data.table::melt(small_fulltable_dt,
+                                id.vars = c("area", "year", "treespecie"),
+                                measure.vars = patterns("PlantingYear"),
+                                variable.name = "carbon_column",
+                                value.name = "carbon_value")
+  
+  # Extract planting year and tree specie from the column names
+  melted_dt[, col_planting_year := as.numeric(sub(".*PlantingYear([0-9]+).*", "\\1", carbon_column))]
+  melted_dt[, col_treespecie := sub(".*TreeSpecie(.*?)_PlantingYear.*", "\\1", carbon_column)]
+  
+  # Apply the conditions and calculate the sum
+  sum_carbon_sd <- melted_dt[
+    # Filter rows where area is non-zero and conditions on planting year and species match
+    area != 0 & col_planting_year == year & col_treespecie == treespecie,
+    sum(carbon_value, na.rm = TRUE),  # Summing the matching carbon values
+    by = .(area, year, treespecie)    # Summing for each combination of area, year, and treespecie
+  ]$V1 # Extract the result directly
+  sum_carbon_sd <- sqrt(sum(sum_carbon_sd^2))
+  
+  
+  
+  
+  
+  # Visits ----
+  sum_visits <- sum(FullTable[area_vector != 0, "VisitsMean"])
+  sum_visits_sd <- sqrt(sum(FullTable[area_vector != 0, "VisitsMean"]^2))
+  
+  
+  
+  
+  # Biodiversity ----
+  species_indices <- which(SPECIES %in% NAME_CONVERSION$Specie)
+  if (length(species_indices) == 0) {
+    sum_biodiversity <- sum_biodiversity_sd <- c()
+  } else {
+    species_pattern <- paste0(".*Specie(", paste0(SPECIES[species_indices], collapse = "|"), ").*")
+    
+    small_fulltable <- FullTable %>%
+      dplyr::select(area, year, treespecie,
+                    (
+                      matches(species_pattern) &
+                        contains("Bio_Mean") &
+                        contains(paste0("Scenario", SCENARIO))
+                    ))
+    
+    # biodiversity_planting <- small_fulltable %>%
+    #   dplyr::select(area, year, treespecie, contains("_Planting")) %>%
+    #   rowwise() %>%
+    #   mutate(
+    #     # Check if area is 0 and ignore the row by setting sum to 0 if true
+    #     # Also set the value to 0 if the tree specie is the wrong one
+    #     final_value = ifelse(area == 0,
+    #                          0,
+    #                          across(contains("Bio_Mean"),
+    #                                 ~ ifelse(
+    #                                   # Correct tree specie
+    #                                   sub(".*TreeSpecie(.*?)_.*",
+    #                                       "\\1",
+    #                                       cur_column()) == treespecie,
+    #                                   .,
+    #                                   0)
+    #                          ) %>%
+    #                            sum())
+    #   ) %>%
+    #   ungroup() %>%
+    #   dplyr::select(final_value)
+    
+    
+    
+    
+    
+    ## Biodiversity per specie per parcel, when planting ----
+    small_fulltable_dt <- small_fulltable %>%
+      dplyr::select(area, year, treespecie, contains("_Planting")) %>%
+      mutate(parcel_id = 1:nrow(FullTable)) |>
+      setDT()
+    
+    # Melt the data table to convert from wide to long format
+    melted_dt <- data.table::melt(small_fulltable_dt, 
+                                  id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                  measure.vars = grep("_Planting", colnames(small_fulltable_dt), value = TRUE), 
+                                  variable.name = "column_name", 
+                                  value.name = "biodiversity")
+    
+    # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
+    melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*?)_Scenario.*", "\\1", column_name)]
+    # Extract the column name's tree specie
+    melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
+    
+    # Remove rows where the column_name's tree specie is not the strategy treespecie
+    melted_dt <- melted_dt[colname_treespecie == treespecie, ]
+    
+    biodiversity_planting <- dcast(melted_dt, parcel_id ~ colname_specie, value.var = "biodiversity")
+    
+    # Re-order by parcel_id
+    biodiversity_planting <- setorder(biodiversity_planting, parcel_id)
+    # Remove parcel_id
+    biodiversity_planting[, parcel_id := NULL]
+    
+    
+    
+    
+    ## Biodiversity per specie per parcel, when NOT planting ----
+    small_fulltable_dt <- small_fulltable %>%
+      dplyr::select(area, year, treespecie, contains("_NoPlanting")) %>%
+      mutate(parcel_id = 1:nrow(FullTable)) |>
+      setDT()
+    
+    # Melt the data table to convert from wide to long format
+    melted_dt <- data.table::melt(small_fulltable_dt, 
+                                  id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                  measure.vars = grep("_NoPlanting", colnames(small_fulltable_dt), value = TRUE), 
+                                  variable.name = "column_name", 
+                                  value.name = "biodiversity")
+    
+    # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
+    melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*?)_Scenario.*", "\\1", column_name)]
+    # Extract the column name's tree specie
+    melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
+    
+    # Remove rows where the column_name's tree specie is not the strategy treespecie
+    melted_dt <- melted_dt[colname_treespecie == treespecie, ]
+    
+    # Re-order by parcel_id
+    melted_dt <- setorder(melted_dt, parcel_id)
+    
+    biodiversity_no_planting <- dcast(melted_dt, parcel_id ~ colname_specie, value.var = "biodiversity")
+    
+    # Re-order by parcel_id
+    biodiversity_no_planting <- setorder(biodiversity_no_planting, parcel_id)
+    # Remove parcel_id
+    biodiversity_no_planting[, parcel_id := NULL]
+    
+    
+    
+    
+    # Biodiversity total ----
+    sum_biodiversity <- get_regressed_biodiversity_change(biodiversity_planting = biodiversity_planting,
+                                                          biodiversity_no_planting = biodiversity_no_planting,
+                                                          MAXYEAR = MAXYEAR,
+                                                          year_of_planting_from_0 = year_vector) |>
+      colSums()
+    
+    # Biodiversity SD
+    sum_biodiversity_sd <- 0
+    sum_biodiversity_sd <- sqrt(sum(sum_biodiversity_sd^2))
+  }
+  
+  
+  
+  
+  # Richness ----
+  # For now, the code below only works for the 2 tree species Conifers and Deciduous. We will have a new biodiversity model later on, so it's not important
+  richness <- c()
+  
+  # # apply_biodiversity_logic <- function(specie, SCENARIO, all_biodiversity_planting, all_biodiversity_no_planting) {
+  # #   
+  # #   # Create column names for both the 'Planting' and 'NoPlanting' cases
+  # #   conifer_col_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_Planting")
+  # #   deciduous_col_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_Planting")
+  # #   new_col_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_Planting")
+  # #   
+  # #   conifer_col_no_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_NoPlanting")
+  # #   deciduous_col_no_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_NoPlanting")
+  # #   new_col_no_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_NoPlanting")
+  # #   
+  # #   # Apply the logic for 'Planting'
+  # #   all_biodiversity_planting[, (new_col_planting) := fifelse(treespecie == "Conifers",
+  # #                                                             get(conifer_col_planting),
+  # #                                                             get(deciduous_col_planting))]
+  # #   
+  # #   # Apply the logic for 'NoPlanting'
+  # #   all_biodiversity_no_planting[, (new_col_no_planting) := fifelse(treespecie == "Conifers",
+  # #                                                                   get(conifer_col_no_planting),
+  # #                                                                   get(deciduous_col_no_planting))]
+  # #   
+  # #   # Remove the original columns after applying the logic
+  # #   all_biodiversity_planting[, c(conifer_col_planting, deciduous_col_planting) := NULL]
+  # #   all_biodiversity_no_planting[, c(conifer_col_no_planting, deciduous_col_no_planting) := NULL]
+  # #   
+  # #   # Return the updated data.tables
+  # #   return(list(all_biodiversity_planting = all_biodiversity_planting,
+  # #               all_biodiversity_no_planting = all_biodiversity_no_planting))
+  # # }
+  # 
+  # small_fulltable <- FullTable %>%
+  #   dplyr::select(area, year, treespecie,
+  #                 contains("Bio_Mean") &
+  #                   contains(paste0("Scenario", SCENARIO))
+  #   ) %>%
+  #   mutate(parcel_id = 1:nrow(FullTable))
+  # for (group in SPECIES) {
+  #   if (group == "All" || group %in% NAME_CONVERSION$Group) {
+  #     
+  #     if (group == "All") {
+  #       species_in_group <- NAME_CONVERSION$Specie
+  #     } else {
+  #       species_in_group <- NAME_CONVERSION$Specie[NAME_CONVERSION$Group == group]
+  #     }
+  #     
+  #     species_pattern <- paste0(".*BioSpecie(", paste0(species_in_group, collapse = "|"), ").*")
+  #     
+  #     # Table with biodiversity values per parcel where we plant the correct tree specie
+  #     all_biodiversity_planting <- small_fulltable %>%
+  #       dplyr::select(parcel_id, treespecie,
+  #                     contains("_Planting") &
+  #                       matches(species_pattern)) %>%
+  #       setDT()
+  #     
+  #     # Table with biodiversity values per parcels where we don't plant the correct tree specie
+  #     all_biodiversity_no_planting <- small_fulltable %>%
+  #       dplyr::select(parcel_id, treespecie, 
+  #                     contains("_NoPlanting") &
+  #                       matches(species_pattern)) %>%
+  #       setDT()
+  #     
+  #     # Create a new column with value equal to the correct tree specie
+  #     for (specie in species_in_group) {
+  #       # When planting
+  #       conifer_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_Planting")
+  #       deciduous_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_Planting")
+  #       new_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_Planting")
+  #       
+  #       all_biodiversity_planting[, (new_col) := fifelse(treespecie == "Conifers",
+  #                                                        get(conifer_col),
+  #                                                        get(deciduous_col))]
+  #       all_biodiversity_planting[, c(conifer_col, deciduous_col) := NULL]
+  #       
+  #       # When not planting
+  #       conifer_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_NoPlanting")
+  #       deciduous_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_NoPlanting")
+  #       new_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_NoPlanting")
+  #       
+  #       all_biodiversity_no_planting[, (new_col) := fifelse(treespecie == "Conifers",
+  #                                                           get(conifer_col),
+  #                                                           get(deciduous_col))]
+  #       all_biodiversity_no_planting[, c(conifer_col, deciduous_col) := NULL]
+  #     }
+  #     
+  #     # Re-order by parcel_id
+  #     all_biodiversity_planting <- setorder(all_biodiversity_planting, parcel_id)
+  #     all_biodiversity_no_planting <- setorder(all_biodiversity_no_planting, parcel_id)
+  #     
+  #     # Remove useless columns
+  #     all_biodiversity_planting <- all_biodiversity_planting[, c("parcel_id", "treespecie") := NULL]
+  #     all_biodiversity_no_planting <- all_biodiversity_no_planting[, c("parcel_id", "treespecie"):= NULL]
+  # 
+  #     # # Apply the function over all species in the group and get the updated data.tables
+  #     # result <- lapply(species_in_group, apply_biodiversity_logic, SCENARIO = SCENARIO,
+  #     #                  all_biodiversity_planting = all_biodiversity_planting,
+  #     #                  all_biodiversity_no_planting = all_biodiversity_no_planting)
+  # 
+  #     # Extract updated results from the list
+  #     # all_biodiversity_planting <- result[[length(result)]]$all_biodiversity_planting
+  #     # all_biodiversity_no_planting <- result[[length(result)]]$all_biodiversity_no_planting
+  
+  # tmp <- get_richness(group = group,
+  #                     all_biodiversity_planting = all_biodiversity_planting,
+  #                     all_biodiversity_no_planting = all_biodiversity_no_planting,
+  #                     MAXYEAR = MAXYEAR,
+  #                     year_of_planting_from_0 = year_vector,
+  #                     NAME_CONVERSION = NAME_CONVERSION)
+  
+  
+  
+  small_fulltable_dt <- FullTable %>%
+    dplyr::select(area, year, treespecie, starts_with("Richness")) %>%
+    mutate(parcel_id = 1:nrow(FullTable)) |>
+    setDT()
+  
+  # Melt the data table to convert from wide to long format
+  melted_dt <- data.table::melt(small_fulltable_dt, 
+                                id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
+                                variable.name = "column_name", 
+                                value.name = "richness")
+  
+  # Extract the column name's tree specie
+  melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
+  # Extract the column name's planting year
+  melted_dt <- melted_dt[, colname_plantingyear := gsub(".*PlantingYear(.*?)", "\\1", column_name)]
+  # Extract the column name's richness group
+  melted_dt <- melted_dt[, colname_group := gsub(".*Group(.*?)_.*", "\\1", column_name)]
+  
+  # Remove rows where the column_name's tree specie is not the strategy treespecie
+  # and where the planting year is not the strategy plantingyear
+  # and where we don't plant (area is 0)
+  # and where plantingyear is 25
+  melted_dt <- melted_dt[colname_treespecie == treespecie &
+                           colname_plantingyear == year &
+                           area != 0 &
+                           colname_plantingyear != MAXYEAR + 1, ]
+  
+  # Sum richness by group
+  tmp <- melted_dt[, .(total_richness = sum(richness)), by = colname_group]
+  richness <- tmp$total_richness
+  names(richness) <- tmp$colname_group
+  
+  richness_sd <- sapply(richness, function(x){return(0)})
+  
+  
+  # End ----
+  
+  return(list("sum_carbon" = sum_carbon,
+              "sum_carbon_sd" = sum_carbon_sd,
+              "sum_richness" = richness,
+              "sum_richness_sd" = richness_sd,
+              "sum_biodiversity" = sum_biodiversity,
+              "sum_biodiversity_sd" = sum_biodiversity_sd,
+              "sum_visits" = sum_visits,
+              "sum_visits_sd" = sum_visits_sd,
+              "sum_area" = sum(area_vector)
+  ))
+}
+
+
 # bisection assigns half the values to 0, and half to 1, by finding a cutoff point
 continuous_to_categorical <- function(values,
                                       legal_non_zero_values) {
@@ -431,6 +1021,81 @@ continuous_to_categorical <- function(values,
   return(result)
 }
 
+# continuous_to_multi_categorical <- function(values,
+#                                             legal_values_ordered) {
+#   # Get the number of categories based on the number of rows in legal_values_ordered
+#   num_categories <- nrow(legal_values_ordered)
+# 
+#   # Define quantile breakpoints based on the number of categories
+#   quantiles <- quantile(values, probs = seq(0, 1, length.out = num_categories + 1), na.rm = TRUE)
+# 
+#   # Apply the transformation to each row of the matrix
+#   solutions <- apply(values, 1, function(row, quantiles, legal_values_ordered) {
+# 
+#     # Initialize a new row of character vectors (to hold categorical values)
+#     new_row <- character(length(row))
+# 
+#     # For each value (column) in the row, assign it to the corresponding category
+#     for (i in 1:length(row)) {
+#       for (j in 1:num_categories) {
+#         # Ensure that each value falls within a valid quantile range
+#         condition1 <- isTRUE(quantiles[j] <= row[i] && row[i] < quantiles[j + 1])
+#         # if we need to use the highest category, i.e. (row[i] == quantiles[j + 1])
+#         condition2 <- isTRUE(j == num_categories)
+#         if (condition1 || condition2) {
+#           # Assign the corresponding legal value for the category
+#           new_row[i] <- legal_values_ordered[j, i]
+#           break
+#         }
+#       }
+#     }
+# 
+#     return(new_row)
+#   }, quantiles = quantiles, legal_values_ordered = legal_values_ordered)
+# 
+#   # Transpose the result to match the original matrix structure
+#   solutions <- t(solutions)
+# 
+#   return(solutions)
+# }
+
+continuous_to_multi_categorical <- function(values,
+                                            legal_values_ordered) {
+  # Get the number of categories based on the number of rows in legal_values_ordered
+  num_categories <- nrow(legal_values_ordered)
+  
+  # Define quantile breakpoints based on the number of categories
+  # quantiles <- quantile(values, probs = seq(0, 1, length.out = num_categories + 1), na.rm = TRUE)
+  cutoffs <- seq(0, 1, length.out = num_categories + 1)
+  
+  # Ensure we are dealing with a matrix/data.frame (so that nrow does not throw an error)
+  if (is.null(dim(values))) {
+    values <- matrix(values, nrow = 1)
+  }
+  
+  indices <- findInterval(values, cutoffs, rightmost.closed = TRUE)
+  
+  solutions <- sapply(1:ncol(legal_values_ordered), function(col) {
+    legal_values_ordered[indices[col], col]
+  })
+  solutions <- matrix(solutions, nrow = nrow(values), ncol = ncol(values))
+  
+  # # Apply the transformation to each row of the matrix
+  # solutions <- matrix(NA, nrow = nrow(values), ncol = ncol(values))
+  # 
+  # for(j in 1:num_categories) {
+  #   # Ensure that each value falls within a valid quantile range
+  #   # if we need to use the highest category, i.e. (row[i] == quantiles[j + 1])
+  #   # Assign the corresponding legal value for the category
+  #   condition <- values >= quantiles[j] & (values < quantiles[j + 1] | j == num_categories)
+  #   solutions[condition] <- legal_values_ordered[j, col(values)[condition]]
+  # }
+  
+  return(solutions)
+}
+
+
+
 generate_samples_RRembo <- function(d, lower, upper, budget = 100,
                                     legal_non_zero_values,
                                     # control = list(Atype = "isotropic",
@@ -450,11 +1115,11 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
                                     init = NULL,
                                     # init$n, init$Amat
                                     RRembo_hyper_parameters = NULL,
-                                    global_log_level = LOG_LEVEL) {
+                                    limit_log_level = LOG_LEVEL) {
   
   if (is.null(RRembo_hyper_parameters)) {
     msg <- "generate_samples_RRembo() has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -471,56 +1136,58 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
   if (control$reverse) {
     if (is.null(init$low_dim_design)) {
       msg <- paste0("RREMBO generating data. Generate low dimension data (", control$designtype, ") ...")
-      notif(msg, log_level = "debug", global_log_level = global_log_level)
+      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
       DoE_low_dimension <- designZ(n.init, tA, bxsize, type = control$designtype)
-      notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
+      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
     } else {
       indtest <- testZ(init$low_dim_design, tA)
-      if (!all(indtest)) 
-        warning("Not all initial low dimensional designs belong to Z.")
+      if (!all(indtest)) {
+        msg <- "Not all initial low dimensional designs belong to Z."
+        notif(msg, log_level = "warning", limit_log_level = limit_log_level)
+      }
       DoE_low_dimension <- init$low_dim_design
     }
     msg <- "RREMBO generating data. Generate high dimension data (smart projection low-dim to high-dim) ..."
-    notif(msg, log_level = "debug", global_log_level = global_log_level)
+    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
     DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_zonotope(DoE_low_dimension = DoE_low_dimension,
                                                                                   A = A,
                                                                                   Amat = Amat,
                                                                                   Aind = Aind,
                                                                                   upper = upper,
                                                                                   lower = lower)
-    notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
+    notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
   } else {
     if (is.null(init$low_dim_design)) {
       msg <- "RREMBO generating data. Generate low dimension data ..."
-      notif(msg, log_level = "debug", global_log_level = global_log_level)
+      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
       DoE_low_dimension <- designU(n.init, A, bxsize, type = control$designtype, 
                                    standard = control$standard)
-      notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
+      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
     } else {
       DoE_low_dimension <- init$low_dim_design
     }
     msg <- "RREMBO generating data. Generate high dimension data (basic projection low-dim to high-dim) ..."
-    notif(msg, log_level = "debug", global_log_level = global_log_level)
+    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
     DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_original(DoE_low_dimension = DoE_low_dimension,
                                                                                   A = A,
                                                                                   Amat = Amat,
                                                                                   Aind = Aind,
                                                                                   upper = upper,
                                                                                   lower = lower)
-    notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
+    notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
   }
   msg <- "RREMBO generating data. Generate low dimension data part 2 (Psi_Y_nonort) ..."
-  notif(msg, log_level = "debug", global_log_level = global_log_level)
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
   DoE_low_dimension <- map(DoE_low_dimension, A)
-  notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
+  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
   
   # Turn values between 0 and 1 to legal area values by rounding then multiplying
   msg <- "RREMBO generating data. Generate high dimension data part 2 (map to categorical values) ..."
-  notif(msg, log_level = "debug", global_log_level = global_log_level)
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
   values <- continuous_to_categorical(values = DoE_high_dimension,
                                       legal_non_zero_values = legal_non_zero_values)
-  notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
-  notif("... generate_samples_RRembo() done", log_level = "debug", global_log_level = global_log_level)
+  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+  notif("... generate_samples_RRembo() done", log_level = "debug", limit_log_level = limit_log_level)
   
   return(list(sample_high_dimension = DoE_high_dimension,
               sample_high_dimension_categorical = values,
@@ -528,57 +1195,6 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
               Amat = A))
 }
 
-generate_samples_RRembo_basic <- function(d, D, budget = 100,
-                                          legal_non_zero_values,
-                                          # control = list(Atype = "isotropic",
-                                          #                reverse = TRUE,
-                                          #                bxsize = NULL,
-                                          #                testU = TRUE,
-                                          #                standard = FALSE, 
-                                          #                maxitOptA = 100,
-                                          #                lightreturn = FALSE,
-                                          #                warping = "Psi",
-                                          #                designtype = "unif",
-                                          #                tcheckP = 1e-04,
-                                          #                roll = F,
-                                          #                inneroptim = "pso",
-                                          #                popsize = 80, 
-                                          #                gen = 40),
-                                          init = NULL,
-                                          # init$n, init$Amat
-                                          RRembo_hyper_parameters = NULL,
-                                          global_log_level = LOG_LEVEL) {
-  
-  if (is.null(RRembo_hyper_parameters)) {
-    msg <- "generate_samples_RRembo_basic() has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
-    stop(paste("[ERROR]", msg))
-  }
-  
-  A <- Amat <- RRembo_hyper_parameters$A
-  n.init <- RRembo_hyper_parameters$n.init
-  
-  
-  msg <- "RREMBO generating data. Generate data part 1 (randomLHS and map to higher dimension) ..."
-  notif(msg, log_level = "debug", global_log_level = global_log_level)
-  DoE_low_dimension <- lhs::randomLHS(n.init, d)
-  DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
-  notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
-  
-  # Turn values between 0 and 1 to legal area values by rounding then multiplying
-  
-  msg <- "RREMBO generating data. Generate data part 2 (map to categorical values) ..."
-  notif(msg, log_level = "debug", global_log_level = global_log_level)
-  DoE_high_dimension_categorical <- continuous_to_categorical(values = DoE_high_dimension,
-                                                              legal_non_zero_values = legal_non_zero_values)
-  notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
-  notif(paste("generate_samples_RRembo_basic() done"), log_level = "debug", global_log_level = global_log_level)
-  
-  return(list(sample_high_dimension = DoE_high_dimension,
-              sample_high_dimension_categorical = DoE_high_dimension_categorical,
-              sample_low_dimension = DoE_low_dimension,
-              Amat = A))
-}
 
 EI_Rembo <- function(x, model, mval = -10, RRembo_hyper_parameters = NULL,
                      batch_size = 1,
@@ -586,11 +1202,11 @@ EI_Rembo <- function(x, model, mval = -10, RRembo_hyper_parameters = NULL,
                      M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                      type = "expected improvement",
                      minimize_objective_function = TRUE,
-                     global_log_level = LOG_LEVEL) {
+                     limit_log_level = LOG_LEVEL) {
   
   if (is.null(RRembo_hyper_parameters)) {
     msg <- "EI_Rembo has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -699,17 +1315,17 @@ normalize_minmax <- function(x) {
 }
 
 # Active Subspace Method
-dimension_reduction_asm_weights <- function(inputs, outputs, global_log_level = LOG_LEVEL) {
+dimension_reduction_asm_weights <- function(inputs, outputs, limit_log_level = LOG_LEVEL) {
   library(BASS)
   library(concordance)
   library(zipfR)
   source(file.path("functions", "concordance-extra-function.R"))
   
-  mymodel <- bass(xx = inputs, y = outputs, verbose = isTRUE(global_log_level != "none"))
+  mymodel <- bass(xx = inputs, y = outputs, verbose = isTRUE(limit_log_level != "none"))
   msg <- "Calculating ASM covariance matrix ..."
-  notif(msg, log_level = "debug", global_log_level = global_log_level)
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
   covariance_matrix <- C_bass(mymodel)
-  notif(paste(msg, "done"), log_level = "debug", global_log_level = global_log_level)
+  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
   
   # Perform eigenvalue decomposition
   eigen_decomp <- eigen(covariance_matrix)
@@ -747,11 +1363,11 @@ dimension_reduction_asm_generate_new_inputs <- function(inputs, weights) {
 dimension_reduction_pca <- function(inputs,
                                     percentage_variance_explained = NULL,
                                     center = FALSE, scale = FALSE,
-                                    global_log_level = LOG_LEVEL,
+                                    limit_log_level = LOG_LEVEL,
                                     ...) {
   if (is.null(percentage_variance_explained)) {
     msg <- "In dimension_reduction_pca, specify percentage_variance_explained"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -770,16 +1386,16 @@ dimension_reduction_pca_generate_new_inputs <- function(pca_object, inputs, numb
 dimension_reduction_svd <- function(inputs,
                                     percentage_variance_explained = NULL,
                                     number_of_components = NULL,
-                                    global_log_level = LOG_LEVEL) {
+                                    limit_log_level = LOG_LEVEL) {
   
   if (is.null(percentage_variance_explained) && is.null(number_of_components)) {
     msg <- "In dimension_reduction_svd, specify either percentage_variance_explained or number_of_components"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   if (!is.null(percentage_variance_explained) && !is.null(number_of_components)) {
     msg <- "In dimension_reduction_svd, specify either percentage_variance_explained or number_of_components, but not both"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -822,12 +1438,12 @@ dimension_reduction_mca <- function(inputs,
   
   if (is.null(percentage_variance_explained) && is.null(number_of_components)) {
     msg <- "In dimension_reduction_mca, specify either percentage_variance_explained or number_of_components"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   if (!is.null(percentage_variance_explained) && !is.null(number_of_components)) {
     msg <- "In dimension_reduction_mca, specify either percentage_variance_explained or number_of_components, but not both"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -938,7 +1554,7 @@ fastest_design_point_selection_method <- function(gp_model, input_candidates_for
   
   if (all(is.infinite(unlist(time)))) {
     msg <- "All Bayesian optimization batch methods (dgpsi -> pei, vigf, mice, alm) failed"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   return(names(time)[which.min(time)])
@@ -1132,7 +1748,7 @@ acquisition_function <- function(gp_predicted_means,
     result <- pnorm(Z)
   }
   
-  if (batch_size > 1 && isTRUE(multiple_data_points)) {
+  if (batch_size > 1) {
     result <- batch_selection(result, batch_size)
   }
   
@@ -1147,73 +1763,45 @@ acquisition_function <- function(gp_predicted_means,
 batch_selection <- function(acquisition_values, batch_size = 1) {
   if (batch_size > length(acquisition_values)) {
     msg <- "In batch_selection, the batch_size is larger than the number of possible values"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   return(order(acquisition_values, decreasing = TRUE)[1:batch_size])
 }
 
-objective_function <- function(inputs, # c(area_vector)
+objective_function <- function(inputs, # c(area, year_planting, tree_specie)
                                area_sum_threshold, # number
-                               area_possible_non_zero_values, # vector
-                               outcomes_to_minimize_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
-                               outcomes_to_minimize_SD_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
+                               year_of_max_no_planting_threshold_vector, # vector
+                               FullTable_arg,
+                               SCENARIO_ARG = SCENARIO,
+                               MAXYEAR_ARG = MAXYEAR,
                                outcomes_to_minimize_sum_threshold_vector = NULL, # vector
-                               outcomes_to_maximize_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
-                               outcomes_to_maximize_SD_matrix = NULL, # 1 row per parcel, 1 column per outcome (e.g. carbon)
                                outcomes_to_maximize_sum_threshold_vector = NULL, # vector
                                penalty_coefficient_arg = PENALTY_COEFFICIENT,
                                preference_weight_area = -1, # Minimize -> negative
                                preference_weights_minimize = NULL, # Minimize -> negative
                                preference_weights_maximize = NULL, # Maximize -> positive
                                exploration = FALSE, # vector, 1 value per outcome
-                               scale = FALSE,
                                tolvec,
                                alpha = 0.9,
                                multi_objectives = FALSE) {
   
+  FullTable <- FullTable_arg
+  SCENARIO <- SCENARIO_ARG
+  MAXYEAR <- MAXYEAR_ARG
   number_of_locations <- length(inputs)
   
   penalty_coefficient <- penalty_coefficient_arg
   
   # Retrieve variables from vector
-  idx <- 1:number_of_locations
-  area_vector <- inputs[idx]
-  
-  # idx <- max(idx) + 1:number_of_locations
-  # years_vector <- inputs[idx]
+  outcomes <- get_outcomes_from_strategy(parameter_vector = inputs,
+                                         FullTable_arg = FullTable)
   
   objectives <- c()
   result <- 0
   cantelli_threshold <- - sqrt(alpha / (1 - alpha))
   
   ## Penalties to make the variables binary instead of continuous
-  
-  # Where Area is zero, ignore
-  indices_of_non_zero_area <- which(area_vector != 0)
-  # Area
-  area_vector <- area_vector[indices_of_non_zero_area]
-  area_possible_non_zero_values <- area_possible_non_zero_values[indices_of_non_zero_area]
-  # Years
-  # years_vector <- years_vector[indices_of_non_zero_area]
-  # years_possible_non_zero_values <- years_possible_non_zero_values[indices_of_non_zero_area]
-  
-  # Other outcomes to maximize + scale (x-min)/(max-min)
-  if (is.null(outcomes_to_maximize_matrix) == FALSE) {
-    outcomes_to_maximize_matrix <- outcomes_to_maximize_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-    outcomes_to_maximize_SD_matrix <- outcomes_to_maximize_SD_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-    # dplyr::mutate(across(everything(), ~ (.x - min(.x)) / (max(.x) - min(.x))))
-  }
-  # Other outsomes to minimize + scale (x-min)/(max-min)
-  if (is.null(outcomes_to_minimize_matrix) == FALSE) {
-    outcomes_to_minimize_matrix <- outcomes_to_minimize_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-    outcomes_to_minimize_SD_matrix <- outcomes_to_minimize_SD_matrix %>%
-      dplyr::slice(indices_of_non_zero_area)
-    # dplyr::mutate(across(everything(), ~ (.x - min(.x)) / (max(.x) - min(.x))))
-  }
   
   # # Add a penalty based on distances to closest acceptable values
   # values <- area_vector
@@ -1226,115 +1814,114 @@ objective_function <- function(inputs, # c(area_vector)
   #   result <- result + 2 * penalty_coefficient_arg * min(distance_to_zero, distance_to_non_zero)
   # }
   
+  
   ## Penalties for deviating from the thresholds
   
-  # Area and a penalty to avoid going above the target
-  vector_sum <- sum(area_vector)
+  # Area
+  vector_sum <- outcomes$sum_area
   threshold <- area_sum_threshold
   penalty <- penalty_coefficient * max(0, vector_sum - threshold)
   # Minimize -> negative
-  preference_weight <- - preference_weight_area
-  if (exploration == FALSE) {
-    objectives[1] <- vector_sum + penalty
-    result <- result + preference_weight * vector_sum + penalty
+  preference_weight <- preference_weight_area
+  if (isFALSE(exploration)) {
+    objectives[1] <- - preference_weight * vector_sum + penalty
+    result <- result - preference_weight * vector_sum + penalty
   } else {
     objectives[1] <- penalty
     result <- result + penalty
   }
   
-  
-  # # Do something similar for other outcomes (minimize, avoid going above the threshold)
-  # if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) > 0) {
-  #   for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
-  #     vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
-  #     threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-  #     penalty <- penalty_coefficient * max(0, vector_sum - threshold)
-  #     if (exploration == FALSE) {
-  #       objectives <- c(objectives, vector_sum + penalty)
-  #       result <- result + vector_sum + penalty
-  #     } else {
-  #       objectives <- c(objectives, penalty)
-  #       result <- result + penalty
-  #     }
-  #   }
-  # }
-  # # Do something similar for other outcomes (maximize, avoid going below the threshold)
-  # if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) > 0) {
-  #   for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
-  #     vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
-  #     threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-  #     penalty <- penalty_coefficient * min(0, vector_sum - threshold)
-  #     if (exploration == FALSE) {
-  #       objectives <- c(objectives, - vector_sum - penalty)
-  #       result <- result - vector_sum - penalty
-  #     } else {
-  #       objectives <- c(objectives, - penalty)
-  #       result <- result - penalty
-  #     }
-  #   }
-  # }
-  # Do something similar for other outcomes (minimize, avoid going above the threshold)
-  if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) &&
-      is.null(outcomes_to_minimize_SD_matrix) == FALSE && nrow(outcomes_to_minimize_SD_matrix)> 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
-      vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_minimize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-      # Minimize -> negative
-      preference_weight <- - preference_weights_minimize[outcome_idx]
-      outcome_name <- colnames(outcomes_to_minimize_matrix)[outcome_idx]
-      # minus outcome and threshold, because the standard formula handles the case of maximizing the outcome, but here we minimize
-      implausibility <- Impl(Target = - threshold,
-                             EY = - vector_sum,
-                             SDY = vector_sum_sd,
-                             alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
-      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
-      if (exploration == FALSE) {
-        objectives <- c(objectives, vector_sum - penalty)
-        result <- result + preference_weight * vector_sum - penalty
-      } else {
-        objectives <- c(objectives, penalty)
-        result <- result - penalty
-      }
-    }
+  # Carbon
+  vector_sum <- outcomes$sum_carbon
+  vector_sum_sd <- outcomes$sum_carbon_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Carbon"]
+  preference_weight <- preference_weights_maximize["Carbon"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Carbon"])$Im
+  penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+  if (isFALSE(exploration)) {
+    objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+    result <- result - preference_weight * vector_sum + penalty
+  } else {
+    objectives <- c(objectives, penalty)
+    result <- result + penalty
   }
-  # Do something similar for other outcomes (maximize, avoid going below the threshold)
-  if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) &&
-      is.null(outcomes_to_maximize_SD_matrix) == FALSE && nrow(outcomes_to_maximize_SD_matrix) > 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
-      vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_maximize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-      browser()
-      preference_weight <- preference_weights_maximize[outcome_idx]
+  
+  # Richness
+  if (isFALSE(is.null(outcomes$sum_richness))) {
+    
+    for (group in names(outcomes$sum_richness)) {
+      
+      vector_sum <- outcomes$sum_richness[group]
+      vector_sum_sd <- 0
+      threshold <- outcomes_to_maximize_sum_threshold_vector[group]
+      preference_weight <- preference_weights_maximize[group]
       implausibility <- Impl(Target = threshold,
                              EY = vector_sum,
-                             SDY = vector_sum_sd,
+                             SDY = 0,
                              alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
-      penalty <- penalty_coefficient * min(0, cantelli_threshold - implausibility)
-      if (exploration == FALSE) {
-        # objectives <- c(objectives, - vector_sum - penalty)
-        # result <- result - vector_sum - penalty
-        objectives <- c(objectives, - preference_weight * vector_sum - penalty)
-        result <- result - preference_weight * vector_sum - penalty
+                             tol = tolvec[group])$Im
+      penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+      if (isFALSE(exploration)) {
+        objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+        result <- result - preference_weight * vector_sum + penalty
       } else {
-        # objectives <- c(objectives, - penalty)
-        # result <- result - penalty
-        objectives <- c(objectives, - penalty)
+        objectives <- c(objectives, penalty)
         result <- result + penalty
       }
     }
   }
   
+  # Biodiversity
+  if (isFALSE(is.null(outcomes$sum_biodiversity))) {
+    
+    for (specie in names(outcomes$sum_biodiversity)) {
+      
+      vector_sum <- outcomes$sum_biodiversity[specie]
+      vector_sum_sd <- outcomes$sum_biodiversity_sd[specie]
+      threshold <- outcomes_to_maximize_sum_threshold_vector[specie]
+      preference_weight <- preference_weights_maximize[specie]
+      implausibility <- Impl(Target = threshold,
+                             EY = vector_sum,
+                             SDY = vector_sum_sd,
+                             alpha = alpha,
+                             tol = tolvec[specie])$Im
+      penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+      if (isFALSE(exploration)) {
+        objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+        result <- result - preference_weight * vector_sum + penalty
+      } else {
+        objectives <- c(objectives, penalty)
+        result <- result + penalty
+      }
+    }
+  }
+  
+  # Visits
+  vector_sum <- outcomes$sum_visits
+  vector_sum_sd <- outcomes$sum_visits_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Visits"]
+  preference_weight <- preference_weights_maximize["Visits"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Visits"])$Im
+  penalty <- penalty_coefficient * max(0, implausibility - cantelli_threshold)
+  if (isFALSE(exploration)) {
+    objectives <- c(objectives, - preference_weight * vector_sum + penalty)
+    result <- result - preference_weight * vector_sum + penalty
+  } else {
+    objectives <- c(objectives, penalty)
+    result <- result + penalty
+  }
+  
   if (!is.finite(result)) {
-    browser()
-    message("area_vector=", area_vector)
-    message("area_sum_threshold=", area_sum_threshold)
-    message("area_possible_non_zero_values=", area_possible_non_zero_values)
+    msg <- paste("The objective function returned a non-finite value of", result)
+    notif(msg, log_level = "error")
   }
   
   if (isTRUE(multi_objectives)) {
@@ -1364,7 +1951,8 @@ gp_performance <- function(gp_means,
   total_sum_of_squares <- sum((true_outputs - mean(true_outputs))^2)
   residual_sum_of_squares <- sum((gp_means - true_outputs)^2)
   if (total_sum_of_squares == 0) {
-    warning("Total sum of squares is zero, R-squared is not defined.")
+    msg <- "Total sum of squares is zero, R-squared is not defined."
+    notif(msg, log_level = "warning", limit_log_level = limit_log_level)
     return(NA)
   } else {
     r_squared <- 1 - residual_sum_of_squares / total_sum_of_squares
@@ -1402,11 +1990,30 @@ theme_Publication <- function(base_size = 10) {
     )
 }
 
-# https://ntfy.sh/uoerstudioserver
-# https://ntfysenate.uboracle1.freeddns.org/uoerstudioserver
-notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default", rbind = FALSE, pad_character = "_",
-                  ntfy = TRUE, file = TRUE, message_arg = TRUE,
-                  log_level = "info", global_log_level = LOG_LEVEL) {
+# This function is necessary to visualize progress of the background tasks (mainly optimization in tab 1 for now)
+# because it runs in a different process and cannot (easily) print values in the main R console or in the Shiny
+# interface. This function serves to define one way globally to send messages to a local file, console, and ntfy server.
+# The official https://ntfy.sh is rate-limited after a few hundred messages, so I (Tim) host my own on a VPS
+# at https://ntfysenate.uboracle1.freeddns.org and fallback to https://ntfy.sh.
+# Anyone can send messages to it, but everything else requires a login. Ask me for one (t.r.f.bacri@exeter.ac.uk) if you want access.
+# ntfy is nice because notifications can be sent to the webpage browser, and to the smartphone app, with different priorities.
+notif <- function(msg,
+                  # Print command messages
+                  verbose = FALSE,
+                  # cURL flags (when using ntfy)
+                  curl_flags = NULL,
+                  # Notify on ntfy with what priority notifications (https://docs.ntfy.sh/publish/?h=priority#message-priority)
+                  ntfy = FALSE, ntfy_priority = "default",
+                  # Useful to print data.frames correctly on ntfy
+                  rbind = FALSE, pad_character = "_",
+                  # Log to a unique file per Shiny session (`server(...)` instance)
+                  file = TRUE, file_suffix = SESSION_FILE_SUFFIX,
+                  # Print on console with message function
+                  message_arg = TRUE,
+                  # Default logging level (debug, info, warning, error, none)
+                  log_level = "info",
+                  # Maximum allowed logging level. Anything above is not sent (e,g, if set to "error", messages of level "info" are not sent)
+                  limit_log_level = LOG_LEVEL) {
   
   log_level_msg <- toupper(log_level)
   log_level <- switch(
@@ -1417,46 +2024,48 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
     "info" = 3,
     "debug" = 4,
   )
-  global_log_level <- switch(
-    global_log_level,
+  limit_log_level <- switch(
+    limit_log_level,
     "none" = 0,
     "error" = 1,
     "warning" = 2,
     "info" = 3,
     "debug" = 4,
   )
-
-  if (log_level > global_log_level) return()
+  
+  if (log_level > limit_log_level) return()
   
   if (isFALSE(rbind)) {
     msg <- paste0("[", log_level_msg, "] ", msg)
   }
-  if (isTRUE(ntfy)) {
-    pad_notif_message <- function(msg, pad_character = "_") {
-      max_key_width <- max(nchar(rownames(msg)))
-      padded_notif_msg <- sapply(1:nrow(msg), function(i, max_key_width, msg) {
-        key <- rownames(msg)[i]
-        value <- msg[i]
-        # result <- sprintf("%-*s  %s", max_key_width, key, value)
-        pad_length <- max_key_width - nchar(key)
-        formatted_key <- paste0(key, strrep(pad_character, pad_length))
-        result <- paste0(formatted_key, pad_character, pad_character, value)
-        return(result)
-      }, max_key_width = max_key_width, msg = msg)
-      padded_notif_msg <- paste(padded_notif_msg, collapse = "\n")
-      return(padded_notif_msg)
+  
+  pad_notif_message <- function(msg, pad_character = "_") {
+    max_key_width <- max(nchar(rownames(msg)))
+    padded_notif_msg <- sapply(1:nrow(msg), function(i, max_key_width, msg) {
+      key <- rownames(msg)[i]
+      value <- msg[i]
+      # result <- sprintf("%-*s  %s", max_key_width, key, value)
+      pad_length <- max_key_width - nchar(key)
+      formatted_key <- paste0(key, strrep(pad_character, pad_length))
+      result <- paste0(formatted_key, pad_character, pad_character, value)
+      return(result)
+    }, max_key_width = max_key_width, msg = msg)
+    padded_notif_msg <- paste(padded_notif_msg, collapse = "\n")
+    return(padded_notif_msg)
+  }
+  
+  if (isTRUE(rbind)) {
+    # Convert the message to a string without column names like "[,1]"
+    if (isTRUE(dim(msg)[2] > 0) && is.null(colnames(msg))) {
+      colnames(msg) <- ""
     }
+    # # gsub in case msg contains strings that get quoted with \"
+    # msg <- paste(gsub('\"', '', capture.output(msg)), collapse = "\n")
     
-    if (isTRUE(rbind)) {
-      # Convert the message to a string without column names like "[,1]"
-      if (isTRUE(dim(msg)[2] > 0) && is.null(colnames(msg))) {
-        colnames(msg) <- ""
-      }
-      # # gsub in case msg contains strings that get quoted with \"
-      # msg <- paste(gsub('\"', '', capture.output(msg)), collapse = "\n")
-      
-      msg <- pad_notif_message(msg, pad_character = pad_character)
-    }
+    msg <- pad_notif_message(msg, pad_character = pad_character)
+  }
+  
+  if (isTRUE(ntfy)) {
     
     # Windows curl has problems with my ntfy server. I install the new curl in C:/curl and search for it if it exists
     # Otherwise, I use the official ntfy.sh, but it has a daily free limit that I hit quickly.
@@ -1481,7 +2090,7 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
     )
     
     # Execute the command
-    result <- system(command, ignore.stdout = quiet, timeout = 5)
+    result <- system(command, ignore.stdout = !verbose, timeout = 5)
     # If there was a curl error
     if (result != 0) {
       url <- "https://ntfy.sh/uoerstudioserver"
@@ -1494,7 +2103,7 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
         msg,
         '" "', url, '"'
       )
-      result <- system(command, ignore.stdout = quiet, timeout = 5)
+      result <- system(command, ignore.stdout = !verbose, timeout = 5)
       if (result != 0) {
         warning("[ERROR] notification cannot be sent to ntfy.sh/uoerstudioserver. You should disable notifications to that website by changing the default argument (ntfy) of notif to FALSE.")
       }
@@ -1505,8 +2114,8 @@ notif <- function(msg, quiet = TRUE, curl_flags = NULL, ntfy_priority = "default
   if (isTRUE(file)) {
     # Log to file, because ntfy has a quota
     FolderSource <- get_foldersource()
-    log_filename <- normalizePath(file.path(FolderSource, "log.txt"))
-    lockfile_name <- normalizePath(file.path(FolderSource, "log_lockfile"))
+    log_filename <- normalizePath(file.path(FolderSource, paste0("log", file_suffix, ".txt")))
+    lockfile_name <- normalizePath(file.path(FolderSource, paste0("log_lockfile", file_suffix)))
     
     if (isFALSE(file.exists(log_filename))) {
       file.create(log_filename)
@@ -1530,27 +2139,28 @@ get_foldersource <- function() {
   return(FolderSource)
 }
 
-get_latest_task_id <- function(global_log_level = LOG_LEVEL) {
+get_latest_task_id <- function(limit_log_level = LOG_LEVEL, file_suffix = SESSION_FILE_SUFFIX) {
   FolderSource <- get_foldersource()
-  task_id_filename <- normalizePath(file.path(FolderSource, "task_id.txt"))
-  lockfile_name <- normalizePath(file.path(FolderSource, "task_id_lockfile"))
+  task_id_filename <- normalizePath(file.path(FolderSource, paste0("task_id", file_suffix, ".txt")))
+  lockfile_name <- normalizePath(file.path(FolderSource, paste0("task_id_lockfile", file_suffix)))
   
+  mylock <- flock::lock(lockfile_name)
   if (isFALSE(file.exists(task_id_filename))) {
-    msg <- "get_latest_task_id() is trying to read the file task_id.txt but it does not exist"
-    notif(msg, log_level = "error", global_log_level = global_log_level)
+    msg <- paste("get_latest_task_id() is trying to read the file", task_id_filename, "but it does not exist")
+    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    flock::unlock(mylock)
     stop(paste("[ERROR]", msg))
   }
-  mylock <- flock::lock(lockfile_name)
   latest_task_id <- as.integer(readLines(task_id_filename))
   flock::unlock(mylock)
   file.remove(lockfile_name)
   return(latest_task_id)
 }
 
-set_latest_task_id <- function(task_id) {
+set_latest_task_id <- function(task_id, file_suffix = SESSION_FILE_SUFFIX) {
   FolderSource <- get_foldersource()
-  task_id_filename <- normalizePath(file.path(FolderSource, "task_id.txt"))
-  lockfile_name <- normalizePath(file.path(FolderSource, "task_id_lockfile"))
+  task_id_filename <- normalizePath(file.path(FolderSource, paste0("task_id", file_suffix, ".txt")))
+  lockfile_name <- normalizePath(file.path(FolderSource, paste0("task_id_lockfile", file_suffix)))
   
   if (isFALSE(file.exists(task_id_filename))) {
     file.create(task_id_filename)
@@ -1563,11 +2173,14 @@ set_latest_task_id <- function(task_id) {
 
 bayesian_optimization <- function(
     seed = 1,
-    FullTable,
+    FullTable_arg,
+    MAXYEAR,
+    SCENARIO,
     area_sum_threshold,
+    year_of_max_no_planting_threshold_vector,
     outcomes_to_maximize_sum_threshold_vector = NULL,
     outcomes_to_minimize_sum_threshold_vector = NULL,
-    global_log_level = LOG_LEVEL,
+    limit_log_level = LOG_LEVEL,
     PLOT = FALSE,
     
     # We track the task ID. If it changes from get_latest_task_id(), this gets cancelled.
@@ -1579,8 +2192,6 @@ bayesian_optimization <- function(
     PENALTY_COEFFICIENT,
     EXPLORATION = TRUE, # FALSE for tab 1, TRUE for tab 2
     EXPLORATION_COEFFICIENT = 0,
-    
-    SCALE = FALSE,
     
     preference_weight_area = 1,
     preference_weights_maximize = NULL,
@@ -1595,14 +2206,7 @@ bayesian_optimization <- function(
       designtype = "LHS",
       # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
       reverse = FALSE),
-    RREMBO_HYPER_PARAMETERS = RRembo_defaults(d = 6, D = nrow(FullTable),
-                                              init = list(n = 10 * nrow(FullTable)), budget = 100,
-                                              control = list(
-                                                # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
-                                                designtype = "LHS",
-                                                # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
-                                                reverse = FALSE),
-                                              global_log_level = LOG_LEVEL),
+    RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
     RREMBO_SMART = FALSE,
     
     # GP
@@ -1612,134 +2216,68 @@ bayesian_optimization <- function(
     tolvec,
     alpha = alphaLVL
 ) {
+  FullTable <- FullTable_arg
+  RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
+  
   pb <- progressr_object
-  notif(paste0("task ", current_task_id, ", Starting a Bayesian Optimization ..."), global_log_level = global_log_level)
+  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
   # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
-  #   tryCatch({dgpsi::init_py(verb = VERBOSE)},
+  #   tryCatch({dgpsi::init_py(verb = TRUE)},
   #            error = function(e) {warning(e);stop(reticulate::py_last_error())})
   # }
   # shiny::showNotification("Starting a search for the best strategy ...", duration = 10)
   
   # Setup parameters ----
   set.seed(seed)
-  # Number of locations/dimensions
-  number_of_locations <- k <- nrow(FullTable)
+  # Number of dimensions
+  number_of_locations <- RREMBO_HYPER_PARAMETERS$D
   # Number of sample points
   # Generate 10 * the dimension of the input
-  n <- 10 * k
+  n <- 10 * number_of_locations
   begin <- Sys.time()
-
-  area_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select(area) %>% unlist(use.names = FALSE)
-  
-  # Outcomes to maximize
-  outcomes_to_maximize_matrix <- outcomes_to_maximize_SD_matrix <- c()
-  if (!is.null(outcomes_to_maximize_sum_threshold_vector)) {
-    for (name in names(outcomes_to_maximize_sum_threshold_vector)) {
-      # All can match with Allophyes_oxyacanthae
-      if (name == "All") {
-        outcomes_to_maximize_matrix <- dplyr::bind_cols(outcomes_to_maximize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("BioMean_All"))
-        outcomes_to_maximize_SD_matrix <- dplyr::bind_cols(outcomes_to_maximize_SD_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("BioSD_All"))
-        # Carbon is named "Jules" in FullTable, but can take e.g. "JulesMeanY2"
-      } else if (name == "Carbon") {
-        outcomes_to_maximize_matrix <- dplyr::bind_cols(outcomes_to_maximize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("JulesMean"))
-        outcomes_to_maximize_SD_matrix <- dplyr::bind_cols(outcomes_to_maximize_SD_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("JulesSD"))
-      } else {
-        outcomes_to_maximize_matrix <- dplyr::bind_cols(outcomes_to_maximize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select(contains(name) & contains("Mean")))
-        outcomes_to_maximize_SD_matrix <- dplyr::bind_cols(outcomes_to_maximize_SD_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select(contains(name) & contains("SD")))
-      }
-    }
-  }
-  # Outcomes to minimize
-  outcomes_to_minimize_matrix <- outcomes_to_minimize_SD_matrix <- c()
-  if (!is.null(outcomes_to_minimize_sum_threshold_vector)) {
-    for (name in names(outcomes_to_minimize_sum_threshold_vector)) {
-      # All can match with Allophyes_oxyacanthae
-      if (name == "All") {
-        outcomes_to_minimize_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("BioMean_All"))
-        outcomes_to_minimize_SD_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("BioSD_All"))
-        # Carbon is named "Jules" in FullTable, but can take e.g. "JulesMeanY2"
-      } else if (name == "Carbon") {
-        outcomes_to_minimize_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select("JulesMean"))
-        outcomes_to_minimize_SD_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select("JulesSD"))
-      } else {
-        outcomes_to_minimize_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                        FullTable %>%
-                                                          sf::st_drop_geometry() %>%
-                                                          dplyr::select(contains(name) & contains("Mean")))
-        outcomes_to_minimize_SD_matrix <- dplyr::bind_cols(outcomes_to_minimize_matrix,
-                                                           FullTable %>%
-                                                             sf::st_drop_geometry() %>%
-                                                             dplyr::select(contains(name) & contains("SD")))
-      }
-    }
-  }
-  carbon_possible_non_zero_values <- FullTable %>% sf::st_drop_geometry() %>% dplyr::select(JulesMean) %>% unlist(use.names = FALSE)
   
   # Generate inputs + outputs ----
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
-  notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs..."), global_log_level = global_log_level)
-  obj_inputs_full_constrained <- generate_legal_unique_samples(10 * 6, k,
-                                                               legal_non_zero_values = area_possible_non_zero_values,
-                                                               max_threshold = area_sum_threshold,
-                                                               constrained = CONSTRAINED_INPUTS,
+  msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Generating initial 80 inputs and outputs...")
+  notif(msg, limit_log_level = limit_log_level)
+  obj_inputs_full_constrained <- generate_legal_unique_samples(n = 10 * 4,
+                                                               FullTable_arg = FullTable,
+                                                               MAXYEAR_arg = MAXYEAR,
+                                                               SPECIES_arg = SPECIES,
+                                                               area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                               year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                               area_sum_is_constrained = CONSTRAINED_INPUTS,
                                                                RRembo = TRUE,
-                                                               RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                               RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                RRembo_smart = RREMBO_SMART,
                                                                current_task_id = current_task_id,
-                                                               global_log_level = global_log_level)
-  if (current_task_id != get_latest_task_id()) {
+                                                               limit_log_level = limit_log_level)
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
-  obj_inputs_full_unconstrained <- generate_legal_unique_samples(10 * 6, k,
-                                                                 legal_non_zero_values = area_possible_non_zero_values,
-                                                                 max_threshold = area_sum_threshold,
-                                                                 constrained = FALSE,
+  obj_inputs_full_unconstrained <- generate_legal_unique_samples(n = 10 * 4,
+                                                                 FullTable_arg = FullTable,
+                                                                 MAXYEAR_arg = MAXYEAR,
+                                                                 SPECIES_arg = SPECIES,
+                                                                 area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                                 year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                                 area_sum_is_constrained = FALSE,
                                                                  RRembo = TRUE,
-                                                                 RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                                 RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                  RRembo_smart = RREMBO_SMART,
                                                                  current_task_id = current_task_id,
-                                                                 global_log_level = global_log_level)
+                                                                 limit_log_level = limit_log_level)
   
-  if (current_task_id != get_latest_task_id()) {
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
   # Add a strategy that plants everywhere, and one that plants nowhere, to handle the case when the user has some extreme thresholds
-  obj_inputs_full_maximum_planting_high_dim_categorical <- area_possible_non_zero_values
-  obj_inputs_full_maximum_planting_high_dim <- area_possible_non_zero_values
-  obj_inputs_full_maximum_planting_low_dim <- area_possible_non_zero_values
+  # obj_inputs_full_maximum_planting_high_dim_categorical <- area_possible_non_zero_values
+  # obj_inputs_full_maximum_planting_high_dim <- area_possible_non_zero_values
+  # obj_inputs_full_maximum_planting_low_dim <- area_possible_non_zero_values
   
   obj_inputs_full <- list(valid_samples_high_dimension_categorical = rbind(obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
                                                                            obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical),
@@ -1747,38 +2285,44 @@ bayesian_optimization <- function(
                                                               obj_inputs_full_unconstrained$valid_samples_low_dimension),
                           valid_samples_high_dimension = rbind(obj_inputs_full_constrained$valid_samples_high_dimension,
                                                                obj_inputs_full_unconstrained$valid_samples_high_dimension))
-  
   obj_inputs <- obj_inputs_full$valid_samples_high_dimension_categorical
+  
+  if (isTRUE(current_task_id != get_latest_task_id())) {
+    return(FALSE)
+  }
+  
   obj_outputs <- apply(obj_inputs, 1, objective_function,
                        area_sum_threshold = area_sum_threshold,
-                       area_possible_non_zero_values = area_possible_non_zero_values,
-                       outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
-                       outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
+                       FullTable_arg = FullTable,
+                       SCENARIO_ARG = SCENARIO,
+                       MAXYEAR_ARG = MAXYEAR,
+                       year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector,
                        outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
+                       outcomes_to_minimize_sum_threshold_vector = outcomes_to_minimize_sum_threshold_vector,
                        exploration = EXPLORATION,
                        penalty_coefficient_arg = PENALTY_COEFFICIENT,
                        preference_weight_area = preference_weight_area,
                        preference_weights_maximize = preference_weights_maximize,
-                       scale = SCALE,
                        tolvec = tolvec,
                        alpha = alpha)
-  notif(paste0("task ", current_task_id, ", Generating initial inputs and outputs done"), global_log_level = global_log_level)
-  if (current_task_id != get_latest_task_id()) {
+  notif(paste0(msg, "done"), limit_log_level = limit_log_level)
+  
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
   obj_inputs_for_gp <- obj_inputs_full$valid_samples_low_dimension
   
   # Fitting GP ----
-  msg <- paste0("task ", current_task_id, ", Fitting GP...")
-  notif(msg, global_log_level = global_log_level)
+  msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Fitting GP...")
+  notif(msg, limit_log_level = limit_log_level)
   gp_model <- dgpsi::gp(obj_inputs_for_gp, obj_outputs,
                         name = KERNEL,
                         vecchia = TRUE,
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                         verb = FALSE)
-  notif(paste0(msg, "done"), global_log_level = global_log_level)
-  if (current_task_id != get_latest_task_id()) {
+  notif(paste0(msg, "done"), limit_log_level = limit_log_level)
+  if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
   
@@ -1791,7 +2335,7 @@ bayesian_optimization <- function(
   pb_amount <- 0
   for (i in 1:BAYESIAN_OPTIMIZATION_ITERATIONS) {
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     set.seed(i)
@@ -1800,26 +2344,30 @@ bayesian_optimization <- function(
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set...")
     pb(message = msg)
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
-    notif(msg, global_log_level = global_log_level)
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
+    notif(msg, limit_log_level = limit_log_level)
     
     if (rstudioapi::isBackgroundJob()) {
       message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
     }
     begin_inside <- Sys.time()
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
-    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(50, k,
-                                                                                legal_non_zero_values = area_possible_non_zero_values,
-                                                                                max_threshold = area_sum_threshold,
-                                                                                constrained = CONSTRAINED_INPUTS,
+    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(n = 50,
+                                                                                FullTable_arg = FullTable,
+                                                                                MAXYEAR_arg = MAXYEAR,
+                                                                                SPECIES_arg = SPECIES,
+                                                                                area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                                                year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                                                area_sum_is_constrained = CONSTRAINED_INPUTS,
                                                                                 RRembo = TRUE,
-                                                                                RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
+                                                                                RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                                 RRembo_smart = RREMBO_SMART,
                                                                                 current_task_id = current_task_id,
-                                                                                global_log_level = global_log_level)
-    if (current_task_id != get_latest_task_id()) {
+                                                                                limit_log_level = limit_log_level)
+    
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     # if (rstudioapi::isBackgroundJob()) {
@@ -1869,23 +2417,32 @@ bayesian_optimization <- function(
     lowest_gp_mean_obj_input_for_gp <- new_candidates_obj_inputs_for_gp[which.min(gp_means), ]
     
     optimization_inital_values <- rbind(best_initial_acquisition_value_obj_input_for_gp,
-                                        lowest_gp_mean_obj_input_for_gp)
+                                        lowest_gp_mean_obj_input_for_gp) |> unique()
     
     time_batch_trick <- Sys.time() - begin_inside
     # if (rstudioapi::isBackgroundJob()) {
     #   message("done")
     # }
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
-    notif(msg, global_log_level = global_log_level)
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
+    notif(msg, limit_log_level = limit_log_level)
+    
+    if (isTRUE(current_task_id != get_latest_task_id())) {
+      return(FALSE)
+    }
     
     ## Optimization of acquisition function around its max and the lowest GP mean ----
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function at max(EI) and min(GP_mean) ...")
     pb(message = msg)
-    notif(paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), global_log_level = global_log_level)
+    notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), limit_log_level = limit_log_level)
     
-    best_inputs_for_gp <- matrix(NA, nrow = 2, ncol = 6)
+    best_inputs_for_gp <- matrix(NA, nrow = nrow(optimization_inital_values), ncol = ncol(optimization_inital_values))
     for (i in 1:nrow(optimization_inital_values)) {
+      
+      if (isTRUE(current_task_id != get_latest_task_id())) {
+        return(FALSE)
+      }
+      
       optimization_inital_value <- optimization_inital_values[i, ]
       if (isTRUE(RREMBO_SMART)) {
         if (RREMBO_HYPER_PARAMETERS$control$reverse) {
@@ -1914,9 +2471,8 @@ bayesian_optimization <- function(
       # control = list(trace = VERBOSE))
       
       if (optimum$convergence != 0) {
-        msg <- paste0("task ", current_task_id, ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
-        warning(paste("[WARNING]", msg))
-        notif(msg, log_level = "warning", global_log_level = global_log_level)
+        msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
+        notif(msg, log_level = "warning", limit_log_level = limit_log_level)
       }
       
       best_inputs_for_gp[i, ] <- optimum$par
@@ -1928,26 +2484,42 @@ bayesian_optimization <- function(
                                                                                           A = RREMBO_HYPER_PARAMETERS$A,
                                                                                           Amat = RREMBO_HYPER_PARAMETERS$Amat,
                                                                                           Aind = RREMBO_HYPER_PARAMETERS$Aind,
-                                                                                          upper = rep(1, k),
-                                                                                          lower = rep(0, k))
+                                                                                          upper = rep(1, RREMBO_HYPER_PARAMETERS$D),
+                                                                                          lower = rep(0, RREMBO_HYPER_PARAMETERS$D))
       } else {
         best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_original(DoE_low_dimension = best_inputs_for_gp,
                                                                                           A = RREMBO_HYPER_PARAMETERS$A,
                                                                                           Amat = RREMBO_HYPER_PARAMETERS$Amat,
                                                                                           Aind = RREMBO_HYPER_PARAMETERS$Aind,
-                                                                                          upper = rep(1, k),
-                                                                                          lower = rep(0, k))
+                                                                                          upper = rep(1, RREMBO_HYPER_PARAMETERS$D),
+                                                                                          lower = rep(0, RREMBO_HYPER_PARAMETERS$D))
       }
     } else {
       best_inputs_continuous <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = best_inputs_for_gp,
                                                                                      A = RREMBO_HYPER_PARAMETERS$A)
     }
-    best_inputs <- continuous_to_categorical(values = best_inputs_continuous,
-                                             legal_non_zero_values = area_possible_non_zero_values)
-    best_inputs <- matrix(best_inputs, ncol = k)
     
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
-    notif(msg, global_log_level = global_log_level)
+    if (isTRUE(current_task_id != get_latest_task_id())) {
+      return(FALSE)
+    }
+    
+    best_inputs <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(
+      DoE_high_dimension_rowwise_matrix = best_inputs_continuous,
+      RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+      FullTable_arg = FullTable,
+      MAXYEAR_arg = MAXYEAR,
+      SPECIES_arg = SPECIES,
+      year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector
+    )
+    
+    best_inputs <- matrix(best_inputs, ncol = RREMBO_HYPER_PARAMETERS$D)
+    
+    if (isTRUE(current_task_id != get_latest_task_id())) {
+      return(FALSE)
+    }
+    
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
+    notif(msg, limit_log_level = limit_log_level)
     
     ## Objective function on the new inputs ----
     # pb_amount <- pb_amount + 1 / max_loop_progress_bar
@@ -1958,21 +2530,26 @@ bayesian_optimization <- function(
     begin_inside <- Sys.time()
     best_outputs <- apply(best_inputs, 1, objective_function,
                           area_sum_threshold = area_sum_threshold,
-                          area_possible_non_zero_values = area_possible_non_zero_values,
-                          outcomes_to_maximize_matrix = outcomes_to_maximize_matrix,
-                          outcomes_to_maximize_SD_matrix = outcomes_to_maximize_SD_matrix,
+                          FullTable_arg = FullTable,
+                          SCENARIO_ARG = SCENARIO,
+                          MAXYEAR_ARG = MAXYEAR,
+                          year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector,
                           outcomes_to_maximize_sum_threshold_vector = outcomes_to_maximize_sum_threshold_vector,
+                          outcomes_to_minimize_sum_threshold_vector = outcomes_to_minimize_sum_threshold_vector,
                           exploration = EXPLORATION,
                           penalty_coefficient_arg = PENALTY_COEFFICIENT,
-                          preference_weight_area = 1,
+                          preference_weight_area = preference_weight_area,
                           preference_weights_maximize = preference_weights_maximize,
-                          scale = SCALE,
                           tolvec = tolvec,
                           alpha = alpha)
     time_obj_function <- Sys.time() - begin_inside
     # if (rstudioapi::isBackgroundJob()) {
     #   message("done")
     # }
+    
+    if (isTRUE(current_task_id != get_latest_task_id())) {
+      return(FALSE)
+    }
     
     ## Diagnostics GP ----
     gp_means <- as.vector(predict(gp_model, best_inputs_for_gp)$results$mean)
@@ -1985,24 +2562,24 @@ bayesian_optimization <- function(
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP... ")
     pb(message = msg)
-    msg <- paste0("task ", current_task_id, ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
-    notif(msg, global_log_level = global_log_level)
+    msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
+    notif(msg, limit_log_level = limit_log_level)
     obj_inputs <- rbind(obj_inputs, best_inputs)
     obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
     obj_outputs <- c(obj_outputs, best_outputs)
     
-    if (current_task_id != get_latest_task_id()) {
+    if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
     begin_inside <- Sys.time()
     gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs,
-                              verb = isTRUE(global_log_level != "none"),
+                              verb = isTRUE(limit_log_level != "none"),
                               # Refit every 2 loop iterations
                               refit = isTRUE(i %% 2 == 0),
                               # Retrain every 15 loop iterations
                               reset = isTRUE(i %% 15 == 0))
     time_update_gp <- Sys.time() - begin_inside
-    notif(paste(msg, "done"), global_log_level = global_log_level)
+    notif(paste(msg, "done"), limit_log_level = limit_log_level)
     
     ## See what takes time ----
     time <- rbind(time,
@@ -2016,41 +2593,21 @@ bayesian_optimization <- function(
   
   end <- Sys.time()
   
-  # Update the other (non-area) outcomes
-  area_vector <- obj_inputs[which.min(obj_outputs), ]
-  indices_zero <- which(area_vector == 0)
-  if (isFALSE(is.null(outcomes_to_maximize_matrix))) {
-    outcomes_to_maximize_matrix <- outcomes_to_maximize_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-    outcomes_to_maximize_SD_matrix <- outcomes_to_maximize_SD_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-  }
-  if (isFALSE(is.null(outcomes_to_minimize_matrix))) {
-    outcomes_to_minimize_matrix <- outcomes_to_minimize_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-    outcomes_to_minimize_SD_matrix <- outcomes_to_minimize_SD_matrix %>%
-      mutate(across(everything(), ~ ifelse(row_number() %in% indices_zero, 0, .)))
-  }
-  
   # Gather results ----
   if (isTRUE(EXPLORATION)) {
     
     legal_output_indices <- which(obj_outputs == 0)
     legal_inputs <- obj_inputs[legal_output_indices, ]
     
-    area_vectors <- legal_inputs
+    outcomes_list <- lapply(1:nrow(legal_inputs), function(i) {
+      return(get_outcomes_from_strategy(legal_inputs[i, ],
+                                        FullTable_arg = FullTable))
+    })
     
-    locations_ignored_idx <- apply(area_vectors, 1, function(row) {which(row == 0)})
-    if (nrow(area_vectors) > 0) {
-      carbon_vectors <- do.call(rbind, lapply(1:nrow(area_vectors), function(x) carbon_possible_non_zero_values))
-    } else {
-      carbon_vectors <- data.frame()
-    }
-    
-    if (length(locations_ignored_idx) > 0) {
-      for (i in 1:nrow(carbon_vectors)) {
-        carbon_vectors[i, locations_ignored_idx[[i]]] <- 0
-      }
+    sum_area <- sum_carbon <- 0
+    for (outcome_list in outcomes_list) {
+      sum_area <- sum_area + outcome_list$sum_area
+      sum_carbon <- sum_carbon + outcome_list$sum_carbon
     }
     
     time_per_solution <- difftime(end, begin, units = "secs")
@@ -2065,12 +2622,12 @@ bayesian_optimization <- function(
       # "legal_output_indices" = paste0(legal_output_indices, collapse = "; "),
       "# strategies found" = length(legal_output_indices),
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
-      "# strategies evaluated" = BAYESIAN_OPTIMIZATION_ITERATIONS * BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+      "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
-      "Σarea summary" = paste0(round(summary(rowSums(area_vectors), 1), 2), collapse = "; "),
+      "Σarea summary" = paste0(round(sum_area, 2), collapse = "; "),
       "area max" = area_sum_threshold,
-      "Σcarbon summary" = paste0(round(summary(rowSums(carbon_vectors), 1), 2), collapse = "; "),
-      "carbon min" = outcomes_to_maximize_sum_threshold_vector[1],
+      "Σcarbon summary" = paste0(round(sum_carbon, 2), collapse = "; "),
+      "carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
       # "sum area_invalidness" = sum(diff_area_possible, na.rm = TRUE),
       # "obj_value" = paste0(obj_outputs[legal_output_indices], collapse = "; "),
       # "exploration coefficient" = EXPLORATION_COEFFICIENT,
@@ -2089,12 +2646,12 @@ bayesian_optimization <- function(
       "time per solution" = paste(time_per_solution, unit_time_per_solution)
     )
     # print(notif_msg)
-    notif(notif_msg, rbind  = TRUE, global_log_level = global_log_level)
+    notif(notif_msg, rbind  = TRUE, limit_log_level = limit_log_level)
     
     # Sum area / Sum carbon
     if (isTRUE(PLOT)) {
       
-      carbon_vectors <- matrix(carbon_possible_non_zero_values, ncol = k, nrow = nrow(obj_inputs), byrow = TRUE)
+      carbon_vectors <- matrix(carbon_possible_non_zero_values, ncol = RREMBO_HYPER_PARAMETERS$D, nrow = nrow(obj_inputs), byrow = TRUE)
       carbon_vectors[obj_inputs == 0] <- 0
       
       carbonareasums <- data.frame(sumarea = rowSums(obj_inputs), sumcarbon = rowSums(carbon_vectors)) |> unique()
@@ -2251,7 +2808,10 @@ bayesian_optimization <- function(
         mapview::mapshot(file = "tab2-map.png")
     }
   } else if (isFALSE(EXPLORATION)) {
-    area_vector <- obj_inputs[which.min(obj_outputs), ]
+    
+    obj_input <- obj_inputs[which.min(obj_outputs), ]
+    outcome <- get_outcomes_from_strategy(parameter_vector = obj_input,
+                                          FullTable_arg = FullTable)
     
     if (isTRUE(PLOT)) {
       # Map
@@ -2394,26 +2954,14 @@ bayesian_optimization <- function(
         gganimate::anim_save(filename = "tab1-area-obj.gif")
     }
     
-    locations_ignored_idx <- which(area_vector == 0)
-    carbon_vector <- carbon_possible_non_zero_values
-    carbon_vector[locations_ignored_idx] <- 0
-    
-    notif_msg1 <- cbind("area" = area_vector,
-                        # "area_invalidness" = diff_area_possible,
-                        "carbon" = carbon_vector
-    )
-    rownames(notif_msg1) <- rep("", nrow(notif_msg1))
-    # print(notif_msg1)
-    # notif(notif_msg1, quiet = FALSE, rbind  = TRUE, global_log_level = global_log_level)
-    
-    notif_msg2 <- rbind(
+    notif_msg <- rbind(
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
-      "# strategies evaluated" = BAYESIAN_OPTIMIZATION_ITERATIONS * BAYESIAN_OPTIMIZATION_BATCH_SIZE,
+      "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
-      "Σarea" = sum(area_vector),
+      "Σarea" = outcome$sum_area,
       "area max" = area_sum_threshold,
-      "Σcarbon" = sum(carbon_vector),
-      "carbon min" = outcomes_to_maximize_sum_threshold_vector[1],
+      "Σcarbon" = outcome$sum_carbon,
+      "carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
       # "sum area_invalidness" = sum(diff_area_possible, na.rm = TRUE),
       "obj_value" = min(obj_outputs),
       "preference weight area" = preference_weight_area,
@@ -2431,67 +2979,114 @@ bayesian_optimization <- function(
       "constrained inputs" = CONSTRAINED_INPUTS,
       "total time" = paste(round(end - begin, 1), units(end - begin))
     )
-    # print(notif_msg2)
-    notif(notif_msg2, rbind  = TRUE, global_log_level = global_log_level)
+    # print(notif_msg)
+    notif(notif_msg, rbind  = TRUE, limit_log_level = limit_log_level)
+  }
+  
+  if (isTRUE(current_task_id != get_latest_task_id())) {
+    return(FALSE)
   }
   
   # End the function ----
   # Return nothing (NULL) if constraints are not respected
   all_constraints_are_respected <- TRUE
-  vector_sum <- sum(area_vector)
-  threshold <- area_sum_threshold
-  all_constraints_are_respected <- isTRUE(max(0, vector_sum - threshold) > 0)
+  broken_constraints <- c()
   
+  outcome <- get_outcomes_from_strategy(parameter_vector = obj_inputs[which.min(obj_outputs), ],
+                                        FullTable_arg = FullTable)
   cantelli_threshold <- - sqrt(alpha / (1 - alpha))
   
-  # Do something similar for other outcomes (minimize, avoid going above the threshold)
-  if (is.null(outcomes_to_minimize_matrix) == FALSE && nrow(outcomes_to_minimize_matrix) &&
-      is.null(outcomes_to_minimize_SD_matrix) == FALSE && nrow(outcomes_to_minimize_SD_matrix)> 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_minimize_matrix)) {
-      vector_sum <- sum(outcomes_to_minimize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_minimize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_minimize_sum_threshold_vector[outcome_idx]
-      preference_weight <- preference_weights_minimize[outcome_idx]
-      # minus outcome and threshold, because the standard formula handles the case of maximizing the outcome, but here we minimize
-      implausibility <- Impl(Target = - threshold,
-                             EY = - vector_sum,
-                             SDY = vector_sum_sd,
+  # Area
+  vector_sum <- outcome$sum_area
+  threshold <- area_sum_threshold
+  if (vector_sum > threshold) {
+    all_constraints_are_respected <- FALSE
+    broken_constraints <- c(broken_constraints, "Area")
+  }
+  
+  # Carbon
+  vector_sum <- outcome$sum_carbon
+  vector_sum_sd <- outcome$sum_carbon_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Carbon"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Carbon"])$Im
+  if (implausibility > cantelli_threshold) {
+    all_constraints_are_respected <- FALSE
+    broken_constraints <- c(broken_constraints, "Carbon")
+    notif(paste("Carbon threshold =", threshold))
+    notif(paste("Carbon sum =", vector_sum))
+    notif(paste("Carbon sum sd =", vector_sum_sd))
+    notif(paste("Carbon tolvec =", tolvec["Carbon"]))
+    notif(paste("Carbon implausibility =", implausibility))
+  }
+  
+  # Richness
+  if (isFALSE(is.null(outcome$sum_richness))) {
+    
+    for (group in names(outcome$sum_richness)) {
+      
+      vector_sum <- outcome$sum_richness[group]
+      vector_sum_sd <- 0
+      threshold <- outcomes_to_maximize_sum_threshold_vector[group]
+      implausibility <- Impl(Target = threshold,
+                             EY = vector_sum,
+                             SDY = 0,
                              alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
+                             tol = tolvec[group])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
+        broken_constraints <- c(broken_constraints, group)
       }
     }
   }
-  # Do something similar for other outcomes (maximize, avoid going below the threshold)
-  if (is.null(outcomes_to_maximize_matrix) == FALSE && nrow(outcomes_to_maximize_matrix) &&
-      is.null(outcomes_to_maximize_SD_matrix) == FALSE && nrow(outcomes_to_maximize_SD_matrix) > 0) {
-    for (outcome_idx in 1:ncol(outcomes_to_maximize_matrix)) {
-      vector_sum <- sum(outcomes_to_maximize_matrix[, outcome_idx])
-      vector_sum_sd <- sqrt(sum((outcomes_to_maximize_SD_matrix[, outcome_idx])^2))
-      threshold <- outcomes_to_maximize_sum_threshold_vector[outcome_idx]
-      preference_weight <- preference_weights_maximize[outcome_idx]
+  
+  # Biodiversity
+  if (isFALSE(is.null(outcome$sum_biodiversity))) {
+    
+    for (specie in names(outcome$sum_biodiversity)) {
+      
+      vector_sum <- outcome$sum_biodiversity[specie]
+      vector_sum_sd <- outcome$sum_biodiversity_sd[specie]
+      threshold <- outcomes_to_maximize_sum_threshold_vector[specie]
       implausibility <- Impl(Target = threshold,
                              EY = vector_sum,
                              SDY = vector_sum_sd,
                              alpha = alpha,
-                             # TODO: Fix names of columns, make them usable with FullTable targets and TARGETS
-                             tol = tolvec[names(tolvec) != "Area"][outcome_idx])$Im
+                             tol = tolvec[specie])$Im
       if (implausibility > cantelli_threshold) {
         all_constraints_are_respected <- FALSE
+        broken_constraints <- c(broken_constraints, specie)
       }
     }
   }
   
-  if (isFALSE(all_constraints_are_respected)) {
-    return()
+  # Visits
+  vector_sum <- outcome$sum_visits
+  vector_sum_sd <- outcome$sum_visits_sd
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Visits"]
+  implausibility <- Impl(Target = threshold,
+                         EY = vector_sum,
+                         SDY = vector_sum_sd,
+                         alpha = alpha,
+                         tol = tolvec["Visits"])$Im
+  if (implausibility > cantelli_threshold) {
+    all_constraints_are_respected <- FALSE
+    broken_constraints <- c(broken_constraints, "Visits")
+  }
+  
+  if (isTRUE(all_constraints_are_respected)) {
+    notif("All constraints are respected")
   } else {
-    return(list(area_vector = obj_inputs[which.min(obj_outputs), ],
-                outcomes_to_maximize = outcomes_to_maximize_matrix,
-                outcomes_to_maximize_SD = outcomes_to_maximize_SD_matrix,
-                outcomes_to_minimize = outcomes_to_minimize_matrix,
-                outcomes_to_minimize_SD = outcomes_to_minimize_SD_matrix,
+    notif(paste("The constraints on", toString(broken_constraints), "are broken."))
+  }
+  
+  if (isFALSE(all_constraints_are_respected)) {
+    return(NA)
+  } else {
+    return(list(strategy_vector = obj_inputs[which.min(obj_outputs), ],
                 time = time,
                 gp_metrics = gp_metric))
   }
