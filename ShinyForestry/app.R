@@ -275,7 +275,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   MER <- list()
   for (ii in 1:length(Uni)) {
     SELLL <- shconv$geometry[AllUnits == Uni[ii]]
-    MER[[ii]] <- st_union(st_make_valid(SELLL))
+    MER[[ii]] <- suppressMessages(st_union(st_make_valid(SELLL)))
   }
   
   
