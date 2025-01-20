@@ -21,7 +21,7 @@ on:
 
 env:
   # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
+  REGISTRY: docker.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
   # R packages are cached for speed. I invalidate cache weekly in the Dockerfile
@@ -74,7 +74,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.DOCKER_GITHUB_TOKEN_RSTUDIO_SECRET }}
+          password: ${{ secrets.TIMOTHEE_DOCKERHUB_TOKEN }}
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
