@@ -2948,7 +2948,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               showNotification(paste("[ERROR]", msg))
               notif(msg, log_level = "error", limit_log_level = LOG_LEVEL)
               return(FALSE)
-            } %>% 
+            } %>%
               finally(function() {
                 bayesian_optimization_finished(TRUE)
                 return(.)
