@@ -2247,11 +2247,11 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
                                 variable.name = "column_name", 
                                 value.name = "biodiversity")
   # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
-  melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*)_Scenario.*", "\\1", column_name)]
+  melted_dt[, colname_specie := gsub(".*BioSpecie(.*)_Scenario.*", "\\1", column_name)]
   # Extract the column name's tree specie
-  melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*)_.*", "\\1", column_name)]
+  melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*)_.*", "\\1", column_name)]
   # Extract the column name's scenario
-  melted_dt <- melted_dt[, colname_scenario := gsub(".*Scenario(.*?)_.*", "\\1", column_name)]
+  melted_dt[, colname_scenario := gsub(".*Scenario(.*?)_.*", "\\1", column_name)]
   # Re-order by parcel_id
   melted_dt <- data.table::setorder(melted_dt, parcel_id)
   # Long to wide
@@ -2279,11 +2279,11 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
                                 variable.name = "column_name", 
                                 value.name = "biodiversity")
   # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
-  melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*)_Scenario.*", "\\1", column_name)]
+  melted_dt[, colname_specie := gsub(".*BioSpecie(.*)_Scenario.*", "\\1", column_name)]
   # Extract the column name's tree specie
-  melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*)_.*", "\\1", column_name)]
+  melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*)_.*", "\\1", column_name)]
   # Extract the column name's scenario
-  melted_dt <- melted_dt[, colname_scenario := gsub(".*Scenario(.*?)_.*", "\\1", column_name)]
+  melted_dt[, colname_scenario := gsub(".*Scenario(.*?)_.*", "\\1", column_name)]
   # Re-order by parcel_id
   melted_dt <- data.table::setorder(melted_dt, parcel_id)
   # Long to wide
