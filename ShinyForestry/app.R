@@ -120,6 +120,16 @@ if (RUN_BO) {
   dgpsi::init_py(verb = FALSE)
 }
 
+# handlers(global = TRUE)
+handlers(
+  list(
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    )
+  ),
+  on_missing = "warning"
+)
+
 NAME_CONVERSION <- get_name_conversion()
 
 # Swap rows 83 and 84
@@ -569,15 +579,6 @@ msg <- paste0("Sampling ", NSamp, " random strategies ...")
 notif(msg)
 
 Uniqunits <- unique(FullTable$units)
-
-handlers(
-  list(
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  ),
-  on_missing = "warning"
-)
 sysinf <- Sys.info()
 if (!is.null(sysinf)){
   os <- sysinf['sysname']
@@ -598,7 +599,7 @@ if (tolower(os) == "windows") {
 future:::ClusterRegistry("stop")
 
 plan(futureplan, workers = min(5, round(future::availableCores() / 2)))
-with_progress({
+simul636YearType <- local({
   pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
   simul636YearType <- foreach(
     aaa = 1:NSamp,
@@ -663,6 +664,7 @@ with_progress({
   }
   # Avoid warning message from progressor function
   pb(amount = 0)
+  return(simul636YearType)
 })
 if (isFALSE(RUN_BO)) {
   plan(sequential)

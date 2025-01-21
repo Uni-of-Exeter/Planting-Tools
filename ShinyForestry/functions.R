@@ -2570,7 +2570,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   
   # We use progression bars inside and outside of functions, and this causes problems, local({}) solves them
   # https://github.com/futureverse/progressr/issues/105
-  with_progress({
+  
     FullTable <- local({
       # 6 steps +
       # nb_of_groups length(unique(intersection$polygon_id_jules)) * nb_BioMean_columns length(intersection %>% dplyr::select(starts_with("Bio_Mean"))) +
@@ -2674,7 +2674,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
       pb(amount = 0)
       return(FullTable)
     })
-  })
+  
   
   notif(paste(msg, "done"), limit_log_level = limit_log_level)
   
