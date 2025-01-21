@@ -2219,7 +2219,8 @@ subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST
 }
 
 # The richness are average probabilities for a group of species to appear in a parcel
-add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SCENARIO = 26) {
+add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SCENARIO = 26,
+                                 limit_log_level = LOG_LEVEL) {
   # Convert from sf to tibble
   FullTable2 <- FullTable %>%
     sf::st_drop_geometry() %>%
@@ -2233,6 +2234,9 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   # col_indices_of_group <- which(colnames(FullTable2) %in% colnames_to_find)
   
   # Biodiversity for planting (year 0)
+  msg <- "Adding biodiversity at year 0 ..."
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  
   small_fulltable_dt <- FullTable2 %>%
     dplyr::select(contains("_Planting"), parcel_id) %>%
     data.table::setDT()
@@ -2258,8 +2262,13 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   # Remove parcel_id
   biodiversity_planting <- biodiversity_planting[, parcel_id := NULL]
   
+  msg <- paste0(msg, "done")
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
   
   # Biodiversity for no_planting (year maxyear)
+  msg <- "Adding biodiversity when no planting (i.e. planting at MAXYEAR) ..."
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  
   small_fulltable_dt <- FullTable2 %>%
     dplyr::select(contains("_NoPlanting"), parcel_id) %>%
     data.table::setDT()
@@ -2285,11 +2294,16 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   # Remove parcel_id
   biodiversity_no_planting <- biodiversity_no_planting[, parcel_id := NULL]
   
+  msg <- paste0(msg, "done")
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
   
   
   # Add an artifical group for all species
   # unique_groups <- c(unique(NAME_CONVERSION$Group), "All")
   unique_groups <- groups
+  
+  msg <- "Adding richness per planting year ..."
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
   
   richnesses <- data.table()
   for (group in unique_groups) {
@@ -2318,6 +2332,9 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
       
     }
   }
+  msg <- paste0(msg, "done")
+  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  
   rm(FullTable2)
   # Convert back to sf object
   FullTable <- cbind(FullTable, richnesses)
