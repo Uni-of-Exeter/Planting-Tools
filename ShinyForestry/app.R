@@ -69,12 +69,12 @@ source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 packages <- c(
   # https://github.com/tidyverse/vroom/issues/538
   "progress",
-  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog", "leaflet", "sf", "ggplot2",
   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-  "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+  "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
   "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-  "mvtnorm", "dplyr", "magrittr",
+  "mvtnorm", "magrittr",
   "rstudioapi",
   "lhs", "sensitivity",
   "progressr", "doFuture", "promises",
@@ -108,8 +108,9 @@ if (Sys.getenv("USERNAME")=="bn267") {
     install_and_load_packages("testthat", verbose = FALSE)
     install_and_load_packages("pkgload", verbose = FALSE)
     install_and_load_packages("devtools", verbose = FALSE)
-    # RRembo needs mvtnorm loaded
+    # RRembo needs mvtnorm loaded, and eaf
     install_and_load_packages("mvtnorm", verbose = FALSE)
+    install_and_load_packages("eaf", verbose = FALSE)
     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
     library("RRembo")
   }
