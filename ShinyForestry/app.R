@@ -69,12 +69,12 @@ source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 packages <- c(
   # https://github.com/tidyverse/vroom/issues/538
   "progress",
-  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog", "leaflet", "sf", "ggplot2",
   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-  "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+  "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
   "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-  "mvtnorm", "dplyr", "magrittr",
+  "mvtnorm", "magrittr",
   "rstudioapi",
   "lhs", "sensitivity",
   "progressr", "doFuture", "promises",
@@ -108,8 +108,9 @@ if (Sys.getenv("USERNAME")=="bn267") {
     install_and_load_packages("testthat", verbose = FALSE)
     install_and_load_packages("pkgload", verbose = FALSE)
     install_and_load_packages("devtools", verbose = FALSE)
-    # RRembo needs mvtnorm loaded
+    # RRembo needs mvtnorm loaded, and eaf
     install_and_load_packages("mvtnorm", verbose = FALSE)
+    install_and_load_packages("eaf", verbose = FALSE)
     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
     library("RRembo")
   }
@@ -118,6 +119,16 @@ if (Sys.getenv("USERNAME")=="bn267") {
 if (RUN_BO) {
   dgpsi::init_py(verb = FALSE)
 }
+
+# handlers(global = TRUE)
+handlers(
+  list(
+    handler_progress(
+      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+    )
+  ),
+  on_missing = "warning"
+)
 
 NAME_CONVERSION <- get_name_conversion()
 
@@ -477,8 +488,12 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   }
   
   # Add the richness
+  msg <- "Adding richness columns ..."
+  notif(msg, log_level = "debug")
   FullTable <- add_richness_columns(FullTable, groups = GROUPS, maxyear = MAXYEAR,
-                                    NAME_CONVERSION = NAME_CONVERSION, SCENARIO = 26)
+                                    NAME_CONVERSION = NAME_CONVERSION, SCENARIO = SCENARIO)
+  msg <- paste(msg, "done")
+  notif(msg)
   
   # FOR BACKWARD COMPATIBILITY
   # until the code works with the new biodiversity columns, keep the old ones:
@@ -568,15 +583,6 @@ msg <- paste0("Sampling ", NSamp, " random strategies ...")
 notif(msg)
 
 Uniqunits <- unique(FullTable$units)
-
-handlers(
-  list(
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  ),
-  on_missing = "warning"
-)
 sysinf <- Sys.info()
 if (!is.null(sysinf)){
   os <- sysinf['sysname']
@@ -597,7 +603,7 @@ if (tolower(os) == "windows") {
 future:::ClusterRegistry("stop")
 
 plan(futureplan, workers = min(5, round(future::availableCores() / 2)))
-with_progress({
+simul636YearType <- local({
   pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
   simul636YearType <- foreach(
     aaa = 1:NSamp,
@@ -662,6 +668,7 @@ with_progress({
   }
   # Avoid warning message from progressor function
   pb(amount = 0)
+  return(simul636YearType)
 })
 if (isFALSE(RUN_BO)) {
   plan(sequential)
@@ -1176,6 +1183,10 @@ tabPanel("Downscaling",id="DownScale",fluidPage(fluidRow(
                                      
 ))
 
+rm(SquaresLoad)
+rm(Sqconv)
+gc()
+
 server <- function(input, output, session,
                    SPECIES_ARG1 = SPECIES,
                    SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH,
@@ -1418,12 +1429,12 @@ the 'Choose' button below that option:"})
   #})
   
   output$DownScalingImage<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\9do9xt.gif"), 
+    list(src = paste0(normalizePath(file.path(DownscalingImagesFolder, "9do9xt.gif"))),
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
   output$DownScalingImage2<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\9do1ky.gif"), 
+    list(src = paste0(normalizePath(file.path(DownscalingImagesFolder,"9do1ky.gif"))),
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
@@ -2937,7 +2948,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               showNotification(paste("[ERROR]", msg))
               notif(msg, log_level = "error", limit_log_level = LOG_LEVEL)
               return(FALSE)
-            } %>% 
+            } %>%
               finally(function() {
                 bayesian_optimization_finished(TRUE)
                 return(.)
