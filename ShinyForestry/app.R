@@ -1183,6 +1183,10 @@ tabPanel("Downscaling",id="DownScale",fluidPage(fluidRow(
                                      
 ))
 
+rm(SquaresLoad)
+rm(Sqconv)
+gc()
+
 server <- function(input, output, session,
                    SPECIES_ARG1 = SPECIES,
                    SPECIES_ENGLISH_ARG1 = SPECIES_ENGLISH,
