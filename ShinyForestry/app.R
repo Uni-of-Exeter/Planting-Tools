@@ -1429,12 +1429,12 @@ the 'Choose' button below that option:"})
   #})
   
   output$DownScalingImage<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\9do9xt.gif"), 
+    list(src = paste0(normalizePath(file.path(DownscalingImagesFolder, "9do9xt.gif"))),
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
   output$DownScalingImage2<-renderImage({
-    list(src = paste0(DownscalingImagesFolder,"\\9do1ky.gif"), 
+    list(src = paste0(normalizePath(file.path(DownscalingImagesFolder,"9do1ky.gif"))),
          contentType = 'image/gif', width = 800, height = 600)
   }, deleteFile = FALSE)
   
