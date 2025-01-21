@@ -91,10 +91,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           # tags: ${{ steps.meta.outputs.tags }}
-          tags: latest
+          pull: true
+          push: true
+          tags: |
+            timotheebacri/rshiny-planting-tools:latest
           labels: ${{ steps.meta.outputs.labels }}
           build-args: DGPSI_FOLDER_NAME=${{ env.DGPSI_FOLDER_NAME }}
           #cache-from: type=gha
