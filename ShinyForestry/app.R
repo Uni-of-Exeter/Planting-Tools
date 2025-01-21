@@ -488,8 +488,12 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   }
   
   # Add the richness
+  msg <- "Adding richness columns ..."
+  notif(msg, log_level = "debug")
   FullTable <- add_richness_columns(FullTable, groups = GROUPS, maxyear = MAXYEAR,
                                     NAME_CONVERSION = NAME_CONVERSION, SCENARIO = 26)
+  msg <- paste(msg, "done")
+  notif(msg)
   
   # FOR BACKWARD COMPATIBILITY
   # until the code works with the new biodiversity columns, keep the old ones:
