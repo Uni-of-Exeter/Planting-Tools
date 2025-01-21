@@ -17,6 +17,7 @@ RUN apt update && \
     apt -y autoremove --purge && \
     apt -y autoclean
 
+RUN apt -y --no-install-recommends install git
 # For packages
 RUN apt -y --no-install-recommends install libcurl4-openssl-dev
 RUN apt -y --no-install-recommends install libfontconfig1-dev
