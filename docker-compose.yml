@@ -2,7 +2,7 @@
 ```yaml
 services:
   plantingtools:
-    image: ghcr.io/uni-of-exeter/planting-tools
+    image: timotheebacri/rshiny-planting-tools
     container_name: plantingtools
     user: 999:999
     environment:
