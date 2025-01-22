@@ -151,6 +151,10 @@ ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 DataFilesFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
 DownscalingImagesFolder<-normalizePath(file.path(FolderSource, "DownScalingImages"))
 CalculatedFilesFolder<-normalizePath(file.path(FolderSource, "CalculatedFiles"))
+# If the folder does not exist, create it
+if (isFALSE(dir.exists(CalculatedFilesFolder))) {
+  dir.create(CalculatedFilesFolder)
+}
 
 
 if(Sys.getenv("USERNAME")=="bn267"){
