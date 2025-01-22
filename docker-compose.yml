@@ -1,0 +1,30 @@
+## docker-compose.yml
+```yaml
+services:
+  plantingtools:
+    image: timotheebacri/rshiny-planting-tools
+    container_name: plantingtools
+    user: 999:999
+    environment:
+      
+      # The logs for individual apps are still kept in the /var/log/shiny-server directory1. If you want to avoid printing the logs to stdout, set the environment variable APPLICATION_LOGS_TO_STDOUT to false.
+      # default is true
+      # APPLICATION_LOGS_TO_STDOUT: true
+
+      # Default umask is 022
+      # UMASK: # ${UMASK:=022}
+      
+      TZ: Europe/London
+
+    volumes:
+      # If you have an app in /srv/shinyapps/appdir, you can run the app by visiting http://localhost:3000/appdir/
+      - /path/to/Planting-Tools/ShinyForestry/:/srv/shiny-server/
+
+      # If you want a custom shiny-server.conf
+      # - /path/to/shiny-server.conf:/etc/shiny-server/shiny-server.conf:ro
+      
+      # If you want logs
+      # - /path/to/shinylogs:/var/log/shiny-server
+    ports:
+      - 8787:8787
+```
