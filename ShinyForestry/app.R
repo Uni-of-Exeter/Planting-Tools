@@ -23,7 +23,7 @@ options(shiny.error = browser)
 options(shiny.reactlog = TRUE)
 options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 
-ANALYSISMODE<-FALSE
+ANALYSISMODE<-TRUE
 SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
 RUN_BO<-FALSE
@@ -1934,8 +1934,7 @@ the 'Choose' button below that option:"})
   
   # Trigger if anything changes
   observe({
-    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)) {
-     
+    if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SlidersHaveBeenInitialized())==1)&(!is.null(SelectedFullTableRow()))) {
       SavedVec<-ClickedVector()
       PreviousSavedVec<-PreviousClickedVector()
       
@@ -1989,7 +1988,6 @@ the 'Choose' button below that option:"})
       CarbonMeanCalc<-rep(0.001,length(SavedVecYear))
 
       CarbonVarCalc<-rep(0.001,length(SavedVecYear))
-
       for(aa in 1:length(SavedVecYear))
       { 
         if(SelectedRowType[aa]=="Conifers"){
