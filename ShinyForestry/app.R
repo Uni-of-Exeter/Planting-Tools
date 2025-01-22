@@ -23,7 +23,7 @@ options(shiny.error = browser)
 options(shiny.reactlog = TRUE)
 options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 
-ANALYSISMODE<-FALSE
+ANALYSISMODE<-TRUE
 SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
 RUN_BO<-FALSE
