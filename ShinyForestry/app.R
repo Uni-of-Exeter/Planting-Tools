@@ -34,6 +34,27 @@ POLYGON_OPACITY<-0.6
 GREY_BACKGROUND_OPACITY<-0.3
 NOTAVAIL_OPACITY<-0.7
 
+sysinf <- Sys.info()
+if (!is.null(sysinf)){
+  os <- sysinf['sysname']
+  if (os == 'Darwin')
+    os <- "osx"
+} else { ## mystery machine
+  os <- .Platform$OS.type
+  if (grepl("^darwin", R.version$os))
+    os <- "osx"
+  if (grepl("linux-gnu", R.version$os))
+    os <- "linux"
+}
+os <- tolower(os)
+if (os == "windows") {
+  futureplan <- future::multisession
+  
+} else {
+  futureplan <- future::multicore
+}
+future:::ClusterRegistry("stop")
+
 
 if(Sys.getenv("USERNAME")=="bn267"){
   FolderSource <- "C://Users//bn267//OneDrive - University of Exeter//Documents//GitHub//Planting-Tools//ShinyForestry//"
@@ -121,12 +142,20 @@ if (RUN_BO) {
 }
 
 # handlers(global = TRUE)
+# Progress report with progressr
+progress_handlers <- list(
+  handler_progress(
+    format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+  )
+)
+if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+  progress_handlers <- c(progress_handlers, handler_rstudio())
+}
+if (os == "windows") {
+  progress_handlers <- c(progress_handlers, handler_winprogressbar())
+}
 handlers(
-  list(
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  ),
+  progress_handlers,
   on_missing = "warning"
 )
 
@@ -587,24 +616,6 @@ msg <- paste0("Sampling ", NSamp, " random strategies ...")
 notif(msg)
 
 Uniqunits <- unique(FullTable$units)
-sysinf <- Sys.info()
-if (!is.null(sysinf)){
-  os <- sysinf['sysname']
-  if (os == 'Darwin')
-    os <- "osx"
-} else { ## mystery machine
-  os <- .Platform$OS.type
-  if (grepl("^darwin", R.version$os))
-    os <- "osx"
-  if (grepl("linux-gnu", R.version$os))
-    os <- "linux"
-}
-if (tolower(os) == "windows") {
-  futureplan <- future::multisession
-} else {
-  futureplan <- future::multicore
-}
-future:::ClusterRegistry("stop")
 
 plan(futureplan, workers = min(5, round(future::availableCores() / 2)))
 simul636YearType <- local({
