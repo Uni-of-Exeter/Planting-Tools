@@ -2347,9 +2347,9 @@ bayesian_optimization <- function(
     msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
     notif(msg, limit_log_level = limit_log_level)
     
-    if (rstudioapi::isBackgroundJob()) {
-      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
-    }
+    # if (rstudioapi::isBackgroundJob()) {
+    #   message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
+    # }
     begin_inside <- Sys.time()
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
