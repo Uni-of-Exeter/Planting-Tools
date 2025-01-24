@@ -26,6 +26,7 @@ ANALYSISMODE<-TRUE
 SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
 RUN_BO<-FALSE
+RNGversion("4.0.0")
 set.seed(1)
 #fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
 FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1))
@@ -68,8 +69,6 @@ FolderSource <- normalizePath(getwd())
 if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
 }
-
-set.seed(1)
 
 STARTYEAR<-2025
 MAXYEAR<-2050-STARTYEAR-1
