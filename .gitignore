@@ -33,6 +33,3 @@ ShinyForestry/DownScalingImages/
 /ShinyForestry/ElicitorOutput/saved new ex
 .Rproj.user
 *.DS_Store
-renv/library/
-renv/cache/
-renv/staging/
