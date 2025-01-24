@@ -1,5 +1,4 @@
 # Created and maintained by Bertrand Nortier and Timothée Bacri
-
 #library(profvis)
 #library(htmlwidgets)
 
@@ -2104,19 +2103,17 @@ the 'Choose' button below that option:"})
         
         
       }else{
-      
-        #cat("starting clustering\n")
+      #cat("starting clustering\n")
         
         NamesOUTPUTS<-names(SubsetMeetTargetsReactiveUnique()$OUTPUTS)
         NamesOUTPUTS<-NamesOUTPUTS[!(sapply(NamesOUTPUTS,function(x) {substr(x,nchar(x)-1,nchar(x))})=="SD")]
         Set_To_Cluster<-SubsetMeetTargetsReactiveUnique()$OUTPUTS[NamesOUTPUTS]
         #save(Set_To_Cluster,file="d:\\Set_To_Clust.RData")
         #cat(Set_To_Cluster$Carbon)
-
-        if(is.null(infpref_reactive())){Weights_To_Use<-rep(1,length(NamesOUTPUTS))}else{
-          Weights_To_Use<-sqrt(abs(infpref_reactive()))
-          
-        }
+        if(!exists("infpref_reactive")){Weights_To_Use<-rep(1,length(NamesOUTPUTS))}else{
+        if(is.null(infpref_reactive())|anyNA(infpref_reactive())){Weights_To_Use<-rep(1,length(NamesOUTPUTS))}else{
+          Weights_To_Use<-sqrt(abs(infpref_reactive()))}
+          }
         Weights_To_Use_MAT<-t(matrix(Weights_To_Use,dim(Set_To_Cluster)[2],dim(Set_To_Cluster)[1]))
         TSNE_RESULTS<-Rtsne::Rtsne(Weights_To_Use_MAT*scale(Set_To_Cluster),perplexity=min(30,(dim(Set_To_Cluster)[1]-1.01)/3))
         #mgcvObjectTsneToData<-vector("list",length(NamesOUTPUTS))

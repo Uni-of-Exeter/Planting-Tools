@@ -1484,6 +1484,7 @@ outputmap_calculateMatsYearType <- function(input,
       CarbonMATYearTypeORSavedVec[,bb]<-0
       TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
       TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
+     # browser()
       CarbonMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
       CarbonMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
     }
