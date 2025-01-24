@@ -998,6 +998,462 @@ get_outcomes_from_strategy <- function(parameter_vector,
   ))
 }
 
+get_outcomes_from_strategy_TO_FINISH <- function(parameter_vector,
+                                       FullTable_arg,
+                                       SPECIES_arg = SPECIES,
+                                       SCENARIO_arg = SCENARIO,
+                                       MAXYEAR_arg = MAXYEAR) {
+  
+  SPECIES <- SPECIES_arg
+  SCENARIO <- SCENARIO_arg
+  MAXYEAR <- MAXYEAR_arg
+  
+  # Prepare data once to avoid re-doing it everywhere ----
+  FullTable_long <- FullTable_arg |>
+    sf::st_drop_geometry() |>
+    setDT()
+  FullTable_long <- FullTable_long[, -c("extent", "x", "y")]
+  FullTable_long[, parcel_id := 1:nrow(FullTable_long)]
+  
+  # Keep outcomes and useful columns
+  keep_columns <- colnames(FullTable_long) %chin% c("parcel_id") | (
+    colnames(FullTable_long) %flike% "Mean" |
+      colnames(FullTable_long) %flike% "SD" |
+      colnames(FullTable_long) %flike% paste0("Scenario", SCENARIO) |
+      colnames(FullTable_long) %flike% "Planting"
+  ) & !(
+    # BioMean and BioSD were kept for compatibility, but are useless here
+    colnames(FullTable_long) %like% "BioMean" |
+      colnames(FullTable_long) %like% "BioSD"
+  ) & !(
+    # Carbon_Mean_Scenario26_TreeSpecieConifers columns are kept for compatibility, but are useless here
+    colnames(FullTable_long) %plike% "^Carbon.*[^0-9]$"
+  )
+  
+  FullTable_long <- FullTable_long[, ..keep_columns]
+  
+  # Wide format to long, because operations on column names are computationally expensive
+  FullTable_long <- data.table::melt(FullTable_long,
+                                     id.vars = c("parcel_id"),
+                                     measure.vars = patterns("Mean|SD|Bio|Richness"),
+                                     variable.name = "outcome_column_name",
+                                     value.name = "outcome_value")
+  
+  # Rename Bio...Planting to Bio...PlantingYear0, and Bio...NoPlanting to Bio...PlantingYear25 (MAXYEAR + 1)
+  no_planting_string <- paste0("_PlantingYear", MAXYEAR + 1)
+  
+  # Only select rows where string replacement should happen
+  FullTable_long[outcome_column_name %like% "_Planting$", 
+                 # Planting corresponds to planting in year 0
+                 outcome_column_name := paste0(outcome_column_name, "Year0")]
+  
+  FullTable_long[outcome_column_name %like% "_NoPlanting$", 
+                 # Not planting corresponds to planting in year MAXYEAR + 1
+                 outcome_column_name := sub(pattern = "_NoPlanting$", 
+                                            replacement = no_planting_string,
+                                            x = outcome_column_name)]
+  
+  # Extract statistic name type from column names
+  FullTable_long[, statistic_name := fcase(
+    outcome_column_name %flike% "Mean", "Mean",
+    outcome_column_name %flike% "SD", "SD",
+    # Richness does not have Mean nor SD
+    default = NA
+  )]
+  
+  # Extract outcomes from the column names
+  FullTable_long[, planting_year := as.numeric(sub(".*_PlantingYear([0-9]+).*", "\\1", outcome_column_name))]
+  FullTable_long[, planting_year := fifelse(test = is.na(planting_year), yes= 0, no = planting_year)]
+  FullTable_long[, treespecie := sub(".*_TreeSpecie([a-zA-Z]+?)_.*", "\\1", outcome_column_name)]
+  FullTable_long[, scenario := sub(".*_Scenario(.*?)_.*", "\\1", outcome_column_name)]
+  FullTable_long[, outcome_type := sub("^(.*?)_.*", "\\1", outcome_column_name)]
+  
+  # When outcome name is Bio or Richness, look at the subtype
+  FullTable_long[, outcome_sub_type := fcase(
+    # Extract the Biodiversity specie
+    outcome_column_name %like% "^Bio", sub(pattern = ".*BioSpecie(.*?)_[A-Z]+.*",
+                                           replacement = "\\1",
+                                           x = outcome_column_name),
+    # Extract the Richness group
+    outcome_column_name %like% "^Richness", sub(pattern = ".*Group(.*?)_.*",
+                                                replacement = "\\1",
+                                                x = outcome_column_name),
+    # Just in case
+    default = NA
+  )]
+  
+  # Fix: Visits is not properly inputted
+  FullTable_long[, outcome_type := fifelse(test = outcome_type %like% "Visits",
+                                           yes = "Visits",
+                                           no = outcome_type)]
+  FullTable_long[, treespecie := fifelse(test = treespecie %like% "Visits",
+                                         yes = "Conifers",
+                                         no = treespecie)]
+  FullTable_long[, scenario := fifelse(test = scenario %like% "Visits",
+                                       yes = SCENARIO,
+                                       no = as.integer(scenario))]
+  
+  
+  # Remove column name
+  FullTable_long[, outcome_column_name := NULL]
+  
+  # Chosen strategy's outcomes ----
+  outcomes <- unique(FullTable_long[, .(parcel_id)])
+  group_size <- length(parameter_vector) / 3
+  
+  indices <- 1:group_size
+  # area_vector <- as.numeric(parameter_vector[indices])
+  outcomes[, strategy_area := as.numeric(parameter_vector[indices])]
+  
+  indices <- indices + group_size
+  # year_vector <- as.numeric(parameter_vector[indices])
+  outcomes[, strategy_year := as.numeric(parameter_vector[indices])]
+  
+  indices <- indices + group_size
+  # treespecie_vector <- parameter_vector[indices]
+  outcomes[, strategy_treespecie := parameter_vector[indices]]
+  
+  FullTable_long <- data.table::merge.data.table(x = FullTable_long,
+                                                 y = outcomes,
+                                                 by = "parcel_id",
+                                                 all.x = TRUE)
+  setkey(FullTable_long, NULL)
+  
+  # Calculate outcomes (sumCarbon, sumArea, sumBiodiversity, sumVisits)
+  
+  # Remove invalid rows
+  FullTable_long <- FullTable_long[
+    # Filter rows where area is non-zero and conditions on planting year and tree species match
+    strategy_area != 0 &
+      planting_year == strategy_year &
+      treespecie == strategy_treespecie,
+  ]
+  
+  # Area
+  sum_area <- FullTable_long[,
+                             unique(strategy_area),
+                             by = parcel_id][
+                               , sum(V1)
+                             ]
+  
+  # Carbon
+  sum_carbon <- FullTable_long[
+    # Filter rows
+    outcome_type == "Carbon" &
+      statistic_name == "Mean",
+    sum(outcome_value)
+  ]
+  
+  # Carbon SD
+  sum_carbon_sd <- FullTable_long[
+    # Filter rows
+    outcome_type == "Carbon" &
+      statistic_name == "SD",
+    sqrt(sum(outcome_value^2))
+  ]
+  
+  
+  
+  # Visits ----
+  sum_visits <- FullTable_long[
+    # Filter rows
+    outcome_type == "Visits" &
+      statistic_name == "Mean",
+    sum(outcome_value)
+  ]
+  sum_visits_sd <- FullTable_long[
+    # Filter rows
+    outcome_type == "Visits" &
+      statistic_name == "SD",
+    sqrt(sum(outcome_value^2))
+  ]
+  
+  
+  
+  # Biodiversity ----
+  species_indices <- which(SPECIES %in% NAME_CONVERSION$Specie)
+  if (length(species_indices) == 0) {
+    sum_biodiversity <- sum_biodiversity_sd <- c()
+  } else {
+    species_pattern <- paste0(".*Specie(", paste0(SPECIES[species_indices], collapse = "|"), ").*")
+    
+    small_fulltable <- FullTable %>%
+      dplyr::select(area, year, treespecie,
+                    (
+                      matches(species_pattern) &
+                        contains("Bio_Mean") &
+                        contains(paste0("Scenario", SCENARIO))
+                    ))
+    
+    # biodiversity_planting <- small_fulltable %>%
+    #   dplyr::select(area, year, treespecie, contains("_Planting")) %>%
+    #   rowwise() %>%
+    #   mutate(
+    #     # Check if area is 0 and ignore the row by setting sum to 0 if true
+    #     # Also set the value to 0 if the tree specie is the wrong one
+    #     final_value = ifelse(area == 0,
+    #                          0,
+    #                          across(contains("Bio_Mean"),
+    #                                 ~ ifelse(
+    #                                   # Correct tree specie
+    #                                   sub(".*TreeSpecie(.*?)_.*",
+    #                                       "\\1",
+    #                                       cur_column()) == treespecie,
+    #                                   .,
+    #                                   0)
+    #                          ) %>%
+    #                            sum())
+    #   ) %>%
+    #   ungroup() %>%
+    #   dplyr::select(final_value)
+    
+    
+    
+    
+    
+    ## Biodiversity per specie per parcel, when planting ----
+    small_fulltable_dt <- small_fulltable %>%
+      dplyr::select(area, year, treespecie, contains("_Planting")) %>%
+      mutate(parcel_id = 1:nrow(FullTable)) |>
+      setDT()
+    
+    # Melt the data table to convert from wide to long format
+    melted_dt <- data.table::melt(small_fulltable_dt, 
+                                  id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                  measure.vars = grep("_Planting", colnames(small_fulltable_dt), value = TRUE), 
+                                  variable.name = "column_name", 
+                                  value.name = "biodiversity")
+    
+    # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
+    melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*?)_Scenario.*", "\\1", column_name)]
+    # Extract the column name's tree specie
+    melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
+    
+    # Remove rows where the column_name's tree specie is not the strategy treespecie
+    melted_dt <- melted_dt[colname_treespecie == treespecie, ]
+    
+    biodiversity_planting <- dcast(melted_dt, parcel_id ~ colname_specie, value.var = "biodiversity")
+    
+    # Re-order by parcel_id
+    biodiversity_planting <- setorder(biodiversity_planting, parcel_id)
+    # Remove parcel_id
+    biodiversity_planting[, parcel_id := NULL]
+    
+    
+    
+    
+    ## Biodiversity per specie per parcel, when NOT planting ----
+    small_fulltable_dt <- small_fulltable %>%
+      dplyr::select(area, year, treespecie, contains("_NoPlanting")) %>%
+      mutate(parcel_id = 1:nrow(FullTable)) |>
+      setDT()
+    
+    # Melt the data table to convert from wide to long format
+    melted_dt <- data.table::melt(small_fulltable_dt, 
+                                  id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                  measure.vars = grep("_NoPlanting", colnames(small_fulltable_dt), value = TRUE), 
+                                  variable.name = "column_name", 
+                                  value.name = "biodiversity")
+    
+    # Extract the species name from the column names (e.g., 'Alauda_arvensis', 'Carex_magellanica')
+    melted_dt <- melted_dt[, colname_specie := gsub(".*BioSpecie(.*?)_Scenario.*", "\\1", column_name)]
+    # Extract the column name's tree specie
+    melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
+    
+    # Remove rows where the column_name's tree specie is not the strategy treespecie
+    melted_dt <- melted_dt[colname_treespecie == treespecie, ]
+    
+    # Re-order by parcel_id
+    melted_dt <- setorder(melted_dt, parcel_id)
+    
+    biodiversity_no_planting <- dcast(melted_dt, parcel_id ~ colname_specie, value.var = "biodiversity")
+    
+    # Re-order by parcel_id
+    biodiversity_no_planting <- setorder(biodiversity_no_planting, parcel_id)
+    # Remove parcel_id
+    biodiversity_no_planting[, parcel_id := NULL]
+    
+    
+    
+    
+    # Biodiversity total ----
+    sum_biodiversity <- get_regressed_biodiversity_change(biodiversity_planting = biodiversity_planting,
+                                                          biodiversity_no_planting = biodiversity_no_planting,
+                                                          MAXYEAR = MAXYEAR,
+                                                          year_of_planting_from_0 = year_vector) |>
+      colSums()
+    
+    # Biodiversity SD
+    sum_biodiversity_sd <- 0
+    sum_biodiversity_sd <- sqrt(sum(sum_biodiversity_sd^2))
+  }
+  
+  
+  
+  
+  
+  # Richness ----
+  # For now, the code below only works for the 2 tree species Conifers and Deciduous. We will have a new biodiversity model later on, so it's not important
+  richness <- c()
+  
+  # # apply_biodiversity_logic <- function(specie, SCENARIO, all_biodiversity_planting, all_biodiversity_no_planting) {
+  # #   
+  # #   # Create column names for both the 'Planting' and 'NoPlanting' cases
+  # #   conifer_col_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_Planting")
+  # #   deciduous_col_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_Planting")
+  # #   new_col_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_Planting")
+  # #   
+  # #   conifer_col_no_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_NoPlanting")
+  # #   deciduous_col_no_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_NoPlanting")
+  # #   new_col_no_planting <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_NoPlanting")
+  # #   
+  # #   # Apply the logic for 'Planting'
+  # #   all_biodiversity_planting[, (new_col_planting) := fifelse(treespecie == "Conifers",
+  # #                                                             get(conifer_col_planting),
+  # #                                                             get(deciduous_col_planting))]
+  # #   
+  # #   # Apply the logic for 'NoPlanting'
+  # #   all_biodiversity_no_planting[, (new_col_no_planting) := fifelse(treespecie == "Conifers",
+  # #                                                                   get(conifer_col_no_planting),
+  # #                                                                   get(deciduous_col_no_planting))]
+  # #   
+  # #   # Remove the original columns after applying the logic
+  # #   all_biodiversity_planting[, c(conifer_col_planting, deciduous_col_planting) := NULL]
+  # #   all_biodiversity_no_planting[, c(conifer_col_no_planting, deciduous_col_no_planting) := NULL]
+  # #   
+  # #   # Return the updated data.tables
+  # #   return(list(all_biodiversity_planting = all_biodiversity_planting,
+  # #               all_biodiversity_no_planting = all_biodiversity_no_planting))
+  # # }
+  # 
+  # small_fulltable <- FullTable %>%
+  #   dplyr::select(area, year, treespecie,
+  #                 contains("Bio_Mean") &
+  #                   contains(paste0("Scenario", SCENARIO))
+  #   ) %>%
+  #   mutate(parcel_id = 1:nrow(FullTable))
+  # for (group in SPECIES) {
+  #   if (group == "All" || group %in% NAME_CONVERSION$Group) {
+  #     
+  #     if (group == "All") {
+  #       species_in_group <- NAME_CONVERSION$Specie
+  #     } else {
+  #       species_in_group <- NAME_CONVERSION$Specie[NAME_CONVERSION$Group == group]
+  #     }
+  #     
+  #     species_pattern <- paste0(".*BioSpecie(", paste0(species_in_group, collapse = "|"), ").*")
+  #     
+  #     # Table with biodiversity values per parcel where we plant the correct tree specie
+  #     all_biodiversity_planting <- small_fulltable %>%
+  #       dplyr::select(parcel_id, treespecie,
+  #                     contains("_Planting") &
+  #                       matches(species_pattern)) %>%
+  #       setDT()
+  #     
+  #     # Table with biodiversity values per parcels where we don't plant the correct tree specie
+  #     all_biodiversity_no_planting <- small_fulltable %>%
+  #       dplyr::select(parcel_id, treespecie, 
+  #                     contains("_NoPlanting") &
+  #                       matches(species_pattern)) %>%
+  #       setDT()
+  #     
+  #     # Create a new column with value equal to the correct tree specie
+  #     for (specie in species_in_group) {
+  #       # When planting
+  #       conifer_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_Planting")
+  #       deciduous_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_Planting")
+  #       new_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_Planting")
+  #       
+  #       all_biodiversity_planting[, (new_col) := fifelse(treespecie == "Conifers",
+  #                                                        get(conifer_col),
+  #                                                        get(deciduous_col))]
+  #       all_biodiversity_planting[, c(conifer_col, deciduous_col) := NULL]
+  #       
+  #       # When not planting
+  #       conifer_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Conifers", "_NoPlanting")
+  #       deciduous_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_TreeSpecie", "Deciduous", "_NoPlanting")
+  #       new_col <- paste0("Bio_Mean_BioSpecie", specie, "_Scenario", SCENARIO, "_NoPlanting")
+  #       
+  #       all_biodiversity_no_planting[, (new_col) := fifelse(treespecie == "Conifers",
+  #                                                           get(conifer_col),
+  #                                                           get(deciduous_col))]
+  #       all_biodiversity_no_planting[, c(conifer_col, deciduous_col) := NULL]
+  #     }
+  #     
+  #     # Re-order by parcel_id
+  #     all_biodiversity_planting <- setorder(all_biodiversity_planting, parcel_id)
+  #     all_biodiversity_no_planting <- setorder(all_biodiversity_no_planting, parcel_id)
+  #     
+  #     # Remove useless columns
+  #     all_biodiversity_planting <- all_biodiversity_planting[, c("parcel_id", "treespecie") := NULL]
+  #     all_biodiversity_no_planting <- all_biodiversity_no_planting[, c("parcel_id", "treespecie"):= NULL]
+  # 
+  #     # # Apply the function over all species in the group and get the updated data.tables
+  #     # result <- lapply(species_in_group, apply_biodiversity_logic, SCENARIO = SCENARIO,
+  #     #                  all_biodiversity_planting = all_biodiversity_planting,
+  #     #                  all_biodiversity_no_planting = all_biodiversity_no_planting)
+  # 
+  #     # Extract updated results from the list
+  #     # all_biodiversity_planting <- result[[length(result)]]$all_biodiversity_planting
+  #     # all_biodiversity_no_planting <- result[[length(result)]]$all_biodiversity_no_planting
+  
+  # tmp <- get_richness(group = group,
+  #                     all_biodiversity_planting = all_biodiversity_planting,
+  #                     all_biodiversity_no_planting = all_biodiversity_no_planting,
+  #                     MAXYEAR = MAXYEAR,
+  #                     year_of_planting_from_0 = year_vector,
+  #                     NAME_CONVERSION = NAME_CONVERSION)
+  
+  
+  
+  small_fulltable_dt <- FullTable %>%
+    dplyr::select(area, year, treespecie, starts_with("Richness")) %>%
+    mutate(parcel_id = 1:nrow(FullTable)) |>
+    setDT()
+  
+  # Melt the data table to convert from wide to long format
+  melted_dt <- data.table::melt(small_fulltable_dt, 
+                                id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
+                                variable.name = "column_name", 
+                                value.name = "richness")
+  
+  # Extract the column name's tree specie
+  melted_dt <- melted_dt[, colname_treespecie := gsub(".*TreeSpecie(.*?)_.*", "\\1", column_name)]
+  # Extract the column name's planting year
+  melted_dt <- melted_dt[, colname_plantingyear := gsub(".*PlantingYear(.*?)", "\\1", column_name)]
+  # Extract the column name's richness group
+  melted_dt <- melted_dt[, colname_group := gsub(".*Group(.*?)_.*", "\\1", column_name)]
+  
+  # Remove rows where the column_name's tree specie is not the strategy treespecie
+  # and where the planting year is not the strategy plantingyear
+  # and where we don't plant (area is 0)
+  # and where plantingyear is 25
+  melted_dt <- melted_dt[colname_treespecie == treespecie &
+                           colname_plantingyear == year &
+                           area != 0 &
+                           colname_plantingyear != MAXYEAR + 1, ]
+  
+  # Sum richness by group
+  tmp <- melted_dt[, .(total_richness = sum(richness)), by = colname_group]
+  richness <- tmp$total_richness
+  names(richness) <- tmp$colname_group
+  
+  richness_sd <- sapply(richness, function(x){return(0)})
+  
+  # End ----
+  
+  return(list("sum_carbon" = sum_carbon,
+              "sum_carbon_sd" = sum_carbon_sd,
+              "sum_richness" = richness,
+              "sum_richness_sd" = richness_sd,
+              "sum_biodiversity" = sum_biodiversity,
+              "sum_biodiversity_sd" = sum_biodiversity_sd,
+              "sum_visits" = sum_visits,
+              "sum_visits_sd" = sum_visits_sd,
+              "sum_area" = sum(area_vector)
+  ))
+}
 
 # bisection assigns half the values to 0, and half to 1, by finding a cutoff point
 continuous_to_categorical <- function(values,
@@ -2347,9 +2803,9 @@ bayesian_optimization <- function(
     msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
     notif(msg, limit_log_level = limit_log_level)
     
-    if (rstudioapi::isBackgroundJob()) {
-      message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
-    }
+    # if (rstudioapi::isBackgroundJob()) {
+    #   message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
+    # }
     begin_inside <- Sys.time()
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
