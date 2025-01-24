@@ -41,7 +41,7 @@ if(Sys.getenv("USERNAME")=="bn267"){
 
 
 # more --> less: debug / info / warning / error / none
-LOG_LEVEL <- "error"
+LOG_LEVEL <- "debug"
 
 # FolderSource <- "ShinyForestry/"
 FolderSource <- normalizePath(getwd())
@@ -73,7 +73,7 @@ packages <- c(
   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
   "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
+  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom","dgpsi",
   "mvtnorm", "magrittr",
   "rstudioapi",
   "lhs", "sensitivity",
@@ -86,41 +86,46 @@ packages <- c(
   "flock",
   "adaptMCMC", "data.table"
 )
-# Bertrand's computer has issues loading and installing packages
-if (Sys.getenv("USERNAME")=="bn267") {
-  library("dgpsi")
-  library("RRembo")
-  for(ll in 1:length(packages)) {
-    library(packages[ll], character.only = TRUE)
-  }
-} else {
-  
-  if (!require(dgpsi)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
-    library("dgpsi")
-  }
-  if (!require(RRembo)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    # RRembo needs mvtnorm loaded, and eaf
-    install_and_load_packages("mvtnorm", verbose = FALSE)
-    install_and_load_packages("eaf", verbose = FALSE)
-    devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
-    library("RRembo")
-  }
-  install_and_load_packages(packages = packages, update = FALSE)
-}
-if (RUN_BO) {
-  dgpsi::init_py(verb = FALSE)
-}
 
-# handlers(global = TRUE)
+lapply(packages, library, character.only = TRUE)
+
+library("dgpsi")
+library("RRembo")
+
+# # Bertrand's computer has issues loading and installing packages
+# if (Sys.getenv("USERNAME")=="bn267") {
+#   library("dgpsi")
+#   library("RRembo")
+#   for(ll in 1:length(packages)) {
+#     library(packages[ll], character.only = TRUE)
+#   }
+# } else {
+#   
+#   if (!require(dgpsi)) {
+#     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+#     install_and_load_packages("testthat", verbose = FALSE)
+#     install_and_load_packages("pkgload", verbose = FALSE)
+#     install_and_load_packages("devtools", verbose = FALSE)
+#     devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
+#     library("dgpsi")
+#   }
+#   if (!require(RRembo)) {
+#     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
+#     install_and_load_packages("testthat", verbose = FALSE)
+#     install_and_load_packages("pkgload", verbose = FALSE)
+#     install_and_load_packages("devtools", verbose = FALSE)
+#     # RRembo needs mvtnorm loaded, and eaf
+#     install_and_load_packages("mvtnorm", verbose = FALSE)
+#     install_and_load_packages("eaf", verbose = FALSE)
+#     devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
+#     library("RRembo")
+#   }
+#   install_and_load_packages(packages = packages, update = FALSE)
+# }
+# if (RUN_BO) {
+#   dgpsi::init_py(verb = FALSE)
+# }
+
 handlers(
   list(
     handler_progress(
@@ -918,10 +923,15 @@ for (ext in AllExtents)
   
   #save(PrecalcCarbonAllExtents,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
   #save(PrecalcCarbonAllExtentsSD,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
+  msg <- paste0("Saving to", CalculatedFilesFolder)
+  notif(msg)
+  
   save(PrecalcCarbonAllExtentsType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
   save(PrecalcCarbonAllExtentsSDType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
   save(PrecalcCarbonAllExtentsType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
   save(PrecalcCarbonAllExtentsSDType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
+  
+  msg <- paste0("Finished saving")
   
 }
 

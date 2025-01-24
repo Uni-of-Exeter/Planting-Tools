@@ -59,5 +59,4 @@ Imports:
   pkgload,
   devtools
 Remotes:
-  https://github.com/mingdeyu/dgpsi-R.git,
-  https://github.com/mbinois/RRembo.git
+  mbinois/RRembo
