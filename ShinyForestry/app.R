@@ -2881,7 +2881,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 }
                 
                 outcome <- get_outcomes_from_strategy(parameter_vector = bo_results$strategy_vector,
-                                                      FullTable_arg = FullTable)
+                                                      FullTable_long_arg = FullTable_long)
                 
                 # Otherwise, a feasible solution is found
                 area_sum <- outcome$sum_area
@@ -2975,9 +2975,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           #   # max = BAYESIAN_OPTIMIZATION_ITERATIONS * 3,
           #   expr = {
           # my_progressr_object <- progressor(steps = 5 * 3, message = "Bayesian optimization")
+          FullTable_long <- transform_FullTable_wide_to_long(FullTable_arg = FullTable,
+                                                             SCENARIO_arg = SCENARIO,
+                                                             MAXYEAR_arg = MAXYEAR,
+                                                             verbose = FALSE)
           
           bayesian_optimization_extendedtask$invoke(seed = 1,
                                                     FullTable_arg = FullTable,
+                                                    FullTable_long_arg = FullTable_long,
                                                     MAXYEAR = MAXYEAR,
                                                     SCENARIO = SCENARIO,
                                                     year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector,
