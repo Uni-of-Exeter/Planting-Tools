@@ -54,9 +54,9 @@ Imports:
   data.table,
   eaf,
   RRembo,
-  dgpsi,
   testthat,
   pkgload,
   devtools
 Remotes:
+  mingdeyu/dgpsi-R
   mbinois/RRembo

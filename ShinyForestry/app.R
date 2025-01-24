@@ -72,7 +72,7 @@ packages <- c(
   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
   "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom","dgpsi",
+  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom","dgpsi", "RRembo",
   "mvtnorm", "magrittr",
   "rstudioapi",
   "lhs", "sensitivity",
@@ -87,9 +87,6 @@ packages <- c(
 )
 
 lapply(packages, library, character.only = TRUE)
-
-library("dgpsi")
-library("RRembo")
 
 # # Bertrand's computer has issues loading and installing packages
 # if (Sys.getenv("USERNAME")=="bn267") {
@@ -121,9 +118,9 @@ library("RRembo")
 #   }
 #   install_and_load_packages(packages = packages, update = FALSE)
 # }
-# if (RUN_BO) {
-#   dgpsi::init_py(verb = FALSE)
-# }
+if (RUN_BO) {
+  dgpsi::init_py(verb = FALSE)
+}
 
 handlers(
   list(

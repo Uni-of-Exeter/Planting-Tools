@@ -1168,9 +1168,13 @@
     },
     "dgpsi": {
       "Package": "dgpsi",
-      "Version": "2.5.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
+      "Version": "2.5.0-9000",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "dgpsi-R",
+      "RemoteUsername": "mingdeyu",
+      "RemoteSha": "7abcecf4bedb4748b4c9aa1416e26bdea00c6908",
       "Requirements": [
         "R",
         "benchmarkme",
@@ -1194,7 +1198,7 @@
         "uuid",
         "visNetwork"
       ],
-      "Hash": "eb02eec7b8cd553acddafccf94d3bd82"
+      "Hash": "631b8fcb9b91bb17667a9a5fb571523a"
     },
     "diffobj": {
       "Package": "diffobj",
