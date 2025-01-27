@@ -9,4 +9,3 @@ services:
       - 3838:3838 # Shiny Server
     volumes:
       - ./ShinyForestry:/srv/shiny-server/ShinyForestry
-      - ./renv:/srv/shiny-server/renv

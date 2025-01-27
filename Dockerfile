@@ -1,4 +1,3 @@
-# Use rocker/shiny image, which already has Shiny Server installed
 FROM rocker/shiny:latest
 
 # Install system dependencies (common for spatial and scientific packages)
@@ -9,17 +8,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtiff-dev libjpeg-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set working directory for renv.lock
-WORKDIR /srv/shiny-server
+# Copy the entire Planting-Tools directory to /srv/shiny-server
+# Ideally for development we would mount not copy?
+COPY . /srv/shiny-server/Planting-Tools/
 
-# Copy renv lock file and restore R packages
-COPY renv.lock .
+# https://rstudio.github.io/renv/articles/docker.html
+# Change default location of cache
+ENV RENV_PATHS_CACHE renv/.cache 
+
+# Set working directory to Planting-Tools for renv
+WORKDIR /srv/shiny-server/Planting-Tools/
+
+# Install renv and restore dependencies
 RUN R -e "install.packages('renv', repos = 'https://cran.rstudio.com')" && \
-    R -e "renv::restore()" && \
-    rm renv.lock
+    R -e "renv::restore()"
+RUN R -e "renv::status()"
 
 # Expose Shiny Server port
 EXPOSE 3838
 
-# Start Shiny Server (the app will be mounted from the host)
-CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/ShinyForestry', host = '0.0.0.0', port = 3838)"]
+# # Start Shiny Server
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/Planting-Tools/ShinyForestry', host = '0.0.0.0', port = 3838)"]
