@@ -22,7 +22,7 @@ options(shiny.error = browser)
 options(shiny.reactlog = TRUE)
 options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 
-ANALYSISMODE<-TRUE
+ANALYSISMODE<-FALSE
 SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
 RUN_BO<-FALSE
@@ -1380,7 +1380,8 @@ the 'Choose' button below that option:"})
   
   output$Chart1<-renderPlot({
    
-    if(ANALYSISMODE){
+    #if(ANALYSISMODE){
+     # browser()
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&length(unique(Clustering_Category_VectorReactive()))==4){
     
@@ -1411,19 +1412,19 @@ the 'Choose' button below that option:"})
         To_Add_Or_Subtract_To_Scale_x<-max(abs(min(CoordPolyOrig[,1])),abs(max(CoordPolyOrig[,1])))/10
         To_Add_Or_Subtract_To_Scale_y<-max(abs(min(CoordPolyOrig[,2])),abs(max(CoordPolyOrig[,2])))/10
         
-        plot(DataClust,col= rgb(0.5, 0.5, 0.5, alpha = 0.5) ,
+        if(ANALYSISMODE){plot(DataClust,col= rgb(0.5, 0.5, 0.5, alpha = 0.5) ,
              xlim=c(min(CoordPolyOrig[,1])-To_Add_Or_Subtract_To_Scale_x,max(CoordPolyOrig[,1])+To_Add_Or_Subtract_To_Scale_x),
              ylim=c(min(CoordPolyOrig[,2])-To_Add_Or_Subtract_To_Scale_y,max(CoordPolyOrig[,2])+To_Add_Or_Subtract_To_Scale_y))
         points(pointCoordinatexy,col="red",pch=20)
-        polygon(CoordPolyOrig[,1],CoordPolyOrig[,2])
+        polygon(CoordPolyOrig[,1],CoordPolyOrig[,2])}else{plot(1, 1, type = "n", xlab = "", ylab = "", axes = FALSE, ann = FALSE)}
         
         if(!is.null(dim(DataClust))){
         Dist_Between_Selected_Points_And_Data_Points_After_tsne<-sqrt((DataClust[,1]-pointCoordinatexy[1])^2+(DataClust[,2]-pointCoordinatexy[2])^2)
         Selected_Point_In_Cluster_To_Display<-which.min(Dist_Between_Selected_Points_And_Data_Points_After_tsne)
         Selected_Point_In_Cluster_To_Display_Reactive(Selected_Point_In_Cluster_To_Display)
-        points(DataClust[Selected_Point_In_Cluster_To_Display,1],DataClust[Selected_Point_In_Cluster_To_Display,2],col="blue",pch=20)
+        if(ANALYSISMODE){points(DataClust[Selected_Point_In_Cluster_To_Display,1],DataClust[Selected_Point_In_Cluster_To_Display,2],col="blue",pch=20)}
         }else{Selected_Point_In_Cluster_To_Display_Reactive(1)
-          points(DataClust,col="blue",pch=20)}
+          if(ANALYSISMODE){points(DataClust,col="blue",pch=20)}}
       }else{
         plot.new()
         text(0.5, 0.5, "There is not a sufficient number of target compatible strategies to obtain clusters",cex = 1.5, col = "red", font = 2)}
@@ -1432,7 +1433,7 @@ the 'Choose' button below that option:"})
       text(0.5, 0.5, "Clustering has not been done yet",cex = 1.5, col = "red", font = 2)
     }  
       
-    }else{}
+  #  }else{}
       
       })
   
@@ -2247,7 +2248,7 @@ the 'Choose' button below that option:"})
                {
     
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches") && (ClusteringDone())) {
-    #browser()
+  
         YearSelect<-input$YearAlt-STARTYEAR
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
@@ -2459,7 +2460,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   #DONE
   # Check if the slider values have been updated after the initialization
   observeEvent(input$SliderMain,{
-   # browser()
+   
     SHBICurrent<-SlidersHaveBeenInitialized()
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
       for (sl in SliderNames){
@@ -3118,7 +3119,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       #                                input_areaSlider_multiplicative_coefficient = FALSE,
       #                                 tolvec=tolvecReactive())
       
-      
+
       tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                                      SavedVecLoc = SavedVecYearType,
                                                      simul636YearTypeLoc = simul636YearType,
@@ -3279,12 +3280,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       else{if(dim(SubsetMeetTargetsUnique$YEAR)[1]>=2){
         
         RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],2,replace=F)
-        #browser()
+
         LinesToCompare<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
                              TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
                              OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
       }else{
-        ##browser()
+
         RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
         LinesToCompare<-list(YEAR=SelectedSimMatGlobal$YEAR[RandomSubsetIndices,],
                              TYPE=SelectedSimMatGlobal$TYPE[RandomSubsetIndices,],
@@ -3564,7 +3565,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 listMaps[[2]]<-leafletProxy("ClusterPage2")
                  LinesToCompare<-LinesToCompareReactive()
                  SelectedLine<-list()
-                # browser()
+              
                  
                  CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
                  
@@ -3622,7 +3623,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   #                 listMaps[[2]]<-leafletProxy("ClusterPage2")
   #                 LinesToCompare<-LinesToCompareReactive()
   #                 SelectedLine<-list()
-  #                 # browser()
+  #                
   #                 
   #               #  CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
   #              #   
@@ -3916,7 +3917,7 @@ if(!is.null(pref_reactive()$prefs)){
       #                                 SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
       #                                 VisitsSelectedSD = VisitsSelectedSD,
       #                                 alphaLVL = 0,tolvec=tolvecReactive()) # At the beginning we want to switch on all the sliders
-       # browser()
+     #  browser()
         
         tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                                        SavedVecLoc = TwoRows[1,],
@@ -3947,7 +3948,6 @@ if(!is.null(pref_reactive()$prefs)){
         
         #################
         
- #   browser()        
         SelecRow<-1
 #        SelectedMins <- tmp$SelectedSimMat2
         SelectedMins <- tmpYearType$SelectedSimMat2
