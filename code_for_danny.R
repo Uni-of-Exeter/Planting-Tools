@@ -318,7 +318,7 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
   #biodiversity
   if(!is.null(outcomes$sum_biodiversity)){
     #handle species names
-    imp_bio <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes_to_maximize_sum_threshold_vector) %in% NAME_CONVERSION$Specie] - outcomes$sum_biodiversity)/(outcomes$sum_biodiversity_sd)
+    imp_bio <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes$sum_biodiversity)] - outcomes$sum_biodiversity)/(outcomes$sum_biodiversity_sd)
     implausibilities <- c(implausibilities, imp_bio)
   }
   return(max(implausibilities))
