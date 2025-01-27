@@ -65,5 +65,5 @@ Imports:
   cluster,
   codetools
 Remotes:
-  mbinois/RRembo,
-  mingdeyu/dgpsi-R
+  mingdeyu/dgpsi-R,
+  mbinois/RRembo
