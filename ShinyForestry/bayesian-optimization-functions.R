@@ -1164,8 +1164,8 @@ get_outcomes_from_strategy <- function(parameter_vector,
       treespecie == strategy_treespecie &
       outcome_type == "Visits",
     .(
-      sum_visits = sum(outcome_value[statistic_name == "Mean"]),
-      sum_visits_sd = sqrt(sum(outcome_value[statistic_name == "SD"]^2))
+      sum_visits = mean(outcome_value[statistic_name == "Mean"]),
+      sum_visits_sd = sqrt(sum(outcome_value[statistic_name == "SD"]^2)) / length(outcome_value[statistic_name == "SD"])
     )
   ]
   sum_visits <- result[, sum_visits]
