@@ -1243,7 +1243,8 @@ get_outcomes_from_strategy <- function(parameter_vector,
       colMeans()
     
     # Biodiversity SD
-    sum_biodiversity_sd <- 0
+    sum_biodiversity_sd <- sapply(sum_biodiversity, function(x){return(0)})
+    
     # sum_biodiversity_sd <- sqrt(sum(sum_biodiversity_sd^2))
   }
   
