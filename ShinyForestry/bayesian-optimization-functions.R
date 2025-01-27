@@ -1150,7 +1150,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   outcomes[, strategy_treespecie := parameter_vector[indices]]
   
   # 14 ms
-  FullTable_long <- data.table::merge.data.table(x = FullTable_long_arg,
+  FullTable_long <- data.table::merge.data.table(x = FullTable_long,
                                                  y = outcomes,
                                                  by = "parcel_id",
                                                  all.x = TRUE)
