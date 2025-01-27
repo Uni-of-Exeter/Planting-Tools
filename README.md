@@ -8,6 +8,20 @@
 7. From RStudio, open app.R and click on the `Run App` button, or run the R command `shiny::runApp('ShinyForestry', launch.browser = TRUE)`
 8. Wait a few seconds / a minute for the new window to popup
 
+# Using `renv`
+
+Prior to initialising the `renv`, you may need to set a GIT Personal Access Token within an `.Renviron` file, or within the session, e.g.
+
+```R
+GITHUB_PAT = <your_personal_access_token>
+```
+which can be confirmed with `Sys.getenv("GIT_PAT")`
+
+```R
+> install.packages("renv")
+> renv::init()
+```
+
 # Instructions for contributors
 - Code is meant to be readable by humans, not only computers, so comment your code and use meaningful variable names. Unreadable code will require a lot of time and effort to fix and modify.
 - Once you are happy with your branch and want to share your changes with everybody, make a Pull Request to the `dev` branch. Daniel (or Timothée for now) will process it.

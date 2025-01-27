@@ -1,5 +1,6 @@
 # progress is required on Ubuntu: https://github.com/tidyverse/vroom/issues/538
 Imports:
+  gitcreds,
   progress,
   car,
   shinyjs,
@@ -54,9 +55,15 @@ Imports:
   data.table,
   eaf,
   RRembo,
+  dgpsi,
   testthat,
   pkgload,
-  devtools
+  devtools,
+  boot,
+  nnet,
+  survival,
+  cluster,
+  codetools
 Remotes:
+  mbinois/RRembo,
   mingdeyu/dgpsi-R
-  mbinois/RRembo
