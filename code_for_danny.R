@@ -25,12 +25,12 @@ source(normalizePath(file.path(FolderSource, "preferTrees.R")))
 packages <- c(
   # https://github.com/tidyverse/vroom/issues/538
   "progress",
-  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog", "leaflet", "sf", "ggplot2",
   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-  "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+  "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
   "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-  "mvtnorm", "dplyr", "magrittr",
+  "mvtnorm", "magrittr",
   "rstudioapi",
   "lhs", "sensitivity",
   "progressr", "doFuture", "promises",
