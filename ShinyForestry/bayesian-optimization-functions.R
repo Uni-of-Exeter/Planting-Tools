@@ -1090,9 +1090,16 @@ transform_FullTable_wide_to_long <- function(FullTable_arg,
   FullTable_long[, outcome_type := fifelse(test = outcome_type %like% "Visits",
                                            yes = "Visits",
                                            no = outcome_type)]
+  # When Visits, affect Conifers to them
   FullTable_long[, treespecie := fifelse(test = treespecie %like% "Visits",
                                          yes = "Conifers",
                                          no = treespecie)]
+  # Then duplicate these values, with tree specie Deciduous
+  FullTable_long_duplicate_visits_deciduous <- copy(FullTable_long[outcome_type == "Visits"])
+  FullTable_long_duplicate_visits_deciduous[, treespecie := "Deciduous"]
+  
+  FullTable_long <- rbind(FullTable_long, FullTable_long_duplicate_visits_deciduous)
+  
   if (isFALSE(verbose)) {
     suppressWarnings({
       FullTable_long[, scenario := fifelse(test = scenario %like% "Visits",
