@@ -4323,8 +4323,6 @@ if(!is.null(pref_reactive()$prefs)){
   onUnhandledError(function(err) {
     # The background processes check the task id, and end if they are not the latest task
     set_latest_task_id(-1)
-    # Force-close background processes
-    future::plan(future::sequential)
     
     if (SESSION_FILE_SUFFIX != "") {
       session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
@@ -4338,8 +4336,6 @@ if(!is.null(pref_reactive()$prefs)){
   observeEvent(input$crash, function(){
     # The background processes check the task id, and end if they are not the latest task
     set_latest_task_id(-1)
-    # Force-close background processes
-    future::plan(future::sequential)
     
     if (SESSION_FILE_SUFFIX != "") {
       session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
