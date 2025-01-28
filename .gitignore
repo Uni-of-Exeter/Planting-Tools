@@ -8,7 +8,7 @@ climate_cells.csv
 ShinyForestry/appMod.r
 ShinyForestry/appMod2_after_fusion.r
 *log*
-*lock*
+*lockfile*
 *task_id*
 *.feather
 SEER/
@@ -16,6 +16,7 @@ ShinyForestry/ElicitorOutput/FullTable*
 ShinyForestry/ElicitorOutput/land_parcels.shp/
 ShinyForestry/ElicitorOutput/Parcels.geojson
 ShinyForestry/JulesOP/Fishnet_1km_to_SEER_net2km*
+ShinyForestry/JulesOP/JulesApp*
 ShinyForestry/JulesOP/beta*
 ShinyForestry/JulesOP/Correspondance*
 ShinyForestry/CalculatedFiles/
@@ -31,3 +32,5 @@ ShinyForestry/DownScalingImages/
 /ShinyForestry/ElicitorOutput/old*
 /ShinyForestry/ElicitorOutput/saved new ex
 .Rproj.user
+.Renviron
+*.DS_Store
