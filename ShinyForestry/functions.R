@@ -2661,8 +2661,8 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
                    sum(.x) / sum(proportion_intersection_in_bio)
                  }),
           
-          geometry_union = st_union(geometry),
-          geometry_jules = st_union(geometry_jules),
+          geometry_union = suppressMessages(st_union(geometry)),
+          geometry_jules = suppressMessages(st_union(geometry_jules)),
           
           polygon_id_jules = mean(polygon_id_jules)
         ) %>% 
