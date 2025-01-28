@@ -1,6 +1,7 @@
 # progress is required on Ubuntu: https://github.com/tidyverse/vroom/issues/538
 Imports:
   gitcreds,
+  Rcpp,
   xfun,
   progress,
   car,
