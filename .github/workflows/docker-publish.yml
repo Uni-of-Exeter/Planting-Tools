@@ -17,6 +17,8 @@ on:
       - ".github/workflows/docker-publish.yml"
       - "Dockerfile"
       - "DESCRIPTION"
+    types:
+      - closed
   workflow_dispatch:
 
 env:
