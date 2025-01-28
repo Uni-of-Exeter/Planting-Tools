@@ -2365,7 +2365,7 @@ get_regressed_biodiversity <- function(biodiversity_planting,
   
   # Compute the regressed value at year_of_planting_from_0
   variable <- matrix(rep(year_of_planting_from_0, each = ncol(slope)), ncol = ncol(slope), byrow = TRUE)
-  result <- intercept + as.matrix(slope) * variable
+  result <- as.matrix(intercept) + as.matrix(slope) * variable
   
   # We want the change: value if we plant - value if we never plant
   if (isTRUE(difference)) {
