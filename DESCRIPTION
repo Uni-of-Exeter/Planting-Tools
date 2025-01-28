@@ -2,6 +2,8 @@
 Imports:
   gitcreds,
   Rcpp,
+  RRembo,
+  dgpsi,
   xfun,
   progress,
   car,
@@ -56,8 +58,6 @@ Imports:
   adaptMCMC,
   data.table,
   eaf,
-  RRembo,
-  dgpsi,
   testthat,
   pkgload,
   devtools,
