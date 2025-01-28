@@ -671,12 +671,8 @@ if (isFALSE(RUN_BO)) {
   plan(sequential)
 }
 handlers(
-  list(
-    handler_shiny(),
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  ),
+  c(handler_shiny(),
+    progress_handlers),
   on_missing = "ignore"
 )
 
