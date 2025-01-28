@@ -2365,7 +2365,7 @@ get_regressed_biodiversity <- function(biodiversity_planting,
   
   # Compute the regressed value at year_of_planting_from_0
   variable <- matrix(rep(year_of_planting_from_0, each = ncol(slope)), ncol = ncol(slope), byrow = TRUE)
-  result <- intercept + as.matrix(slope) * variable
+  result <- as.matrix(intercept) + as.matrix(slope) * variable
   
   # We want the change: value if we plant - value if we never plant
   if (isTRUE(difference)) {
@@ -2661,8 +2661,8 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
                    sum(.x) / sum(proportion_intersection_in_bio)
                  }),
           
-          geometry_union = st_union(geometry),
-          geometry_jules = st_union(geometry_jules),
+          geometry_union = suppressMessages(st_union(geometry)),
+          geometry_jules = suppressMessages(st_union(geometry_jules)),
           
           polygon_id_jules = mean(polygon_id_jules)
         ) %>% 
