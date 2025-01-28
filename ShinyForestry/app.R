@@ -96,7 +96,7 @@ msg <- "Installing all packages ..."
 notif(msg)
 
 plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
-str(remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com'))
+remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com')
 
 msg <- paste(msg, "done")
 notif(msg)
