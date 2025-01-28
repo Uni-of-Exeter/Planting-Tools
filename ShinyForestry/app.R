@@ -85,56 +85,40 @@ source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 
-packages <- c(
-  # https://github.com/tidyverse/vroom/issues/538
-  "progress",
-  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog", "leaflet", "sf", "ggplot2",
-  "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-  "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-  "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-  "mvtnorm", "magrittr",
-  "rstudioapi",
-  "lhs", "sensitivity",
-  "progressr", "doFuture", "promises",
-  # # Active subspace method
-  "concordance", "BASS", "zipfR",
-  # To plot the best map, and save it to a file
-  "mapview", "webshot",
-  # File-locking, for multi-process
-  "flock",
-  "adaptMCMC", "data.table"
-)
-# Bertrand's computer has issues loading and installing packages
-if (Sys.getenv("USERNAME")=="bn267") {
-  library("dgpsi")
-  library("RRembo")
-  for(ll in 1:length(packages)) {
-    library(packages[ll], character.only = TRUE)
-  }
-} else {
-  
-  if (!require(dgpsi)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
-    library("dgpsi")
-  }
-  if (!require(RRembo)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    # RRembo needs mvtnorm loaded, and eaf
-    install_and_load_packages("mvtnorm", verbose = FALSE)
-    install_and_load_packages("eaf", verbose = FALSE)
-    devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
-    library("RRembo")
-  }
-  install_and_load_packages(packages = packages, update = FALSE)
+
+# Install and load packages in DESCRIPTION
+if (isFALSE(require("remotes"))) {
+  install.packages('remotes', repos = 'https://cran.rstudio.com')
+  library(remotes)
 }
+
+msg <- "Installing all packages ..." 
+notif(msg)
+
+plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
+str(remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com'))
+
+msg <- paste(msg, "done")
+notif(msg)
+
+
+
+msg <- "Loading all packages ..." 
+notif(msg)
+
+# Retrieve packages from DESCRIPTION (in plantingtools_folder)
+packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
+packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
+packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
+packages <- na.omit(packages)  # Remove any NAs
+
+sapply(packages, library, character.only = TRUE)
+
+msg <- paste(msg, "done")
+notif(msg)
+
+
+
 if (RUN_BO) {
   dgpsi::init_py(verb = FALSE)
 }
