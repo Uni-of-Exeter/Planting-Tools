@@ -1,19 +1,4 @@
 # Created and maintained by Bertrand Nortier and Timothée Bacri
-#library(profvis)
-#library(htmlwidgets)
-
-# Ubuntu packages needed
-# sudo apt-get -y --no-install-recommends install libcurl4-openssl-dev
-# sudo apt-get -y --no-install-recommends install libfontconfig1-dev
-# sudo apt-get -y --no-install-recommends install libxml2-dev
-# sudo apt-get -y --no-install-recommends install libudunits2-dev
-# sudo apt-get -y --no-install-recommends install libssl-dev
-# sudo apt-get -y --no-install-recommends install libfontconfig1-dev
-# sudo apt-get -y --no-install-recommends install libproj-dev
-# sudo apt-get -y --no-install-recommends install cmake
-# sudo apt-get -y --no-install-recommends install libgdal-dev
-# sudo apt-get -y --no-install-recommends install libharfbuzz-dev
-# sudo apt-get -y --no-install-recommends install libfribidi-dev
 
 # options(warn=2, error=recover)
 # options(warn=2)
@@ -85,27 +70,15 @@ source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 
-packages <- c(
-  # https://github.com/tidyverse/vroom/issues/538
-  "progress",
-  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog", "leaflet", "sf", "ggplot2",
-  "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-  "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-  "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-  "mvtnorm", "magrittr",
-  "rstudioapi",
-  "lhs", "sensitivity",
-  "progressr", "doFuture", "promises",
-  # # Active subspace method
-  "concordance", "BASS", "zipfR",
-  # To plot the best map, and save it to a file
-  "mapview", "webshot",
-  # File-locking, for multi-process
-  "flock",
-  "adaptMCMC", "data.table"
-)
-# Bertrand's computer has issues loading and installing packages
+
+# Retrieve packages from DESCRIPTION (in plantingtools_folder)
+plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
+packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
+packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
+packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
+packages <- na.omit(packages)  # Remove any NAs
+
+# Install and load packages in DESCRIPTION
 if (Sys.getenv("USERNAME")=="bn267") {
   library("dgpsi")
   library("RRembo")
@@ -113,28 +86,27 @@ if (Sys.getenv("USERNAME")=="bn267") {
     library(packages[ll], character.only = TRUE)
   }
 } else {
+  if (isFALSE(require("remotes"))) {
+    install.packages('remotes', repos = 'https://cran.rstudio.com')
+    library(remotes)
+  }
   
-  if (!require(dgpsi)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
-    library("dgpsi")
-  }
-  if (!require(RRembo)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    # RRembo needs mvtnorm loaded, and eaf
-    install_and_load_packages("mvtnorm", verbose = FALSE)
-    install_and_load_packages("eaf", verbose = FALSE)
-    devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
-    library("RRembo")
-  }
-  install_and_load_packages(packages = packages, update = FALSE)
+  msg <- "Installing all packages ..." 
+  notif(msg)
+  remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com')
+  
+  msg <- paste(msg, "done")
+  notif(msg)
+  
+  msg <- "Loading all packages ..." 
+  notif(msg)
+  
+  sapply(packages, library, character.only = TRUE)
+  
+  msg <- paste(msg, "done")
+  notif(msg)
 }
+
 if (RUN_BO) {
   dgpsi::init_py(verb = FALSE)
 }
@@ -147,7 +119,13 @@ progress_handlers <- list(
   )
 ) 
 if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
-  progress_handlers <- c(progress_handlers, handler_rstudio())
+  progress_handlers <- c(progress_handlers,
+                         handler_rstudio(),
+                         handler_progress(
+                           format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+                         ))
+} else {
+  progress_handlers <- c(progress_handlers, handler_txtprogressbar())
 }
 if (os == "windows") {
   progress_handlers <- c(progress_handlers, handler_winprogressbar())
@@ -687,12 +665,8 @@ if (isFALSE(RUN_BO)) {
   plan(sequential)
 }
 handlers(
-  list(
-    handler_shiny(),
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  ),
+  c(handler_shiny(),
+    progress_handlers),
   on_missing = "ignore"
 )
 
@@ -4339,8 +4313,6 @@ if(!is.null(pref_reactive()$prefs)){
   onUnhandledError(function(err) {
     # The background processes check the task id, and end if they are not the latest task
     set_latest_task_id(-1)
-    # Force-close background processes
-    future::plan(future::sequential)
     
     if (SESSION_FILE_SUFFIX != "") {
       session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
@@ -4354,8 +4326,6 @@ if(!is.null(pref_reactive()$prefs)){
   observeEvent(input$crash, function(){
     # The background processes check the task id, and end if they are not the latest task
     set_latest_task_id(-1)
-    # Force-close background processes
-    future::plan(future::sequential)
     
     if (SESSION_FILE_SUFFIX != "") {
       session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
