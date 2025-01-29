@@ -145,7 +145,7 @@ progress_handlers <- list(
   handler_progress(
     format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
   )
-)
+) 
 if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
   progress_handlers <- c(progress_handlers, handler_rstudio())
 }
