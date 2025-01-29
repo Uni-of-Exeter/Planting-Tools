@@ -83,7 +83,7 @@ packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
 # Install and load packages in DESCRIPTION
-if (Sys.getenv("USERNAME")=="bn267") {
+if (Sys.getenv("USERNAME")=="bn267" || Sys.getenv("USERNAME")=="dw356") {
   library("dgpsi")
   library("RRembo")
   for(ll in 1:length(packages)) {
