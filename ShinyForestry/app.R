@@ -1,19 +1,4 @@
 # Created and maintained by Bertrand Nortier and Timothée Bacri
-#library(profvis)
-#library(htmlwidgets)
-
-# Ubuntu packages needed
-# sudo apt-get -y --no-install-recommends install libcurl4-openssl-dev
-# sudo apt-get -y --no-install-recommends install libfontconfig1-dev
-# sudo apt-get -y --no-install-recommends install libxml2-dev
-# sudo apt-get -y --no-install-recommends install libudunits2-dev
-# sudo apt-get -y --no-install-recommends install libssl-dev
-# sudo apt-get -y --no-install-recommends install libfontconfig1-dev
-# sudo apt-get -y --no-install-recommends install libproj-dev
-# sudo apt-get -y --no-install-recommends install cmake
-# sudo apt-get -y --no-install-recommends install libgdal-dev
-# sudo apt-get -y --no-install-recommends install libharfbuzz-dev
-# sudo apt-get -y --no-install-recommends install libfribidi-dev
 
 # options(warn=2, error=recover)
 # options(warn=2)
@@ -86,38 +71,41 @@ source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"
 source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 
 
-# Install and load packages in DESCRIPTION
-if (isFALSE(require("remotes"))) {
-  install.packages('remotes', repos = 'https://cran.rstudio.com')
-  library(remotes)
-}
-
-msg <- "Installing all packages ..." 
-notif(msg)
-
-plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
-remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com')
-
-msg <- paste(msg, "done")
-notif(msg)
-
-
-
-msg <- "Loading all packages ..." 
-notif(msg)
-
 # Retrieve packages from DESCRIPTION (in plantingtools_folder)
+plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
 packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
 packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
 packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
-sapply(packages, library, character.only = TRUE)
-
-msg <- paste(msg, "done")
-notif(msg)
-
-
+# Install and load packages in DESCRIPTION
+if (Sys.getenv("USERNAME")=="bn267") {
+  library("dgpsi")
+  library("RRembo")
+  for(ll in 1:length(packages)) {
+    library(packages[ll], character.only = TRUE)
+  }
+} else {
+  if (isFALSE(require("remotes"))) {
+    install.packages('remotes', repos = 'https://cran.rstudio.com')
+    library(remotes)
+  }
+  
+  msg <- "Installing all packages ..." 
+  notif(msg)
+  remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com')
+  
+  msg <- paste(msg, "done")
+  notif(msg)
+  
+  msg <- "Loading all packages ..." 
+  notif(msg)
+  
+  sapply(packages, library, character.only = TRUE)
+  
+  msg <- paste(msg, "done")
+  notif(msg)
+}
 
 if (RUN_BO) {
   dgpsi::init_py(verb = FALSE)
