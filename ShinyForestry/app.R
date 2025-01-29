@@ -73,7 +73,11 @@ source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 
 # Retrieve packages from DESCRIPTION (in plantingtools_folder)
 plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
-packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
+if (file.exists(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))) {
+  packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
+} else {
+  packages <- read.dcf(normalizePath(file.path(FolderSource, "DESCRIPTION")))[, "Imports"]
+}
 packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
 packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
