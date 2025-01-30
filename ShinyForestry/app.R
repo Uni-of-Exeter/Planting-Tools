@@ -3233,7 +3233,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       for (target in TARGETS) {
         prior_list[[target]] <- prior_list_temp[[target]]
       }
-      
+    #  browser()
       # pref_reactive(prefObject(data = datAll2,
       #                          priors = prior_list))
       
