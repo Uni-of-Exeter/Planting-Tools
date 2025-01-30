@@ -1471,7 +1471,7 @@ server <- function(input, output, session,
   
   observeEvent({input$UserID_Dropdown},{
     if(input$UserID_Dropdown!="Please Choose a Computer ID"){
-   #   browser()
+    #  browser()
     USER_ID_Reactive(input$UserID_Dropdown)
     USER_ID_CHOSEN(TRUE)
     hide("UserID_Dropdown") 
@@ -3340,6 +3340,15 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                              OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
         pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
                                  priors = prior_list))
+        SelectedLine <- list()
+        
+        SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[1,],
+                                  TYPE=LinesToCompare$TYPE[1,],
+                                  OUTPUTS=LinesToCompare$OUTPUTS[1,])
+        SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[2,],
+                                  TYPE=LinesToCompare$TYPE[2,],
+                                  OUTPUTS=LinesToCompare$OUTPUTS[2,])
+        
       }else{
 
         RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
@@ -3348,6 +3357,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                              OUTPUTS=SelectedSimMatGlobal$OUTPUTS[RandomSubsetIndices,])
         pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
                                  priors = prior_list))
+        SelectedLine <- list()
+        
+        SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[1,],
+                                  TYPE=LinesToCompare$TYPE[1,],
+                                  OUTPUTS=LinesToCompare$OUTPUTS[1,])
+        SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[2,],
+                                  TYPE=LinesToCompare$TYPE[2,],
+                                  OUTPUTS=LinesToCompare$OUTPUTS[2,])
       }
         
       }
