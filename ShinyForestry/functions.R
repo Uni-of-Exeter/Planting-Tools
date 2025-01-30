@@ -827,7 +827,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
      # browser()
 #      saveRDS(pref_reactive(),file=paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))
       
-      saveRDS(list(data=pref_reactive()$data,prefs=pref_reactive()$prefs),file=paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))
+      saveRDS(list(data=pref_reactive()$data,prefs=pref_reactive()$prefs),file=paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))
       
       
       # If we have reached the MaxNumber of choices, then we stop

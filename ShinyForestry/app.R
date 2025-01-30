@@ -12,6 +12,7 @@ SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
 USER_ID<-2
 MAXNBSTRATS<-20
+TOTAL_USER_NB<-9
 
 
 
@@ -3068,8 +3069,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       if(dim(pref_reactive()$data)[1]>=(MAXNBSTRATS*2)){RunInit<-FALSE}
       
     }
-    if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))){
-      dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))
+    if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))){
+      dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))
       if(dim(dataPrefStart$data)[1]>=(MAXNBSTRATS*2)){RunInit<-FALSE}
     }
     
@@ -3276,9 +3277,9 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       if(dim(FIXED_STRATEGIES_LIST$YEAR)[1]!=0){
         # Have we previously already chosen strategies
       #  if(file.exists(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))){
-          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))){
+          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))){
             
-          dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))
+          dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))
           #pref_reactive(readRDS(pref_reactive,file=paste0(FolderSource,"//FixedStrats//pref_reactive.RDS")))
           pref_reactive(prefObject(data =dataPrefStart$data,
                                    prefs=dataPrefStart$prefs,
@@ -3303,7 +3304,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                     TYPE=LinesToCompare$TYPE[2,],
                                     OUTPUTS=LinesToCompare$OUTPUTS[2,])
 #          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))){
-          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))){
+          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))){
           pref_reactive()$data_augment(rbind(SelectedLine[[1]]$OUTPUTS[TARGETS],SelectedLine[[2]]$OUTPUTS[TARGETS]))}else{
             pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
                                      priors = prior_list))}
