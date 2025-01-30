@@ -147,7 +147,7 @@ generate_legal_unique_samples <- function(n,
     } else {
       msg <- "generate_legal_unique_samples() -> generate_legal_samples() ..."
       notif(msg, log_level = "debug", limit_log_level = limit_log_level)
-      if (attempts > 1) {
+      if (attempts > 1 && nrow(valid_samples) > 1) {
         temp <- lhs::optAugmentLHS(lhs = valid_samples, m = rows, mult = 1)
         
         # Only take the new rows
@@ -1313,7 +1313,7 @@ dimension_reduction_mca_generate_new_inputs <- function(mca_object, inputs, cate
   return(result)
 }
 
-fastest_design_point_selection_method <- function(gp_model, input_candidates_for_gp, batch_size, workers, parallel) {
+fastest_design_point_selection_method <- function(gp_model, input_candidates_for_gp, batch_size, workers, parallel, limit_log_level = LOG_LEVEL) {
   
   # If the inputs have low dimensions, don't waste time, "mice" is good and fast
   n <- nrow(gp_model$data$X)
@@ -1572,7 +1572,7 @@ acquisition_function <- function(gp_predicted_means,
 }
 
 # https://dspace.mit.edu/handle/1721.1/128591
-batch_selection <- function(acquisition_values, batch_size = 1) {
+batch_selection <- function(acquisition_values, batch_size = 1, limit_log_level = LOG_LEVEL) {
   if (batch_size > length(acquisition_values)) {
     msg <- "In batch_selection, the batch_size is larger than the number of possible values"
     notif(msg, log_level = "error", limit_log_level = limit_log_level)
@@ -1584,6 +1584,7 @@ batch_selection <- function(acquisition_values, batch_size = 1) {
 objective_function <- function(inputs, # c(area, year_planting, tree_specie)
                                area_sum_threshold, # number
                                year_of_max_no_planting_threshold_vector, # vector
+                               FullTable_arg,
                                FullTable_long_arg,
                                SCENARIO_ARG = SCENARIO,
                                MAXYEAR_ARG = MAXYEAR,
