@@ -2796,11 +2796,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
         if(RUN_BO){
           
-          if (isTRUE(current_task_id != get_latest_task_id())) {
-            notif(paste("Task", current_task_id, "cancelled."))
-            return()
-          }
-          
           msg <- paste0("task ", current_task_id, " BO start")
           notif(msg)
           showNotification(msg)
