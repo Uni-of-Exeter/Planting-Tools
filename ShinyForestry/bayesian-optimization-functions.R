@@ -2169,7 +2169,7 @@ bayesian_optimization <- function(
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
-    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(n = 50,
+    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(n = 25,
                                                                                 FullTable_arg = FullTable,
                                                                                 MAXYEAR_arg = MAXYEAR,
                                                                                 SPECIES_arg = SPECIES,
@@ -2181,6 +2181,18 @@ bayesian_optimization <- function(
                                                                                 RRembo_smart = RREMBO_SMART,
                                                                                 current_task_id = current_task_id,
                                                                                 limit_log_level = limit_log_level)
+    new_candidates_obj_inputs_full_unconstrained <- generate_legal_unique_samples(n = 25,
+                                                                                  FullTable_arg = FullTable,
+                                                                                  MAXYEAR_arg = MAXYEAR,
+                                                                                  SPECIES_arg = SPECIES,
+                                                                                  area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                                                  year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                                                  area_sum_is_constrained = FALSE,
+                                                                                  RRembo = TRUE,
+                                                                                  RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                                                                  RRembo_smart = RREMBO_SMART,
+                                                                                  current_task_id = current_task_id,
+                                                                                  limit_log_level = limit_log_level)
     
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
@@ -2190,8 +2202,10 @@ bayesian_optimization <- function(
     # }
     time_sample <- Sys.time() - begin_inside
     
-    new_candidates_obj_inputs <- new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical
-    new_candidates_obj_inputs_for_gp <- new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension
+    new_candidates_obj_inputs <- rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
+                                       new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical)
+    new_candidates_obj_inputs_for_gp <- rbind(new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension,
+                                              new_candidates_obj_inputs_full_unconstrained$valid_samples_low_dimension)
     
     ## Generate acquisition values ----
     # pb_amount <- pb_amount + 1 / max_loop_progress_bar
