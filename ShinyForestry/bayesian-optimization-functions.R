@@ -839,7 +839,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   # For now, the code below only works for the 2 tree species Conifers and Deciduous. We will have a new biodiversity model later on, so it's not important
   tmp <- FullTable_long[outcome_type == "Richness" &
                           planting_year == strategy_year,
-                        sum(outcome_value),
+                        mean(outcome_value),
                         by = outcome_sub_type]
   sum_richness <- tmp[, V1]
   names(sum_richness) <- tmp[, outcome_sub_type]
