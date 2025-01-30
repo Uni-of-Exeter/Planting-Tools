@@ -3007,7 +3007,7 @@ Carbon</span>: ", round(Carbon,2)#round(sum(CarbonMeanCalc), 2)
 }
 FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs, Area, Visits, VisitsSD)
 {
-  
+ # browser()
   addControlText <- NULL
   for (i in 1:length(SPECIES)) {
     specie_latin <- SPECIES[i]
@@ -3016,23 +3016,30 @@ FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs,
     selectedBioSDspecie <- BioSDs[[paste0( specie_latin,"SD")]]
     #  addControlText <- paste0(addControlText, specie_english, ": ", 
     #                          round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
+    if(specie_latin %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")){
     addControlText <-c(addControlText,
                        #Please do not delete this code, it allows to add back the standard deviation on the labels
                        #sprintf("%-12s :%.2f\u00B1%.2f\n",specie_english,selectedBiospecie,2 * selectedBioSDspecie)
-                       sprintf("%-12s :%.2f\n",specie_english,selectedBiospecie)
+                       sprintf("%-30s:%.2f \n",paste0("Species richness (",specie_english,")"),selectedBiospecie)
                        
-                       )
+                       )}else{
+    addControlText <-c(addControlText,
+                       #Please do not delete this code, it allows to add back the standard deviation on the labels
+                       #sprintf("%-12s :%.2f\u00B1%.2f\n",specie_english,selectedBiospecie,2 * selectedBioSDspecie)
+                       sprintf("%-30s:%.2f \n",paste0(specie_english," (Presence %)"),selectedBiospecie))
+                       }
+    
     
     #paste0(addControlText, specie_english, ": ", 
      #                        round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
   }
  
   addControlText<-c(#sprintf("%-12s :%.2f\u00B1%.2f\n","Carbon", Carbon, 2*CarbonSD), 
-                   sprintf("%-12s :%.2f\n","Carbon", Carbon), 
+                   sprintf("%-30s:%.2f\n","Carbon (Tonnes of CO2)", Carbon), 
                     addControlText,
-                   sprintf("%-12s :%.4f\n",  "Area ", Area),
+                   sprintf("%-30s:%.4f \n",  "Area (km^2)", Area),
                     #sprintf("%-12s :%.2f\u00B1%.2f\n","Visitors", Visits, 2*VisitsSD)
-                   sprintf("%-12s :%.2f\n","Visitors", Visits)
+                   sprintf("%-30s:%.2f \n","Visitors (Visits per month)", Visits)
                     
                     )
   
