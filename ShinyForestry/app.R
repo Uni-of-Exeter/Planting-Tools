@@ -1449,7 +1449,6 @@ the 'Choose' button below that option:"})
  #   }
 #  })
   
-  
   observeEvent({
     input$random
   },{
