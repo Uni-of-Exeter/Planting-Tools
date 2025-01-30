@@ -1849,7 +1849,7 @@ notif <- function(msg,
   if (log_level > limit_log_level) return()
   
   if (isFALSE(rbind)) {
-    msg <- paste0("[", log_level_msg, "] ", msg)
+    msg <- paste0("[", log_level_msg, "] ", Sys.time(), " ", msg)
   }
   
   pad_notif_message <- function(msg, pad_character = "_") {
