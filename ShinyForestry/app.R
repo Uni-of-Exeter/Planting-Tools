@@ -1471,7 +1471,7 @@ server <- function(input, output, session,
   
   observeEvent({input$UserID_Dropdown},{
     if(input$UserID_Dropdown!="Please Choose a Computer ID"){
-      browser()
+   #   browser()
     USER_ID_Reactive(input$UserID_Dropdown)
     USER_ID_CHOSEN(TRUE)
     hide("UserID_Dropdown") 
@@ -3057,7 +3057,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   
   observeEvent({input$tabs == "Preferences"
     USER_ID_CHOSEN()}, {
-browser()
+#browser()
     if(FirstTimeClickOnPreferencesReactive()&(USER_ID_CHOSEN())){
  
 #browser()
