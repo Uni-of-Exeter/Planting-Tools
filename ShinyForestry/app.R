@@ -10,11 +10,15 @@ options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 ANALYSISMODE<-FALSE
 SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
+USER_ID<-2
+MAXNBSTRATS<-20
+
+
+
 RUN_BO<-FALSE
 RNGversion("4.0.0")
 set.seed(1)
-#fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
-FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1))
+######################
 POLYGON_OPACITY<-0.6
 GREY_BACKGROUND_OPACITY<-0.3
 NOTAVAIL_OPACITY<-0.7
@@ -46,6 +50,7 @@ if(Sys.getenv("USERNAME")=="bn267"){
 }
 
 
+
 # more --> less: debug / info / warning / error / none
 LOG_LEVEL <- "error"
 
@@ -53,6 +58,13 @@ LOG_LEVEL <- "error"
 FolderSource <- normalizePath(getwd())
 if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
+}
+
+
+#fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
+if(file.exists(paste0(FolderSource,"//FixedStrats//FIXED_STRATEGIES_LIST.RData"))){
+load(paste0(FolderSource,"//FixedStrats//FIXED_STRATEGIES_LIST.RData"))}else{
+  FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1)) 
 }
 
 STARTYEAR<-2025
@@ -1269,7 +1281,8 @@ server <- function(input, output, session,
   Text4 <- reactiveVal("")
   PrefTextA <- reactiveVal("")
   PrefTextB <- reactiveVal("")
-
+  PrefTextC <- reactiveVal("Tell us more about your preferences.  Please look at the two planting strategies below and indicate which you would prefer if these were the only two options by selecting
+                           the 'Choose' button below that option:")
   # # Add TextN <- reactiveVal("") for each specie
   # for (i in 1:N_SPECIES) {
   #   var_name <- paste0("Text", i + 3)
@@ -1317,8 +1330,7 @@ server <- function(input, output, session,
   output$FourthMapTxt <- renderText({Text4()})
   output$PrefTextChoiceA <- renderText({PrefTextA()})
   output$PrefTextChoiceB <- renderText({PrefTextB()})
-  output$PrefText<-renderText({"Tell us more about your preferences.  Please look at the two planting strategies below and indicate which you would prefer if these were the only two options by selecting
-the 'Choose' button below that option:"})
+  output$PrefText<-renderText({PrefTextC()})
   
   output$Analysis<-renderPlot({
    
@@ -3030,7 +3042,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
 
     if(FirstTimeClickOnPreferencesReactive()){
  
-
+#browser()
     SavedVec <- ClickedVector()
     SavedVecYear <- ClickedVectorYear()
     SavedVecYearType <- ClickedVectorYearType()  
@@ -3050,7 +3062,19 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     listMaps[[1]] <- calcBaseMap$map
     listMaps[[2]] <- calcBaseMap$map
     
-    if (!is.null(SavedVecYearType)) {
+    RunInit<-TRUE
+    #If we have already made all the choices, then we do not run the algorithm
+    if(file.exists(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))){pref_reactive(readRDS(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS")))
+      if(dim(pref_reactive()$data)[1]>=(MAXNBSTRATS*2)){RunInit<-FALSE}
+      
+    }
+    if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))){
+      dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))
+      if(dim(dataPrefStart$data)[1]>=(MAXNBSTRATS*2)){RunInit<-FALSE}
+    }
+    
+    
+    if(!is.null(SavedVecYearType)&RunInit) {
       
       AreaSelected <- AreaSelected0()
       CarbonSelected <- CarbonSelected0()
@@ -3121,7 +3145,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                                      PrecalculatedCarbonSelectedTableTypeSD=PrecalcCarbonAllExtentsSDType[[SelectedDropdown]],
                                                      SavedVecYearTypeLoc=ClickedVectorYearType(),
                                                      #PreviousSavedVecYearTypeLoc=PreviousClickedVectorType(),
-                                                     SAMPLELIST=Simul636YearTypeOverrideReactive(),
+                                                     SAMPLELIST=vector("list",length(Simul636YearTypeOverrideReactive())),#Simul636YearTypeOverrideReactive(),
                                                      MAXYEAR=MAXYEAR,
                                                      CONCATENATION_SIM_MAT=TRUE
       )
@@ -3200,7 +3224,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       SubsetMeetTargetsReactiveUnique(SubsetMeetTargetsUnique)
       # if (dim(SubsetMeetTargetsUnique$YEAR)[1] >= 250)
       #{
-      
+
       prior_list_temp <- list()
       # Carbon prior
       # mean = 1 / half(midpoint)
@@ -3250,9 +3274,43 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
       #first, we look at the pre-recorded set
       if(dim(FIXED_STRATEGIES_LIST$YEAR)[1]!=0){
-        LinesToCompare<-list(YEAR=FIXED_STRATEGIES_LIST$YEAR[1:2,],
-                             TYPE=FIXED_STRATEGIES_LIST$TYPE[1:2,],
-                             OUTPUTS=FIXED_STRATEGIES_LIST$OUTPUTS[1:2,])
+        # Have we previously already chosen strategies
+      #  if(file.exists(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))){
+          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))){
+            
+          dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))
+          #pref_reactive(readRDS(pref_reactive,file=paste0(FolderSource,"//FixedStrats//pref_reactive.RDS")))
+          pref_reactive(prefObject(data =dataPrefStart$data,
+                                   prefs=dataPrefStart$prefs,
+                                   priors = prior_list))
+          StartLine<-(MAXNBSTRATS*2)*(USER_ID-1)+dim(pref_reactive()$data)[1]+1
+          
+          }else{
+            StartLine<-(MAXNBSTRATS*2)*(USER_ID-1)+1}
+          
+        #browser()
+        LinesToCompare<-list(YEAR=FIXED_STRATEGIES_LIST$YEAR[StartLine:(StartLine+1),],
+                               TYPE=FIXED_STRATEGIES_LIST$TYPE[StartLine:(StartLine+1),],
+                               OUTPUTS=FIXED_STRATEGIES_LIST$OUTPUTS[StartLine:(StartLine+1),])
+        
+      #  browser()
+          SelectedLine <- list()
+          
+          SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[1,],
+                                    TYPE=LinesToCompare$TYPE[1,],
+                                    OUTPUTS=LinesToCompare$OUTPUTS[1,])
+          SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[2,],
+                                    TYPE=LinesToCompare$TYPE[2,],
+                                    OUTPUTS=LinesToCompare$OUTPUTS[2,])
+#          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))){
+          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST.RData"))){
+          pref_reactive()$data_augment(rbind(SelectedLine[[1]]$OUTPUTS[TARGETS],SelectedLine[[2]]$OUTPUTS[TARGETS]))}else{
+            pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
+                                     priors = prior_list))}
+          
+          
+      
+        
       }
       #THEN, we look in the target compatible samples because I want to 
       else{if(dim(SubsetMeetTargetsUnique$YEAR)[1]>=2){
@@ -3262,12 +3320,16 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         LinesToCompare<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
                              TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
                              OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
+        pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
+                                 priors = prior_list))
       }else{
 
         RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
         LinesToCompare<-list(YEAR=SelectedSimMatGlobal$YEAR[RandomSubsetIndices,],
                              TYPE=SelectedSimMatGlobal$TYPE[RandomSubsetIndices,],
                              OUTPUTS=SelectedSimMatGlobal$OUTPUTS[RandomSubsetIndices,])
+        pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
+                                 priors = prior_list))
       }
         
       }
@@ -3278,9 +3340,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       #CurrentRound(1)
       
       LinesToCompareReactive(LinesToCompare)
-      SelectedLine <- list()
-      pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
-                               priors = prior_list))
+
       # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 1]], ]
       # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[1, 2]], ]
       
@@ -3299,25 +3359,20 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       #                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 2],],
       #                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 2],])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
       #                                                                                             global_log_level = LOG_LEVEL)
-      SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[1,],
-                                TYPE=LinesToCompare$TYPE[1,],
-                                OUTPUTS=LinesToCompare$OUTPUTS[1,])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
-      SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[2,],
-                                TYPE=LinesToCompare$TYPE[2,],
-                                OUTPUTS=LinesToCompare$OUTPUTS[2,])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+      
       
       for (aai in 1:2) {
-        
-        TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
-        TypeB<-(SelectedLine[[aai]]$TYPE=="Deciduous")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
-        BlockedCells<-(SavedVecYearType>=YearSelect)
+        #On this page, we do not take into account blocked land parcels
+        TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)#&(SavedVecYearType<YearSelect)
+        TypeB<-(SelectedLine[[aai]]$TYPE=="Deciduous")&(SelectedLine[[aai]]$YEAR<=YearSelect)#&(SavedVecYearType<YearSelect)
+        #BlockedCells<-#(SavedVecYearType>=YearSelect)
         mapp<-listMaps[[aai]]
         removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
         COLOURS<-rep("transparent",length(TypeA))
         
         COLOURS[TypeA]<-"#117733"#"purple"
         COLOURS[TypeB]<-"#44AA99"#green"
-        COLOURS[BlockedCells]<-"red"
+        #COLOURS[BlockedCells]<-"red"
         mapp<-addPolygons(mapp,data=FullTable$geometry,
                           layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
         removeControl(mapp,layerId="legend")
@@ -3464,7 +3519,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
     
     output$ClusterPage <- renderLeaflet({listMaps[[1]]})
     output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})
-    
+    if(!RunInit){PrefTextC("Thank you, Elicitation is now complete.")}
     
   }}, ignoreInit = TRUE)
 
@@ -3496,7 +3551,11 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours,
                            ClickedVectorYear=ClickedVectorYear,
-                           ClickedVectorYearType=ClickedVectorYearType)
+                           ClickedVectorYearType=ClickedVectorYearType,
+                           FIXED_STRATEGIES_LIST=FIXED_STRATEGIES_LIST,
+                           FolderSource=FolderSource,
+                           MAXNBSTRATS=MAXNBSTRATS,
+                           USER_ID=USER_ID)
   })
 
   observeEvent(input$choose2, {
@@ -3526,7 +3585,11 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            GreyPolygonWidth = GreyPolygonWidth,
                            UnitPolygonColours = UnitPolygonColours,
                            ClickedVectorYear=ClickedVectorYear,
-                           ClickedVectorYearType=ClickedVectorYearType)
+                           ClickedVectorYearType=ClickedVectorYearType,
+                           FIXED_STRATEGIES_LIST=FIXED_STRATEGIES_LIST,
+                           FolderSource=FolderSource,
+                           MAXNBSTRATS=MAXNBSTRATS,
+                           USER_ID=USER_ID)
   })
   
 ### the year slider on the preference tab is changed, then change the land parcels displayed.  
@@ -3821,6 +3884,21 @@ if(!is.null(pref_reactive()$prefs)){
             
           }
           
+        
+        runjs('
+   var widget = HTMLWidgets.find("#map6");
+      widget.resize($("#map6")[0], $("#map6").width(), $("#map6").height());
+       $("#map6").data("leaflet").invalidateSize();
+
+')
+        runjs('
+   var widget = HTMLWidgets.find("#Full-elements-container);
+      widget.resize($("#Full-elements-container")[0], $("#Full-elements-container").width(), $("#Full-elements-container").height());
+        $("#Full-elements-container").data("leaflet").invalidateSize();
+')
+
+        
+        
         }else{}
         
       #}
@@ -4298,6 +4376,79 @@ if(!is.null(pref_reactive()$prefs)){
     }
     
   })
+  
+################################################  
+  observeEvent(input$tabs, {
+    runjs('$(document).trigger("shown.htmlwidgets");')
+    if (input$tabs == "Maps") {
+      runjs('
+            var widget = HTMLWidgets.find("#map");
+            widget.resize($("#map")[0], $("#map").width(), $("#map").height());
+          
+            ') 
+
+      }
+    if (input$tabs == "Preferences") {
+      runjs('
+  var widget = HTMLWidgets.find("#ClusterPage");
+      widget.resize($("#ClusterPage")[0], $("#ClusterPage").width(), $("#ClusterPage").height());
+
+   
+            ')
+      
+      runjs('
+    var widget2 = HTMLWidgets.find("#ClusterPage2");
+      widget2.resize($("#ClusterPage2")[0], $("#ClusterPage2").width(), $("#ClusterPage2").height());
+           ')
+      
+      
+    }
+    
+    
+    if (input$tabs == "Alternative Approaches") {
+      runjs('
+   var widget = HTMLWidgets.find("#map2");
+      widget.resize($("#map2")[0], $("#map2").width(), $("#map2").height());
+')
+      
+      runjs('
+   var widget = HTMLWidgets.find("#map3");
+      widget.resize($("#map3")[0], $("#map3").width(), $("#map3").height());
+')
+      runjs('
+   var widget = HTMLWidgets.find("#map4");
+      widget.resize($("#map4")[0], $("#map4").width(), $("#map4").height());
+')
+    
+      
+    }
+    
+    
+    
+    if (input$tabs == "Exploration") {
+ 
+      
+      
+      runjs('
+   var widget = HTMLWidgets.find("#map6");
+      widget.resize($("#map6")[0], $("#map6").width(), $("#map6").height());
+       $("#map6").data("leaflet").invalidateSize();
+
+')
+      runjs('
+   var widget = HTMLWidgets.find("#Full-elements-container);
+      widget.resize($("#Full-elements-container")[0], $("#Full-elements-container").width(), $("#Full-elements-container").height());
+        $("#Full-elements-container").data("leaflet").invalidateSize();
+')
+      
+      
+      
+      
+    }
+    
+    
+  })
+    
   
   # On session close, delete temporary files
   onSessionEnded(function() {
