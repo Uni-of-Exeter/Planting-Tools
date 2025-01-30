@@ -10,7 +10,7 @@ options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 ANALYSISMODE<-FALSE
 SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
-USER_ID<-2
+
 MAXNBSTRATS<-20
 TOTAL_USER_NB<-9
 
@@ -972,10 +972,11 @@ ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)
                                      fluidPage(
                                        shinyjs::hidden(
                                          fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))
-                                       ),
+                                       ),selectInput("UserID_Dropdown", "Computer ID:", 
+                                                     choices = c("Please Choose a Computer ID",1:TOTAL_USER_NB)),
                                        conditionalPanel(
                                          condition = "input.Trigger == true",
-                                         verticalLayout(
+                                         verticalLayout(verbatimTextOutput("UserText"),  
                                           verbatimTextOutput("PrefText"),
                                            sliderInput("YearPref","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
                                          fluidRow(
@@ -1250,6 +1251,9 @@ server <- function(input, output, session,
   
   CarbonSliderVal <- reactive({input$SliderMain})
   
+  USER_ID_Reactive<-reactiveVal(NULL)
+  USER_ID_CHOSEN<-reactiveVal(FALSE)
+  
   # bioSliderVal <- reactive({input$BioSlider})
   # Add BioSliderValSPECIE <- reactive({input$BioSliderSPECIE}) for each specie
   # for (x in SPECIES) {
@@ -1284,6 +1288,7 @@ server <- function(input, output, session,
   PrefTextB <- reactiveVal("")
   PrefTextC <- reactiveVal("Tell us more about your preferences.  Please look at the two planting strategies below and indicate which you would prefer if these were the only two options by selecting
                            the 'Choose' button below that option:")
+  UserTextReactive<-reactiveVal("")
   # # Add TextN <- reactiveVal("") for each specie
   # for (i in 1:N_SPECIES) {
   #   var_name <- paste0("Text", i + 3)
@@ -1332,6 +1337,8 @@ server <- function(input, output, session,
   output$PrefTextChoiceA <- renderText({PrefTextA()})
   output$PrefTextChoiceB <- renderText({PrefTextB()})
   output$PrefText<-renderText({PrefTextC()})
+  output$UserText<-renderText({UserTextReactive()})
+  
   
   output$Analysis<-renderPlot({
    
@@ -1462,6 +1469,15 @@ server <- function(input, output, session,
  #   }
 #  })
   
+  observeEvent({input$UserID_Dropdown},{
+    if(input$UserID_Dropdown!="Please Choose a Computer ID"){
+      browser()
+    USER_ID_Reactive(input$UserID_Dropdown)
+    USER_ID_CHOSEN(TRUE)
+    hide("UserID_Dropdown") 
+    UserTextReactive(paste0("Computer ID chosen: ",input$UserID_Dropdown))
+    }
+    })
   
   observeEvent({
     input$random
@@ -3039,9 +3055,10 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   })
   
   
-  observeEvent(input$tabs == "Preferences", {
-
-    if(FirstTimeClickOnPreferencesReactive()){
+  observeEvent({input$tabs == "Preferences"
+    USER_ID_CHOSEN()}, {
+browser()
+    if(FirstTimeClickOnPreferencesReactive()&(USER_ID_CHOSEN())){
  
 #browser()
     SavedVec <- ClickedVector()
@@ -3069,8 +3086,8 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       if(dim(pref_reactive()$data)[1]>=(MAXNBSTRATS*2)){RunInit<-FALSE}
       
     }
-    if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))){
-      dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))
+    if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID_Reactive(),".RData"))){
+      dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID_Reactive(),".RData"))
       if(dim(dataPrefStart$data)[1]>=(MAXNBSTRATS*2)){RunInit<-FALSE}
     }
     
@@ -3277,17 +3294,17 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       if(dim(FIXED_STRATEGIES_LIST$YEAR)[1]!=0){
         # Have we previously already chosen strategies
       #  if(file.exists(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))){
-          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))){
+          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID_Reactive(),".RData"))){
             
-          dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))
+          dataPrefStart<-readRDS(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID_Reactive(),".RData"))
           #pref_reactive(readRDS(pref_reactive,file=paste0(FolderSource,"//FixedStrats//pref_reactive.RDS")))
           pref_reactive(prefObject(data =dataPrefStart$data,
                                    prefs=dataPrefStart$prefs,
                                    priors = prior_list))
-          StartLine<-(MAXNBSTRATS*2)*(USER_ID-1)+dim(pref_reactive()$data)[1]+1
+          StartLine<-(MAXNBSTRATS*2)*(as.numeric(USER_ID_Reactive())-1)+dim(pref_reactive()$data)[1]+1
           
           }else{
-            StartLine<-(MAXNBSTRATS*2)*(USER_ID-1)+1}
+            StartLine<-(MAXNBSTRATS*2)*(as.numeric(USER_ID_Reactive())-1)+1}
           
         #browser()
         LinesToCompare<-list(YEAR=FIXED_STRATEGIES_LIST$YEAR[StartLine:(StartLine+1),],
@@ -3304,7 +3321,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                     TYPE=LinesToCompare$TYPE[2,],
                                     OUTPUTS=LinesToCompare$OUTPUTS[2,])
 #          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))){
-          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))){
+          if(file.exists(paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID_Reactive(),".RData"))){
           pref_reactive()$data_augment(rbind(SelectedLine[[1]]$OUTPUTS[TARGETS],SelectedLine[[2]]$OUTPUTS[TARGETS]))}else{
             pref_reactive(prefObject(data = LinesToCompare$OUTPUTS[TARGETS],
                                      priors = prior_list))}
@@ -3556,7 +3573,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            FIXED_STRATEGIES_LIST=FIXED_STRATEGIES_LIST,
                            FolderSource=FolderSource,
                            MAXNBSTRATS=MAXNBSTRATS,
-                           USER_ID=USER_ID)
+                           USER_ID_Local=as.numeric(USER_ID_Reactive()))
   })
 
   observeEvent(input$choose2, {
@@ -3590,7 +3607,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                            FIXED_STRATEGIES_LIST=FIXED_STRATEGIES_LIST,
                            FolderSource=FolderSource,
                            MAXNBSTRATS=MAXNBSTRATS,
-                           USER_ID=USER_ID)
+                           USER_ID_Local=as.numeric(USER_ID_Reactive()))
   })
   
 ### the year slider on the preference tab is changed, then change the land parcels displayed.  

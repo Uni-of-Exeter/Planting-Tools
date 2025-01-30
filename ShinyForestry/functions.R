@@ -794,7 +794,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
                                    FIXED_STRATEGIES_LIST,
                                    FolderSource,
                                    MAXNBSTRATS,
-                                   USER_ID) {
+                                   USER_ID_Local) {
 #
   SPECIES <- SPECIES_ARG3
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
@@ -827,7 +827,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
      # browser()
 #      saveRDS(pref_reactive(),file=paste0(FolderSource,"//FixedStrats//pref_reactive.RDS"))
       
-      saveRDS(list(data=pref_reactive()$data,prefs=pref_reactive()$prefs),file=paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID,".RData"))
+      saveRDS(list(data=pref_reactive()$data,prefs=pref_reactive()$prefs),file=paste0(FolderSource,"//FixedStrats//pref_LIST",USER_ID_Local,".RData"))
       
       
       # If we have reached the MaxNumber of choices, then we stop
@@ -853,7 +853,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
       if(dim(FIXED_STRATEGIES_LIST$YEAR)[1]!=0){
         
         
-        StartLine<-(MAXNBSTRATS*2)*(USER_ID-1)+dim(pref_reactive()$data)[1]+1
+        StartLine<-(MAXNBSTRATS*2)*(USER_ID_Local-1)+dim(pref_reactive()$data)[1]+1
         
         
         LinesToCompare<-list(YEAR=FIXED_STRATEGIES_LIST$YEAR[StartLine:(StartLine+1),],
