@@ -2004,7 +2004,7 @@ bayesian_optimization <- function(
     progressr_object = function(amount = 0, message = "") {},
     BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
     PENALTY_COEFFICIENT,
-    EXPLORATION = TRUE, # FALSE for tab 1, TRUE for tab 2
+    EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
     EXPLORATION_COEFFICIENT = 0,
     
     preference_weight_area = 1,
