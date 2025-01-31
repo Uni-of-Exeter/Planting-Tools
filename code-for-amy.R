@@ -672,7 +672,7 @@ strategies <- local({
       
       # Change the column names for Bertrand
       colnames(selectedvectorvalue$YEAR) <- paste0("SelectedSimMat.YEAR.", 1:nrow(FullTable))
-      colnames(selectedvectorvalue$TYPE) <- paste0("SelectedSimMat.TYPE", 1:nrow(FullTable))
+      colnames(selectedvectorvalue$TYPE) <- paste0("SelectedSimMat.TYPE.", 1:nrow(FullTable))
       
       result$YEAR <- rbind(result$YEAR, selectedvectorvalue$YEAR)
       result$TYPE <- rbind(result$TYPE, selectedvectorvalue$TYPE)
