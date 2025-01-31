@@ -704,8 +704,10 @@ strategies <- local({
 
 save(strategies, file = "strategies_for_amy.RData")
 
-strategies <- data.frame(YEAR = strategies$YEAR[1:360, ],
-                         TYPE = strategies$TYPE[1:360, ],
-                         OUTPUTS = strategies$OUTPUTS[1:360, ])
+# Remove duplicate strategies
+rows_to_keep <- which(!duplicated(strategies$OUTPUTS))
 
-save(strategies, file = "strategies_for_amy_360.RData")
+FIXED_STRATEGIES_LIST <- list(YEAR = strategies$YEAR[rows_to_keep, ][1:360, ],
+                              TYPE = strategies$TYPE[rows_to_keep, ][1:360, ],
+                              OUTPUTS = strategies$OUTPUTS[rows_to_keep, ][1:360, ])
+save(FIXED_STRATEGIES_LIST, file = "ShinyForestry/FixedStrats/FIXED_STRATEGIES_LIST.RData")
