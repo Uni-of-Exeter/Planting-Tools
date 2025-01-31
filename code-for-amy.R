@@ -408,6 +408,12 @@ bo_results <- local({
                           slider_threshold_map_1 <- slider_values_sample_map_1[row_map_1, !(colnames(slider_values_sample_map_1) %in% c("ID", "Matched_ID"))]
                           slider_threshold_map_2 <- slider_values_sample_map_2[row_map_2, !(colnames(slider_values_sample_map_2) %in% c("ID"))]
                           
+                          RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
+                                                                     D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                                                     init = list(n = 100), budget = 100,
+                                                                     control = RREMBO_CONTROL,
+                                                                     limit_log_level = LOG_LEVEL)
+                          
                           bo_result_map_1 <- bayesian_optimization(seed = 1,
                                                                    FullTable_arg = FullTable,
                                                                    FullTable_long_arg = FullTable_long,
@@ -476,6 +482,12 @@ bo_results <- local({
                           
                           pb(amount = 0, message = "Starting BO map 2")
                           
+                          
+                          RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
+                                                                     D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                                                     init = list(n = 100), budget = 100,
+                                                                     control = RREMBO_CONTROL,
+                                                                     limit_log_level = LOG_LEVEL)
                           bo_result_map_2 <- bayesian_optimization(seed = 1,
                                                                    FullTable_arg = FullTable,
                                                                    FullTable_long_arg = FullTable_long,
