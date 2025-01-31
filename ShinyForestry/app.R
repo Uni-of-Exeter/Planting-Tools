@@ -63,11 +63,12 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
 
 
 #fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
-if(file.exists(paste0(FolderSource,"//FixedStrats//FIXED_STRATEGIES_LIST.RData"))){
-load(paste0(FolderSource,"//FixedStrats//FIXED_STRATEGIES_LIST.RData"))}else{
+if (file.exists(normalizePath(file.path(FolderSource, "FixedStrats", "FIXED_STRATEGIES_LIST.RData"))) {
+  load(normalizePath(file.path(FolderSource, "FixedStrats", "FIXED_STRATEGIES_LIST.RData")))
+} else{
   FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1)) 
 }
-
+  
 STARTYEAR<-2025
 MAXYEAR<-2050-STARTYEAR-1
 SCENARIO <- 26
