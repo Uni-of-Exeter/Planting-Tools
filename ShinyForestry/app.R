@@ -3276,9 +3276,10 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       for (target in TARGETS) {
         prior_list[[target]] <- prior_list_temp[[target]]
       }
+     # browser()
       
-      # pref_reactive(prefObject(data = datAll2,
-      #                          priors = prior_list))
+      # pref_reactive(prefObject(priors = prior_list))
+      # saveRDS(pref_reactive(),file="C://Users//bn267//OneDrive - University of Exeter//Documents//GitHub//Planting-Tools//ShinyForestry//BasePrefObj,RDS")
       
       #      UniqueBinCodes <- unique(DatBinaryCode)
       
