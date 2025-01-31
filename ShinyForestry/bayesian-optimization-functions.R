@@ -1749,6 +1749,106 @@ objective_function <- function(inputs, # c(area, year_planting, tree_specie)
   }
 }
 
+
+objective_function_min_distance <- function(inputs, # c(area, year_planting, tree_specie)
+                                            area_sum_threshold, # number
+                                            year_of_max_no_planting_threshold_vector, # vector
+                                            FullTable_arg,
+                                            FullTable_long_arg,
+                                            SCENARIO_ARG = SCENARIO,
+                                            MAXYEAR_ARG = MAXYEAR,
+                                            outcomes_to_minimize_sum_threshold_vector = NULL, # vector
+                                            outcomes_to_maximize_sum_threshold_vector = NULL, # vector
+                                            penalty_coefficient_arg = PENALTY_COEFFICIENT,
+                                            preference_weight_area = -1, # Minimize -> negative
+                                            preference_weights_minimize = NULL, # Minimize -> negative
+                                            preference_weights_maximize = NULL, # Maximize -> positive
+                                            exploration = FALSE, # vector, 1 value per outcome
+                                            tolvec,
+                                            alpha = 0.9,
+                                            multi_objectives = FALSE) {
+  
+  FullTable_long <- FullTable_long_arg
+  SCENARIO <- SCENARIO_ARG
+  MAXYEAR <- MAXYEAR_ARG
+  number_of_locations <- length(inputs)
+  
+  
+  # Retrieve variables from vector
+  outcomes <- get_outcomes_from_strategy(parameter_vector = inputs,
+                                         FullTable_long_arg = FullTable_long)
+  
+  objectives <- c()
+  result <- 0
+  
+  ## Penalties to make the variables binary instead of continuous
+  
+  # # Add a penalty based on distances to closest acceptable values
+  # values <- area_vector
+  # possible_values <- area_possible_non_zero_values
+  # for (i in seq_along(values)) {
+  #   # Distances to 0 and to the possible (max) value
+  #   distance_to_zero <- values[i]
+  #   distance_to_non_zero <- abs(possible_values[i] - values[i])
+  #   
+  #   result <- result + 2 * penalty_coefficient_arg * min(distance_to_zero, distance_to_non_zero)
+  # }
+  
+  
+  ## Penalties for deviating from the thresholds
+  
+  # Area
+  vector_sum <- outcomes$sum_area
+  threshold <- area_sum_threshold
+  # Minimize -> negative
+  result <- (vector_sum - threshold)^2
+  
+  # Carbon
+  vector_sum <- outcomes$sum_carbon
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Carbon"]
+  result <- result + (vector_sum - threshold)^2
+  
+  # Richness
+  if (isFALSE(is.null(outcomes$sum_richness))) {
+    
+    for (group in names(outcomes$sum_richness)) {
+      
+      vector_sum <- outcomes$sum_richness[group]
+      threshold <- outcomes_to_maximize_sum_threshold_vector[group]
+      result <- result + (vector_sum - threshold)^2
+    }
+  }
+  
+  # Biodiversity
+  if (isFALSE(is.null(outcomes$sum_biodiversity))) {
+    
+    for (specie in names(outcomes$sum_biodiversity)) {
+      
+      vector_sum <- outcomes$sum_biodiversity[specie]
+      threshold <- outcomes_to_maximize_sum_threshold_vector[specie]
+      result <- result + (vector_sum - threshold)^2
+    }
+  }
+  
+  # Visits
+  vector_sum <- outcomes$sum_visits
+  threshold <- outcomes_to_maximize_sum_threshold_vector["Visits"]
+  result <- result + (vector_sum - threshold)^2
+  
+  if (length(result) == 0) {
+    msg <- paste("The objective function returned an empty result:", result)
+    notif(msg, log_level = "error")
+    return(NA)
+  }
+  if (!is.finite(result)) {
+    msg <- paste("The objective function returned a non-finite value of", result)
+    notif(msg, log_level = "error")
+    return(NA)
+  }
+  
+  return(result)
+}
+
 gp_performance <- function(gp_means,
                            test_inputs,
                            true_outputs,
@@ -2046,6 +2146,8 @@ bayesian_optimization <- function(
   # }
   # shiny::showNotification("Starting a search for the best strategy ...", duration = 10)
   
+  formals(notif)$file_suffix <- Sys.getpid()
+  
   # Setup parameters ----
   set.seed(seed)
   # Number of dimensions
@@ -2110,7 +2212,7 @@ bayesian_optimization <- function(
     return(FALSE)
   }
   
-  obj_outputs <- apply(obj_inputs, 1, objective_function,
+  obj_outputs <- apply(obj_inputs, 1, objective_function_min_distance,
                        area_sum_threshold = area_sum_threshold,
                        FullTable_arg = FullTable,
                        FullTable_long_arg = FullTable_long,
@@ -2362,7 +2464,7 @@ bayesian_optimization <- function(
     #   message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount, "/", max_loop_progress_bar, " Computing true outputs ... ", appendLF = FALSE)
     # }
     begin_inside <- Sys.time()
-    best_outputs <- apply(best_inputs, 1, objective_function,
+    best_outputs <- apply(best_inputs, 1, objective_function_min_distance,
                           area_sum_threshold = area_sum_threshold,
                           FullTable_arg = FullTable,
                           FullTable_long_arg = FullTable_long,
@@ -2918,13 +3020,13 @@ bayesian_optimization <- function(
     notif(paste("The constraints on", toString(broken_constraints), "are broken."))
   }
   
-  if (isFALSE(all_constraints_are_respected)) {
-    return(NA)
-  } else {
-    return(list(strategy_vector = obj_inputs[which.min(obj_outputs), ],
-                time = time,
-                gp_metrics = gp_metric))
-  }
+  # if (isFALSE(all_constraints_are_respected)) {
+  #   return(NA)
+  # } else {
+  return(list(strategy_vector = obj_inputs[which.min(obj_outputs), ],
+              time = time,
+              gp_metrics = gp_metric))
+  # }
   
 }
 # server(...){
