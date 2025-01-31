@@ -148,11 +148,12 @@ generate_legal_unique_samples <- function(n,
       msg <- "generate_legal_unique_samples() -> generate_legal_samples() ..."
       notif(msg, log_level = "debug", limit_log_level = limit_log_level)
       if (attempts > 1 && nrow(valid_samples) > 1) {
-        temp <- lhs::optAugmentLHS(lhs = valid_samples, m = rows, mult = 1)
+        
+        temp <- lhs::optAugmentLHS(lhs = as.matrix(valid_samples_low_dimension), m = rows, mult = 1)
         
         # Only take the new rows
-        temp <- temp[(length(valid_samples) + 1):length(temp), ]
-        temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = samples, A = A)
+        temp <- tail(temp, rows)
+        temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = temp, A = A)
         
         # Turn values between 0 and 1 to legal area values by rounding then multiplying
         temp_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = temp_high_dimension,
@@ -210,8 +211,8 @@ generate_legal_unique_samples <- function(n,
       valid_samples <- rbind(valid_samples,
                              samples[indices_to_keep, , drop = FALSE])
       if (isTRUE(RRembo)) {
-        colnames(valid_samples_low_dimension) <- good_colnames_low_dim
-        colnames(valid_samples_high_dimension) <- good_colnames_high_dim
+        # colnames(valid_samples_low_dimension) <- good_colnames_low_dim
+        # colnames(valid_samples_high_dimension) <- good_colnames_high_dim
         valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
                                              samples_low_dimension[indices_to_keep, , drop = FALSE])
         valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
