@@ -898,8 +898,12 @@ continuous_to_multi_categorical <- function(values,
   
   indices <- findInterval(values, cutoffs, rightmost.closed = TRUE)
   
-  solutions <- sapply(1:ncol(legal_values_ordered), function(col) {
-    legal_values_ordered[indices[col], col]
+  indices <- matrix(indices, nrow = nrow(values), ncol = ncol(values))
+  
+  solutions <- sapply(1:ncol(values), function(col) {
+    sapply(1:nrow(values), function(row) {
+      return(legal_values_ordered[indices[row, col], col])
+    })
   })
   solutions <- matrix(solutions, nrow = nrow(values), ncol = ncol(values))
   
