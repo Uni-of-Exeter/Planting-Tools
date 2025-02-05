@@ -4295,6 +4295,69 @@ if(!is.null(pref_reactive()$prefs)){
     
   })
   
+  
+  # When user changes tab, the leaflet map is not correct
+  # User needs to resize maps to re-render them
+  # This fixes it (TODO: 2 tabs left to do)
+  observeEvent(input$tabs, {
+    runjs('$(document).trigger("shown.htmlwidgets");')
+    if (input$tabs == "Maps") {
+      runjs('
+            var widget = HTMLWidgets.find("#map");
+            widget.resize($("#map")[0], $("#map").width(), $("#map").height());
+          
+            ') 
+    }
+    if (input$tabs == "Preferences") {
+      runjs('
+  var widget = HTMLWidgets.find("#ClusterPage");
+      widget.resize($("#ClusterPage")[0], $("#ClusterPage").width(), $("#ClusterPage").height());
+   
+            ')
+      
+      runjs('
+    var widget2 = HTMLWidgets.find("#ClusterPage2");
+      widget2.resize($("#ClusterPage2")[0], $("#ClusterPage2").width(), $("#ClusterPage2").height());
+           ')
+      
+      
+    }
+    
+    # TODO: Fix this
+    #     if (input$tabs == "Alternative Approaches") {
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map2");
+    #       widget.resize($("#map2")[0], $("#map2").width(), $("#map2").height());
+    # ')
+    #       
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map3");
+    #       widget.resize($("#map3")[0], $("#map3").width(), $("#map3").height());
+    # ')
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map4");
+    #       widget.resize($("#map4")[0], $("#map4").width(), $("#map4").height());
+    # ')
+    #     }
+    
+    
+    # TODO: Fix this
+    #     if (input$tabs == "Exploration") {
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map6");
+    #       widget.resize($("#map6")[0], $("#map6").width(), $("#map6").height());
+    #        $("#map6").data("leaflet").invalidateSize();
+    # ')
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#Full-elements-container);
+    #       widget.resize($("#Full-elements-container")[0], $("#Full-elements-container").width(), $("#Full-elements-container").height());
+    #         $("#Full-elements-container").data("leaflet").invalidateSize();
+    # ')
+    #     }
+    
+    
+  })
+  
   # On session close, delete temporary files
   onSessionEnded(function() {
     if (SESSION_FILE_SUFFIX != "") {
