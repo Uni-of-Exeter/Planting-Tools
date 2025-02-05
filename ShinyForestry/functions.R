@@ -484,285 +484,285 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
   return(two_strategies_that_meet_all_targets)
 }
 
-observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
-                                   input,
-                                   output,
-                                   session,
-                                   infpref_reactive,
-                                   ConvertSample,
-                                   LinesToCompareReactive,
-                                   ClickedVector,
-                                   # AreaSelected0,
-                                   # CarbonSelected0,
-                                   # # RedSquirrelSelected0,
-                                   # SpeciesListSelected0, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected0, ...)
-                                   # VisitsSelected0,
-                                   # CarbonSelectedSD0,
-                                   # # RedSquirrelSelectedSD0,
-                                   # SpeciesListSelectedSD0, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD0, ...)
-                                   # VisitsSelectedSD0,
-                                   # DatBinaryCode0,
-                                   NbRoundsMax,
-                                   CurrentRound,
-                                   FullTable,
-                                   FullTableNotAvail,
-                                   VecNbMet0,
-                                   shconv,
-                                   SelectedSimMatGlobal,
-                                   pref_reactive,
-                                   ColourScheme,
-                                   ColorLighteningFactor,
-                                   ColorDarkeningFactor,
-                                   SPECIES_ARG3,
-                                   SPECIES_ENGLISH_ARG3,
-                                   N_TARGETS_ARG2,
-                                   TARGETS_ARG1,
-                                   GreyPolygonWidth,
-                                   UnitPolygonColours,
-                                   ClickedVectorYear) {
-  SPECIES <- SPECIES_ARG3
-  SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
-  N_TARGETS <- N_TARGETS_ARG2
-  TARGETS <- TARGETS_ARG1
-  SavedVec <- ClickedVector()
-  SavedVecYear <- ClickedVectorYear()
-  LinesToCompare <- as.matrix(LinesToCompareReactive())
-  SelectedDropdown <- input$inSelect
-  
-  shinyjs::disable("choose1")
-  shinyjs::disable("choose2")
-  
-  if((!is.null(SavedVec))&(CurrentRound()>0)){
-    calcBaseMap <- BaseMap2(SelectedDropdown,layerId="main100",shconv=shconv,GreyPolygonWidth=GreyPolygonWidth)
-    
-    SelectedSimMat2 <- SelectedSimMatGlobal
-    if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
-    {
-      CR <- CurrentRound()
-      length_pref_reactive_data <- nrow(pref_reactive()$data)
-      if (choose == 1) {
-        # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
-        pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
-      } else if (choose == 2) {
-        # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
-        pref_reactive()$addPref(c(length_pref_reactive_data, length_pref_reactive_data - 1))
-      }
-      # if(CR<dim(LinesToCompare)[1]){
-      #   LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
-      # }
-      # LinesToCompareReactive(LinesToCompare)
-      
-      CR <- CR+1
-      CurrentRound(CR)
-      
-      listMaps <- list()
-      listMaps[[1]] <- calcBaseMap$map
-      listMaps[[2]] <- calcBaseMap$map
-      
-      SelectedLine <- list()
-      # Re-pick 2 random stragies like in app.R line 1687
-      # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
-      # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
-      two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
-                                                                                                         SelectedSimMat2 = SelectedSimMat2,
-                                                                                                         pref_reactive = pref_reactive,
-                                                                                                         N_TARGETS_ARG3 = N_TARGETS,
-                                                                                                         TARGETS_ARG2 = TARGETS,
-                                                                                                         prior_list = NULL)
-      SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
-      SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
-      
-      for(aai in 1:2){
-        SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVecYear)]
-        SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
-        # SelectedBio <- SelectedLine[[aai]]$redsquirrel
-        for (x in SPECIES) {
-          var_name <- paste0("SelectedBio", x)
-          value <- SelectedLine[[aai]][[x]]
-          assign(var_name, value)
-        }
-        SelectedArea <- SelectedLine[[aai]]$Area
-        SelectedVisits <- SelectedLine[[aai]]$Visits
-        
-        SelectedTreeCarbonSD <- SelectedLine[[aai]]$CarbonSD
-        # SelectedBioSD <- SelectedLine[[aai]]$redsquirrelSD
-        for (x in SPECIES) {
-          var_name <- paste0("SelectedBioSD", x)
-          value <- SelectedLine[[aai]][[paste0(x, "SD")]]
-          assign(var_name, value)
-        }
-        SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
-        
-        SELL <- (FullTable$extent==SelectedDropdown)
-        if(!is.null(SELL)){
-          SELGEO<-FullTable$geometry[SELL]
-          
-          UnitsSel<-unique(FullTable$units[SELL])
-          Cols<-rainbow(length(UnitsSel))
-          FullColVec<-rep(0,dim(FullTable[SELL,])[1])
-          for (iii in 1:length(Cols)){
-            FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
-          }
-          
-          ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
-          FullColVec<-darken(FullColVec,ColorDarkeningFactor)
-          ClickedCols<-rep("red",length(ClickedCols))
-          
-          ColObtained<-getCols(ColourScheme,UnitsVec=FullTable$units[SELL],
-                               ColorLighteningFactor,ColorDarkeningFactor)
-          
-          FullColVec<-ColObtained$FullColVec#darken(FullColVec,ColorDarkeningFactor)
-          ClickedCols<-ColObtained$ClickedCols
-          
-          #  sellng <- FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
-          #  sellat <- FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
-          for (iii in 1:length(SwitchedOnCells)){
-            if(SavedVec[iii]==1){
-              
-              if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),
-                                               lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),
-                                               color =ClickedCols[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
-              }else{
-                for(kk in 1:length(SELGEO[[iii]])) {
-                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),
-                                                 lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),
-                                                 color =ClickedCols[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
-                }
-                
-              }
-              
-            }
-            else{
-              if(SwitchedOnCells[iii]==1){
-                if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
-                  listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),
-                                                 lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),
-                                                 color=FullColVec[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
-                }else{
-                  for(kk in 1:length(SELGEO[[iii]])) {
-                    listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),
-                                                   lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),
-                                                   color=FullColVec[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
-                    
-                  }
-                  
-                }
-              }
-            }
-          }
-        }
-        #addControlText <- ""
-        #for (i in 1:length(SPECIES)) {
-        #  specie_latin <- SPECIES[i]
-        #  specie_english <- SPECIES_ENGLISH[i]
-        #  selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
-        #  selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-        #  addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
-        #}
-        
-        
-       BioMean <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
-        colnames(BioMean) <- SPECIES
-        BioSD <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
-        colnames(BioSD) <- paste0(SPECIES,"SD")
-        
-        for (i in 1:length(SPECIES)) {
-          specie_latin <- SPECIES[i]
-          selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
-          selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
-          BioMean[specie_latin]<-selectedBiospecie
-          BioSD[paste0(specie_latin,"SD")]<-selectedBioSDspecie
-        }
-        
-        
-        listMaps[[aai]] <- listMaps[[aai]]%>%  
-         # addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",sprintf("%.2f",2*SelectedTreeCarbonSD),"<br>",
-          #                         # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
-          #                         addControlText,
-           #                        "Area Planted: ",round(SelectedArea,2),"<br>",
-           #                        "Visitors: ",round(SelectedVisits,2),"\u00B1",sprintf("%.2f",2*SelectedVisitsSD),
-            #                       "</p>"), position = "topright")
-          addControl(map,html =   FormattedControl(SelectedTreeCarbon,
-                                                   SelectedTreeCarbonSD,
-                                                   SPECIES,
-                                                   SPECIES_ENGLISH,
-                                                   BioMean,
-                                                   BioSD, 
-                                                   SelectedArea, 
-                                                   SelectedVisits, SelectedVisitsSD), position = "topright",layerId="legend")
-        
-      }
-      listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                                     SelectedDropdown = SelectedDropdown,
-                                     listMaps = listMaps)
-      
-      output$ClusterPage <- renderLeaflet({listMaps[[1]]})
-      output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})  
-      shinyjs::enable("choose1")
-      shinyjs::enable("choose2")
-      
-    } else {
-      CR <- CurrentRound()
-      # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
-      length_pref_reactive_data <- nrow(pref_reactive()$data)
-      pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
-      
-      
-      shinyjs::disable("choose1")
-      shinyjs::disable("choose2")
-      
-      # temp <- pref$infer()
-      pref_reactive()$update()
-      temp <- pref_reactive()$posterior_mean
-      infpref_reactive(temp)
-      
-      # SelectedSimMat2 <- SelectedSimMatGlobal
-      # VecNbMet <- VecNbMet0()
-      # 
-      # # columns <- c("Carbon","redsquirrel","Area","Visits")
-      # SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
-      # ClusteringDat <- data.frame(sqrt(infpref_reactive())*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
-      # ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
-      # ClusteringDat <- unique(ClusteringDat)
-      # set.seed(123)
-      # 
-      # FailedTsne <- TRUE
-      # PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
-      # IndexPerp <- 1
-      # 
-      # while((FailedTsne)&(IndexPerp<=length(PerpVec))){
-      #   Perp <- PerpVec[IndexPerp]
-      #   tsRes <-try(Rtsne(ClusteringDat, perplexity = Perp))
-      #   IndexPerp <- IndexPerp+1       
-      #   if(class(tsRes)[1]!="try-error"){FailedTsne <- FALSE}
-      # }
-      # 
-      # if(FailedTsne){
-      #   
-      #   pp <- ggplot() +theme_void() +
-      #     annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
-      #              size = 10, color = "black", hjust = 0.5, vjust = 0.5)
-      #   output$plotOP1 <- renderPlot({pp})
-      #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
-      #   
-      # }else{
-      #   
-      #   tsneclusters <- Mclust(tsRes$Y, 1:N_TARGETS)
-      #   ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
-      #     ggpairs(columns=1:N_TARGETS, aes(color=cluster),upper=list(continuous="points"))
-      #   output$plotOP1 <- renderPlot({ClusterPlot})
-      #   
-      #   
-      #   #pp< <- ggplot(data=data.frame(x=tsRes$Y[,1],y=tsRes$Y[,2]),aes(x,y))+
-      #   #  geom_point(aes(colour =factor(ClusteringDat$NbTargetsMet)))+
-      #   #  labs(x="dim1",y="dim2",color = "Number of Targets Met")+theme_minimal()
-      #   #output$plotOP1 <- renderPlot({pp})
-      #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
-      # }
-      
-    }  }
-}
+# observe_event_function <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
+#                                    input,
+#                                    output,
+#                                    session,
+#                                    infpref_reactive,
+#                                    ConvertSample,
+#                                    LinesToCompareReactive,
+#                                    ClickedVector,
+#                                    # AreaSelected0,
+#                                    # CarbonSelected0,
+#                                    # # RedSquirrelSelected0,
+#                                    # SpeciesListSelected0, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected0, ...)
+#                                    # VisitsSelected0,
+#                                    # CarbonSelectedSD0,
+#                                    # # RedSquirrelSelectedSD0,
+#                                    # SpeciesListSelectedSD0, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD0, ...)
+#                                    # VisitsSelectedSD0,
+#                                    # DatBinaryCode0,
+#                                    NbRoundsMax,
+#                                    CurrentRound,
+#                                    FullTable,
+#                                    FullTableNotAvail,
+#                                    VecNbMet0,
+#                                    shconv,
+#                                    SelectedSimMatGlobal,
+#                                    pref_reactive,
+#                                    ColourScheme,
+#                                    ColorLighteningFactor,
+#                                    ColorDarkeningFactor,
+#                                    SPECIES_ARG3,
+#                                    SPECIES_ENGLISH_ARG3,
+#                                    N_TARGETS_ARG2,
+#                                    TARGETS_ARG1,
+#                                    GreyPolygonWidth,
+#                                    UnitPolygonColours,
+#                                    ClickedVectorYear) {
+#   SPECIES <- SPECIES_ARG3
+#   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
+#   N_TARGETS <- N_TARGETS_ARG2
+#   TARGETS <- TARGETS_ARG1
+#   SavedVec <- ClickedVector()
+#   SavedVecYear <- ClickedVectorYear()
+#   LinesToCompare <- as.matrix(LinesToCompareReactive())
+#   SelectedDropdown <- input$inSelect
+#   
+#   shinyjs::disable("choose1")
+#   shinyjs::disable("choose2")
+#   
+#   if((!is.null(SavedVec))&(CurrentRound()>0)){
+#     calcBaseMap <- BaseMap2(SelectedDropdown,layerId="main100",shconv=shconv,GreyPolygonWidth=GreyPolygonWidth)
+#     
+#     SelectedSimMat2 <- SelectedSimMatGlobal
+#     if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
+#     {
+#       CR <- CurrentRound()
+#       length_pref_reactive_data <- nrow(pref_reactive()$data)
+#       if (choose == 1) {
+#         # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+#         pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
+#       } else if (choose == 2) {
+#         # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,2],LinesToCompare[CR,1]))
+#         pref_reactive()$addPref(c(length_pref_reactive_data, length_pref_reactive_data - 1))
+#       }
+#       # if(CR<dim(LinesToCompare)[1]){
+#       #   LinesToCompare[CR+1,] <- prefeR::suggest(pref,maxComparisons = 5)
+#       # }
+#       # LinesToCompareReactive(LinesToCompare)
+#       
+#       CR <- CR+1
+#       CurrentRound(CR)
+#       
+#       listMaps <- list()
+#       listMaps[[1]] <- calcBaseMap$map
+#       listMaps[[2]] <- calcBaseMap$map
+#       
+#       SelectedLine <- list()
+#       # Re-pick 2 random stragies like in app.R line 1687
+#       # SelectedLine[[1]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,1]],]
+#       # SelectedLine[[2]] <- SelectedSimMat2[ConvertSample[LinesToCompare[CR,2]],]
+#       two_strategies_that_meet_all_targets <- pick_two_strategies_that_meet_targets_update_pref_reactive(VecNbMet0 = VecNbMet0,
+#                                                                                                          SelectedSimMat2 = SelectedSimMat2,
+#                                                                                                          pref_reactive = pref_reactive,
+#                                                                                                          N_TARGETS_ARG3 = N_TARGETS,
+#                                                                                                          TARGETS_ARG2 = TARGETS,
+#                                                                                                          prior_list = NULL)
+#       SelectedLine[[1]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+#       SelectedLine[[2]] <- SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+#       
+#       for(aai in 1:2){
+#         SwitchedOnCells <- SelectedLine[[aai]][1:length(SavedVecYear)]
+#         SelectedTreeCarbon <- SelectedLine[[aai]]$Carbon
+#         # SelectedBio <- SelectedLine[[aai]]$redsquirrel
+#         for (x in SPECIES) {
+#           var_name <- paste0("SelectedBio", x)
+#           value <- SelectedLine[[aai]][[x]]
+#           assign(var_name, value)
+#         }
+#         SelectedArea <- SelectedLine[[aai]]$Area
+#         SelectedVisits <- SelectedLine[[aai]]$Visits
+#         
+#         SelectedTreeCarbonSD <- SelectedLine[[aai]]$CarbonSD
+#         # SelectedBioSD <- SelectedLine[[aai]]$redsquirrelSD
+#         for (x in SPECIES) {
+#           var_name <- paste0("SelectedBioSD", x)
+#           value <- SelectedLine[[aai]][[paste0(x, "SD")]]
+#           assign(var_name, value)
+#         }
+#         SelectedVisitsSD <- SelectedLine[[aai]]$VisitsSD
+#         
+#         SELL <- (FullTable$extent==SelectedDropdown)
+#         if(!is.null(SELL)){
+#           SELGEO<-FullTable$geometry[SELL]
+#           
+#           UnitsSel<-unique(FullTable$units[SELL])
+#           Cols<-rainbow(length(UnitsSel))
+#           FullColVec<-rep(0,dim(FullTable[SELL,])[1])
+#           for (iii in 1:length(Cols)){
+#             FullColVec[FullTable$units[SELL]==UnitsSel[iii]]<-Cols[iii]
+#           }
+#           
+#           ClickedCols<-lighten(FullColVec,ColorLighteningFactor)
+#           FullColVec<-darken(FullColVec,ColorDarkeningFactor)
+#           ClickedCols<-rep("red",length(ClickedCols))
+#           
+#           ColObtained<-getCols(ColourScheme,UnitsVec=FullTable$units[SELL],
+#                                ColorLighteningFactor,ColorDarkeningFactor)
+#           
+#           FullColVec<-ColObtained$FullColVec#darken(FullColVec,ColorDarkeningFactor)
+#           ClickedCols<-ColObtained$ClickedCols
+#           
+#           #  sellng <- FullTable[SELL,c("lgn.1","lgn.2","lgn.3","lgn.4","lgn.5")]
+#           #  sellat <- FullTable[SELL,c("lat.1","lat.2","lat.3","lat.4","lat.5")]
+#           for (iii in 1:length(SwitchedOnCells)){
+#             if(SavedVec[iii]==1){
+#               
+#               if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+#                 listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[1]][,1]),
+#                                                lat= as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),
+#                                                color =ClickedCols[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
+#               }else{
+#                 for(kk in 1:length(SELGEO[[iii]])) {
+#                   listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng= as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),
+#                                                  lat= as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii,"_",kk),
+#                                                  color =ClickedCols[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
+#                 }
+#                 
+#               }
+#               
+#             }
+#             else{
+#               if(SwitchedOnCells[iii]==1){
+#                 if(st_geometry_type(SELGEO[[iii]])=="POLYGON"){
+#                   listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[1]][,1]),
+#                                                  lat=  as.numeric(SELGEO[[iii]][[1]][,2]),layerId =paste0("Square",iii),
+#                                                  color=FullColVec[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
+#                 }else{
+#                   for(kk in 1:length(SELGEO[[iii]])) {
+#                     listMaps[[aai]] <- addPolygons(listMaps[[aai]],lng=  as.numeric(SELGEO[[iii]][[kk]][[1]][,1]),
+#                                                    lat=  as.numeric(SELGEO[[iii]][[kk]][[1]][,2]),layerId =paste0("Square",iii),
+#                                                    color=FullColVec[iii],weight=UnitPolygonColours,fillOpacity = POLYGON_OPACITY)
+#                     
+#                   }
+#                   
+#                 }
+#               }
+#             }
+#           }
+#         }
+#         #addControlText <- ""
+#         #for (i in 1:length(SPECIES)) {
+#         #  specie_latin <- SPECIES[i]
+#         #  specie_english <- SPECIES_ENGLISH[i]
+#         #  selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+#         #  selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+#         #  addControlText <- paste0(addControlText, specie_english, ": ", round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "<br>")
+#         #}
+#         
+#         
+#        BioMean <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
+#         colnames(BioMean) <- SPECIES
+#         BioSD <- data.frame(matrix(ncol = length(SPECIES), nrow = 1))
+#         colnames(BioSD) <- paste0(SPECIES,"SD")
+#         
+#         for (i in 1:length(SPECIES)) {
+#           specie_latin <- SPECIES[i]
+#           selectedBiospecie <- get(paste0("SelectedBio", specie_latin))
+#           selectedBioSDspecie <- get(paste0("SelectedBioSD", specie_latin))
+#           BioMean[specie_latin]<-selectedBiospecie
+#           BioSD[paste0(specie_latin,"SD")]<-selectedBioSDspecie
+#         }
+#         
+#         
+#         listMaps[[aai]] <- listMaps[[aai]]%>%  
+#          # addControl(html = paste0("<p>Carbon: ",round(SelectedTreeCarbon,2),"\u00B1",sprintf("%.2f",2*SelectedTreeCarbonSD),"<br>",
+#           #                         # "Red Squirrel: ",round(SelectedBio,2),"\u00B1",round(2*SelectedBioSD,2),"<br>",
+#           #                         addControlText,
+#            #                        "Area Planted: ",round(SelectedArea,2),"<br>",
+#            #                        "Visitors: ",round(SelectedVisits,2),"\u00B1",sprintf("%.2f",2*SelectedVisitsSD),
+#             #                       "</p>"), position = "topright")
+#           addControl(map,html =   FormattedControl(SelectedTreeCarbon,
+#                                                    SelectedTreeCarbonSD,
+#                                                    SPECIES,
+#                                                    SPECIES_ENGLISH,
+#                                                    BioMean,
+#                                                    BioSD, 
+#                                                    SelectedArea, 
+#                                                    SelectedVisits, SelectedVisitsSD), position = "topright",layerId="legend")
+#         
+#       }
+#       listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
+#                                      SelectedDropdown = SelectedDropdown,
+#                                      listMaps = listMaps)
+#       
+#       output$ClusterPage <- renderLeaflet({listMaps[[1]]})
+#       output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})  
+#       shinyjs::enable("choose1")
+#       shinyjs::enable("choose2")
+#       
+#     } else {
+#       CR <- CurrentRound()
+#       # pref$addPref(prefeR::`%>%`(LinesToCompare[CR,1],LinesToCompare[CR,2]))
+#       length_pref_reactive_data <- nrow(pref_reactive()$data)
+#       pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
+#       
+#       
+#       shinyjs::disable("choose1")
+#       shinyjs::disable("choose2")
+#       
+#       # temp <- pref$infer()
+#       pref_reactive()$update()
+#       temp <- pref_reactive()$posterior_mean
+#       infpref_reactive(temp)
+#       
+#       # SelectedSimMat2 <- SelectedSimMatGlobal
+#       # VecNbMet <- VecNbMet0()
+#       # 
+#       # # columns <- c("Carbon","redsquirrel","Area","Visits")
+#       # SelectedSimMat2columns <- c("Carbon", SPECIES, "Area","Visits")
+#       # ClusteringDat <- data.frame(sqrt(infpref_reactive())*SelectedSimMat2[,SelectedSimMat2columns],NbTargetsMet=VecNbMet)
+#       # ClusteringDat <- ClusteringDat[ClusteringDat$NbTargetsMet>0,]
+#       # ClusteringDat <- unique(ClusteringDat)
+#       # set.seed(123)
+#       # 
+#       # FailedTsne <- TRUE
+#       # PerpVec <- c(10,20,30,5,2,1,0.1,40,50,60,70,80,100)
+#       # IndexPerp <- 1
+#       # 
+#       # while((FailedTsne)&(IndexPerp<=length(PerpVec))){
+#       #   Perp <- PerpVec[IndexPerp]
+#       #   tsRes <-try(Rtsne(ClusteringDat, perplexity = Perp))
+#       #   IndexPerp <- IndexPerp+1       
+#       #   if(class(tsRes)[1]!="try-error"){FailedTsne <- FALSE}
+#       # }
+#       # 
+#       # if(FailedTsne){
+#       #   
+#       #   pp <- ggplot() +theme_void() +
+#       #     annotate("text", x = 0.5, y = 0.5, label = "Clustering Failed",
+#       #              size = 10, color = "black", hjust = 0.5, vjust = 0.5)
+#       #   output$plotOP1 <- renderPlot({pp})
+#       #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+#       #   
+#       # }else{
+#       #   
+#       #   tsneclusters <- Mclust(tsRes$Y, 1:N_TARGETS)
+#       #   ClusterPlot <- mutate(ClusteringDat, cluster=as.factor(tsneclusters$classification)) %>%
+#       #     ggpairs(columns=1:N_TARGETS, aes(color=cluster),upper=list(continuous="points"))
+#       #   output$plotOP1 <- renderPlot({ClusterPlot})
+#       #   
+#       #   
+#       #   #pp< <- ggplot(data=data.frame(x=tsRes$Y[,1],y=tsRes$Y[,2]),aes(x,y))+
+#       #   #  geom_point(aes(colour =factor(ClusteringDat$NbTargetsMet)))+
+#       #   #  labs(x="dim1",y="dim2",color = "Number of Targets Met")+theme_minimal()
+#       #   #output$plotOP1 <- renderPlot({pp})
+#       #   updateCheckboxInput(session,"Trigger", label = "", value = FALSE)
+#       # }
+#       
+#     }  }
+# }
 
 observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
                                    input,
