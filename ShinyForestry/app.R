@@ -19,7 +19,7 @@ TOTAL_USER_NB<-9
 RUN_BO<-FALSE
 RNGversion("4.0.0")
 set.seed(1)
-######################
+
 POLYGON_OPACITY<-0.6
 GREY_BACKGROUND_OPACITY<-0.3
 NOTAVAIL_OPACITY<-0.7
