@@ -73,13 +73,17 @@ source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 
 # Retrieve packages from DESCRIPTION (in plantingtools_folder)
 plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
-packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
+if (file.exists(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))) {
+  packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
+} else {
+  packages <- read.dcf(normalizePath(file.path(FolderSource, "DESCRIPTION")))[, "Imports"]
+}
 packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
 packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
 # Install and load packages in DESCRIPTION
-if (Sys.getenv("USERNAME")=="bn267") {
+if (Sys.getenv("USERNAME")=="bn267" || Sys.getenv("USERNAME")=="dw356") {
   library("dgpsi")
   library("RRembo")
   for(ll in 1:length(packages)) {
@@ -113,13 +117,14 @@ if (RUN_BO) {
 
 # handlers(global = TRUE)
 # Progress report with progressr
-progress_handlers <- list()
+progress_handlers <- list(
+  handler_progress(
+    format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
+  )
+) 
 if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
   progress_handlers <- c(progress_handlers,
-                         handler_rstudio(),
-                         handler_progress(
-                           format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-                         ))
+                         handler_rstudio())
 } else {
   progress_handlers <- c(progress_handlers, handler_txtprogressbar())
 }
@@ -1440,7 +1445,6 @@ the 'Choose' button below that option:"})
   #    }
  #   }
 #  })
-  
   
   observeEvent({
     input$random
@@ -2792,11 +2796,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
         if(RUN_BO){
           
-          if (isTRUE(current_task_id != get_latest_task_id())) {
-            notif(paste("Task", current_task_id, "cancelled."))
-            return()
-          }
-          
           msg <- paste0("task ", current_task_id, " BO start")
           notif(msg)
           showNotification(msg)
@@ -3234,7 +3233,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       for (target in TARGETS) {
         prior_list[[target]] <- prior_list_temp[[target]]
       }
-      
+    #  browser()
       # pref_reactive(prefObject(data = datAll2,
       #                          priors = prior_list))
       
@@ -4288,6 +4287,69 @@ if(!is.null(pref_reactive()$prefs)){
         updateSliderInput(inputId="slider_y", value = PM_res$NewValueOnSlider_y)}
       
     }
+    
+  })
+  
+  
+  # When user changes tab, the leaflet map is not correct
+  # User needs to resize maps to re-render them
+  # This fixes it (TODO: 2 tabs left to do)
+  observeEvent(input$tabs, {
+    runjs('$(document).trigger("shown.htmlwidgets");')
+    if (input$tabs == "Maps") {
+      runjs('
+            var widget = HTMLWidgets.find("#map");
+            widget.resize($("#map")[0], $("#map").width(), $("#map").height());
+          
+            ') 
+    }
+    if (input$tabs == "Preferences") {
+      runjs('
+  var widget = HTMLWidgets.find("#ClusterPage");
+      widget.resize($("#ClusterPage")[0], $("#ClusterPage").width(), $("#ClusterPage").height());
+   
+            ')
+      
+      runjs('
+    var widget2 = HTMLWidgets.find("#ClusterPage2");
+      widget2.resize($("#ClusterPage2")[0], $("#ClusterPage2").width(), $("#ClusterPage2").height());
+           ')
+      
+      
+    }
+    
+    # TODO: Fix this
+    #     if (input$tabs == "Alternative Approaches") {
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map2");
+    #       widget.resize($("#map2")[0], $("#map2").width(), $("#map2").height());
+    # ')
+    #       
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map3");
+    #       widget.resize($("#map3")[0], $("#map3").width(), $("#map3").height());
+    # ')
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map4");
+    #       widget.resize($("#map4")[0], $("#map4").width(), $("#map4").height());
+    # ')
+    #     }
+    
+    
+    # TODO: Fix this
+    #     if (input$tabs == "Exploration") {
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map6");
+    #       widget.resize($("#map6")[0], $("#map6").width(), $("#map6").height());
+    #        $("#map6").data("leaflet").invalidateSize();
+    # ')
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#Full-elements-container);
+    #       widget.resize($("#Full-elements-container")[0], $("#Full-elements-container").width(), $("#Full-elements-container").height());
+    #         $("#Full-elements-container").data("leaflet").invalidateSize();
+    # ')
+    #     }
+    
     
   })
   

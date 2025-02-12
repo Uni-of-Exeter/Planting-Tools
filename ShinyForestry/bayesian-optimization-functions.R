@@ -147,12 +147,13 @@ generate_legal_unique_samples <- function(n,
     } else {
       msg <- "generate_legal_unique_samples() -> generate_legal_samples() ..."
       notif(msg, log_level = "debug", limit_log_level = limit_log_level)
-      if (attempts > 1) {
-        temp <- lhs::optAugmentLHS(lhs = valid_samples, m = rows, mult = 1)
+      if (attempts > 1 && nrow(valid_samples) > 1) {
+        
+        temp <- lhs::optAugmentLHS(lhs = as.matrix(valid_samples_low_dimension), m = rows, mult = 1)
         
         # Only take the new rows
-        temp <- temp[(length(valid_samples) + 1):length(temp), ]
-        temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = samples, A = A)
+        temp <- tail(temp, rows)
+        temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = temp, A = A)
         
         # Turn values between 0 and 1 to legal area values by rounding then multiplying
         temp_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = temp_high_dimension,
@@ -210,8 +211,8 @@ generate_legal_unique_samples <- function(n,
       valid_samples <- rbind(valid_samples,
                              samples[indices_to_keep, , drop = FALSE])
       if (isTRUE(RRembo)) {
-        colnames(valid_samples_low_dimension) <- good_colnames_low_dim
-        colnames(valid_samples_high_dimension) <- good_colnames_high_dim
+        # colnames(valid_samples_low_dimension) <- good_colnames_low_dim
+        # colnames(valid_samples_high_dimension) <- good_colnames_high_dim
         valid_samples_low_dimension <- rbind(valid_samples_low_dimension,
                                              samples_low_dimension[indices_to_keep, , drop = FALSE])
         valid_samples_high_dimension <- rbind(valid_samples_high_dimension,
@@ -839,7 +840,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   # For now, the code below only works for the 2 tree species Conifers and Deciduous. We will have a new biodiversity model later on, so it's not important
   tmp <- FullTable_long[outcome_type == "Richness" &
                           planting_year == strategy_year,
-                        sum(outcome_value),
+                        mean(outcome_value),
                         by = outcome_sub_type]
   sum_richness <- tmp[, V1]
   names(sum_richness) <- tmp[, outcome_sub_type]
@@ -898,8 +899,12 @@ continuous_to_multi_categorical <- function(values,
   
   indices <- findInterval(values, cutoffs, rightmost.closed = TRUE)
   
-  solutions <- sapply(1:ncol(legal_values_ordered), function(col) {
-    legal_values_ordered[indices[col], col]
+  indices <- matrix(indices, nrow = nrow(values), ncol = ncol(values))
+  
+  solutions <- sapply(1:ncol(values), function(col) {
+    sapply(1:nrow(values), function(row) {
+      return(legal_values_ordered[indices[row, col], col])
+    })
   })
   solutions <- matrix(solutions, nrow = nrow(values), ncol = ncol(values))
   
@@ -1313,7 +1318,7 @@ dimension_reduction_mca_generate_new_inputs <- function(mca_object, inputs, cate
   return(result)
 }
 
-fastest_design_point_selection_method <- function(gp_model, input_candidates_for_gp, batch_size, workers, parallel) {
+fastest_design_point_selection_method <- function(gp_model, input_candidates_for_gp, batch_size, workers, parallel, limit_log_level = LOG_LEVEL) {
   
   # If the inputs have low dimensions, don't waste time, "mice" is good and fast
   n <- nrow(gp_model$data$X)
@@ -1572,7 +1577,7 @@ acquisition_function <- function(gp_predicted_means,
 }
 
 # https://dspace.mit.edu/handle/1721.1/128591
-batch_selection <- function(acquisition_values, batch_size = 1) {
+batch_selection <- function(acquisition_values, batch_size = 1, limit_log_level = LOG_LEVEL) {
   if (batch_size > length(acquisition_values)) {
     msg <- "In batch_selection, the batch_size is larger than the number of possible values"
     notif(msg, log_level = "error", limit_log_level = limit_log_level)
@@ -1584,6 +1589,7 @@ batch_selection <- function(acquisition_values, batch_size = 1) {
 objective_function <- function(inputs, # c(area, year_planting, tree_specie)
                                area_sum_threshold, # number
                                year_of_max_no_planting_threshold_vector, # vector
+                               FullTable_arg,
                                FullTable_long_arg,
                                SCENARIO_ARG = SCENARIO,
                                MAXYEAR_ARG = MAXYEAR,
@@ -1848,7 +1854,7 @@ notif <- function(msg,
   if (log_level > limit_log_level) return()
   
   if (isFALSE(rbind)) {
-    msg <- paste0("[", log_level_msg, "] ", msg)
+    msg <- paste0(Sys.time(), " [", log_level_msg, "] ", msg)
   }
   
   pad_notif_message <- function(msg, pad_character = "_") {
@@ -2003,7 +2009,7 @@ bayesian_optimization <- function(
     progressr_object = function(amount = 0, message = "") {},
     BAYESIAN_OPTIMIZATION_BATCH_SIZE = 1,
     PENALTY_COEFFICIENT,
-    EXPLORATION = TRUE, # FALSE for tab 1, TRUE for tab 2
+    EXPLORATION = FALSE, # FALSE for tab 1, TRUE for tab 2
     EXPLORATION_COEFFICIENT = 0,
     
     preference_weight_area = 1,
@@ -2168,7 +2174,7 @@ bayesian_optimization <- function(
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
     }
-    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(n = 50,
+    new_candidates_obj_inputs_full_constrained <- generate_legal_unique_samples(n = 25,
                                                                                 FullTable_arg = FullTable,
                                                                                 MAXYEAR_arg = MAXYEAR,
                                                                                 SPECIES_arg = SPECIES,
@@ -2180,6 +2186,18 @@ bayesian_optimization <- function(
                                                                                 RRembo_smart = RREMBO_SMART,
                                                                                 current_task_id = current_task_id,
                                                                                 limit_log_level = limit_log_level)
+    new_candidates_obj_inputs_full_unconstrained <- generate_legal_unique_samples(n = 25,
+                                                                                  FullTable_arg = FullTable,
+                                                                                  MAXYEAR_arg = MAXYEAR,
+                                                                                  SPECIES_arg = SPECIES,
+                                                                                  area_sum_threshold_numeric_arg = area_sum_threshold,
+                                                                                  year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
+                                                                                  area_sum_is_constrained = FALSE,
+                                                                                  RRembo = TRUE,
+                                                                                  RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
+                                                                                  RRembo_smart = RREMBO_SMART,
+                                                                                  current_task_id = current_task_id,
+                                                                                  limit_log_level = limit_log_level)
     
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
@@ -2189,8 +2207,10 @@ bayesian_optimization <- function(
     # }
     time_sample <- Sys.time() - begin_inside
     
-    new_candidates_obj_inputs <- new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical
-    new_candidates_obj_inputs_for_gp <- new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension
+    new_candidates_obj_inputs <- rbind(new_candidates_obj_inputs_full_constrained$valid_samples_high_dimension_categorical,
+                                       new_candidates_obj_inputs_full_unconstrained$valid_samples_high_dimension_categorical)
+    new_candidates_obj_inputs_for_gp <- rbind(new_candidates_obj_inputs_full_constrained$valid_samples_low_dimension,
+                                              new_candidates_obj_inputs_full_unconstrained$valid_samples_low_dimension)
     
     ## Generate acquisition values ----
     # pb_amount <- pb_amount + 1 / max_loop_progress_bar
