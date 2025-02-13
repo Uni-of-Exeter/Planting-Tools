@@ -1357,6 +1357,7 @@ server <- function(input, output, session,
       
       #MaxValsReactive(MaxVals)
       MaxMinValsReactiveVector(c(MaxVals$CarbonMax,unlist(MaxVals$bioMaxList),MaxVals$AreaMax,MaxVals$VisistMax))
+      print(MaxMinValsReactiveVector)
       tolvecReactive(MaxVals$tolvec)
       # updateSliderInput(session, "SliderMain", max = trunc(sum(CarbonSelected)), value = trunc(sum(CarbonSelected)))
       # updateSliderInput(session, "SliderMain", max = MaxVals$CarbonMax, value = MaxVals$CarbonMax)
@@ -1675,16 +1676,14 @@ server <- function(input, output, session,
   observeEvent(input$SliderMain,{
     
     SHBICurrent<-SlidersHaveBeenInitialized()
-    print(SHBICurrent)
-    print(SliderNames)
-    print(input)
+    
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
       for (sl in SliderNames){
-        print(sl)
-        print(input[[sl]])
-        
         SliderNumber<-which(SliderNames==sl)        
-        if(input[[sl]]==MaxMinValsReactiveVector()[SliderNumber]){SHBICurrent[SliderNumber]<-1;SlidersHaveBeenInitialized(SHBICurrent)}
+        if(input[[sl]]==MaxMinValsReactiveVector()[SliderNumber]){
+          SHBICurrent[SliderNumber]<-1;
+          SlidersHaveBeenInitialized(SHBICurrent)
+          }
       }}
   })
   
