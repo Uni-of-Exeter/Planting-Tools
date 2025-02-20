@@ -3,87 +3,55 @@ library(leaflet)
 library(bslib)  # For Bootstrap-based accordion UI
 library(shinyjs) # For sidebar toggling
 library(uuid)
+library(callr)
+library(plumber)
+library(geojsonsf)
+library(jsonlite)
+library(sf)
 
 source("config.R")
 
-FolderSource <- normalizePath(getwd())
-ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
-CalculatedFilesFolder<-normalizePath(file.path(FolderSource, "CalculatedFiles"))
+setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/ShinyForestry/")
+FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")))
 
-print(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))))
-FullTable <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
-FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
-load(normalizePath(file.path(CalculatedFilesFolder, "simul636YearType.RData")))
-print(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
-
-print(dim(simul636YearType[[2]]))
-print(dim(simul636YearType[[1]]))
-print(simul636YearType[["YEAR"]][2])
-print(names(simul636YearType[[1]])) # this is null so it's a matrix not a dataframe.
-
-# Data Structure
-# simul636YearType is a list containing 2 elements: YEAR and TYPE.
-# simul636YearType[[1]] is a numeric matrix of dimensions (2000, 403), with values ranging from -1 to positive integers.
-# simul636YearType[[2]] is a character matrix of dimensions (2000, 403), with categories like "Conifers," "Deciduous," and "NoPlanting," likely indicating different types of trees or planting states.
-
-load("CalculatedFiles/SubsetMeetTargets.RData")
-
-
-# I need to know what table does what, what does it look like
-# what does a result look like. If I give some sliders, I want a result...
-print(SubsetMeetTargets[[1]][25, ])
-print(SubsetMeetTargets[[2]][25, ])
-print(dim(SubsetMeetTargets[[2]]))
-print(dim(SubsetMeetTargets[[1]]))
-print(SubsetMeetTargets[["YEAR"]][2])
-print(names(SubsetMeetTargets[[1]])) # this is null so it's a matrix not a dataframe.
-
-library(sf)
-
-generate_parcel_data <- function(FullTable) {
-  # Ensure FullTable is an sf object
-  if (!inherits(FullTable, "sf")) {
-    stop("FullTable must be an sf object.")
-  }
-  
-  # Get the number of rows in FullTable (this will be used as 'n')
-  n <- nrow(FullTable)
-  
-  # Generate parcel_ids as a sequence of integers starting from 1
-  parcel_ids <- sapply(1:n, function(x) UUIDgenerate())
-  
-  # Extract the geometry from FullTable
-  geometries <- st_geometry(FullTable)  # Get all geometries from FullTable
-  
-  # Random planting years (for example, from 2025 to 2049)
-  planting_years <- sample(2025:2049, n, replace = TRUE)
-  
-  # Random planting types ("Deciduous", "Conifer", "None")
-  planting_types <- sample(c("Deciduous", "Conifer", "None"), n, replace = TRUE)
-  
-  # Random 'is_blocked' status (TRUE or FALSE)
-  is_blocked <- sample(c(TRUE, FALSE), n, replace = TRUE)
-  
-  # Combine into an sf object
-  parcel_data <- st_sf(
-    parcel_id = parcel_ids,             # Unique ID for each parcel
-    geometry = geometries,              # Geometry from FullTable
-    planting_year = planting_years,     # Year of planting
-    planting_type = planting_types,     # Type of planting
-    is_blocked = is_blocked,            # Whether it's blocked
-    crs = st_crs(FullTable)              # Use CRS from FullTable
-  )
-  
-  return(parcel_data)
+# --- Plumber API
+start_plumber_api <- function() {
+  r_bg(function() {
+    pr <- plumb("ShinyForestry/backend/strategy.R")
+    pr$run(port = API_PORT)
+  })
 }
+plumber_process <- start_plumber_api()
 
-# Example usage:
-# Assuming FullTable is already an sf object
-parcel_data <- generate_parcel_data(FullTable)
+# Check if the Plumber API is running
+if (!plumber_process$is_alive()) {
+  stop("Failed to start the Plumber API.")
+}
+# ---/ Plumber API
 
-# View the generated parcel data
-print(parcel_data)
-
+# Function to hit the API and process the geojson data
+fetch_api_data <- function() {
+  url <- paste0("http://127.0.0.1:8001/generate_parcels")
+  # Make the API request
+  response <- httr::GET(url)
+  
+  # Check if the response is successful
+  if (httr::status_code(response) == 200) {
+    print("Request succeeded!")
+    geojson_list <- httr::content(response, as = "text", encoding = "UTF-8")
+    
+    # Remove the list wrapping and parse the JSON string
+    geojson_string <- jsonlite::fromJSON(geojson_list)[[1]]  # Extract the string from the list
+    
+    # Now the geojson_string contains the correct GeoJSON data
+    geojson_parsed <- jsonlite::fromJSON(geojson_string)  # Convert the JSON string to a list in R
+    
+    # Return the parsed GeoJSON data
+    return(geojson_parsed)
+  } else {
+    stop(paste("Request failed with status:", httr::status_code(response)))
+  }
+}
 
 # Define UI
 ui <- fluidPage(
@@ -118,6 +86,11 @@ ui <- fluidPage(
       width: 100%;
       height: 100%;
       position: relative;  /* Required to position year slider */
+    }
+    .leaflet-control{
+      background: rgba(255, 255, 255, 0.9); /* background-colour to zero */
+      box-shadow: none !important; /* remove box-shadow */
+      border: none !important; /* remove border */
     }
   ")),
   
@@ -168,7 +141,19 @@ ui <- fluidPage(
           ),
           actionButton("submit", "Submit"),
           actionButton("reset", "Reset"),
-          actionButton("save", "Save in session")
+          actionButton("save", "Save Strategy")
+        ),
+        accordion_panel(
+          "Statutory Metrics",
+          tagList(
+            p("Empty.")
+          )
+        ),
+        accordion_panel(
+          "Outcomes",
+          tagList(
+            p("Empty.")
+          )
         ),
         accordion_panel(
           "💾 Saved Strategies",
@@ -203,113 +188,213 @@ ui <- fluidPage(
 )
 
 
-# Server logic
 server <- function(input, output, session) {
   
-  # Reactive value to store clicked polygons
-  clicked_polygons <- reactiveVal(list())
+  # !TODO do these need to be reset?
+  new_data <- reactiveVal(NULL) # most recent data
+  filtered_data <- reactiveVal(NULL) # data filtered by year
   
-  # Store saved strategies as a named list (acting as a hashmap)
-  saved_strategies <- reactiveVal(list())
+  current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
+  clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
+  saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
+  filtered_data <- reactiveVal(NULL)
   
-  # Reactive expression to filter FullTable by the selected year
-  filtered_data <- reactive({
-    # Filter the parcel_data based on the selected year
-    parcel_data_filtered <- parcel_data[parcel_data$planting_year <= input$year, ]
-    return(parcel_data_filtered)  # Ensure you return the filtered data
-  })
+  # Track the initial slider values when the submit button is clicked
+  initial_values <- reactiveVal(list(
+    carbon = NULL,
+    species = NULL,
+    species_goat_moth = NULL,
+    species_stag_beetle = NULL,
+    species_lichens = NULL,
+    area = NULL,
+    recreation = NULL,
+    year = NULL
+  ))
   
-  # Initialize leaflet map
-  output$map <- renderLeaflet({
-    leaflet() %>% 
-      addTiles() %>%  # Add the base map tiles once
-      setView(lng = LON_DEFAULT, lat = LAT_DEFAULT, zoom = ZOOM_DEFAULT) %>% 
-      addPolygons(
-        data = parcel_data,  # Base parcel data (static)
-        weight = 1,
-        color = "#000000",
-        fillColor = "#dddde2",
-        fillOpacity = 0.8,
-        group = "parcelPolygons",  # Group the polygons
-        layerId = parcel_data$parcel_id  # Set unique IDs for each polygon
-      ) %>% 
-      addPolygons(
-        data = FullTableNotAvail,  # Unavailable polygons
-        weight = 1,
-        color = "#000000",
-        fillColor = "#808080",
-        fillOpacity = 0.8,
-        group = "unavailablePolygons"
-      )
-  })
+  # Initialize leaflet map or update it on submit
+  initialize_or_update_map <- function(input_year) {
+    # Fetch the data from the API when initializing or submitting
+    new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
 
-  # Keep track of layers currently on the map (filtered ones)
-  current_layers <- reactiveVal(list())  # List of current layer IDs
+    if (!is.null(new_data_fetched)) {
+      # Apply the filter based on the selected year
+      new_data(new_data_fetched)
+      filtered_data_subset <- new_data_fetched[new_data_fetched$planting_year <= input_year, ]
+      filtered_data(filtered_data_subset)
+      current_layers(filtered_data_subset$parcel_id)
+      
+      # Render the leaflet map with the updated data
+      output$map <- renderLeaflet({
+        leaflet() %>% 
+          addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
+          setView(lng = LON_DEFAULT, lat = LAT_DEFAULT, zoom = ZOOM_DEFAULT) %>% 
+          
+          # Add base layer (all parcels) from new_data
+          addPolygons(
+            data = new_data_fetched,  # Use the full dataset as the base layer
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = AVAILABLE_PARCEL_COLOUR,
+            fillOpacity = FILL_OPACITY,
+            group = "parcelPolygons",  # Group the polygons
+            layerId = ~parcel_id,  # Set unique IDs for each polygon
+            label = ~parcel_id,
+            popup = "No planting"
+          ) %>% 
+          
+          # Add filtered polygons based on the selected year
+          addPolygons(
+            data = filtered_data_subset,  # Filtered data based on the year
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
+            fillOpacity = FILL_OPACITY,
+            layerId = ~parcel_id,
+            label = ~parcel_id,
+            popup = ~planting_type
+          ) %>%
+          
+          # Add unavailable parcels layer
+          addPolygons(
+            data = FullTableNotAvail,  # Unavailable parcels
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = UNAVAILABLE_PARCEL_COLOUR,
+            fillOpacity = FILL_OPACITY,
+            group = "unavailablePolygons",
+            popup = "Unavailable for planting"
+          ) %>%
+          
+          # Add legend
+          addLegend(
+            position = "topright",
+            colors = adjustcolor(unname(COLOUR_MAPPING), alpha.f = FILL_OPACITY),
+            labels = names(COLOUR_MAPPING),
+            title = "Planting Type",
+            opacity = 1.0
+          )
+      })
+    } else {
+      print("API fetch failed, no data to update.")
+    }
+  }
   
-  observeEvent(input$map_shape_click, {
-    clicked_id <- input$map_shape_click$id
-    print(paste("User clicked on parcel:", clicked_id))
+  # A reactive expression to track the current year
+  current_year <- reactive({
+    input$year
+  })
+  
+  # Initialize the map on app start
+  initialize_or_update_map(YEAR_MIN)
+  
+  # Handle submit event to update the map
+  observeEvent(input$submit, {
+    # Save the initial values when the submit button is clicked
+    initial_values(list(
+      carbon = input$carbon,
+      species = input$species,
+      species_goat_moth = input$species_goat_moth,
+      species_stag_beetle = input$species_stag_beetle,
+      species_lichens = input$species_lichens,
+      area = input$area,
+      recreation = input$recreation,
+      year = input$year
+    ))
+    
+    # Enable the save button when submit is pressed
+    shinyjs::enable("save")
+    
+    # Update the map by calling the same function
+    initialize_or_update_map(current_year())
+  })
+  
+  # Monitor changes to the sliders
+  observe({
+    # Get the current slider values
+    current_values <- list(
+      carbon = input$carbon,
+      species = input$species,
+      species_goat_moth = input$species_goat_moth,
+      species_stag_beetle = input$species_stag_beetle,
+      species_lichens = input$species_lichens,
+      area = input$area,
+      recreation = input$recreation,
+      year = input$year
+    )
+    
+    # Compare current values with initial values
+    values_changed <- !identical(current_values, initial_values())
+    
+    # Disable the save button if values have changed
+    if (values_changed) {
+      shinyjs::disable("save")
+    } else {
+      shinyjs::enable("save")
+    }
   })
   
   observe({
-    fdata <- filtered_data()  # Reactive filtering
-    
-    # Get the current IDs of the filtered polygons
-    current_ids <- unique(fdata$parcel_id)
-    
-    # Get the current state of the layers (those that are already on the map)
-    existing_layers <- current_layers()
-    
-    # Find the IDs that need to be added and removed
-    to_add <- setdiff(current_ids, existing_layers)
-    to_remove <- setdiff(existing_layers, current_ids)  # Ensure this is a vector of IDs
-    
-    # Remove polygons that are no longer in the filtered data
-    # if (length(to_remove) > 0) {
-    #     leafletProxy("map") %>% removeShape(layerId = to_remove)
-    #   }
-    # 
-    # try update polygons back with a new style
-    if (length(to_remove) > 0) {
-      # Get the data for all parcels that need to be recolored from FullTable
-      updated_data <- parcel_data[parcel_data$parcel_id %in% to_remove, ]  # Use `to_remove` to filter
-
-      # Update the recolor of polygons in one go
-      leafletProxy("map") %>%
-        addPolygons(
-          data = updated_data,  # Use the updated data for the parcels in `to_remove`
-          weight = 1,
-          color = "#000000",
-          fillColor = "#dddde2",  # New color
-          fillOpacity = 0.8,    # New opacity
-          layerId = updated_data$parcel_id  # Ensure to reassign the same layerId for all
-        )
-    }
-    
-    # Add new polygons (those that are in filtered data but not on the map)
-    if (length(to_add) > 0) {
-      new_data <- fdata[fdata$parcel_id %in% to_add, ]
-      print("New Data to Add:")
-      print(new_data$parcel_id)
+    input_year <- input$year 
+    print(new_data())
+    if (!is.null(new_data())) {
+      # Access the most recently loaded data stored in the reactive `new_data`
+      current_data <- new_data()
       
-      leafletProxy("map") %>%
-        addPolygons(
-          data = new_data,  # Filtered data for new polygons
-          weight = 1,
-          color = "#000000",
-          fillColor = "green",  # Color for filtered polygons
-          fillOpacity = 0.6,
-          group = "filteredPolygons",  # Group for filtered polygons
-          layerId = ~parcel_id  # Use parcel_id as layerId to add new polygons
-        )
+      # Filter the data based on the selected year and update `filtered_data`
+      filtered_data_subset <- current_data[current_data$planting_year <= input_year, ]
+      filtered_data(filtered_data_subset)  # Update the reactive filtered data
+      
+      # Get the current IDs of the filtered polygons
+      current_ids <- unique(filtered_data_subset$parcel_id)
+      
+      # Get the current state of the layers (those that are already on the map)
+      existing_layers <- current_layers()  # Use the reactive current_layers()
+      
+      # Find the IDs that need to be added and removed
+      to_add <- setdiff(current_ids, existing_layers)
+      to_remove <- setdiff(existing_layers, current_ids)  # Ensure this is a vector of IDs
+      
+      # try update polygons back with a new style
+      if (length(to_remove) > 0) {
+        # Get the data for all parcels that need to be recoloured from FullTable
+        updated_data <- current_data[current_data$parcel_id %in% to_remove, ]  # Use `to_remove` to filter
+        
+        # Update the recolour of polygons in one go
+        leafletProxy("map") %>%
+          addPolygons(
+            data = updated_data,  # Use the updated data for the parcels in `to_remove`
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = AVAILABLE_PARCEL_COLOUR,
+            fillOpacity = FILL_OPACITY,
+            layerId = updated_data$parcel_id,  # Ensure to reassign the same layerId for all
+            label = updated_data$parcel_id
+          )
+      }
+      
+      # Add new polygons (those that are in filtered data but not on the map)
+      if (length(to_add) > 0) {
+        leafletProxy("map") %>%
+          addPolygons(
+            data = current_data[current_data$parcel_id %in% to_add, ],  # Filtered data for new polygons
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+            fillOpacity = FILL_OPACITY,
+            group = "filteredPolygons",  # Group for filtered polygons
+            layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
+            label = ~parcel_id,
+            popup = ~planting_type
+          )
+      }
+      
+      # Update the state of current layers
+      current_layers(current_ids)
     }
-    
-    # Update the state of current layers
-    current_layers(current_ids)
-    print("current_layers:")
-    print(current_layers)
   })
+  
+  
   # Enable/Disable sliders
   observe({
     toggleState("carbon", input$carbon_checkbox)
@@ -345,22 +430,10 @@ server <- function(input, output, session) {
     
     tagList(strategy_items)
     
-    # # Create accordion panels dynamically for each saved strategy
-    # accordion_items <- lapply(names(strategies), function(key) {
-    #   accordion_panel(
-    #     paste(key),
-    #     actionButton(paste("load_strategy", key, sep = "_"), paste("Load")),
-    #     actionButton(paste("delete_strategy", key, sep = "_"), " Delete", icon = icon("trash"))
-    #   )
-    # })
-    # 
-    # # Wrap in an accordion
-    # tagList(
-    #   accordion(!!!accordion_items)  # Unquote-splice to pass all items
-    # )
   })
   
   # Save strategy when the "Save" button is clicked
+  # !TODO need to save the map stuff too!
   observeEvent(input$save, {
     # Save the current state (slider values)
     strategy <- list(
@@ -392,6 +465,7 @@ server <- function(input, output, session) {
   })
   
   # Load strategy values into sliders when the "Load" button is clicked
+  # !TODO need to load the JSON in too
   observe({
     lapply(names(saved_strategies()), function(key) {
       # Dynamically handle load strategy for each strategy
@@ -460,5 +534,6 @@ server <- function(input, output, session) {
     })
   })
 }
+
 
 shinyApp(ui, server)
