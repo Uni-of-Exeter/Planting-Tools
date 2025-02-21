@@ -2,6 +2,7 @@ library(shiny)
 library(leaflet)
 library(bslib)  # For Bootstrap-based accordion UI
 library(shinyjs) # For sidebar toggling
+library(shinycssloaders)
 library(uuid)
 library(callr)
 library(plumber)
@@ -12,7 +13,7 @@ library(sf)
 source("config.R")
 
 setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/ShinyForestry/")
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")))
+FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")),quiet=TRUE)
 
 # --- Plumber API
 start_plumber_api <- function() {
@@ -37,7 +38,6 @@ fetch_api_data <- function() {
   
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
-    print("Request succeeded!")
     geojson_list <- httr::content(response, as = "text", encoding = "UTF-8")
     
     # Remove the list wrapping and parse the JSON string
@@ -164,7 +164,6 @@ ui <- fluidPage(
     mainPanel(
       class = "main-panel",
       leafletOutput("map", height = "100%"),
-      
       # Absolute Panel for the year-slider, inside the map container
       absolutePanel(
         id = "year-slider",
@@ -190,6 +189,8 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
+  map_view <- reactiveValues(lat = LAT_DEFAULT, lon = LON_DEFAULT, zoom = ZOOM_DEFAULT)
+  
   # !TODO do these need to be reset?
   new_data <- reactiveVal(NULL) # most recent data
   filtered_data <- reactiveVal(NULL) # data filtered by year
@@ -198,8 +199,7 @@ server <- function(input, output, session) {
   clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
   saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
-  filtered_data <- reactiveVal(NULL)
-  
+
   # Track the initial slider values when the submit button is clicked
   initial_values <- reactiveVal(list(
     carbon = NULL,
@@ -213,20 +213,23 @@ server <- function(input, output, session) {
   ))
   
   # Initialize leaflet map or update it on submit
-  initialize_or_update_map <- function(input_year) {
+  initialize_or_update_map <- function(input_year, data = NULL) {
     # Fetch the data from the API when initializing or submitting
-    new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
-
+    # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
+    new_data_fetched <- if (!is.null(data)) data else st_read(fetch_api_data(), quiet=TRUE)
+    
     if (!is.null(new_data_fetched)) {
       # Apply the filter based on the selected year
       new_data(new_data_fetched)
       filtered_data_subset <- new_data_fetched[new_data_fetched$planting_year <= input_year, ]
       filtered_data(filtered_data_subset)
       current_layers(filtered_data_subset$parcel_id)
+      clicked_polygons(NULL)
       
       # Render the leaflet map with the updated data
       output$map <- renderLeaflet({
         leaflet() %>% 
+          # addTiles() %>% 
           addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
           setView(lng = LON_DEFAULT, lat = LAT_DEFAULT, zoom = ZOOM_DEFAULT) %>% 
           
@@ -332,11 +335,12 @@ server <- function(input, output, session) {
     } else {
       shinyjs::enable("save")
     }
+    
   })
   
   observe({
     input_year <- input$year 
-    print(new_data())
+
     if (!is.null(new_data())) {
       # Access the most recently loaded data stored in the reactive `new_data`
       current_data <- new_data()
@@ -394,7 +398,6 @@ server <- function(input, output, session) {
     }
   })
   
-  
   # Enable/Disable sliders
   observe({
     toggleState("carbon", input$carbon_checkbox)
@@ -437,6 +440,9 @@ server <- function(input, output, session) {
   observeEvent(input$save, {
     # Save the current state (slider values)
     strategy <- list(
+      saved_data = new_data(),
+      clicked_polygons = clicked_polygons(),
+      
       carbon = input$carbon,
       species = input$species,
       species_goat_moth = input$species_goat_moth,
@@ -471,6 +477,11 @@ server <- function(input, output, session) {
       # Dynamically handle load strategy for each strategy
       observeEvent(input[[paste("load_strategy", key, sep = "_")]], {
         strategy <- saved_strategies()[[key]]
+        
+        # Restore saved data
+        new_data(strategy$saved_data)
+        clicked_polygons(strategy$clicked_polygons)
+        
         updateSliderInput(session, "carbon", value = strategy$carbon)
         updateSliderInput(session, "species", value = strategy$species)
         updateSliderInput(session, "species_goat_moth", value = strategy$species_goat_moth)
@@ -488,15 +499,18 @@ server <- function(input, output, session) {
         updateCheckboxInput(session, "species_lichens_checkbox", value = strategy$species_lichens_checkbox)
         updateCheckboxInput(session, "area_checkbox", value = strategy$area_checkbox)
         updateCheckboxInput(session, "recreation_checkbox", value = strategy$recreation_checkbox)
+
+        # Ensure the map updates with the loaded strategy
+        initialize_or_update_map(strategy$year, strategy$saved_data)        
       })
     })
   })
   
   # Observe the reset of the sliders
   observeEvent(input$reset, {
-    # Reset map view
+
     leafletProxy("map") %>%
-      setView(lng = LON_DEFAULT, lat = LAT_DEFAULT, zoom = ZOOM_DEFAULT)
+      setView(lat = LAT_DEFAULT, lng = LON_DEFAULT, zoom = ZOOM_DEFAULT)
     
     # Reset sliders to default values
     updateSliderInput(session, "carbon", value = CARBON_DEFAULT)
@@ -535,5 +549,8 @@ server <- function(input, output, session) {
   })
 }
 
+# !TODO Save strategy on first load
+#       Proper reloading of the map on submit.
+#         Resets everything... maybe we just want to update the polygons like add/remove?
 
 shinyApp(ui, server)
