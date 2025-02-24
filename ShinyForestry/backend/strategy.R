@@ -30,10 +30,12 @@ generate_parcel_data <- function(FullTable) {
   if (!inherits(FullTable, "sf")) {
     stop("FullTable must be an sf object.")
   }
-  
+
   n <- nrow(FullTable)
+  print(colnames(FullTable))
   parcel_ids <- sapply(1:n, function(x) UUIDgenerate())
   geometries <- st_geometry(FullTable)
+  parcel_areas <- FullTable$area
   planting_years <- sample(2025:2049, n, replace = TRUE)
   planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
   planting_years[is.na(planting_types)] <- NA
@@ -42,6 +44,7 @@ generate_parcel_data <- function(FullTable) {
   parcel_data <- st_sf(
     parcel_id = parcel_ids,
     geometry = geometries,
+    parcel_area = parcel_areas,
     planting_year = planting_years,
     planting_type = planting_types,
     is_blocked = is_blocked,
@@ -54,16 +57,22 @@ generate_parcel_data <- function(FullTable) {
 #* @apiTitle Parcel Data API
 #* @apiDescription Returns parcel data in GeoJSON format.
 
+#* @get /health
+#* @serializer json
+function() {
+  list(status = "OK", message = "Plumber API is running")
+}
+
 #* Generate parcel data
 #* @get /generate_parcels
 #* @serializer json
 function() {
   parcel_data <- generate_parcel_data(FullTable)
   
-  # Convert sf object to GeoJSON without extra serialization
-  geojson <- geojsonsf::sf_geojson(parcel_data, simplify = FALSE)
+  # Use sf_geojson to return a proper GeoJSON response
+  geojson <- geojsonsf::sf_geojson(parcel_data)
   
-  # Return the GeoJSON directly, without further jsonlite serialization
+  # Return the proper GeoJSON
   return(geojson)
 }
 

@@ -4,55 +4,86 @@ library(bslib)  # For Bootstrap-based accordion UI
 library(shinyjs) # For sidebar toggling
 library(shinycssloaders)
 library(uuid)
-library(callr)
 library(plumber)
 library(geojsonsf)
 library(jsonlite)
 library(sf)
+library(ggplot2)
+library(dplyr)
+library(httr)
+library(units)
+library(shinyWidgets)
+library(plotly)
 
-source("config.R")
+setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/")
 
-setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/ShinyForestry/")
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")),quiet=TRUE)
+source("ShinyForestry/config.R")
 
-# --- Plumber API
-start_plumber_api <- function() {
-  r_bg(function() {
-    pr <- plumb("ShinyForestry/backend/strategy.R")
-    pr$run(port = API_PORT)
-  })
-}
-plumber_process <- start_plumber_api()
+FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ShinyForestry/ElicitorOutput")), "FullTableNotAvail.geojson")),quiet=TRUE)
 
-# Check if the Plumber API is running
-if (!plumber_process$is_alive()) {
-  stop("Failed to start the Plumber API.")
-}
-# ---/ Plumber API
+# # Function to check if API is running
+# is_api_running <- function(url = "http://127.0.0.1:8002/health") {
+#   res <- tryCatch({
+#     httr::GET(url)
+#   }, error = function(e) {
+#     NULL
+#   })
+#   !is.null(res) && res$status_code == 200
+# }
+# 
+# print(getwd())
+# 
+# # Function to start API in a separate process
+# start_api <- function() {
+#   if (!is_api_running()) {
+#     message("Starting Plumber API...")
+#     
+#     # Start API using processx (this prevents R from freezing)
+#     api_process <- processx::process$new(
+#       "Rscript", 
+#       args = c("-e", "pr <- plumber::plumb('ShinyForestry/backend/strategy.R'); pr$run(host = '127.0.0.1', port = 8002)"),
+#       stdout = "|", stderr = "|"
+#     )
+#     
+#     # Wait up to 10 seconds for the API to start
+#     for (i in 1:10) {
+#       Sys.sleep(1)
+#       if (is_api_running()) {
+#         message("Plumber API is running!")
+#         return(api_process)
+#       } else {
+#         message("⏳ Waiting for API to start... (", i, "/10)")
+#       }
+#     }
+#     
+#     stop("ERROR: API failed to start within 10 seconds.")
+#   } else {
+#     message("Plumber API is already running.") 
+#   }
+# }
+# 
+# # Start API before launching Shiny app
+# api_process <- start_api()
 
-# Function to hit the API and process the geojson data
 fetch_api_data <- function() {
+  
   url <- paste0("http://127.0.0.1:8001/generate_parcels")
   # Make the API request
   response <- httr::GET(url)
-  
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
-    geojson_list <- httr::content(response, as = "text", encoding = "UTF-8")
-    
-    # Remove the list wrapping and parse the JSON string
-    geojson_string <- jsonlite::fromJSON(geojson_list)[[1]]  # Extract the string from the list
-    
-    # Now the geojson_string contains the correct GeoJSON data
-    geojson_parsed <- jsonlite::fromJSON(geojson_string)  # Convert the JSON string to a list in R
-    
-    # Return the parsed GeoJSON data
-    return(geojson_parsed)
-  } else {
-    stop(paste("Request failed with status:", httr::status_code(response)))
-  }
-}
 
+    content_raw <- httr::content(response, "text", encoding = "UTF-8")
+    geojson <- jsonlite::fromJSON(content_raw)
+    geojson_parsed <- st_read(geojson)
+    
+    return(geojson_parsed)
+    } 
+  else {
+    stop(paste("Request failed with status:", httr::status_code(response)))
+    }
+}
+    
 # Define UI
 ui <- fluidPage(
   useShinyjs(), # Enable JavaScript functionalities
@@ -109,6 +140,7 @@ ui <- fluidPage(
       accordion(
         accordion_panel(
           "🎯 Targets",
+          multiple=FALSE,
           tagList(
             fluidRow(
               column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
@@ -143,18 +175,18 @@ ui <- fluidPage(
           actionButton("reset", "Reset"),
           actionButton("save", "Save Strategy")
         ),
-        accordion_panel(
-          "Statutory Metrics",
-          tagList(
-            p("Empty.")
-          )
-        ),
-        accordion_panel(
-          "Outcomes",
-          tagList(
-            p("Empty.")
-          )
-        ),
+        # accordion_panel(
+        #   "Statutory Metrics",
+        #   tagList(
+        #     p("Empty.")
+        #   )
+        # ),
+        # accordion_panel(
+        #   "Outcomes",
+        #   tagList(
+        #     p("Empty.")
+        #   )
+        # ),
         accordion_panel(
           "💾 Saved Strategies",
           uiOutput("saved_strategies")
@@ -173,14 +205,39 @@ ui <- fluidPage(
                     value = YEAR_DEFAULT, 
                     step = 1, 
                     animate = TRUE,
-                    ticks = TRUE,  # Disable ticks to avoid formatting issues
+                    ticks = TRUE,  
                     animateOptions(interval = 100, loop = FALSE),
                     sep = "",
-                    width = "100%"
+                    width = "100%" # This will make the slider take 100% width of the container
         ),
         bottom = "50px", 
         left = "50%", 
-        style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);"
+        style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);",
+        
+        div(
+          style = "display: flex; justify-content: center; width: 100%;",
+          radioGroupButtons(
+            inputId = "view_toggle",
+            choices = c("Annual", "Cumulative"),
+            selected = "Cumulative",
+            status = "primary",
+            justified = TRUE, # Makes them equal width
+            width = '220px'
+          )
+        ),
+        
+        # Using an accordion-style panel here, like the sidebar
+        accordion(
+          open = FALSE,
+          accordion_panel(
+            "Time-Series",
+            multiple = FALSE,
+            tagList(
+              plotlyOutput("areaPlot", height = "250px")
+            ),
+            style = "border: none;",  # Remove border around the entire accordion header
+          )
+        )
       )
     )
   )
@@ -194,12 +251,16 @@ server <- function(input, output, session) {
   # !TODO do these need to be reset?
   new_data <- reactiveVal(NULL) # most recent data
   filtered_data <- reactiveVal(NULL) # data filtered by year
+  panel_expanded <- reactiveVal(FALSE)
+  output_data <- reactiveVal(NULL)
   
   current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
   clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
   saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
 
+  plot_type <- reactiveVal("cumulative") 
+  
   # Track the initial slider values when the submit button is clicked
   initial_values <- reactiveVal(list(
     carbon = NULL,
@@ -212,11 +273,88 @@ server <- function(input, output, session) {
     year = NULL
   ))
   
+  processed_data <- reactive({
+    plot_data <- output_data()  # Get the combined data frame from the reactive expression
+    
+    # If no data, return NULL
+    if (is.null(plot_data)) return(NULL)
+    
+    # Convert total_area to km²
+    plot_data$total_area <- set_units(plot_data$total_area, "km^2")
+    
+    # Compute cumulative area for each planting type
+    cumulative_data <- plot_data %>%
+      arrange(planting_type, planting_year) %>%
+      group_by(planting_type) %>%
+      mutate(cumulative_area = cumsum(total_area)) %>%
+      ungroup()
+    
+    # Return both datasets in a list (ready for instant switching)
+    list(total = plot_data, cumulative = cumulative_data)
+  })
+  
+  # Render time-series plot for both Conifer and Deciduous
+  output$areaPlot <- renderPlotly({
+    data <- processed_data()  # Get precomputed data
+    
+    # Debugging: Print tables
+    print(data$cumulative)
+    print(data$total)
+    
+    # If no data, return NULL
+    if (is.null(data)) return(NULL)
+    
+    # Determine which dataset to use based on user selection
+    selected_plot <- if (input$view_toggle == "Cumulative") {
+      data$cumulative %>% rename(y_value = cumulative_area)  # Rename for consistency
+    } else {
+      data$total %>% rename(y_value = total_area)
+    }
+    
+    # Create the plot
+    p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_type)) +
+      geom_line(size = 1, alpha = FILL_OPACITY) +
+      geom_point(size = 1.2) +
+      scale_color_manual(values = COLOUR_MAPPING) +
+      labs(title = ifelse(input$view_toggle == "Cumulative", 
+                          " ", 
+                          " "), 
+           x = "Year",
+           y = ifelse(input$view_toggle == "Cumulative", 
+                      "Cumulative Area Planted", 
+                      "Total Area Planted"),
+           color = "Planting Type") +
+      theme_minimal(base_size = 10) +
+      theme(legend.position = "none")
+    
+    ggplotly(p)
+  })
+  
+  
+  observeEvent(input$toggle_btn, {
+    # Toggle the visibility of the content with animation
+    toggle("expand-content", anim = TRUE, animType = "slide", time = 0.3)
+    
+    # Toggle the panel state (expanded/collapsed)
+    panel_expanded(!panel_expanded())
+    
+    # Update the chevron icon based on the new state
+    new_icon <- if (panel_expanded()) {
+      icon("chevron-up")
+    } else {
+      icon("chevron-down")
+    }
+    updateActionButton(session, "toggle_btn", icon = new_icon)
+  })
+  
   # Initialize leaflet map or update it on submit
   initialize_or_update_map <- function(input_year, data = NULL) {
     # Fetch the data from the API when initializing or submitting
     # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
-    new_data_fetched <- if (!is.null(data)) data else st_read(fetch_api_data(), quiet=TRUE)
+    print(data)
+    print(fetch_api_data())
+    
+    new_data_fetched <- if (!is.null(data)) data else fetch_api_data()
     
     if (!is.null(new_data_fetched)) {
       # Apply the filter based on the selected year
@@ -225,6 +363,22 @@ server <- function(input, output, session) {
       filtered_data(filtered_data_subset)
       current_layers(filtered_data_subset$parcel_id)
       clicked_polygons(NULL)
+      
+      print(new_data_fetched)
+      
+      # Update conifer and deciduous data based on the fetched data
+      area_data <- new_data_fetched %>%
+        dplyr::filter(!is.na(planting_year)) %>%
+        dplyr::mutate(
+          geometry = st_make_valid(geometry),  # Ensure valid geometries
+          parcel_area = st_area(geometry)      # Calculate area of each polygon
+        ) %>%
+        dplyr::group_by(planting_year, planting_type) %>%
+        dplyr::summarise(total_area = sum(parcel_area, na.rm = TRUE), .groups = 'drop') %>%  # Avoid warning with `.groups`
+        dplyr::arrange(planting_year)  # Ensures chronological order
+      
+      # Save the area data for later use in plots
+      output_data(area_data)
       
       # Render the leaflet map with the updated data
       output$map <- renderLeaflet({
@@ -340,13 +494,22 @@ server <- function(input, output, session) {
   
   observe({
     input_year <- input$year 
-
+    selected_view <- input$view_toggle
+    
     if (!is.null(new_data())) {
       # Access the most recently loaded data stored in the reactive `new_data`
       current_data <- new_data()
       
-      # Filter the data based on the selected year and update `filtered_data`
-      filtered_data_subset <- current_data[current_data$planting_year <= input_year, ]
+      # # Filter the data based on the selected year and update `filtered_data`
+      # filtered_data_subset <- current_data[current_data$planting_year <= input_year, ]
+      # filtered_data(filtered_data_subset)  # Update the reactive filtered data
+      
+      # **Modify Filtering Based on Selected View**
+      filtered_data_subset <- if (selected_view == "Cumulative") {
+        current_data[current_data$planting_year <= input_year, ]  # Up to the selected year
+      } else {
+        current_data[current_data$planting_year == input_year, ]  # Only the selected year
+      }      
       filtered_data(filtered_data_subset)  # Update the reactive filtered data
       
       # Get the current IDs of the filtered polygons
