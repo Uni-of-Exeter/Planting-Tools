@@ -19,51 +19,7 @@ setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/")
 
 source("ShinyForestry/config.R")
 
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ShinyForestry/ElicitorOutput")), "FullTableNotAvail.geojson")),quiet=TRUE)
-
-# # Function to check if API is running
-# is_api_running <- function(url = "http://127.0.0.1:8002/health") {
-#   res <- tryCatch({
-#     httr::GET(url)
-#   }, error = function(e) {
-#     NULL
-#   })
-#   !is.null(res) && res$status_code == 200
-# }
-# 
-# print(getwd())
-# 
-# # Function to start API in a separate process
-# start_api <- function() {
-#   if (!is_api_running()) {
-#     message("Starting Plumber API...")
-#     
-#     # Start API using processx (this prevents R from freezing)
-#     api_process <- processx::process$new(
-#       "Rscript", 
-#       args = c("-e", "pr <- plumber::plumb('ShinyForestry/backend/strategy.R'); pr$run(host = '127.0.0.1', port = 8002)"),
-#       stdout = "|", stderr = "|"
-#     )
-#     
-#     # Wait up to 10 seconds for the API to start
-#     for (i in 1:10) {
-#       Sys.sleep(1)
-#       if (is_api_running()) {
-#         message("Plumber API is running!")
-#         return(api_process)
-#       } else {
-#         message("⏳ Waiting for API to start... (", i, "/10)")
-#       }
-#     }
-#     
-#     stop("ERROR: API failed to start within 10 seconds.")
-#   } else {
-#     message("Plumber API is already running.") 
-#   }
-# }
-# 
-# # Start API before launching Shiny app
-# api_process <- start_api()
+FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ShinyForestry/ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
 
 fetch_api_data <- function() {
   
@@ -75,7 +31,7 @@ fetch_api_data <- function() {
 
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
     geojson <- jsonlite::fromJSON(content_raw)
-    geojson_parsed <- st_read(geojson)
+    geojson_parsed <- st_read(geojson, quiet=TRUE)
     
     return(geojson_parsed)
     } 
@@ -297,10 +253,6 @@ server <- function(input, output, session) {
   output$areaPlot <- renderPlotly({
     data <- processed_data()  # Get precomputed data
     
-    # Debugging: Print tables
-    print(data$cumulative)
-    print(data$total)
-    
     # If no data, return NULL
     if (is.null(data)) return(NULL)
     
@@ -351,9 +303,7 @@ server <- function(input, output, session) {
   initialize_or_update_map <- function(input_year, data = NULL) {
     # Fetch the data from the API when initializing or submitting
     # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
-    print(data)
-    print(fetch_api_data())
-    
+
     new_data_fetched <- if (!is.null(data)) data else fetch_api_data()
     
     if (!is.null(new_data_fetched)) {
@@ -363,8 +313,6 @@ server <- function(input, output, session) {
       filtered_data(filtered_data_subset)
       current_layers(filtered_data_subset$parcel_id)
       clicked_polygons(NULL)
-      
-      print(new_data_fetched)
       
       # Update conifer and deciduous data based on the fetched data
       area_data <- new_data_fetched %>%
