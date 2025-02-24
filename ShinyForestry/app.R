@@ -19,6 +19,8 @@ POLYGON_OPACITY<-0.6
 GREY_BACKGROUND_OPACITY<-0.3
 NOTAVAIL_OPACITY<-0.7
 
+BACKEND_HOST_OR_IP <- "localhost"
+
 sysinf <- Sys.info()
 if (!is.null(sysinf)){
   os <- sysinf['sysname']
