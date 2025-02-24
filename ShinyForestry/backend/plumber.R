@@ -94,3 +94,32 @@ function(res, file, userid) {
   res$status <- 200
   return("Success")
 }
+
+#* Generate all files needed for frontend (in CalculatedFiles and ElicitorOutput)
+#* curl -X GET "localhost/calculate_pre_server_block"
+#* @post /upload_decision_units
+#* @param file decision_units.json
+#* @param userid User identifier to store data in folder
+#* @response 200 Success: The calculations are done
+#* @response 400 Bad request: Some files are missing
+function(res, file, userid) {
+  
+  user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
+  elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
+  
+  # Are any required files missing
+  land_parcels_missing <- isFALSE(file.exists(file.path(elicitor_outout_folder, "land_parcels.shp.zip")))
+  outcomes_missing <- isFALSE(file.exists(file.path(elicitor_outout_folder, "outcomes.json")))
+  decisions_units_missing <- isFALSE(file.exists(file.path(elicitor_outout_folder, "decision_units.json")))
+  if (land_parcels_missing || outcomes_missing || decisions_units_missing) {
+    res$status <- 400
+    missing_files <- ""
+    if (land_parcels_missing) missing_files <- paste(missing_files, "land_parcels.shp.zip")
+    if (outcomes_missing) missing_files <- paste(missing_files, "outcomes.json")
+    if (decisions_units_missing) missing_files <- paste(missing_files, "decision_units.json")
+    return(paste("Bad request: Please upload", missing_files))
+  }
+  
+
+}
+
