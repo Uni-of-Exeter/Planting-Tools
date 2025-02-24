@@ -1,14 +1,20 @@
 library(plumber)
 
+# plumb("plumber.R") |>
+#   pr_run(port = 5762) # Specify API port
+
 normalizePath <- function(path, winslash = "\\") {
   base::normalizePath(path, winslash = winslash, mustWork = FALSE)
 }
 
-#* Receive user shapefile zip: curl -X POST "localhost/data" -H "accept: */*" -H "Content-Type: multipart/form-data" -F "upload=@land_parcels.shp.zip;type=application/x-zip-compressed"
+#* Receive user shapefile zip
+#* curl -X POST "localhost/upload_shapefile_zip" -H "accept: */*" -H "Content-Type: multipart/form-data" -F "upload=@land_parcels.shp.zip;type=application/x-zip-compressed"
 #* @post /upload_shapefile_zip
 #* @param file Zip shapefile
 #* @param userid User identifier to store data in folder
-function(file, userid) {
+#* @response 200 Success: The file was saved to disk
+#* @response 400 Bad request: The file name is incorrect
+function(res, file, userid) {
   
   user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
   elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
@@ -17,21 +23,30 @@ function(file, userid) {
   # Get zip file from binary content
   filename <- names(file)
   if (filename != "land_parcels.shp.zip") {
-    return(FALSE)
+    res$status <- 400
+    res$body <- jsonlite::toJSON(list(
+      status = 403, # Repeated per the blog post
+      message = "An error message"
+    ))
+    return(paste("Bad request: The file name is incorrect, it should be land_parcels.shp.zip and you sent", filename))
   }
   file_path <- normalizePath(file.path(user_folder, filename))
   file.remove(file_path)
   content <- file[[1]]
   writeBin(content, file_path)
   
-  return(TRUE)
+  res$status <- 200
+  return("Success")
 }
 
-#* Receive user shapefile zip: curl -X POST "localhost/data" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@outcomes.json"
+#* Receive user outcomes.json
+#* curl -X POST "localhost/upload_outcomes" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@outcomes.json"
 #* @post /upload_outcomes
 #* @param file outcomes.json
 #* @param userid User identifier to store data in folder
-function(file, userid) {
+#* @response 200 Success: The file was saved to disk
+#* @response 400 Bad request: The file name is incorrect
+function(res, file, userid) {
   
   user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
   elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
@@ -40,21 +55,26 @@ function(file, userid) {
   # Get zip file from binary content
   filename <- names(file)
   if (filename != "land_parcels.shp.zip") {
-    return(FALSE)
+    res$status <- 400
+    return(paste("Bad request: The file name is incorrect, it should be outcomes.json and you sent", filename))
   }
   file_path <- normalizePath(file.path(user_folder, filename))
   file.remove(file_path)
   content <- file[[1]]
   writeBin(content, file_path)
   
-  return(TRUE)
+  res$status <- 200
+  return("Success")
 }
 
-#* Receive user shapefile zip: curl -X POST "localhost/data" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@decision_units.json"
+#* Receive user decision_units.json
+#* curl -X POST "localhost/upload_decision_units" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@decision_units.json"
 #* @post /upload_decision_units
 #* @param file decision_units.json
 #* @param userid User identifier to store data in folder
-function(file, userid) {
+#* @response 200 Success: The file was saved to disk
+#* @response 400 Bad request: The file name is incorrect
+function(res, file, userid) {
   
   user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
   elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
@@ -63,12 +83,14 @@ function(file, userid) {
   # Get zip file from binary content
   filename <- names(file)
   if (filename != "land_parcels.shp.zip") {
-    return(FALSE)
+    res$status <- 400
+    return(paste("Bad request: The file name is incorrect, it should be decision_units.json and you sent", filename))
   }
   file_path <- normalizePath(file.path(user_folder, filename))
   file.remove(file_path)
   content <- file[[1]]
   writeBin(content, file_path)
   
-  return(TRUE)
+  res$status <- 200
+  return("Success")
 }
