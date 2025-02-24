@@ -170,29 +170,62 @@ ui <- fluidPage(
         left = "50%", 
         style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);",
         
+        # div(
+        #   style = "display: flex; justify-content: center; width: 100%;",
+        #   radioGroupButtons(
+        #     inputId = "view_toggle",
+        #     choices = c("Annual", "Cumulative"),
+        #     selected = "Cumulative",
+        #     status = "primary",
+        #     justified = TRUE, # Makes them equal width
+        #     width = '220px'
+        #   )
+        # ),
+        # 
+        # # Using an accordion-style panel here, like the sidebar
+        # accordion(
+        #   open = FALSE,
+        #   accordion_panel(
+        #     "Time-Series",
+        #     multiple = FALSE,
+        #     tagList(
+        #       plotlyOutput("areaPlot", height = "250px")
+        #     ),
+        #     style = "border: none;",  # Remove border around the entire accordion header
+        #   )
+        # )
+        
         div(
-          style = "display: flex; justify-content: center; width: 100%;",
+          style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px",
+          
+          # Left-Aligned Annual/Cumulative Toggle
           radioGroupButtons(
             inputId = "view_toggle",
             choices = c("Annual", "Cumulative"),
             selected = "Cumulative",
             status = "primary",
-            justified = TRUE, # Makes them equal width
+            justified = TRUE,
             width = '220px'
+          ),
+          
+          # Right-Aligned Time-Series Toggle Button
+          actionButton(
+            inputId = "toggle_plot",
+            label = "📈 Show Time-Series",
+            style = "
+                width: 200px; 
+                height: 40px; 
+                line-height: 20px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                margin-top: -17px;"
           )
         ),
         
-        # Using an accordion-style panel here, like the sidebar
-        accordion(
-          open = FALSE,
-          accordion_panel(
-            "Time-Series",
-            multiple = FALSE,
-            tagList(
-              plotlyOutput("areaPlot", height = "250px")
-            ),
-            style = "border: none;",  # Remove border around the entire accordion header
-          )
+        # Time-Series Plot (Initially hidden, shown when toggled)
+        div(id = "time_series_plot", style = "display: none;",
+            plotlyOutput("areaPlot", height = "250px")
         )
       )
     )
@@ -283,20 +316,17 @@ server <- function(input, output, session) {
   })
   
   
-  observeEvent(input$toggle_btn, {
-    # Toggle the visibility of the content with animation
-    toggle("expand-content", anim = TRUE, animType = "slide", time = 0.3)
+  observeEvent(input$toggle_plot, {
+    shinyjs::toggle(id = "time_series_plot", anim = TRUE)
     
-    # Toggle the panel state (expanded/collapsed)
-    panel_expanded(!panel_expanded())
-    
-    # Update the chevron icon based on the new state
-    new_icon <- if (panel_expanded()) {
-      icon("chevron-up")
+    # Change button text dynamically
+    new_label <- if (input$toggle_plot %% 2 == 1) {
+      "📉 Hide Time-Series"
     } else {
-      icon("chevron-down")
+      "📈 Show Time-Series"
     }
-    updateActionButton(session, "toggle_btn", icon = new_icon)
+    
+    updateActionButton(session, "toggle_plot", label = new_label)
   })
   
   # Initialize leaflet map or update it on submit
@@ -317,10 +347,10 @@ server <- function(input, output, session) {
       # Update conifer and deciduous data based on the fetched data
       area_data <- new_data_fetched %>%
         dplyr::filter(!is.na(planting_year)) %>%
-        dplyr::mutate(
-          geometry = st_make_valid(geometry),  # Ensure valid geometries
-          parcel_area = st_area(geometry)      # Calculate area of each polygon
-        ) %>%
+        # dplyr::mutate( # I don't think we need to do this as it's fine as it is.
+        #   geometry = st_make_valid(geometry),  # Ensure valid geometries
+        #   parcel_area = st_area(geometry)      # Calculate area of each polygon
+        # ) %>%
         dplyr::group_by(planting_year, planting_type) %>%
         dplyr::summarise(total_area = sum(parcel_area, na.rm = TRUE), .groups = 'drop') %>%  # Avoid warning with `.groups`
         dplyr::arrange(planting_year)  # Ensures chronological order
