@@ -79,6 +79,14 @@ ui <- fluidPage(
       box-shadow: none !important; /* remove box-shadow */
       border: none !important; /* remove border */
     }
+    
+    /* Make the Plotly mode bar fully transparent */
+    /* target individual button containers */
+    .js-plotly-plot .modebar > div {
+        background: none !important;
+        opacity: 1 !important;
+    }
+
   ")),
   
   div(
@@ -89,13 +97,12 @@ ui <- fluidPage(
       div(
         style = "padding: 20px; background-color: #f0f0f0; border-radius: 8px;
                  box-shadow: 0px 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;",
-        h3(HTML("<strong>ADD-TREES</strong>: "), 
-           "🌱"),
+        h3(HTML("<strong>ADD-TREES</strong>: ")),
         p("Use the checkboxes and sliders to enable/disable targets and adjust their values.")
       ),
       accordion(
         accordion_panel(
-          "🎯 Targets",
+          "Targets",
           multiple=FALSE,
           tagList(
             fluidRow(
@@ -144,7 +151,7 @@ ui <- fluidPage(
         #   )
         # ),
         accordion_panel(
-          "💾 Saved Strategies",
+          "Saved Strategies",
           uiOutput("saved_strategies")
         )
       )
@@ -201,7 +208,7 @@ ui <- fluidPage(
           # Left-Aligned Time-Series Toggle Button
           actionButton(
             inputId = "toggle_plot",
-            label = "📈 Show Time-Series",
+            label = "Show Time-Series",
             style = "
                 width: 200px; 
                 height: 40px; 
@@ -341,22 +348,37 @@ server <- function(input, output, session) {
                       "Total Area Planted"),
            color = "Planting Type") +
       theme_minimal(base_size = 10) +
-      theme(legend.position = "none")
-
-    ggplotly(p)
+      theme(
+        legend.position = "none",
+        panel.background = element_rect(fill = "transparent", color = NA),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        legend.background = element_rect(fill = "transparent"),
+        legend.box.background = element_rect(fill = "transparent")
+      ) 
+    
+    ggplotly(p) %>%
+      layout(
+        paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
+        plot_bgcolor = "rgba(255,255,255,0)"
+      ) %>%
+      config(
+        displayModeBar = TRUE  # Keep the toolbar
+      )
   })
 
   
   observeEvent(input$toggle_plot, {
     shinyjs::toggle(id = "time_series_plot", anim = TRUE)
-    
+
     # Change button text dynamically
     new_label <- if (input$toggle_plot %% 2 == 1) {
-      "📉 Hide Time-Series"
+      # "📉 Hide Time-Series"
+      "Hide Time-Series"
     } else {
-      "📈 Show Time-Series"
+      # "📈 Show Time-Series"
+      "Show Time-Series"
     }
-    
+
     updateActionButton(session, "toggle_plot", label = new_label)
   })
   
