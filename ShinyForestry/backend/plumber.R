@@ -113,6 +113,46 @@ function(res, file, userid) {
   return("Success")
 }
 
+#* @filter manage_environment
+function(req, res, userid) {
+  # Ensure userid is provided
+  if (missing(userid) || userid == "") {
+    res$status <- 400
+    return(list(error = "Missing required parameter: userid"))
+  }
+  
+  # Define the folder path for the user's environment
+  user_folder <- file.path("user_data", as.character(userid))
+  dir.create(user_folder, showWarnings = FALSE, recursive = TRUE)
+  
+  # Define the environment file path
+  env_file <- file.path(user_folder, "environment.RData")
+  
+  # Unload all objects and packages
+  rm(list = ls(envir = .GlobalEnv), envir = .GlobalEnv)
+  suppressWarnings(
+    lapply(setdiff(loadedNamespaces(), c("base", "stats", "utils", "graphics", "grDevices", "methods")), unloadNamespace)
+  )
+  
+  # Load user-specific environment if it exists
+  if (file.exists(env_file)) {
+    load(env_file, envir = .GlobalEnv)
+  }
+  
+  # Attach the file path to the request for saving later
+  req$env_file <- env_file
+  
+  forward()
+}
+
+#* @postroute /save_environment
+function(req) {
+  # Save the current environment to the user-specific file
+  if (!is.null(req$env_file)) {
+    save(list = ls(envir = .GlobalEnv), envir = .GlobalEnv, file = req$env_file)
+  }
+}
+
 #* Generate all files needed for frontend (in CalculatedFiles and ElicitorOutput)
 #* curl -X GET "localhost/calculate_pre_server_block"
 #* @post /pre_calculation_before_server_block
