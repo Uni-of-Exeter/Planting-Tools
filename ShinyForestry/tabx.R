@@ -14,6 +14,7 @@ library(httr)
 library(units)
 library(shinyWidgets)
 library(plotly)
+library(leaflet.extras)
 
 setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/")
 
@@ -416,8 +417,8 @@ server <- function(input, output, session) {
         leaflet() %>% 
           # addTiles() %>% 
           addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
+          addResetMapButton() %>% 
           setView(lng = LON_DEFAULT, lat = LAT_DEFAULT, zoom = ZOOM_DEFAULT) %>% 
-          
           # Add base layer (all parcels) from new_data
           addPolygons(
             data = new_data_fetched,  # Use the full dataset as the base layer
@@ -741,6 +742,7 @@ server <- function(input, output, session) {
       })
     })
   })
+
 }
 
 # !TODO Save strategy on first load
