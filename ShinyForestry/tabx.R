@@ -196,19 +196,9 @@ ui <- fluidPage(
         # )
         
         div(
-          style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px",
+          style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px;",
           
-          # Left-Aligned Annual/Cumulative Toggle
-          radioGroupButtons(
-            inputId = "view_toggle",
-            choices = c("Annual", "Cumulative"),
-            selected = "Cumulative",
-            status = "primary",
-            justified = TRUE,
-            width = '220px'
-          ),
-          
-          # Right-Aligned Time-Series Toggle Button
+          # Left-Aligned Time-Series Toggle Button
           actionButton(
             inputId = "toggle_plot",
             label = "📈 Show Time-Series",
@@ -220,11 +210,21 @@ ui <- fluidPage(
                 align-items: center; 
                 justify-content: center;
                 margin-top: -17px;"
+          ),
+          
+          # Right-Aligned Annual/Cumulative Toggle
+          radioGroupButtons(
+            inputId = "view_toggle",
+            choices = c("Annual", "Cumulative"),
+            selected = "Cumulative",
+            status = "primary",
+            justified = TRUE,
+            width = '220px'
           )
         ),
         
-        # Time-Series Plot (Initially hidden, shown when toggled)
-        div(id = "time_series_plot", style = "display: none;",
+        # Time-Series Plot (Initially hidden, shown when toggled)... Plotly sometimes has an issue where it's overflowing
+        div(id = "time_series_plot", style = "display: none",
             plotlyOutput("areaPlot", height = "250px")
         )
       )
@@ -242,6 +242,7 @@ server <- function(input, output, session) {
   filtered_data <- reactiveVal(NULL) # data filtered by year
   panel_expanded <- reactiveVal(FALSE)
   output_data <- reactiveVal(NULL)
+
   
   current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
   clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
@@ -261,6 +262,26 @@ server <- function(input, output, session) {
     recreation = NULL,
     year = NULL
   ))
+  
+  # hacky JS to make sure plotly plot doesn't bug out
+  observe({
+    # Trigger plot layout adjustment when the plot is shown
+    shinyjs::runjs("
+    // Listen for visibility change or toggle button click
+    $('#time_series_plot').on('shown.bs.collapse', function() {
+      setTimeout(function() {
+        Plotly.relayout('areaPlot', { width: $('#time_series_plot').width() });
+      }, 100);  // Add small delay to ensure layout changes
+    });
+
+    // Optionally, adjust layout when switching between Annual and Cumulative
+    $('#view_toggle').on('change', function() {
+      setTimeout(function() {
+        Plotly.relayout('areaPlot', { width: $('#time_series_plot').width() });
+      }, 100);
+    });
+  ")
+  })
   
   processed_data <- reactive({
     plot_data <- output_data()  # Get the combined data frame from the reactive expression
@@ -301,20 +322,20 @@ server <- function(input, output, session) {
       geom_line(size = 1, alpha = FILL_OPACITY) +
       geom_point(size = 1.2) +
       scale_color_manual(values = COLOUR_MAPPING) +
-      labs(title = ifelse(input$view_toggle == "Cumulative", 
-                          " ", 
-                          " "), 
+      labs(title = ifelse(input$view_toggle == "Cumulative",
+                          " ",
+                          " "),
            x = "Year",
-           y = ifelse(input$view_toggle == "Cumulative", 
-                      "Cumulative Area Planted", 
+           y = ifelse(input$view_toggle == "Cumulative",
+                      "Cumulative Area Planted",
                       "Total Area Planted"),
            color = "Planting Type") +
       theme_minimal(base_size = 10) +
       theme(legend.position = "none")
-    
+
     ggplotly(p)
   })
-  
+
   
   observeEvent(input$toggle_plot, {
     shinyjs::toggle(id = "time_series_plot", anim = TRUE)
