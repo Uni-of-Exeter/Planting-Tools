@@ -225,7 +225,7 @@ ui <- fluidPage(
         
         # Time-Series Plot (Initially hidden, shown when toggled)... Plotly sometimes has an issue where it's overflowing
         div(id = "time_series_plot", style = "display: none",
-            plotlyOutput("areaPlot", height = "250px")
+            plotlyOutput("areaPlot", height = "300px")
         )
       )
     )
@@ -279,6 +279,16 @@ server <- function(input, output, session) {
       setTimeout(function() {
         Plotly.relayout('areaPlot', { width: $('#time_series_plot').width() });
       }, 100);
+    });
+    
+    // Handle window resizing
+    $(window).resize(function() {
+      setTimeout(function() {
+        // Trigger plot resizing only if the plot is visible
+        if ($('#time_series_plot').is(':visible')) {
+          Plotly.relayout('areaPlot', { width: $('#time_series_plot').width() });
+        }
+      }, 5);  // Add small delay for resize to stabilize
     });
   ")
   })
