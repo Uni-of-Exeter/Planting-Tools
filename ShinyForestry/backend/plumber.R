@@ -14,7 +14,13 @@ normalizePath <- function(path, winslash = "\\") {
 #* @param userid User identifier to store data in folder
 #* @response 200 Success: The file was saved to disk
 #* @response 400 Bad request: The file name is incorrect
+#* @response 401 Unauthorized: User id is not an integer
 function(res, file, userid) {
+  
+  if (isFALSE(is.integer(userid))) {
+    res$status <- 401
+    return("userid is not an integer")
+  }
   
   user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
   elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
@@ -46,7 +52,13 @@ function(res, file, userid) {
 #* @param userid User identifier to store data in folder
 #* @response 200 Success: The file was saved to disk
 #* @response 400 Bad request: The file name is incorrect
+#* @response 401 Unauthorized: User id is not an integer
 function(res, file, userid) {
+  
+  if (isFALSE(is.integer(userid))) {
+    res$status <- 401
+    return("userid is not an integer")
+  }
   
   user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
   elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
@@ -74,7 +86,13 @@ function(res, file, userid) {
 #* @param userid User identifier to store data in folder
 #* @response 200 Success: The file was saved to disk
 #* @response 400 Bad request: The file name is incorrect
+#* @response 401 Unauthorized: User id is not an integer
 function(res, file, userid) {
+  
+  if (isFALSE(is.integer(userid))) {
+    res$status <- 401
+    return("userid is not an integer")
+  }
   
   user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
   elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
@@ -97,12 +115,17 @@ function(res, file, userid) {
 
 #* Generate all files needed for frontend (in CalculatedFiles and ElicitorOutput)
 #* curl -X GET "localhost/calculate_pre_server_block"
-#* @post /upload_decision_units
-#* @param file decision_units.json
+#* @post /pre_calculation_before_server_block
 #* @param userid User identifier to store data in folder
 #* @response 200 Success: The calculations are done
-#* @response 400 Bad request: Some files are missing
+#* @response 400 Bad request
+#* @response 401 Unauthorized: User id is not an integer
 function(res, file, userid) {
+  
+  if (isFALSE(is.integer(userid))) {
+    res$status <- 401
+    return("userid is not an integer")
+  }
   
   user_folder <- normalizePath(file.path("..", paste0("userid_", userid)))
   elicitor_outout_folder <- normalizePath(file.path(user_folder, "ElicitorOutput"))
@@ -119,7 +142,6 @@ function(res, file, userid) {
     if (decisions_units_missing) missing_files <- paste(missing_files, "decision_units.json")
     return(paste("Bad request: Please upload", missing_files))
   }
-  
 
 }
 
