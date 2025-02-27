@@ -312,48 +312,46 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   LinesJulesNoMinus1 <- which(LinesJules == (-1))
   LinesJules[LinesJulesNoMinus1] <- 1
   
-  JulesMean <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[, c("x", "y", "mean337")]
-  JulesSD <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[, c("x", "y", "sd337")]
+  # Jules results for all years from 0 to MAXYEAR
+  JulesMeanYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
+  JulesSDYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
+  JulesMean <- JulesMeanYears[, c("x", "y", "mean337")]
+  JulesSD <- JulesSDYears[, c("x", "y", "sd337")]
   
   SelectedJulesMeanSq <- JulesMean[LinesJules, ]
   SelectedJulesMeanSq[LinesJulesNoMinus1, ] <- 0
   SelectedJulesSDSq <- JulesSD[LinesJules, ]
   SelectedJulesSDSq[LinesJulesNoMinus1, ] <- 0
-  JulesMean<-NULL;JulesSD<-NULL;
-  gc()
+  rm(JulesMean, JulesSD)
   
-  # Jules results for all years from 0 to MAXYEAR
-  JulesMeanYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
-  JulesSDYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
   
   
   SelectedJulesMeanYears<-JulesMeanYears[LinesJules,paste0("mean",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesMeanYears[LinesJulesNoMinus1, ] <- 0
   SelectedJulesSDYears<-JulesSDYears[LinesJules,paste0("sd",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesSDYears[LinesJulesNoMinus1, ] <- 0
-  JulesMeanYears<-0;JulesSDYears<-0;
+  rm(JulesMeanYears, JulesSDYears)
   
   
   
-  
-  
-  JulesMean85 <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[, c("x", "y", "mean337")]
-  JulesSD85 <- arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[, c("x", "y", "sd337")]
-  SelectedJulesMeanSq85 <- JulesMean85[LinesJules, ]
-  SelectedJulesMeanSq85[LinesJulesNoMinus1, ] <- 0
-  SelectedJulesSDSq85 <- JulesSD85[LinesJules, ]
-  SelectedJulesSDSq85[LinesJulesNoMinus1, ] <- 0
-  JulesMean85<-NULL;JulesSD85<-NULL;
-  gc()
   
   
   JulesMeanYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
   JulesSDYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
+  JulesMean85 <- JulesMeanYears85[, c("x", "y", "mean337")]
+  JulesSD85 <- JulesSDYears85[, c("x", "y", "sd337")]
+  SelectedJulesMeanSq85 <- JulesMean85[LinesJules, ]
+  SelectedJulesMeanSq85[LinesJulesNoMinus1, ] <- 0
+  SelectedJulesSDSq85 <- JulesSD85[LinesJules, ]
+  SelectedJulesSDSq85[LinesJulesNoMinus1, ] <- 0
+  rm(JulesMean85, JulesSD85)
+  
+  
   SelectedJulesMeanYears85<-JulesMeanYears85[LinesJules,paste0("mean",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesMeanYears85[LinesJulesNoMinus1, ] <- 0
   SelectedJulesSDYears85<-JulesSDYears85[LinesJules,paste0("sd",12*((MAXYEAR+1)-seq(1,(MAXYEAR+1),1))+1)]
   SelectedJulesSDYears85[LinesJulesNoMinus1, ] <- 0
-  JulesMeanYears85<-NULL;JulesSDYears85<-NULL;
+  rm(JulesMeanYears85, JulesSDYears85)
   gc()
   
   
