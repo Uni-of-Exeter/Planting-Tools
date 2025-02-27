@@ -84,33 +84,36 @@ packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
 packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
-# Install and load packages in DESCRIPTION
-if (Sys.getenv("USERNAME")=="bn267" || Sys.getenv("USERNAME")=="dw356") {
-  library("dgpsi")
-  library("RRembo")
-  for(ll in 1:length(packages)) {
-    library(packages[ll], character.only = TRUE)
-  }
-} else {
-  if (isFALSE(require("remotes"))) {
-    install.packages('remotes', repos = 'https://cran.rstudio.com')
-    library(remotes)
-  }
-  
-  msg <- "Installing all packages ..." 
-  notif(msg)
-  remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com')
-  
-  msg <- paste(msg, "done")
-  notif(msg)
-  
-  msg <- "Loading all packages ..." 
-  notif(msg)
-  
-  sapply(packages, library, character.only = TRUE)
-  
-  msg <- paste(msg, "done")
-  notif(msg)
+# # Install and load packages in DESCRIPTION
+# if (Sys.getenv("USERNAME")=="bn267" || Sys.getenv("USERNAME")=="dw356") {
+#   library("dgpsi")
+#   library("RRembo")
+#   for(ll in 1:length(packages)) {
+#     library(packages[ll], character.only = TRUE)
+#   }
+# } else {
+#   if (isFALSE(require("remotes"))) {
+#     install.packages('remotes', repos = 'https://cran.rstudio.com')
+#     library(remotes)
+#   }
+#   
+#   msg <- "Installing all packages ..." 
+#   notif(msg)
+#   remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com')
+#   
+#   msg <- paste(msg, "done")
+#   notif(msg)
+#   
+#   msg <- "Loading all packages ..." 
+#   notif(msg)
+#   
+#   sapply(packages, library, character.only = TRUE)
+#   
+#   msg <- paste(msg, "done")
+#   notif(msg)
+# }
+for(ll in 1:length(packages)) {
+  library(packages[ll], character.only = TRUE)
 }
 
 if (RUN_BO) {
