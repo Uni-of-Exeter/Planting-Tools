@@ -815,18 +815,18 @@ PrecalcCarbonAllExtentsSDType2Lines<-list()
 
 
 if(#file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))&
-   #file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))&
-   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))&
-   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))&
-   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))&
-   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
+  #file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))&
+  file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))&
+  file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))&
+  file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))&
+  file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
 ){
-#load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
-#load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
-load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
-load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
-load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
-load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
+  #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
+  #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
+  load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
+  load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+  load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
+  load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
 }else{
   #if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))){
   #  file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
@@ -848,71 +848,71 @@ load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDTy
   }
   
   
-
-for (ext in AllExtents)
-{
-  CarbonSelectedYear<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
-  CarbonSelectedYear$geometry<-NULL
-  CarbonSelectedSDYear<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
-  CarbonSelectedSDYear$geometry<-NULL
   
-  CarbonSelectedYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
-  CarbonSelectedYear85$geometry<-NULL
-  CarbonSelectedSDYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
-  CarbonSelectedSDYear85$geometry<-NULL
-  
-  
-  # PrecalcCarbonAllExtents[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-  # PrecalcCarbonAllExtentsSD[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-
-  PrecalcCarbonAllExtentsType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-  PrecalcCarbonAllExtentsSDType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-  
-  PrecalcCarbonAllExtentsType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
-  PrecalcCarbonAllExtentsSDType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
-  
-  # This precalculated table is used once when the map if first displayed. We use 2 identical lines to avoid issues with the
-  # function call that expects a matrix in input.
-  
-  PrecalcCarbonAllExtentsType2Lines[[ext]][1,]<-CarbonSelectedYear85[,"Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
-  PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]<-CarbonSelectedSDYear85[,"Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
-  PrecalcCarbonAllExtentsType2Lines[[ext]][2,]<-PrecalcCarbonAllExtentsType2Lines[[ext]][1,]
-  PrecalcCarbonAllExtentsSDType2Lines[[ext]][2,]<- PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]
-  
-  for(abb in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[1])
+  for (ext in AllExtents)
   {
-    for(bcc in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[2])
+    CarbonSelectedYear<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
+    CarbonSelectedYear$geometry<-NULL
+    CarbonSelectedSDYear<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
+    CarbonSelectedSDYear$geometry<-NULL
+    
+    CarbonSelectedYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
+    CarbonSelectedYear85$geometry<-NULL
+    CarbonSelectedSDYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
+    CarbonSelectedSDYear85$geometry<-NULL
+    
+    
+    # PrecalcCarbonAllExtents[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+    # PrecalcCarbonAllExtentsSD[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+    
+    PrecalcCarbonAllExtentsType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+    PrecalcCarbonAllExtentsSDType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
+    
+    PrecalcCarbonAllExtentsType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
+    PrecalcCarbonAllExtentsSDType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
+    
+    # This precalculated table is used once when the map if first displayed. We use 2 identical lines to avoid issues with the
+    # function call that expects a matrix in input.
+    
+    PrecalcCarbonAllExtentsType2Lines[[ext]][1,]<-CarbonSelectedYear85[,"Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
+    PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]<-CarbonSelectedSDYear85[,"Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
+    PrecalcCarbonAllExtentsType2Lines[[ext]][2,]<-PrecalcCarbonAllExtentsType2Lines[[ext]][1,]
+    PrecalcCarbonAllExtentsSDType2Lines[[ext]][2,]<- PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]
+    
+    for(abb in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[1])
     {
-      
-     # PrecalcCarbonAllExtents[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
-    #  PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
-
-      
-      if(simul636YearType[["TYPE"]][abb,bcc]=="NoPlanting"){
-      PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-0
-      PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-0
-      }else{
+      for(bcc in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[2])
+      {
         
-        if(simul636YearType[["TYPE"]][abb,bcc]=="Conifers"){
-          PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                         simul636YearType$YEAR[abb,bcc])]
-          PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                             simul636YearType$YEAR[abb,bcc])]
+        # PrecalcCarbonAllExtents[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+        #  PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+        
+        
+        if(simul636YearType[["TYPE"]][abb,bcc]=="NoPlanting"){
+          PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-0
+          PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-0
         }else{
-          PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear85[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[abb,bcc])]
-          PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+          
+          if(simul636YearType[["TYPE"]][abb,bcc]=="Conifers"){
+            PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
+                                                                                       simul636YearType$YEAR[abb,bcc])]
+            PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
+                                                                                           simul636YearType$YEAR[abb,bcc])]
+          }else{
+            PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear85[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+            PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+            
+          }
           
         }
-          
-          }
-
-      #cat(paste0(abb,"  ",bcc,"\n"))
+        
+        #cat(paste0(abb,"  ",bcc,"\n"))
+      }
+      
     }
     
+    
   }
-  
-  
-}
   
   #save(PrecalcCarbonAllExtents,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
   #save(PrecalcCarbonAllExtentsSD,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
