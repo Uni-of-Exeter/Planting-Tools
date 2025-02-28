@@ -34,7 +34,7 @@ if (!is.null(sysinf)){
     os <- "linux"
 }
 os <- tolower(os)
-if (os == "windows") {
+if (os == "windows" || isTRUE(requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable())) {
   futureplan <- future::multisession
   
 } else {
