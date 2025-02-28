@@ -1,4 +1,6 @@
 library(plumber)
+library(jsonlite)
+library(future)
 
 # plumb(normalizePath(file.path("backend", "plumber.R"))) |>
 #   pr_run(port = 5762) |> # Specify API port
@@ -92,3 +94,25 @@ function(res, file) {
   res$status <- 200
   return("Success")
 }
+
+#* Code before server block
+#* curl -X PUT
+#* @put /initialization
+#* @response 200 Success: Initialized the app, did pre-processing
+#* @response 403 Forbidden: Missing one or more input files from the elicitor
+function() {
+  new_environment <- new.env()
+  with(new_environment, {
+    b <- 3
+  })
+  return(new_environment)
+}
+
+
+
+
+
+
+
+
+
