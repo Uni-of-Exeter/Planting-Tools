@@ -215,7 +215,7 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
                            list(planting = TRUE, # scenario
                                 tree_specie = "Deciduous",
                                 table = scenario_species_prob_40_unmanaged_deciduous))
-  # Free lots of RAM
+  # Frees RAM
   rm(baseline_species_prob_40_unmanaged_conifers, baseline_species_prob_40_unmanaged_deciduous,
      scenario_species_prob_40_unmanaged_conifers, scenario_species_prob_40_unmanaged_deciduous)
   
