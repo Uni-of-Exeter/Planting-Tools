@@ -9,8 +9,8 @@ normalizePath <- function(path, winslash = "\\") {
 }
 
 #* Receive user shapefile zip
-#* curl -X POST "localhost/upload_shapefile_zip" -H "accept: */*" -H "Content-Type: multipart/form-data" -F "upload=@land_parcels.shp.zip;type=application/x-zip-compressed"
-#* @post /upload_shapefile_zip
+#* curl -X PUT "localhost/upload_shapefile_zip" -H "accept: */*" -H "Content-Type: multipart/form-data" -F "upload=@land_parcels.shp.zip;type=application/x-zip-compressed"
+#* @put /upload_shapefile_zip
 #* @param file Zip shapefile
 #* @param userid User identifier to store data in folder
 #* @response 200 Success: The file was saved to disk
@@ -40,8 +40,8 @@ function(res, file) {
 }
 
 #* Receive user outcomes.json
-#* curl -X POST "localhost/upload_outcomes" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@outcomes.json"
-#* @post /upload_outcomes
+#* curl -X PUT "localhost/upload_outcomes" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@outcomes.json"
+#* @put /upload_outcomes
 #* @param file outcomes.json
 #* @param userid User identifier to store data in folder
 #* @response 200 Success: The file was saved to disk
@@ -67,8 +67,8 @@ function(res, file) {
 }
 
 #* Receive user decision_units.json
-#* curl -X POST "localhost/upload_decision_units" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@decision_units.json"
-#* @post /upload_decision_units
+#* curl -X PUT "localhost/upload_decision_units" -H "accept: */*" -H "Content-Type: application/json" -F "upload=@decision_units.json"
+#* @put /upload_decision_units
 #* @param file decision_units.json
 #* @param userid User identifier to store data in folder
 #* @response 200 Success: The file was saved to disk
