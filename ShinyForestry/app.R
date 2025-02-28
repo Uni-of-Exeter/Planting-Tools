@@ -176,7 +176,10 @@ PROJdir<-substring(PROJdir,1,nchar(PROJdir)-8)
 sf_proj_search_paths(PROJdir)
 }
 
-
+# Loading big files takes up a lot of RAM that cannot be emptied.
+# So instead, loading happens in a new R process we can then shutdown
+library(future)
+plan(futureplan, workers = 2)
 
 # Load files if any are missing
 if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson"))) ||
@@ -188,15 +191,15 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "Parcels.geojson")))
   
   
   
-  SquaresLoad <- sf::st_read(normalizePath(file.path(DataFilesFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))
+  SquaresLoad <- value(future(sf::st_read(normalizePath(file.path(DataFilesFolder, "SEER", "Fishnet_1km_to_SEER_net2km.shp")))))
   Sqconv <- st_transform(SquaresLoad, crs = 4326)
-  CorrespondenceJules <- read.csv(normalizePath(file.path(DataFilesFolder, "CorrespondanceSqToJules.csv")))[, -1]
-  seer2km <- st_read(normalizePath(file.path(DataFilesFolder, "SEER_net2km.shp")))
-  jncc100 <- read.csv(normalizePath(file.path(DataFilesFolder, "beta_JNCC100_interact_quad.csv")))
-  baseline_species_prob_40_unmanaged_conifers <- read.csv(normalizePath(file.path(DataFilesFolder, "baseline_species_prob_40_unmanaged_conifers.csv")), header = FALSE)
-  baseline_species_prob_40_unmanaged_deciduous <- read.csv(normalizePath(file.path(DataFilesFolder, "baseline_species_prob_40_unmanaged_deciduous.csv")), header = FALSE)
-  scenario_species_prob_40_unmanaged_conifers <- read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40_unmanaged_conifers.csv")), header = FALSE)
-  scenario_species_prob_40_unmanaged_deciduous <- read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40_unmanaged_deciduous.csv")), header = FALSE)
+  CorrespondenceJules <- value(future(read.csv(normalizePath(file.path(DataFilesFolder, "CorrespondanceSqToJules.csv")))[, -1]))
+  seer2km <- value(future(st_read(normalizePath(file.path(DataFilesFolder, "SEER_net2km.shp")))))
+  jncc100 <- value(future(read.csv(normalizePath(file.path(DataFilesFolder, "beta_JNCC100_interact_quad.csv")))))
+  baseline_species_prob_40_unmanaged_conifers <- value(future(read.csv(normalizePath(file.path(DataFilesFolder, "baseline_species_prob_40_unmanaged_conifers.csv")), header = FALSE)))
+  baseline_species_prob_40_unmanaged_deciduous <- value(future(read.csv(normalizePath(file.path(DataFilesFolder, "baseline_species_prob_40_unmanaged_deciduous.csv")), header = FALSE)))
+  scenario_species_prob_40_unmanaged_conifers <- value(future(read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40_unmanaged_conifers.csv")), header = FALSE)))
+  scenario_species_prob_40_unmanaged_deciduous <- value(future(read.csv(normalizePath(file.path(DataFilesFolder, "scenario_species_prob_40_unmanaged_deciduous.csv")), header = FALSE)))
   speciesprob_list <- list(list(planting = FALSE, # baseline
                                 tree_specie = "Conifers",
                                 table = baseline_species_prob_40_unmanaged_conifers),
@@ -316,8 +319,9 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   LinesJules[LinesJulesNoMinus1] <- 1
   
   # Jules results for all years from 0 to MAXYEAR
-  JulesMeanYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
-  JulesSDYears<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
+  # Loading feather files takes a lot of RAM permanently. This makes it happen in another process we shut down,
+  JulesMeanYears <- value(future(arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]))
+  JulesSDYears <- value(future(arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp26-06-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]))
   JulesMean <- JulesMeanYears[, c("x", "y", "mean337")]
   JulesSD <- JulesSDYears[, c("x", "y", "sd337")]
   
@@ -339,8 +343,8 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
   
   
   
-  JulesMeanYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]
-  JulesSDYears85<-arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]
+  JulesMeanYears85 <- value(future(arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-mean-monthly.feather")))[,c("x","y",paste0("mean",seq(1,337,by=12)))]))
+  JulesSDYears85 <- value(future(arrow::read_feather(normalizePath(file.path(DataFilesFolder, "JulesApp-rcp85-04-sd-monthly.feather")))[,c("x","y",paste0("sd",seq(1,337,by=12)))]))
   JulesMean85 <- JulesMeanYears85[, c("x", "y", "mean337")]
   JulesSD85 <- JulesSDYears85[, c("x", "y", "sd337")]
   SelectedJulesMeanSq85 <- JulesMean85[LinesJules, ]
@@ -581,9 +585,11 @@ if (!file.exists(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geo
 }
 
 notif(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))))
-FullTable <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
-FullTableNotAvail <- sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
+FullTable <- value(future(sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))))
+FullTableNotAvail <- value(future(sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))))
 notif(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
+
+future:::ClusterRegistry("stop")
 
 STDMEAN <- 0.05
 STDSTD <- 0.01
@@ -667,6 +673,7 @@ simul636YearType <- local({
 })
 if (isFALSE(RUN_BO)) {
   plan(sequential)
+  future:::ClusterRegistry("stop")
 }
 handlers(
   c(handler_shiny(),
