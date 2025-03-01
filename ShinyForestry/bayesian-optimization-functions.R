@@ -1825,7 +1825,7 @@ notif <- function(msg,
                   # Useful to print data.frames correctly on ntfy
                   rbind = FALSE, pad_character = "_",
                   # Log to a unique file per Shiny session (`server(...)` instance)
-                  file = TRUE, file_suffix = SESSION_FILE_SUFFIX,
+                  file = FALSE, file_suffix = SESSION_FILE_SUFFIX,
                   # Print on console with message function
                   message_arg = TRUE,
                   # Default logging level (debug, info, warning, error, none)
