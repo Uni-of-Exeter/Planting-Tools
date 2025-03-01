@@ -1,4 +1,5 @@
-*.Rproj
+Planting-Tools.Rproj
+.Rproj.user
 .Rhistory
 *.RData
 .Ruserdata
@@ -30,4 +31,3 @@ ShinyForestry/DownScalingImages/
 /ShinyForestry/CalculatedFiles
 /ShinyForestry/ElicitorOutput/old*
 /ShinyForestry/ElicitorOutput/saved new ex
-.Rproj.user
