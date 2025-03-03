@@ -3,24 +3,22 @@ Planting-Tools.Rproj
 .Rhistory
 *.RData
 .Ruserdata
-baseline_species_prob_40*
-scenario_species_prob_40*
-climate_cells.csv
+**/baseline_species_prob_40*
+**/scenario_species_prob_40*
+**/climate_cells.csv
 ShinyForestry/appMod.r
 ShinyForestry/appMod2_after_fusion.r
 *log*
 *lock*
 *task_id*
 *.feather
-SEER/
-ShinyForestry/ElicitorOutput/FullTable*
-ShinyForestry/ElicitorOutput/land_parcels.shp/
-ShinyForestry/ElicitorOutput/Parcels.geojson
-ShinyForestry/JulesOP/Fishnet_1km_to_SEER_net2km*
-ShinyForestry/JulesOP/beta*
-ShinyForestry/JulesOP/Correspondance*
-ShinyForestry/CalculatedFiles/
-ShinyForestry/DownScalingImages/
+**/SEER/
+**/ElicitorOutput/FullTable*
+**/ElicitorOutput/land_parcels.shp/
+**/ElicitorOutput/Parcels.geojson
+**/JulesOP
+**/CalculatedFiles/
+**/DownScalingImages/
 *.gif
 *.mov
 *.avi
@@ -28,6 +26,6 @@ ShinyForestry/DownScalingImages/
 *.mp3
 *.mp4
 *.mkv
-/ShinyForestry/CalculatedFiles
-/ShinyForestry/ElicitorOutput/old*
-/ShinyForestry/ElicitorOutput/saved new ex
+**/CalculatedFiles
+**/ElicitorOutput/old*
+**/ElicitorOutput/saved new ex

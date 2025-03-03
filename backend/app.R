@@ -31,349 +31,59 @@ sapply(filenames, function(filename) {
 library(tools)
 
 # more --> less: debug / info / warning / error / none
-LOG_LEVEL <- "info"
-if (file.exists(normalizePath(file.path("bayesian-optimization-functions.R"), mustWork = FALSE))) {
-  source(normalizePath(file.path("bayesian-optimization-functions.R")), local = TRUE)
-} else {
-  source(normalizePath(file.path("backend", "bayesian-optimization-functions.R")), local = TRUE)
-}
+LOG_LEVEL <- "debug"
+source(normalizePath(file.path("bayesian-optimization-functions.R")), local = TRUE)
 
-library(curl)
 # If the files exist and have correct hashes, do not upload them.
-for (filename in filenames) {
+sapply(filenames, function(filename) {
   filepath <- file.path(elicitor_folder, filename)
-  md5 <- tools::md5sum(filepath)
+  md5 <- tools::md5sum(file)
   
-  notif(paste("Checking if", filename, "exists in the backend and is the same one as on this computer"), log_level = "debug")
-  response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/exists?filename=", filename, "&md5sum=", md5))
+  notif(paste("Checking if", filename, "exists in the backend and is the same one as on this computer"))
+  response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/exists?filename=", filename, "&md5sum=", md5),
+                                handle = handle_PUT)
   
   # Get the response information
   body <- rjson::fromJSON(rawToChar(response$content))
   status <- response$status_code
-  if (status %in% c(400, 404)) {
+  if (status %in% c(400,404)) {
     
-    # if (grepl(".zip$", filename)) {
+    if (grepl(".zip", filename)) {
       result <- system(paste0('curl ',
-                              '-sSL ',
                               '-X PUT ',
-                              '-H "accept: */*"',
                               '-H "Content-Type: multipart/form-data" ', 
-                              # '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
-                              '-F "file_to_upload=@', filepath, ';type=application/octet-stream" ',
+                              '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
                               BACKEND_HOST, '/upload'),
                        intern = TRUE) |>
         rjson::fromJSON()
-    # } else if (grepl(".json$", filename)) {
-    #   result <- system(paste0('curl ',
-    #                           '-X PUT ',
-    #                           '-H "accept: */*" ', 
-    #                           '-H "Content-Type: multipart/form-data" ', 
-    #                           # '-F "file_to_upload=@', filepath, ';type=application/json" ',
-    #                           BACKEND_HOST, '/upload'),
-    #                    intern = TRUE) |>
-    #     rjson::fromJSON()
-    # }
+    } else if (grepl(".json")) {
+      result <- system(paste0('curl ',
+                              '-X PUT ',
+                              '-H "Content-Type: application/json" ', 
+                              '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
+                              BACKEND_HOST, '/upload'),
+                       intern = TRUE) |>
+        rjson::fromJSON()
+    }
     
-    if (result == "Success") {
-      msg <- paste0("Upload of ", filename, ": ", result)
-      notif(msg, log_level = "debug")
-    } else if (names(result) == "error") {
+    if (names(result) == "error") {
       msg <- paste0("Error during upload of ", filename, ": ", result$error)
       notif(msg, log_level = "error")
       stop(msg)
+    } else if (result == "Success") {
+      msg <- paste0("Upload of ", filename, ": ", result)
+      notif(msg, log_level = "info")
     }
-  } else if (status == 200) {
-    notif(paste(filename, "is valid"), log_level = "debug")
   }
-}
+})
 
-# Initialize the environment
-handle_PUT <- new_handle()
-handle_setopt(handle_PUT, customrequest = "PUT")
-msg <- "/initializing the backend ..."
-notif(msg)
-response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/initialize?LOG_LEVEL=", LOG_LEVEL),
-                              handle = handle_PUT)
-notif(paste(msg, "done"))
-if (response$status_code != 200) {
-  msg <- paste("Error initializing the backend, response object=", toString(response))
-  notif(msg, log_level = "error")
-  stop(msg)
-}
 
-# Save the RDS response to file, then read it
-msg <- "Reading the environment from the backend ..."
-notif(msg)
-
-temp_file <- tempfile()
-writeBin(response$content, temp_file)
-env <- readRDS(temp_file)
-file.remove(temp_file)
-
-# Merge the backend environment into the global environment
-list2env(as.list(env), envir = .GlobalEnv)
-
-msg <- paste(msg, "done")
-notif(msg)
+# Merge the new environment into the global environment
+list2env(as.list(new_env), envir = .GlobalEnv)
 
 for(ll in 1:length(packages)) {
   library(packages[ll], character.only = TRUE)
 }
-
-
-ui <- fluidPage(useShinyjs(), chooseSliderSkin("Flat",color =rgb(0.25, 0.6, 1.0)),
-                tags$style(".running .status-icon { animation: spin 1s linear infinite; }
-               .running { background-color: blue; display: inline-block; padding: 10px; border-radius: 50%; }
-               .finished { background-color: green; display: inline-block; padding: 10px; border-radius: 50%; }
-               .status-icon { display: inline-block; }
-               @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }"),
-                div(id = "task_status", class = "finished", "🔄"), # Status indicator for the task
-                tabsetPanel(id = "tabs",
-                            tabPanel("Maps", fluidPage(
-                              tags$head(
-                                tags$style(HTML("#PrefText {background-color: white;padding: 0px;border: 2px solid white;font-size: 1em; font-weight: bold; margin-bottom: 0;}"))
-                              ),
-                              fluidRow(
-                                column(9,
-                                       selectInput("inSelect", "area", sort(unique(c(FullTable$extent, FullTableNotAvail$extent))), 
-                                                   FullTable$extent[1]),
-                                       jqui_resizable(div(
-                                         style = "width: 80%; height: 400px;",
-                                         leafletOutput("map", width = "100%", height = "100%"),
-                                         sliderInput("YearSelect","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
-                                                     0+STARTYEAR,step=1,width = "100%",sep = "")
-                                         
-                                       )
-                                       )
-                                ),
-                                column(3,
-                                       # verticalLayout(sliderInput("SliderMain", "Tree Carbon Stored (tonnes of CO2):", min = 0, max = 870, value = 800),
-                                       #                sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25, step = 0.01),
-                                       #                sliderInput("AreaSlider", "Total Area Planted (km^2):", min = 0, max = 25, value = 15),
-                                       #                sliderInput("VisitsSlider", "Average Number of Visitors per cell:", min = 0, max = 750, value = 400))
-                                       do.call("verticalLayout",
-                                               verticalLayout_params)
-                                ))
-                            )
-                            ),
-                            tabPanel("Preferences", id = "Preferences",
-                                     fluidPage(
-                                       shinyjs::hidden(
-                                         fluidRow(12, checkboxInput("Trigger", "", value = FALSE, width = NULL))
-                                       ),
-                                       conditionalPanel(
-                                         condition = "input.Trigger == true",
-                                         verticalLayout(
-                                           verbatimTextOutput("PrefText"),
-                                           sliderInput("YearPref","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = ""),
-                                           fluidRow(
-                                             column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage")), 
-                                                                      verbatimTextOutput("PrefTextChoiceA"),
-                                                                      actionButton("choose1", "Choose"))
-                                             ),
-                                             column(6, verticalLayout(jqui_resizable(leafletOutput("ClusterPage2")), 
-                                                                      verbatimTextOutput("PrefTextChoiceB"),
-                                                                      actionButton("choose2", "Choose"))
-                                             )
-                                           ))),
-                                       conditionalPanel(
-                                         condition = "input.Trigger == false", fluidRow(column(12, jqui_resizable(plotOutput("plotOP1"))))
-                                       )
-                                     ))
-                            ,
-                            tabPanel("Alternative approaches", id = "Alt",
-                                     
-                                     
-                                     
-                                     jqui_resizable(
-                                       div(
-                                         id = "AltContainer",
-                                         style = "display: grid; grid-template-columns: 3fr 1fr; grid-template-rows: auto auto 1fr; height: 100%; 
-                                                width: 100%; overflow: hidden;",
-                                         div(
-                                           id = "SliderYearAlt",
-                                           style = "width: 100%; padding: 10px 10px; grid-column: 1 / span 2;",  # Make the slider span both columns
-                                           sliderInput("YearAlt","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,0+STARTYEAR,step=1,width = "100%",sep = "")
-                                         ),
-                                         div(
-                                           id = "SliderTextConditional",
-                                           style = "width: 100%; padding: 0px; grid-column: 1 / span 2;",  # Make the text output span both columns
-                                           if (SHOW_TITLES_ON_CLUSTERING_PAGE) {column(10,verbatimTextOutput("ZeroText"),column(2,))}
-                                         ),
-                                         div(
-                                           style = "display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr  auto 1fr; gap: 5px; 
-                                                  grid-column: 1; grid-row: 3; height: 100%;",
-                                           div(
-                                             style = "grid-row: 1; grid-column: 1; width: 100%;",
-                                             if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FirstMapTxt")}
-                                           ),
-                                           div(
-                                             style = "grid-row: 2; grid-column: 1; width: 100%; height: 100%;",
-                                             leafletOutput("map2", height = 250, width = "100%")
-                                           ),
-                                           div(
-                                             style = "grid-row: 1; grid-column: 2; width: 100%;",
-                                             if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("SecondMapTxt")}
-                                           ),
-                                           div(
-                                             style = "grid-row: 2; grid-column: 2; width: 100%; height: 100%;",
-                                             leafletOutput("map3", height = 250, width = "100%")
-                                           ),
-                                           div(
-                                             style = "grid-row: 3; grid-column: 1; width: 100%;",
-                                             if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("ThirdMapTxt")}
-                                           ),
-                                           div(
-                                             style = "grid-row: 4; grid-column: 1; width: 100%; height: 100%;",
-                                             leafletOutput("map4", height = 250, width = "100%")
-                                           ),
-                                           div(
-                                             style = "grid-row: 3; grid-column: 2; width: 100%;",
-                                             if (SHOW_TITLES_ON_CLUSTERING_PAGE) {verbatimTextOutput("FourthMapTxt")}
-                                           ),
-                                           div(
-                                             style = "grid-row: 4; grid-column: 2; width: 100%; height: 100%;",
-                                             leafletOutput("map5", height = 250, width = "100%")
-                                           )
-                                         ),
-                                         div(
-                                           id = "RightCol",
-                                           style = "display: flex; flex-direction: column; padding: 0px 10px 0px 10px; background: white; 
-                                                  grid-column: 2; grid-row: 3; height: 100%;",
-                                           div(
-                                             style = "margin-bottom: 10px; width: 100%;margin-top: 2px",
-                                             verbatimTextOutput("TargetText")
-                                           ),
-                                           div(
-                                             style = "margin-bottom: 10px; text-align: center; width: 100%;",
-                                             actionButton("random", "Randomize!")
-                                           ),
-                                           div(
-                                             id = "UniqueLegend",
-                                             style = "padding: 20px; border: 1px solid grey; border-radius: 2px; margin-top: 0; width: 100%;background-color: rgba(210,210,210,0.2);",
-                                             tags$div(style = "display: flex; flex-direction: column; gap: 0px;",
-                                                      tags$div(
-                                                        style = "font-weight: bold; margin-bottom: 0px;",
-                                                        "Planting type"
-                                                      ),
-                                                      tags$div(style = "display: flex; align-items: center; gap: 10px;",
-                                                               tags$div(style = paste0("width: 20px; height: 20px; background-color: 
-                                                                               rgba(17, 119, 51," ,trunc(255*POLYGON_OPACITY),")
-                                                                               ;")),
-                                                               "Conifer"
-                                                      ),
-                                                      tags$div(style = "display: flex; align-items: center; gap: 10px;",
-                                                               tags$div(style = paste0("width: 20px; height: 20px; background-color: 
-                                                                               rgba(68,170,152," ,trunc(255*POLYGON_OPACITY),")
-                                                                               ;")),
-                                                               "Deciduous"
-                                                      ),
-                                                      tags$div(style = "display: flex; align-items: center; gap: 10px;",
-                                                               tags$div(style = paste0("width: 20px; height: 20px; background-color: 
-                                                                               rgba(128,128,128," ,min(trunc(1.5*255*NOTAVAIL_OPACITY),255),")
-                                                                               ;")),
-                                                               "Not available"
-                                                      ),
-                                                      tags$div(style = "display: flex; align-items: center; gap: 10px;",
-                                                               tags$div(style = paste0("width: 20px; height: 20px; background-color: 
-                                                                               rgba(255,0,0," ,trunc(255*POLYGON_OPACITY),")
-                                                                               ;")),
-                                                               "Blocked"
-                                                      )
-                                                      
-                                             )
-                                           )
-                                         )
-                                       )
-                                     )
-                                     
-                            ),
-                            
-                            if (ANALYSISMODE){tabPanel("Clustering analysis", jqui_resizable(plotOutput("Analysis")),jqui_resizable(plotOutput("Analysis2")))},
-                            tabPanel("Exploration",
-                                     fluidPage(
-                                       
-                                       jqui_resizable(
-                                         div(id = "Full-elements-container",
-                                             style = "display: flex; flex-direction: column; height: 100%; width: 100%; 
-                                                    overflow: hidden;",
-                                             div(
-                                               id = "sliderYearExplorationClusterTop",
-                                               style = "flex: 1; display: flex;align-items: center; 
-                                                                justify-content: center;",
-                                               sliderInput("YearSelectClusterExplorationSlider","Planting year",0+STARTYEAR,MAXYEAR+STARTYEAR,
-                                                           0+STARTYEAR,step=1,width = "100%",sep = "")
-                                             ),
-                                             div(
-                                               id = "MultipleElements",
-                                               style = "flex: 3;display: flex;flex-direction: row;height: 100%;",
-                                               div(
-                                                 id = "Map6_container",
-                                                 style = "flex: 3;height: 100%;padding-right: 10px",
-                                                 leafletOutput("map6", width = "100%",height = "100%")
-                                               ),
-                                               div(id = "column_container",
-                                                   style = "flex: 1;height: 100%;display: flex;flex-direction: column; 
-                                                                      justify-content: flex-start;",
-                                                   div(
-                                                     style = "display: flex; align-items: center; margin-bottom: 20px;
-                                                                    width: 100%;",
-                                                     actionButton("Carbon_plus", "+", style = "width: 40px;"),
-                                                     actionButton("Carbon_minus", "-", style = "width: 40px;"),
-                                                     tags$div("Carbon", style = "margin-right: 20px;")
-                                                   ),
-                                                   tagList(
-                                                     lapply(SPECIES, function(nm) {
-                                                       div(
-                                                         style = "display: flex; align-items: center; margin-bottom: 20px; 
-                                                                      width: 100%;",
-                                                         actionButton(paste0(nm, "_plus"), "+", style = "width: 40px;"),
-                                                         actionButton(paste0(nm, "_minus"), "-", style = "width: 40px;"),
-                                                         tags$div(nm, style = "margin-right: 20px;")
-                                                       )
-                                                     })
-                                                   ),
-                                                   div(
-                                                     style = "display: flex; align-items: center; margin-bottom: 20px;
-                                                                  width: 100%;",
-                                                     actionButton("Area_plus", "+", style = "width: 40px;"),
-                                                     actionButton("Area_minus", "-", style = "width: 40px;"),
-                                                     tags$div("Area")
-                                                   ),
-                                                   
-                                                   div(
-                                                     style = "display: flex; align-items: center; margin-bottom: 20px;
-                                                                  width: 100%;",
-                                                     actionButton("Visits_plus", "+", style = "width: 40px;"),
-                                                     actionButton("Visits_minus", "-", style = "width: 40px;"),
-                                                     tags$div("Visits")
-                                                   ),
-                                                   div(
-                                                     #style = "margin-bottom: 0px;",
-                                                     sliderInput("Direction_x",inputId="slider_x",min=0,max=100,step=0.01,value=10,width = "100%")
-                                                   ),
-                                                   div(
-                                                     #style = "margin-bottom: 20px;",
-                                                     sliderInput("Direction_y",inputId="slider_y",min=0,max=100,step=0.01,value=10,width = "100%")
-                                                   )
-                                               )
-                                             )
-                                         ),
-                                         options = list(minWidth = 600, minHeight = 400)
-                                       )
-                                     ),
-                                     plotOutput("Chart1"),
-                            ),
-                            
-                            tabPanel("Downscaling",id="DownScale",fluidPage(fluidRow(
-                              column(6,imageOutput("DownScalingImage")),
-                              column(6,imageOutput("DownScalingImage2")),
-                              
-                            ))
-                            )
-                            #plotOutput("DownscalingPlots")),
-                            
-                ))
 
 
 server <- function(input, output, session,
