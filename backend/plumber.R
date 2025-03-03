@@ -6,78 +6,30 @@ normalizePath <- function(path, winslash = "\\") {
   base::normalizePath(path, winslash = winslash, mustWork = FALSE)
 }
 
-#* Receive user shapefile zip
-#* curl -X PUT -H "Content-Type: multipart/form-data" -F "upload=@land_parcels.shp.zip;type=application/x-zip-compressed" localhost/upload_shapefile_zip
-#* @put /upload_shapefile_zip
-#* @param file Zip shapefile
-#* @response 200 Success: The file was saved to disk
-#* @response 400 Bad request: The file name is incorrect
-function(res, file) {
-  
-  elicitor_outout_folder <- normalizePath(file.path("ElicitorOutput"))
-  dir.create(elicitor_outout_folder, recursive = TRUE)
-  
-  # Get zip file from binary content
-  filename <- names(file)
-  if (filename != "land_parcels.shp.zip") {
-    res$status <- 400
-    res$body <- jsonlite::toJSON(list(
-      status = 403, # Repeated per the blog post
-      message = "An error message"
-    ))
-    return(paste("Bad request: The file name is incorrect, it should be land_parcels.shp.zip and you sent", filename))
-  }
-  file_path <- normalizePath(file.path(elicitor_outout_folder, filename))
-  file.remove(file_path)
-  content <- file[[1]]
-  writeBin(content, file_path)
-  
-  res$status <- 200
-  return("Success")
-}
 
-#* Receive user outcomes.json
-#* curl -X PUT -H "Content-Type: application/json" -F "upload=@outcomes.json" localhost/upload_outcomes
-#* @put /upload_outcomes
-#* @param file outcomes.json
+# https://github.com/rstudio/plumber/issues/579#issuecomment-702432276
+#* Receive user Elicitor files
+#* curl -X PUT -H "Content-Type: multipart/form-data" -F "file_to_upload=@land_parcels.shp.zip;type=application/x-zip-compressed" localhost:<port>/upload
+#* curl -X PUT -H "Content-Type: application/json" -F "file_to_upload=@decision_units.json" localhost:<port>/upload
+#* curl -X PUT -H "Content-Type: application/json" -F "file_to_upload=@outcomes.json" localhost:<port>/upload
+#* curl -X PUT -H "Content-Type: application/json" --upload-file @outcomes.json" localhost:<port>/upload
+#* @put /upload
+#* @param file_to_upload:[file] File to upload
 #* @response 200 Success: The file was saved to disk
 #* @response 400 Bad request: The file name is incorrect
-function(res, file) {
+function(res, file_to_upload) {
+  
+  file <- file_to_upload
+  acceptable_file_names <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
   
   elicitor_outout_folder <- normalizePath(file.path("ElicitorOutput"))
   dir.create(elicitor_outout_folder, recursive = TRUE)
   
   # Get zip file from binary content
   filename <- names(file)
-  if (filename != "land_parcels.shp.zip") {
+  if (isFALSE(filename %in% acceptable_file_names)) {
     res$status <- 400
-    return(paste("Bad request: The file name is incorrect, it should be outcomes.json and you sent", filename))
-  }
-  file_path <- normalizePath(file.path(elicitor_outout_folder, filename))
-  file.remove(file_path)
-  content <- file[[1]]
-  writeBin(content, file_path)
-  
-  res$status <- 200
-  return("Success")
-}
-
-#* Receive user decision_units.json
-#* curl -X PUT -H "Content-Type: application/json" -F "upload=@decision_units.json" localhost/upload_decision_units
-#* @put /upload_decision_units
-#* @param file decision_units.json
-#* @response 200 Success: The file was saved to disk
-#* @response 400 Bad request: The file name is incorrect
-function(res, file) {
-  
-  elicitor_outout_folder <- normalizePath(file.path("ElicitorOutput"))
-  dir.create(elicitor_outout_folder, recursive = TRUE)
-  
-  # Get zip file from binary content
-  filename <- names(file)
-  if (filename != "land_parcels.shp.zip") {
-    res$status <- 400
-    return(paste("Bad request: The file name is incorrect, it should be decision_units.json and you sent", filename))
+    return(paste("Bad request: The file name is incorrect, it should be one of", acceptable_file_names, "and you sent", filename))
   }
   file_path <- normalizePath(file.path(elicitor_outout_folder, filename))
   file.remove(file_path)
@@ -89,7 +41,7 @@ function(res, file) {
 }
 
 #* Check if user input file exists and matches the user's file
-#* curl -X GET localhost/exists?filename=land_parcels.shp.zip&md5sum=ekglnswl
+#* curl -X GET localhost:<port>/exists?filename=<filename>&md5sum=<md5sum>
 #* @get /exists
 #* @param filename Name of user input file
 #* @param md5sum md5 value of the file
@@ -120,7 +72,7 @@ function(res, filename, md5sum) {
 }
 
 #* Code before server block. Returns an environment
-#* curl -X PUT -H "Accept: text/plain" localhost/initialization
+#* curl -X PUT -H "Accept: text/plain" localhost:<port>/initialization
 #* @put /initialization
 #* @response 200 Success: Initialized the app, did pre-processing
 #* @response 403 Forbidden: Missing one or more input files from the elicitor

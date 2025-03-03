@@ -11,47 +11,71 @@ options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 RNGversion("4.0.0")
 set.seed(1)
 
-BACKEND_HOST <- "localhost:40000"
+BACKEND_HOST <- "http://localhost:40000"
 
 if (file.exists("ShinyForestry")) {
   elicitor_folder <- normalizePath(file.path("ShinyForestry", "ElicitorOutput"))
 } else {
   elicitor_folder <- normalizePath(file.path("ElicitorOutput"))
 }
-land_parcels_zip <- file.path(elicitor_folder, "land_parcels.shp.zip")
-decision_units <- file.path(elicitor_folder, "decision_units.json")
-outcomes <- file.path(elicitor_folder, "outcomes.json")
 
-if (isFALSE(file.exists(land_parcels_zip))) {
-  stop(land_parcels_zip, "does not exist")
-}
-if (isFALSE(file.exists(decision_units))) {
-  stop(decision_units, "does not exist")
-}
-if (isFALSE(file.exists(outcomes))) {
-  stop(outcomes, "does not exist")
-}
+# If a file does not exist, stop everything
+filenames <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
+sapply(filenames, function(filename) {
+  filepath <- file.path(elicitor_folder, filename)
+  if (isFALSE(file.exists(filepath))) {
+    stop(filename, "does not exist")
+  }
+}) |> invisible()
+
 library(tools)
-library(curl)
 
-handle_GET <- new_handle()
-handle_setopt(handle_GET, customrequest = "GET")
+# more --> less: debug / info / warning / error / none
+LOG_LEVEL <- "debug"
+source(normalizePath(file.path("bayesian-optimization-functions.R")), local = TRUE)
+
 # If the files exist and have correct hashes, do not upload them.
-file <- land_parcels_zip
-md5 <- tools::md5sum(file)
-handle_GET <- new_handle()
-handle_setopt(handle, customrequest = "GET")
-
-response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/exists?filename=land_parcels.shp.zip&md5sum=", md5),
-                              handle = handle_PUT)
-# Get the response information
-body <- rjson::fromJSON(rawToChar(response$content))
-status <- response$status_code
-if (status %in% c(400,404)) {
-  curl_upload(file = file,
-              url = paste0(BACKEND_HOST, "/upload_shapefile_zip"),
-              customrequest = "PUT")
-}
+sapply(filenames, function(filename) {
+  filepath <- file.path(elicitor_folder, filename)
+  md5 <- tools::md5sum(file)
+  
+  notif(paste("Checking if", filename, "exists in the backend and is the same one as on this computer"))
+  response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/exists?filename=", filename, "&md5sum=", md5),
+                                handle = handle_PUT)
+  
+  # Get the response information
+  body <- rjson::fromJSON(rawToChar(response$content))
+  status <- response$status_code
+  if (status %in% c(400,404)) {
+    
+    if (grepl(".zip", filename)) {
+      result <- system(paste0('curl ',
+                              '-X PUT ',
+                              '-H "Content-Type: multipart/form-data" ', 
+                              '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
+                              BACKEND_HOST, '/upload'),
+                       intern = TRUE) |>
+        rjson::fromJSON()
+    } else if (grepl(".json")) {
+      result <- system(paste0('curl ',
+                              '-X PUT ',
+                              '-H "Content-Type: application/json" ', 
+                              '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
+                              BACKEND_HOST, '/upload'),
+                       intern = TRUE) |>
+        rjson::fromJSON()
+    }
+    
+    if (names(result) == "error") {
+      msg <- paste0("Error during upload of ", filename, ": ", result$error)
+      notif(msg, log_level = "error")
+      stop(msg)
+    } else if (result == "Success") {
+      msg <- paste0("Upload of ", filename, ": ", result)
+      notif(msg, log_level = "info")
+    }
+  }
+})
 
 
 # Merge the new environment into the global environment
