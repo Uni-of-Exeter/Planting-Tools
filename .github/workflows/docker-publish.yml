@@ -123,5 +123,5 @@ jobs:
           pull: true
           push: true
           tags: |
-            Uni-of-Exeter/Planting-Tools:planting-tools-backend-latest
+            uni-of-exeter/planting-tools:backend-latest
           labels: ${{ steps.meta.outputs.labels }}
