@@ -1,6 +1,5 @@
 FROM r-base:latest
 
-COPY . /backend_code
 WORKDIR /backend_code
 
 LABEL org.opencontainers.image.source=https://github.com/Uni-of-Exeter/Planting-Tools
@@ -54,6 +53,7 @@ RUN apt update && \
 # RUN Rscript -e "install.packages('remotes', lib = normalizePath(Sys.getenv('R_LIBS_USER')), repos = 'https://cran.rstudio.com/')"
 
 # Packages update once in a while. We (arbitrarily) update them by invalidating the cache monthly
+COPY DESCRIPTION DESCRIPTION
 RUN date +%Y-%m && \
     Rscript -e "install.packages('remotes')" && \
     Rscript -e "remotes::install_deps(repos = 'https://cran.rstudio.com')"
@@ -72,5 +72,10 @@ RUN echo "options(reticulate.conda_binary = '${CONDA_PATH}/bin/conda')" | tee -a
 # Initialize dgpsi, and say yes to all prompts
 RUN Rscript -e "readline<-function(prompt) {return('Y')};dgpsi::init_py()"
 
-# Copy the backend and run plumber
-CMD Rscript -e /backend_code/backend/trigger_plumber_for_dev.R
+# Run plumber
+CMD if [ -f /backend_code/backend/trigger_plumber_for_dev.R ]; then \
+      Rscript -e /backend_code/backend/trigger_plumber_for_dev.R; \
+    else \
+      echo "/backend_code/backend/trigger_plumber_for_dev.R not found, doing nothing"; \
+      tail -f /dev/null \
+    fi
