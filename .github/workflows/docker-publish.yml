@@ -71,7 +71,8 @@ jobs:
     
   backend:
     # needs: official-shiny
-    runs-on: ubuntu-24.04-arm
+    # runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -91,9 +92,9 @@ jobs:
       - name: Set dgpsi folder name
         run: echo "DGPSI_FOLDER_NAME=$(curl -sSL https://raw.githubusercontent.com/mingdeyu/dgpsi-R/refs/heads/master/R/initi_py.R | grep "env_name *<-" | grep --invert-match "^\s*#" | grep --only-matching --perl-regexp 'dgp.*\d')" >> $GITHUB_ENV
       
-      # # https://github.com/docker/setup-qemu-action
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
+      # https://github.com/docker/setup-qemu-action
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
@@ -116,6 +117,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          platform: linux/arm64
           build-args: DGPSI_FOLDER_NAME=${{ env.DGPSI_FOLDER_NAME }}
           pull: true
           push: true
