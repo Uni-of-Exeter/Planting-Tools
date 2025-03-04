@@ -22,6 +22,7 @@ source("ShinyForestry/config.R")
 
 FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ShinyForestry/ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
 
+
 fetch_api_data <- function() {
   
   url <- paste0("http://127.0.0.1:8001/generate_parcels")
@@ -40,9 +41,26 @@ fetch_api_data <- function() {
     stop(paste("Request failed with status:", httr::status_code(response)))
     }
 }
+
+# Function to fetch slider data
+fetch_slider_values <- function() {
+  url <- "http://127.0.0.1:8001/slider_values"
+  response <- httr::GET(url)
+  
+  if (httr::status_code(response) == 200) {
+    content_raw <- httr::content(response, "text", encoding = "UTF-8")
+    slider_data <- jsonlite::fromJSON(content_raw)
+    
+    return(slider_data)
+  } else {
+    stop(paste("Request failed with status:", httr::status_code(response)))
+  }
+}
     
 # Define UI
 ui <- fluidPage(
+  # ui <- navbarPage(
+  title = "ADD-TREES",
   useShinyjs(), # Enable JavaScript functionalities
   theme = bs_theme(bootswatch = "lumen"), # Optional theming
   tags$style(HTML("
@@ -98,13 +116,14 @@ ui <- fluidPage(
       div(
         style = "padding: 20px; background-color: #f0f0f0; border-radius: 8px;
                  box-shadow: 0px 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;",
-        h3(HTML("<strong>ADD-TREES</strong>: ")),
+        h3(HTML("<strong>ADD-TREES</strong>")),
         p("Use the checkboxes and sliders to enable/disable targets and adjust their values.")
       ),
       accordion(
+        id = "main_accordion",
         accordion_panel(
           "Targets",
-          multiple=FALSE,
+          id = "targets_accordion",
           tagList(
             fluidRow(
               column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
@@ -133,7 +152,7 @@ ui <- fluidPage(
             fluidRow(
               column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
               column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", min = 0, max = 20, value = RECREATION_DEFAULT))
-            ),
+            )
           ),
           actionButton("submit", "Submit"),
           actionButton("reset", "Reset"),
@@ -151,10 +170,20 @@ ui <- fluidPage(
         #     p("Empty.")
         #   )
         # ),
+        # accordion(
+        #   accordion_panel(
+        #     "Radar Chart",
+        #     plotlyOutput("radarPlot")
+        #   )
+        # ),
         accordion_panel(
           "Saved Strategies",
           uiOutput("saved_strategies")
         )
+        # accordion_panel(
+        #   "Dynamic Sliders",
+        #   uiOutput("dynamic_sliders")  # Placeholder for dynamic sliders
+        # )
       )
     ),
     mainPanel(
@@ -211,15 +240,27 @@ ui <- fluidPage(
             inputId = "toggle_plot",
             label = "Show Time-Series",
             style = "
-                width: 200px; 
-                height: 40px; 
-                line-height: 20px; 
-                display: flex; 
-                align-items: center; 
+                width: 180px;
+                height: 40px;
+                line-height: 20px;
+                display: flex;
+                align-items: center;
                 justify-content: center;
                 margin-top: -17px;"
           ),
           
+          # actionButton(
+          #   inputId = "toggle_radar_plot",
+          #   label = "Show Outcomes",
+          #   style = "
+          #       width: 160px; 
+          #       height: 40px; 
+          #       line-height: 20px; 
+          #       display: flex; 
+          #       align-items: center; 
+          #       justify-content: center;
+          #       margin-top: -17px;"
+          # ),
           # Right-Aligned Annual/Cumulative Toggle
           radioGroupButtons(
             inputId = "view_toggle",
@@ -234,6 +275,9 @@ ui <- fluidPage(
         # Time-Series Plot (Initially hidden, shown when toggled)... Plotly sometimes has an issue where it's overflowing
         div(id = "time_series_plot", style = "display: none",
             plotlyOutput("areaPlot", height = "300px")
+        ),
+        div(id = "radar_plot", style = "display: none",
+            plotlyOutput("radarPlot", height = "300px")
         )
       )
     )
@@ -245,18 +289,58 @@ server <- function(input, output, session) {
   
   map_view <- reactiveValues(lat = LAT_DEFAULT, lon = LON_DEFAULT, zoom = ZOOM_DEFAULT)
   
+  # slider_data <- reactiveVal(NULL)
+  # 
+  # user_inputs <- reactiveValues(sliders = list(), checkboxes = list())
+  # 
+  # slider_data <- fetch_slider_values()
+  # 
+  # # Initialize storage with default values
+  # for (slider_name in names(slider_data)) {
+  #   user_inputs$sliders[[slider_name]] <- (slider_data[[slider_name]]$min + slider_data[[slider_name]]$max) / 2  # Default slider position
+  #   user_inputs$checkboxes[[slider_name]] <- TRUE  # Default checkbox state
+  # }
+  
+  # output$dynamic_controls <- renderUI({
+  #   data <- slider_data()
+  #   if (is.null(data)) return(NULL)
+  #   
+  #   controls_list <- lapply(names(data), function(slider_name) {
+  #     fluidRow(
+  #       column(2, checkboxInput(
+  #         inputId = paste0(slider_name, "_checkbox"),
+  #         label = NULL,
+  #         value = user_inputs$checkboxes[[slider_name]]
+  #       )),
+  #       column(10, sliderInput(
+  #         inputId = slider_name,
+  #         label = paste(slider_name, ":", data[[slider_name]]$min, "-", data[[slider_name]]$max),
+  #         min = data[[slider_name]]$min,
+  #         max = data[[slider_name]]$max,
+  #         value = user_inputs$sliders[[slider_name]]
+  #       ))
+  #     )
+  #   })
+  #   
+  #   do.call(tagList, controls_list)
+  # })
+  
   # !TODO do these need to be reset?
   new_data <- reactiveVal(NULL) # most recent data
   filtered_data <- reactiveVal(NULL) # data filtered by year
   panel_expanded <- reactiveVal(FALSE)
   output_data <- reactiveVal(NULL)
-
   
   current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
-  clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
+  # clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
+  clicked_polygons <- reactiveVal(data.frame(
+    parcel_id = character(),  # Empty initially
+    blocked_until_year = numeric(),
+    stringsAsFactors = FALSE
+  ))
+  
   saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
-
   plot_type <- reactiveVal("cumulative") 
   
   # Track the initial slider values when the submit button is clicked
@@ -321,6 +405,47 @@ server <- function(input, output, session) {
     list(total = plot_data, cumulative = cumulative_data)
   })
   
+  output$radarPlot <- renderPlotly({
+    data_values <- data.frame(
+      Category = c("Carbon", "Species", "Goat Moth", "Stag Beetle", "Lichens", "Area", "Recreation"),
+      Target = c(100, 100, 100, 100, 100, 100, 100),
+      Actual = c(80, 77, 97, 74, 99, 104, 102) # mocked data
+    )
+      
+    fig <- plot_ly(
+      type = 'scatterpolar',
+      fill = 'toself',
+      mode = "markers"  # Changed to lines+markers for better visual representation
+    ) %>%
+      add_trace(
+        r = data_values$Target,
+        theta = data_values$Category,
+        name = "Target",
+        fillcolor = 'rgba(0, 0, 0, 0.1)'  # Light fill color for the target
+      ) %>%
+      add_trace(
+        r = data_values$Actual,
+        theta = data_values$Category,
+        name = "Actual",
+        fillcolor = 'rgba(255, 0, 0, 0.2)'  # Red fill for actual
+      ) %>%
+      layout(
+        polar = list(
+          radialaxis = list(visible = TRUE, range = c(0, 120), showgrid = TRUE),
+          angularaxis = list(rotation = 270), # Keeps the rotation
+          bgcolor = "rgba(255, 255, 255, 0)"  # Set transparent background for the polar chart itself
+        ),
+        showlegend = TRUE,
+        # Set transparent background
+        paper_bgcolor = "rgba(255, 255, 255, 0)",  # Transparent background for the entire plot area
+        plot_bgcolor = "rgba(255, 255, 255, 0)"   # Transparent background for the plot area itself
+      )
+    
+    fig
+    })
+    
+  
+  
   # Render time-series plot for both Conifer and Deciduous
   output$areaPlot <- renderPlotly({
     data <- processed_data()  # Get precomputed data
@@ -383,6 +508,18 @@ server <- function(input, output, session) {
     updateActionButton(session, "toggle_plot", label = new_label)
   })
   
+  observeEvent(input$toggle_radar_plot, {
+    shinyjs::toggle(id = "radar_plot", anim = TRUE)
+    # Change button text dynamically
+    new_label <- if (input$toggle_radar_plot %% 2 == 1) {
+      "Hide Outcomes"
+    } else {
+      "Show Outcomes"
+    }
+    
+    updateActionButton(session, "toggle_radar_plot", label = new_label)
+  })
+  
   # Initialize leaflet map or update it on submit
   initialize_or_update_map <- function(input_year, data = NULL) {
     # Fetch the data from the API when initializing or submitting
@@ -393,10 +530,17 @@ server <- function(input, output, session) {
     if (!is.null(new_data_fetched)) {
       # Apply the filter based on the selected year
       new_data(new_data_fetched)
+      
+      # Initialize clicked_polygons() with all parcel_ids and a default blocked_until_year
+      clicked_polygons(data.frame(
+        parcel_id = new_data_fetched$parcel_id,  
+        blocked_until_year = 0,  
+        stringsAsFactors = FALSE
+      ))
+      
       filtered_data_subset <- new_data_fetched[new_data_fetched$planting_year <= input_year, ]
       filtered_data(filtered_data_subset)
       current_layers(filtered_data_subset$parcel_id)
-      clicked_polygons(NULL)
       
       # Update conifer and deciduous data based on the fetched data
       area_data <- new_data_fetched %>%
@@ -414,6 +558,7 @@ server <- function(input, output, session) {
       
       # Render the leaflet map with the updated data
       output$map <- renderLeaflet({
+        
         leaflet() %>% 
           # addTiles() %>% 
           addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
@@ -429,7 +574,7 @@ server <- function(input, output, session) {
             group = "parcelPolygons",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
-            popup = "No planting"
+            # popup = "No planting"
           ) %>% 
           
           # Add filtered polygons based on the selected year
@@ -441,7 +586,7 @@ server <- function(input, output, session) {
             fillOpacity = FILL_OPACITY,
             layerId = ~parcel_id,
             label = ~parcel_id,
-            popup = ~planting_type
+            # popup = ~planting_type
           ) %>%
           
           # Add unavailable parcels layer
@@ -452,7 +597,7 @@ server <- function(input, output, session) {
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
             group = "unavailablePolygons",
-            popup = "Unavailable for planting"
+            # popup = "Unavailable for planting"
           ) %>%
           
           # Add legend
@@ -496,7 +641,87 @@ server <- function(input, output, session) {
     
     # Update the map by calling the same function
     initialize_or_update_map(current_year())
+    
+    # target = as.numeric(unlist(initial_values()))[1:7]
+    
+    # output$radarPlot <- renderPlotly({
+    #   data_values <- data.frame(
+    #     Category = c("Carbon", "Species", "Goat Moth", "Stag Beetle", "Lichens", "Area", "Recreation"),
+    #     Target = (target/target)*100.,
+    #     Actual = ((as.numeric(unlist(initial_values()))[1:7] * runif(7, 0.8, 1.2))/target)*100. # mocked data
+    #   )
+    #   
+    #   accordion_panel_close(id = "main_accordion", values = "Targets")
+    #   
+    #   fig <- plot_ly(
+    #     type = 'scatterpolar',
+    #     fill = 'toself',
+    #     mode = "markers"
+    #   ) %>%
+    #     add_trace(
+    #       r = data_values$Target,
+    #       theta = data_values$Category,
+    #       name = "Target",
+    #       fillcolor = 'rgba(0, 0, 0, 0.1)'
+    #     ) %>%
+    #     add_trace(
+    #       r = data_values$Actual,
+    #       theta = data_values$Category,
+    #       name = "Actual",
+    #       fillcolor = 'rgba(255, 0, 0, 0.2)'
+    #     ) %>%
+    #     layout(
+    #       polar = list(
+    #         radialaxis = list(visible = TRUE, range = c(0, 120), showgrid = TRUE),
+    #         angularaxis = list(rotation = 0) # Rotates start position for better readability
+    #       ),
+    #       showlegend = TRUE
+    #     )
+    #   
+    #   fig
+    # })
+    
   })
+  
+  # Not Tested
+  observeEvent(input$map_shape_click, {
+    click <- input$map_shape_click
+    clicked_parcel_id <- click$id  # Get clicked parcel_id
+    selected_year <- input$year    # Get selected year
+    
+    # Ensure clicked_polygons() is not NULL or empty
+    current_clicked <- clicked_polygons()
+    
+    if (is.null(current_clicked) || nrow(current_clicked) == 0 || !"parcel_id" %in% colnames(current_clicked)) {
+      print("clicked_polygons() is empty, NULL, or missing parcel_id column.")
+      return()  # Exit early to avoid errors
+    }
+    
+    # Ensure clicked_parcel_id is not NULL
+    if (is.null(clicked_parcel_id) || clicked_parcel_id == "") {
+      print("Invalid clicked_parcel_id.")
+      return()
+    }
+    
+    # Check safely if the parcel exists in the list
+    parcel_exists <- any(current_clicked$parcel_id == clicked_parcel_id, na.rm = TRUE)
+    
+    if (parcel_exists) {
+      # Update the `blocked_until_year` for the clicked parcel
+      current_clicked$blocked_until_year[current_clicked$parcel_id == clicked_parcel_id] <- selected_year
+    } else {
+      print("Clicked parcel is not in the list.")  # Debugging message
+      return()
+    }
+    
+    # Update reactive value
+    clicked_polygons(current_clicked)
+    
+    print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
+  })
+  
+  
+
   
   # Monitor changes to the sliders
   observe({
@@ -523,7 +748,14 @@ server <- function(input, output, session) {
     }
     
   })
-  
+ 
+  # the blocking part of the code hasn't really been tested
+  # there is currently a bug where if we click a parcel to block it, and then go > blocked_until_year, 
+  # it's recoloured to it's eventual colour (regardless of when that change was supposed to happen); or dark gery if it never happens
+  # hackily fixed with:             
+  #
+  # fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+  # 
   observe({
     input_year <- input$year 
     selected_view <- input$view_toggle
@@ -531,6 +763,21 @@ server <- function(input, output, session) {
     if (!is.null(new_data())) {
       # Access the most recently loaded data stored in the reactive `new_data`
       current_data <- new_data()
+      
+      # get clicked polygons
+      clicked_info <- clicked_polygons()
+      
+      if (!is.null(clicked_info) && nrow(clicked_info) > 0) {
+        # Blocked polygons: those whose blocked_until_year is greater than or equal to the input_year
+        blocked_parcels <- clicked_info[clicked_info$blocked_until_year >= input_year, ]
+        print(clicked_info[clicked_info$blocked_until_year > 0, ])
+        # Unblocked parcels: those whose blocked_until_year is less than input_year
+        unblocked_parcels <- clicked_info[clicked_info$blocked_until_year < input_year, ]
+        unblocked_parcels <- unblocked_parcels[unblocked_parcels$blocked_until_year != 0, ]  # Ensure no "0" entries
+      } else {
+        blocked_parcels <- NULL
+        unblocked_parcels <- NULL
+      }
       
       # # Filter the data based on the selected year and update `filtered_data`
       # filtered_data_subset <- current_data[current_data$planting_year <= input_year, ]
@@ -568,7 +815,7 @@ server <- function(input, output, session) {
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
             layerId = updated_data$parcel_id,  # Ensure to reassign the same layerId for all
-            label = updated_data$parcel_id
+            # label = updated_data$parcel_id
           )
       }
       
@@ -584,14 +831,50 @@ server <- function(input, output, session) {
             group = "filteredPolygons",  # Group for filtered polygons
             layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
             label = ~parcel_id,
-            popup = ~planting_type
+            # popup = ~planting_type
           )
       }
       
-      # Update the state of current layers
       current_layers(current_ids)
+      
+      # Now handle Blocked Parcels (those that are blocked until input_year)
+      if (length(blocked_parcels) > 0) {
+        blk <- current_data[current_data$parcel_id %in% blocked_parcels$parcel_id, ]
+        
+        # Add blocked polygons with a distinct style (red color for blocked)
+        leafletProxy("map") %>%
+          addPolygons(
+            data = blk,  # Data for blocked parcels
+            weight = 1,
+            color = 'black',
+            fillColor = 'red',  # Indicating blocked parcels
+            fillOpacity = FILL_OPACITY,
+            group = "BlockedPolygons",
+            layerId = blk$parcel_id,  # Reassign the same layerId for blocked polygons
+            label = ~paste("Parcel ID:", parcel_id, "Blocked Until:", blocked_parcels$blocked_until_year[blocked_parcels$parcel_id == parcel_id])
+          )
+      }
+      
+      # Handle Unblocked Parcels (those whose blocked_until_year is less than input_year)
+      if (length(unblocked_parcels) > 0) {
+        unblk <- current_data[current_data$parcel_id %in% unblocked_parcels$parcel_id, ]
+        
+        # Recolor unblocked polygons and update them (reassign color based on planting_type)
+        leafletProxy("map") %>%
+          addPolygons(
+            data = unblk,  # Data for unblocked parcels
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+            fillOpacity = FILL_OPACITY,
+            group = "UnblockedPolygons",
+            layerId = unblk$parcel_id,  # Reassign the same layerId for unblocked polygons
+            label = ~paste("Parcel ID:", parcel_id)
+          )
+      }
     }
   })
+  
   
   # Enable/Disable sliders
   observe({
@@ -684,8 +967,6 @@ server <- function(input, output, session) {
         updateSliderInput(session, "species_lichens", value = strategy$species_lichens)
         updateSliderInput(session, "area", value = strategy$area)
         updateSliderInput(session, "recreation", value = strategy$recreation)
-        
-        updateSliderInput(session, "year", value = strategy$year)  # Load year as well
         
         updateCheckboxInput(session, "carbon_checkbox", value = strategy$carbon_checkbox)
         updateCheckboxInput(session, "species_checkbox", value = strategy$species_checkbox)
