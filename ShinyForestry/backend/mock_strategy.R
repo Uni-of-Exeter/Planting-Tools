@@ -139,17 +139,27 @@ function() {
 
 
 #* Generate parcel data
-#* @get /generate_parcels
+#* @post /generate_parcels
+#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
 #* @serializer json
-function() {
-  parcel_data <- generate_parcel_data()
+function(req) {
+  body <- tryCatch(
+    jsonlite::fromJSON(req$postBody, simplifyVector = TRUE),
+    error = function(e) return(list(error = "Invalid JSON format."))
+  )
   
-  # Use sf_geojson to return a proper GeoJSON response
+  # Validate required fields
+  if (!is.list(body) || !"blocked_until_year" %in% names(body) || !"parcel_id" %in% names(body)) {
+    return(list(error = "Missing required fields: parcel_id and blocked_until_year."))
+  }
+  
+  # Generate parcel data
+  parcel_data <- generate_parcel_data()
   geojson <- geojsonsf::sf_geojson(parcel_data)
   
-  # Return the proper GeoJSON
   return(geojson)
 }
+
 
 # Example Output
 #                               parcel_id parcel_area planting_year planting_type is_blocked                       geometry
