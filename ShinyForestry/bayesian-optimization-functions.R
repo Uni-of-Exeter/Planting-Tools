@@ -1815,7 +1815,7 @@ theme_Publication <- function(base_size = 10) {
 # at https://ntfysenate.uboracle1.freeddns.org and fallback to https://ntfy.sh.
 # Anyone can send messages to it, but everything else requires a login. Ask me for one (t.r.f.bacri@exeter.ac.uk) if you want access.
 # ntfy is nice because notifications can be sent to the webpage browser, and to the smartphone app, with different priorities.
-notif <- function(msg,
+notif <- function(msg = "",
                   # Print command messages
                   verbose = FALSE,
                   # cURL flags (when using ntfy)
