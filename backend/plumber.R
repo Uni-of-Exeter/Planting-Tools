@@ -221,8 +221,8 @@ function(res, LOG_LEVEL = "info") {
     packages <- na.omit(packages)  # Remove any NAs
     
     # # Load packages in DESCRIPTION
-    for(ll in 1:length(packages)) {
-      library(packages[ll], character.only = TRUE)
+    for(i in 1:length(packages)) {
+      library(packages[i], character.only = TRUE)
     }
     
     if (RUN_BO) {
@@ -401,29 +401,29 @@ function(res, LOG_LEVEL = "info") {
       #We are looking at CO2 retained in 2050. Then JulesMeanY0 means that if we plant in year 0,
       #we will obtain JulesMeanYears$mean337, year 1: mean325, year 2: mean313,....
       #Note that JulesMeanY29 is considered "No Planting" so the values of 0 will not be changed
-      for(ii in 1:(MAXYEAR+2))
+      for(i in 1:(MAXYEAR+2))
       {
-        FullTab[paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",(ii-1))]<-rep(0, length(Uni))
+        FullTab[paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",(i-1))]<-rep(0, length(Uni))
       }
-      for(ii in 1:(MAXYEAR+2))
+      for(i in 1:(MAXYEAR+2))
       {
-        FullTab[paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",(ii-1))]<-rep(0, length(Uni))
+        FullTab[paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",(i-1))]<-rep(0, length(Uni))
       }
       
-      for(ii in 1:(MAXYEAR+2))
+      for(i in 1:(MAXYEAR+2))
       {
-        FullTab[paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",(ii-1))]<-rep(0, length(Uni))
+        FullTab[paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",(i-1))]<-rep(0, length(Uni))
       }
-      for(ii in 1:(MAXYEAR+2))
+      for(i in 1:(MAXYEAR+2))
       {
-        FullTab[paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",(ii-1))]<-rep(0, length(Uni))
+        FullTab[paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",(i-1))]<-rep(0, length(Uni))
       }
       
       
       MER <- list()
-      for (ii in 1:length(Uni)) {
-        SELLL <- shconv$geometry[AllUnits == Uni[ii]]
-        MER[[ii]] <- suppressMessages(st_union(st_make_valid(SELLL)))
+      for (i in 1:length(Uni)) {
+        SELLL <- shconv$geometry[AllUnits == Uni[i]]
+        MER[[i]] <- suppressMessages(st_union(st_make_valid(SELLL)))
       }
       
       
@@ -493,13 +493,11 @@ function(res, LOG_LEVEL = "info") {
       INTT <- st_intersection(st_make_valid(SELECTEDSquaresconvTab), st_make_valid(FullTableCopy))
       INTT$area <- st_area(INTT) / 1e6
       
-      notif(5)
-      
       # Bootstrap means and standard deviations (to avoid assumptions of independence)
       # As we have sum of Gaussians, we 
       # NBSIMS <- 500
-      for (ii in 1:length(FullTableCopy$geometry)) {
-        SELLLines <- INTT$idPoly == ii
+      for (i in 1:length(FullTableCopy$geometry)) {
+        SELLLines <- INTT$idPoly == i
         SELLSqs <- INTT$idSq[SELLLines]
         SELLWeights <- INTT$area[SELLLines]
         #    SellWeightsArr <- t(matrix(SELLWeights, length(SELLWeights), NBSIMS))
@@ -520,45 +518,45 @@ function(res, LOG_LEVEL = "info") {
         
         if (length(SelJulesMeans) >= 1) {
           # SimuArr <- rmvnorm(NBSIMS, mean = SelJulesMeans, sigma = diag(SelJulesSDs^2))
-          FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[ii] <-    sum(SelJulesMeans*SELLWeights)#sum(colMeans(SimuArr * SellWeightsArr))
-          FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[ii] <- sqrt(sum((SelJulesSDs*SELLWeights)^2))#sd(rowSums(SimuArr * SellWeightsArr))
+          FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[i] <-    sum(SelJulesMeans*SELLWeights)#sum(colMeans(SimuArr * SellWeightsArr))
+          FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[i] <- sqrt(sum((SelJulesSDs*SELLWeights)^2))#sd(rowSums(SimuArr * SellWeightsArr))
           
           #JulesMeanY29 is not replaced here as it is used to men that there is no planting.
           
-          FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-colSums(SelJulesMeansYears*SellWeightsArr)
-          FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-sqrt(colSums((SelJulesSDsYears*SellWeightsArr)^2))
+          FullTable[i,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-colSums(SelJulesMeansYears*SellWeightsArr)
+          FullTable[i,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-sqrt(colSums((SelJulesSDsYears*SellWeightsArr)^2))
           
           FullTable$Carbon_Mean_Scenario26_TreeSpecieDeciduous<-sum(SelJulesMeans85*SELLWeights)
           FullTable$Carbon_SD_Scenario26_TreeSpecieDeciduous<-sqrt(sum((SelJulesSDs85*SELLWeights)^2))
           
           
-          FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-colSums(SelJulesMeansYears85*SellWeightsArr)
-          FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-sqrt(colSums((SelJulesSDsYears85*SellWeightsArr)^2))
+          FullTable[i,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-colSums(SelJulesMeansYears85*SellWeightsArr)
+          FullTable[i,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-sqrt(colSums((SelJulesSDsYears85*SellWeightsArr)^2))
           
           
-          FullTable$area[ii] <- sum(SELLWeights)
+          FullTable$area[i] <- sum(SELLWeights)
           
           # } else if (length(SelJulesMeans) == 1) {
           #  SimuArr <- rnorm(NBSIMS, mean = SelJulesMeans, sd = SelJulesSDs)
-          # FullTable$JulesMean[ii] <- sum(colMeans(SimuArr * SellWeightsArr))
-          #  FullTable$JulesSD[ii] <- sd(rowSums(SimuArr * SellWeightsArr))
-          #  FullTable$area[ii] <- sum(SELLWeights)
+          # FullTable$JulesMean[i] <- sum(colMeans(SimuArr * SellWeightsArr))
+          #  FullTable$JulesSD[i] <- sd(rowSums(SimuArr * SellWeightsArr))
+          #  FullTable$area[i] <- sum(SELLWeights)
         } else {
-          FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[ii] <- 0
-          FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[ii] <- 0
-          FullTable$Carbon_Mean_Scenario26_TreeSpecieDeciduous[ii]<-0
-          FullTable$Carbon_SD_Scenario26_TreeSpecieDeciduous[ii]<-0
+          FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[i] <- 0
+          FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[i] <- 0
+          FullTable$Carbon_Mean_Scenario26_TreeSpecieDeciduous[i]<-0
+          FullTable$Carbon_SD_Scenario26_TreeSpecieDeciduous[i]<-0
           
           
           
-          FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
-          FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
+          FullTable[i,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
+          FullTable[i,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
           
-          FullTable[ii,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
-          FullTable[ii,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
+          FullTable[i,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
+          FullTable[i,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
           
           
-          FullTable$area[ii] <- sum(SELLWeights)
+          FullTable$area[i] <- sum(SELLWeights)
         }
       }
       
@@ -735,7 +733,7 @@ function(res, LOG_LEVEL = "info") {
     simul636YearType <- local({
       pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
       simul636YearType <- foreach(
-        aaa = 1:NSamp,
+        i = 1:NSamp,
         .combine = combine_foreach_rbind,
         .multicombine = TRUE,
         .inorder = TRUE,
@@ -749,8 +747,8 @@ function(res, LOG_LEVEL = "info") {
         RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
         
         result <- matrix(0, nrow = 1, ncol = dim(FullTable)[1])
-        for (bbb in 1:length(Uniqunits)) {
-          result[1, FullTable$units == Uniqunits[bbb]] <- RandSamp[bbb]
+        for (j in 1:length(Uniqunits)) {
+          result[1, FullTable$units == Uniqunits[j]] <- RandSamp[j]
         }
         result_simul636 <- result
         
@@ -792,7 +790,7 @@ function(res, LOG_LEVEL = "info") {
         result_simul636YearType <- result
         
         # End
-        if (aaa %% (ceiling(NSamp / 100)) == 0) {pb(amount = ceiling(NSamp / 100))}
+        if (i %% (ceiling(NSamp / 100)) == 0) {pb(amount = ceiling(NSamp / 100))}
         return(result_simul636YearType)
       }
       # Avoid warning message from progressor function
@@ -1017,28 +1015,28 @@ function(res, LOG_LEVEL = "info") {
         PrecalcCarbonAllExtentsType2Lines[[ext]][2,]<-PrecalcCarbonAllExtentsType2Lines[[ext]][1,]
         PrecalcCarbonAllExtentsSDType2Lines[[ext]][2,]<- PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]
         
-        for(abb in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[1])
+        for(i in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[1])
         {
-          for(bcc in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[2])
+          for(j in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[2])
           {
             
-            # PrecalcCarbonAllExtents[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
-            #  PrecalcCarbonAllExtentsSD[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+            # PrecalcCarbonAllExtents[[ext]][i, j]<-CarbonSelectedYear[j,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[i, j])]
+            #  PrecalcCarbonAllExtentsSD[[ext]][i, j]<-CarbonSelectedSDYear[j,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[i, j])]
             
             
-            if(simul636YearType[["TYPE"]][abb,bcc]=="NoPlanting"){
-              PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-0
-              PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-0
+            if(simul636YearType[["TYPE"]][i, j]=="NoPlanting"){
+              PrecalcCarbonAllExtentsType[[ext]][i, j]<-0
+              PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-0
             }else{
               
-              if(simul636YearType[["TYPE"]][abb,bcc]=="Conifers"){
-                PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                           simul636YearType$YEAR[abb,bcc])]
-                PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                               simul636YearType$YEAR[abb,bcc])]
+              if(simul636YearType[["TYPE"]][i, j]=="Conifers"){
+                PrecalcCarbonAllExtentsType[[ext]][i, j]<-CarbonSelectedYear[i,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
+                                                                                           simul636YearType$YEAR[i, j])]
+                PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-CarbonSelectedSDYear[i,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
+                                                                                               simul636YearType$YEAR[i, j])]
               }else{
-                PrecalcCarbonAllExtentsType[[ext]][abb,bcc]<-CarbonSelectedYear85[bcc,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[abb,bcc])]
-                PrecalcCarbonAllExtentsSDType[[ext]][abb,bcc]<-CarbonSelectedSDYear85[bcc,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[abb,bcc])]
+                PrecalcCarbonAllExtentsType[[ext]][i, j]<-CarbonSelectedYear85[i,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[i, j])]
+                PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-CarbonSelectedSDYear85[i,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[i, j])]
                 
               }
             }
