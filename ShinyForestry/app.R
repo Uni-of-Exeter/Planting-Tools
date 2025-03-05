@@ -41,7 +41,7 @@ if (file.exists(normalizePath(file.path("bayesian-optimization-functions.R"), mu
 library(curl)
 # If the files exist and have correct hashes, do not upload them.
 for (filename in filenames) {
-  filepath <- file.path(elicitor_folder, filename)
+  filepath <- normalizePath(file.path(elicitor_folder, filename))
   md5 <- tools::md5sum(filepath)
   
   notif(paste("Checking if", filename, "exists in the backend and is the same one as on this computer"), log_level = "debug")
