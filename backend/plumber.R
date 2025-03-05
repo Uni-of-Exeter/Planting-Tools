@@ -50,6 +50,24 @@ for(ll in 1:length(packages)) {
   library(packages[ll], character.only = TRUE)
 }
 
+#* Log full request information
+#* @filter log_request
+function(req) {
+  # # Print full URI and other request details
+  # cat("Full URI:", req$rook.url_scheme, "://", req$HTTP_HOST, req$PATH_INFO, "\n")
+  # cat("Method:", req$REQUEST_METHOD, "\n")
+  # cat("Query String:", req$QUERY_STRING, "\n")
+  # cat("Headers:", paste(names(req$HEADERS), req$HEADERS, sep = ": ", collapse = "; "), "\n")
+  # try(cat("POST Body (if any):", rawToChar(req$postBody), "\n"), silent = FALSE)
+  
+  notif(paste0(req$REQUEST_METHOD, " - ",
+               req$rook.url_scheme, "://", req$HTTP_HOST, req$PATH_INFO, req$QUERY_STRING, " - ",
+               "Headers = ", paste(names(req$HEADERS), req$HEADERS, sep = ": ", collapse = "; ")), ntfy = FALSE)
+  
+  # Forward the request to the next filter or endpoint
+  forward()
+}
+
 #* Health
 #* @get /health
 #* @response 200 Success: Service is healthy
