@@ -11,7 +11,7 @@ options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 RNGversion("4.0.0")
 set.seed(1)
 
-BACKEND_HOST <- "http://backend:40000"
+BACKEND_HOST <- "http://144.173.60.164:40000"
 
 if (file.exists("ShinyForestry")) {
   elicitor_folder <- normalizePath(file.path("ShinyForestry", "ElicitorOutput"))
