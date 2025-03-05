@@ -1076,6 +1076,12 @@ function(res, LOG_LEVEL = "info") {
     }
     
     # rm(save_folder_elicitoroutput, save_folder)
+    if (exists("SquaresLoad")) {
+      rm(SquaresLoad)
+    }
+    if (exists("Sqconv")) {
+      rm(Sqconv)
+    }
     
     JulesMean <- 0;JulesSD <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0
   })
