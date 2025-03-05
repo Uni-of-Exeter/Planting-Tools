@@ -1095,7 +1095,7 @@ function(res, LOG_LEVEL = "info") {
       # Remove if not part of base package
       packages <- find(object_name)
       if (isFALSE("package:base" %in% packages)) {
-        try(rm(object_name, envir = new_environment))
+        try(rm(list = object_name, envir = new_environment))
       }
     }
   }
