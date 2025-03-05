@@ -52,6 +52,7 @@ for (filename in filenames) {
   status <- response$status_code
   if (status %in% c(400, 404)) {
     
+    filepath <- normalizePath(filepath, winslash = "/")
     # if (grepl(".zip$", filename)) {
       result <- system(paste0('curl ',
                               '-sSL ',
