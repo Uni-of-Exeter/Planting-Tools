@@ -96,7 +96,7 @@ function(req, res, file_to_upload) {
   
   acceptable_file_names <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
   
-  save_folder <- get_folder_save_data()
+  save_folder <- get_backend_folder_save_data()
   elicitor_output_folder <- normalizePath(file.path(save_folder, "ElicitorOutput"))
   
   if (isFALSE(dir.exists(elicitor_output_folder))) {
@@ -136,7 +136,7 @@ function(req, res, file_to_upload) {
 #* @response 404 Not found: The file was not found
 function(res, filename, md5sum) {
   
-  save_folder <- get_folder_save_data()
+  save_folder <- get_backend_folder_save_data()
   elicitor_output_folder <- normalizePath(file.path(save_folder, "ElicitorOutput"))
   file <- file.path(elicitor_output_folder, filename)
   if (file.exists(file)) {
@@ -287,7 +287,7 @@ function(res, LOG_LEVEL = "info") {
     
     USER_PATH <- user_path()
     
-    save_folder <- get_folder_save_data()
+    save_folder <- get_backend_folder_save_data()
     save_folder_elicitoroutput <- normalizePath(file.path(save_folder, "ElicitorOutput"))
     dir.create(save_folder_elicitoroutput, recursive = TRUE, showWarnings = FALSE)
     
