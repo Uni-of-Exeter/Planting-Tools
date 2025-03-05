@@ -1,3 +1,9 @@
+get_backend_folder_save_data <- function() {
+  return(file.path(Sys.getenv("HOME"), "backend") |>
+           normalizePath() |>
+           sub(pattern = "//", replacement = "/"))
+}
+
 CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
 {
   PROBAMATloc <- IVECloc

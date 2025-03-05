@@ -266,22 +266,23 @@ function(res, LOG_LEVEL = "info") {
     
     USER_PATH <- user_path()
     
-    save_folder <- normalizePath(file.path(tempdir()))
+    save_folder <- get_folder_save_data()
     save_folder_elicitoroutput <- normalizePath(file.path(save_folder, "ElicitorOutput"))
     dir.create(save_folder_elicitoroutput, recursive = TRUE, showWarnings = FALSE)
     
     # ElicitorAppFolder <- normalizePath(file.path(USER_PATH, "Downloads"))
-    ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
+    # ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
+    ElicitorAppFolder <- save_folder_elicitoroutput
     DataFilesFolder <- normalizePath(file.path(FolderSource, "JulesOP"))
     DownscalingImagesFolder<-normalizePath(file.path(FolderSource, "DownScalingImages"))
     
-    # CalculatedFilesFolder<-normalizePath(file.path(FolderSource, "CalculatedFiles"))
-    # CalculatedFilesFolder<-normalizePath(file.path(save_folder, "CalculatedFiles"))
+    # CalculatedFilesFolder <- normalizePath(file.path(FolderSource, "CalculatedFiles"))
+    CalculatedFilesFolder <- normalizePath(file.path(save_folder, "CalculatedFiles"))
     
     # If the folder does not exist, create it
-    # if (isFALSE(dir.exists(CalculatedFilesFolder))) {
-    #   dir.create(CalculatedFilesFolder)
-    # }
+    if (isFALSE(dir.exists(CalculatedFilesFolder))) {
+      dir.create(CalculatedFilesFolder)
+    }
     
     # Loading big files takes up a lot of RAM that cannot be emptied.
     # So instead, loading happens in a new R process we can then shutdown
@@ -354,10 +355,9 @@ function(res, LOG_LEVEL = "info") {
       if (is.null(shconv$extent)) {
         shconv$extent <- "NoExtent"
       }
-      # st_write(shconv, normalizePath(file.path(save_folder_elicitoroutput, "Parcels.geojson")))
-      # shconv <- sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "Parcels.geojson"))  )
+      st_write(shconv, normalizePath(file.path(save_folder_elicitoroutput, "Parcels.geojson")))
     } else {
-      # shconv <- sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "Parcels.geojson")))
+      shconv <- sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "Parcels.geojson")))
     }
     
     notif(paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "decision_units.json"))))
@@ -700,21 +700,21 @@ function(res, LOG_LEVEL = "info") {
       FullTable <- FullTable %>%
         dplyr::filter(units != -1)
       
-      # # st_write(FullTable, normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
-      # st_write(FullTable, normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson")))
-      # # FullTableNotAvail <- data.frame(extent = NULL)
-      # # st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
-      # st_write(FullTableNotAvail, normalizePath(file.path(save_folder_elicitoroutput, "FullTableNotAvail.geojson")))
+      # st_write(FullTable, normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
+      st_write(FullTable, normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson")))
+      # FullTableNotAvail <- data.frame(extent = NULL)
+      # st_write(FullTableNotAvail, normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
+      st_write(FullTableNotAvail, normalizePath(file.path(save_folder_elicitoroutput, "FullTableNotAvail.geojson")))
     }
     
-    # # notif(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))))
-    # # FullTable <- value(future(sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))))
-    # # FullTableNotAvail <- value(future(sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))))
-    # # notif(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
-    # notif(paste("Loading", normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))))
-    # FullTable <- value(future(sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson")))))
-    # FullTableNotAvail <- value(future(sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "FullTableNotAvail.geojson")))))
-    # notif(paste("Loading", normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
+    # notif(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))))
+    # FullTable <- value(future(sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))))
+    # FullTableNotAvail <- value(future(sf::st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))))
+    # notif(paste("Loading", normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
+    notif(paste("Loading", normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson and FullTableNotAvail.geojson ..."))))
+    FullTable <- value(future(sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson")))))
+    FullTableNotAvail <- value(future(sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "FullTableNotAvail.geojson")))))
+    notif(paste("Loading", normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
     
     # future:::ClusterRegistry("stop")
     
@@ -950,39 +950,39 @@ function(res, LOG_LEVEL = "info") {
     PrecalcCarbonAllExtentsSDType2Lines<-list()
     
     
-    # if(#file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData"))) &&
-    #   #file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData"))) &&
-    #   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData"))) &&
-    #   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData"))) &&
-    #   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData"))) &&
-    #   file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))) {
-    if (FALSE) {
+    if(#file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData"))) &&
+      #file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData"))) &&
+      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData"))) &&
+      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData"))) &&
+      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData"))) &&
+      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))) {
+    # if (FALSE) {
       
-      # #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
-      # #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
-      # load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
-      # load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
-      # load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
-      # load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
+      #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
+      #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
+      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
+      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
+      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
     } else {
-      # #if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))){
-      # #  file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
-      # #}
-      # #if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))){
-      # #  file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
-      # #}
-      # if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))){
-      #   file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
-      # }
-      # if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))){
-      #   file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
-      # }
-      # if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))){
-      #   file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
-      # }
-      # if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))){
-      #   file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
-      # }
+      #if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))){
+      #  file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
+      #}
+      #if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))){
+      #  file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
+      #}
+      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))){
+        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
+      }
+      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))){
+        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+      }
+      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))){
+        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
+      }
+      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))){
+        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
+      }
       
       
       for (ext in AllExtents)
@@ -1046,11 +1046,11 @@ function(res, LOG_LEVEL = "info") {
       
       #save(PrecalcCarbonAllExtents,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
       #save(PrecalcCarbonAllExtentsSD,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
-      # # Necessary
-      # save(PrecalcCarbonAllExtentsType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
-      # save(PrecalcCarbonAllExtentsSDType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
-      # save(PrecalcCarbonAllExtentsType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
-      # save(PrecalcCarbonAllExtentsSDType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
+      # Necessary
+      save(PrecalcCarbonAllExtentsType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
+      save(PrecalcCarbonAllExtentsSDType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
+      save(PrecalcCarbonAllExtentsType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
+      save(PrecalcCarbonAllExtentsSDType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
       
     }
     
