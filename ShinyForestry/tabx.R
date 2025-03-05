@@ -22,10 +22,39 @@ source("ShinyForestry/config.R")
 
 FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ShinyForestry/ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
 
+fetch_api_data_post <- function(json_payload) {
+  
+  url <- "http://127.0.0.1:8011/generate_parcels"
+  
+  # Make the API POST request with JSON payload
+  response <- httr::POST(
+    url,
+    body = json_payload, 
+    encode = "json",
+    httr::content_type_json()
+  )
+  
+  print(response)
+  
+  # Check if the response is successful
+  if (httr::status_code(response) == 200) {
+    
+    content_raw <- httr::content(response, "text", encoding = "UTF-8")
+    geojson <- jsonlite::fromJSON(content_raw)
+    geojson_parsed <- st_read(geojson, quiet = TRUE)
+    
+    print(geojson_parsed)
+    return(geojson_parsed)
+    
+  } else {
+    stop(paste("Request failed with status:", httr::status_code(response)))
+  }
+}
+
 
 fetch_api_data <- function() {
   
-  url <- paste0("http://127.0.0.1:8001/generate_parcels")
+  url <- paste0("http://127.0.0.1:8010/generate_parcels")
   # Make the API request
   response <- httr::GET(url)
   # Check if the response is successful
@@ -44,7 +73,7 @@ fetch_api_data <- function() {
 
 # Function to fetch slider data
 fetch_slider_values <- function() {
-  url <- "http://127.0.0.1:8001/slider_values"
+  url <- "http://127.0.0.1:8010/slider_values"
   response <- httr::GET(url)
   
   if (httr::status_code(response) == 200) {
@@ -351,8 +380,9 @@ server <- function(input, output, session) {
     species_stag_beetle = NULL,
     species_lichens = NULL,
     area = NULL,
-    recreation = NULL,
-    year = NULL
+    recreation = NULL
+    # year = NULL
+    # num_clicked_polygons = 0 # not sure if this is the best way, what about if polygons are blocked online... I guess that's fine.
   ))
   
   # hacky JS to make sure plotly plot doesn't bug out
@@ -521,11 +551,17 @@ server <- function(input, output, session) {
   })
   
   # Initialize leaflet map or update it on submit
-  initialize_or_update_map <- function(input_year, data = NULL) {
+  initialize_or_update_map <- function(input_year, data = NULL, json_payload = NULL) {
     # Fetch the data from the API when initializing or submitting
     # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
 
-    new_data_fetched <- if (!is.null(data)) data else fetch_api_data()
+    new_data_fetched <- if (!is.null(data)) {
+      data
+    } else if (!is.null(json_payload)) {
+      fetch_api_data_post(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
+    } else {
+      fetch_api_data()  # Use GET otherwise
+    }
     
     if (!is.null(new_data_fetched)) {
       # Apply the filter based on the selected year
@@ -632,15 +668,47 @@ server <- function(input, output, session) {
       species_stag_beetle = input$species_stag_beetle,
       species_lichens = input$species_lichens,
       area = input$area,
-      recreation = input$recreation,
-      year = input$year
+      recreation = input$recreation
+      # year = input$year
+      # num_clicked_polygons = 0
     ))
+    
+    # Extract blocked parcels (if any exist)
+    blocked_parcels <- clicked_polygons()
+    blocked_parcels_filtered <- blocked_parcels[blocked_parcels$blocked_until_year > 0, ]
+    
+    # Create the payload
+    payload <- list(
+      carbon = as.numeric(input$carbon),
+      species = as.numeric(input$species),
+      species_goat_moth = as.numeric(input$species_goat_moth),
+      species_stag_beetle = as.numeric(input$species_stag_beetle),
+      species_lichens = as.numeric(input$species_lichens),
+      area = as.numeric(input$area),
+      recreation = as.numeric(input$recreation),
+      blocked_parcels = if (nrow(blocked_parcels_filtered) > 0) {
+        # Create a list of blocked parcels
+        lapply(1:nrow(blocked_parcels_filtered), function(i) {
+          list(
+            parcel_id = blocked_parcels_filtered$parcel_id[i],
+            blocked_until_year = as.numeric(blocked_parcels_filtered$blocked_until_year[i])
+          )
+        })
+      } else {
+        list()  # Return an empty list if no blocked parcels exist
+      }
+    )
+    
+    # Convert to JSON
+    json_payload <- jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE)
+
+    print("json payload")
+    print(json_payload)
+    # Update the map by calling the same function
+    initialize_or_update_map(current_year(), json_payload = json_payload)
     
     # Enable the save button when submit is pressed
     shinyjs::enable("save")
-    
-    # Update the map by calling the same function
-    initialize_or_update_map(current_year())
     
     # target = as.numeric(unlist(initial_values()))[1:7]
     
@@ -684,6 +752,7 @@ server <- function(input, output, session) {
   })
   
   # Not Tested
+  # Implement clicking off
   observeEvent(input$map_shape_click, {
     click <- input$map_shape_click
     clicked_parcel_id <- click$id  # Get clicked parcel_id
@@ -733,19 +802,42 @@ server <- function(input, output, session) {
       species_stag_beetle = input$species_stag_beetle,
       species_lichens = input$species_lichens,
       area = input$area,
-      recreation = input$recreation,
-      year = input$year
+      recreation = input$recreation
+      # year = input$year
+      # num_clicked_polygons = nrow(clicked_polygons()[clicked_polygons()$blocked_until_year != 0, ]) # not sure if this is how to do it 
     )
     
     # Compare current values with initial values
-    values_changed <- !identical(current_values, initial_values())
-    
-    # Disable the save button if values have changed
-    if (values_changed) {
-      shinyjs::disable("save")
-    } else {
-      shinyjs::enable("save")
-    }
+# In your server code:
+values_changed <- !identical(current_values, initial_values())
+current_clicked <- clicked_polygons()
+
+# Check if values have changed or if there are any blocked parcels
+# In your server code:
+values_changed <- !identical(current_values, initial_values())
+current_clicked <- clicked_polygons()
+
+# Check if values have changed or if there are any blocked parcels
+if (values_changed || nrow(current_clicked[current_clicked$blocked_until_year != 0, ]) != 0) {
+  # Disable Save button as changes require submission
+  shinyjs::disable("save")  # Disable the save button
+  
+  # Enable and highlight the Submit button (green)
+  shinyjs::enable("submit")  # Enable the submit button
+  # shinyjs::removeClass("submit", "btn-secondary")  # Remove the gray/disabled class
+  shinyjs::addClass("submit", "btn-success")  # Add the green/active class
+  
+} else {
+  # Enable Save button if no changes have been made
+  shinyjs::enable("save")  # Enable the save button
+  
+  # Disable Submit button if no changes have been made
+  shinyjs::disable("submit")  # Disable the submit button
+  shinyjs::removeClass("submit", "btn-success")  # Remove the green/active class
+  shinyjs::addClass("submit", "btn-secondary")  # Add the gray/disabled class
+}
+
+
     
   })
  
@@ -846,8 +938,8 @@ server <- function(input, output, session) {
           addPolygons(
             data = blk,  # Data for blocked parcels
             weight = 1,
-            color = 'black',
-            fillColor = 'red',  # Indicating blocked parcels
+            color = PARCEL_LINE_COLOUR,
+            fillColor = BLOCKED_PARCEL_COLOUR,  # Indicating blocked parcels
             fillOpacity = FILL_OPACITY,
             group = "BlockedPolygons",
             layerId = blk$parcel_id,  # Reassign the same layerId for blocked polygons
