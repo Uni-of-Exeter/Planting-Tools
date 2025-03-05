@@ -60,9 +60,9 @@ function(req) {
   # cat("Headers:", paste(names(req$HEADERS), req$HEADERS, sep = ": ", collapse = "; "), "\n")
   # try(cat("POST Body (if any):", rawToChar(req$postBody), "\n"), silent = FALSE)
   
-  notif(paste0(req$REQUEST_METHOD, " - ",
-               req$rook.url_scheme, "://", req$HTTP_HOST, req$PATH_INFO, req$QUERY_STRING, " - ",
-               "Headers = ", paste(names(req$HEADERS), req$HEADERS, sep = ": ", collapse = "; ")), ntfy = FALSE)
+  notif(paste0(req$REQUEST_METHOD, " -- ",
+               req$rook.url_scheme, "://", req$HTTP_HOST, req$PATH_INFO, req$QUERY_STRING, " -- ",
+               "Headers = { ", paste(names(req$HEADERS), req$HEADERS, sep = ": ", collapse = "; "), " }"), ntfy = FALSE)
   
   # Forward the request to the next filter or endpoint
   forward()
