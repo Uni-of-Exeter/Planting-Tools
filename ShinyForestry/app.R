@@ -60,7 +60,8 @@ for (filename in filenames) {
                               '-H "accept: */*" ',
                               # '-H "Content-Type: multipart/form-data" ',
                               # '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
-                              '-F "file_to_upload=@', filepath, ';type=application/octet-stream" ',
+                              # '-F "file_to_upload=@', filepath, ';type=application/octet-stream" ',
+                              '-F "file_to_upload=@', filepath, '" ',
                               BACKEND_HOST, '/upload'),
                        intern = TRUE) |>
         rjson::fromJSON()
