@@ -149,8 +149,8 @@ function(res, filename, md5sum) {
 function(res, LOG_LEVEL = "info") {
   
   library(future)
-  # plan(futureplan, workers = min(4, future::availableCores()))
-  plan(sequential)
+  plan(futureplan, workers = min(4, future::availableCores()))
+  # plan(sequential)
   notif("Backend initialization ...")
   
   new_environment <- new.env()
