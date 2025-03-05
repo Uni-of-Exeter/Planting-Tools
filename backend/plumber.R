@@ -175,7 +175,7 @@ function(res, LOG_LEVEL = "info") {
       os <- sysinf['sysname']
       if (os == 'Darwin')
         os <- "osx"
-    } else { ## mystery machine
+    } else { # mystery machine
       os <- .Platform$OS.type
       if (grepl("^darwin", R.version$os))
         os <- "osx"
