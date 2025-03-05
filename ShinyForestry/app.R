@@ -11,7 +11,7 @@ options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 RNGversion("4.0.0")
 set.seed(1)
 
-BACKEND_HOST <- "http://localhost:40000"
+BACKEND_HOST <- "http://backend:40000"
 
 if (file.exists("ShinyForestry")) {
   elicitor_folder <- normalizePath(file.path("ShinyForestry", "ElicitorOutput"))
@@ -90,9 +90,10 @@ for (filename in filenames) {
 # Initialize the environment
 handle_PUT <- new_handle()
 handle_setopt(handle_PUT, customrequest = "PUT")
-msg <- "/initializing the backend ..."
+url <- paste0(BACKEND_HOST, "/initialize?LOG_LEVEL=", LOG_LEVEL)
+msg <- paste("initializing the backend", url, "...")
 notif(msg)
-response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/initialize?LOG_LEVEL=", LOG_LEVEL),
+response <- curl_fetch_memory(url = url,
                               handle = handle_PUT)
 notif(paste(msg, "done"))
 if (response$status_code != 200) {

@@ -1,3 +1,9 @@
+get_backend_folder_save_data <- function() {
+  return(file.path(Sys.getenv("HOME"), "backend") |>
+           normalizePath() |>
+           sub(pattern = "//", replacement = "/"))
+}
+
 CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
 {
   PROBAMATloc <- IVECloc
@@ -2792,8 +2798,8 @@ get_group_from_specie <- function(specie, NAME_CONVERSION_ARG = NAME_CONVERSION)
   return(result)
 }
 
-normalizePath <- function(path) {
-  return(base::normalizePath(path, mustWork = FALSE))
+normalizePath <- function(path, winslash = "\\", mustWork = FALSE) {
+  base::normalizePath(path, winslash = winslash, mustWork = mustWork)
 }
 
 user_path <- function() {

@@ -2792,8 +2792,8 @@ get_group_from_specie <- function(specie, NAME_CONVERSION_ARG = NAME_CONVERSION)
   return(result)
 }
 
-normalizePath <- function(path) {
-  return(base::normalizePath(path, mustWork = FALSE))
+normalizePath <- function(path, winslash = "\\", mustWork = FALSE) {
+  base::normalizePath(path, winslash = winslash, mustWork = mustWork)
 }
 
 user_path <- function() {
