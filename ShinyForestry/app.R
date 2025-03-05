@@ -113,6 +113,18 @@ writeBin(response$content, temp_file)
 env <- readRDS(temp_file)
 file.remove(temp_file)
 
+# # DEBUGGING
+# format(object.size(response$content), units = "MiB")
+# sizes <- c()
+# for (name in names(env)) {
+#   sizes <- c(sizes, format(object.size(get(name, envir = as.environment(env))), units = "MiB"))
+#   if (is.function(get(name, envir = as.environment(env)))) {
+#     message(name)
+#   }
+# }
+# sizes <- cbind(sizes, names(env))
+# # DEBUGGING
+
 # Merge the backend environment into the global environment
 list2env(as.list(env), envir = .GlobalEnv)
 
