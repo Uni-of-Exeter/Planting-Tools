@@ -58,7 +58,8 @@ generate_parcel_data <- function() {
   planting_years <- sample(2025:2049, n, replace = TRUE)
   planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
   planting_years[is.na(planting_types)] <- NA
-  is_blocked <- FALSE
+  is_available <- FALSE
+  blocked_until_year <- NA
   
   parcel_data <- st_sf(
     parcel_id = empty_parcel_data$parcel_id,
@@ -143,20 +144,76 @@ function() {
 #* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
 #* @serializer json
 function(req) {
+  
   body <- tryCatch(
     jsonlite::fromJSON(req$postBody, simplifyVector = TRUE),
     error = function(e) return(list(error = "Invalid JSON format."))
   )
   
+  # Debug: Print the incoming body to inspect its structure
+  print("Incoming body:")
+  print(body)
+  
   # Validate required fields
-  if (!is.list(body) || !"blocked_until_year" %in% names(body) || !"parcel_id" %in% names(body)) {
-    return(list(error = "Missing required fields: parcel_id and blocked_until_year."))
+  required_fields <- c("carbon", "species", "species_goat_moth", "species_stag_beetle",
+                       "species_lichens", "area", "recreation", "blocked_parcels")
+  
+  if (!all(required_fields %in% names(body))) {
+    return(list(error = "Missing required fields in request body."))
   }
   
+  # Extract blocked parcels
+  blocked_parcels <- body$blocked_parcels
+  
+  # Debug: Check the structure of blocked_parcels
+  print("Blocked parcels:")
+  print(blocked_parcels)
+  str(blocked_parcels)  # Check the structure of blocked_parcels
+  
+  # If blocked_parcels is a data frame, you can check directly for columns
+  if (is.data.frame(blocked_parcels)) {
+    # Validate each row in the data frame
+    for (i in 1:nrow(blocked_parcels)) {
+      parcel <- as.data.frame(blocked_parcels[i, , drop = FALSE])  # Convert to data frame row
+      
+      # Check if required columns exist
+      if (!"parcel_id" %in% colnames(parcel) || !"blocked_until_year" %in% colnames(parcel)) {
+        return(list(error = "Each parcel must have 'parcel_id' and 'blocked_until_year'."))
+      }
+      
+      # Inspect parcel fields
+      print(paste("Inspecting parcel", i))
+      print(parcel)
+      print(paste("Parcel ID: ", parcel$parcel_id))  # Debug: print parcel_id
+    }
+  } else {
+    return(list(error = "`blocked_parcels` must be a data frame."))
+  }
+  
+  # Continue with backend logic
+  parcel_data <- generate_parcel_data()
+  
+  # Update blocked parcels in the backend logic
+  for (i in 1:nrow(blocked_parcels)) {
+    parcel <- as.data.frame(blocked_parcels[i, , drop = FALSE])  # Convert to data frame row
+    parcel_data$is_blocked[parcel_data$parcel_id == parcel$parcel_id] <- TRUE
+    parcel_data$blocked_until_year[parcel_data$parcel_id == parcel$parcel_id] <- parcel$blocked_until_year
+  }
+  
+  # Convert to GeoJSON
+  geojson <- geojsonsf::sf_geojson(parcel_data)
+  return(geojson)
+}
+
+
+#* Generate parcel data
+#* @get /generate_parcels
+#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
+#* @serializer json
+function() {
   # Generate parcel data
   parcel_data <- generate_parcel_data()
   geojson <- geojsonsf::sf_geojson(parcel_data)
-  
   return(geojson)
 }
 
