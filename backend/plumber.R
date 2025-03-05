@@ -84,7 +84,6 @@ function(res) {
 #* curl -X PUT -H "Content-Type: multipart/form-data" -F "file_to_upload=@decision_units.json" localhost:<port>/upload
 #* curl -X PUT -H "Content-Type: multipart/form-data" -F "file_to_upload=@outcomes.json" localhost:<port>/upload
 #* @put /upload
-#* @parser octet
 #* @param file_to_upload:[file] File to upload
 #* @response 200 Success: The file was saved to disk
 #* @response 400 Bad request: The file name is incorrect
