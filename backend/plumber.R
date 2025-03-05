@@ -1060,16 +1060,19 @@ function(res, LOG_LEVEL = "info") {
   })
   
   # Remove functions from environment (can't remove base functions though), they are already in the frontend and take a lot of space to return
+  msg <- "Removing functions from environment ..."
+  notif(msg, log_level = "debug")
   for (object_name in ls(new_environment)) {
-    object <- get(object_name)
+    object <- get(object_name, envir = new_environment)
     if ("function" %in% class(object)) {
       # Remove if not part of base package
       packages <- find(object_name)
       if (isFALSE("package:base" %in% packages)) {
-        try(rm(object, envir = new_environment))
+        try(rm(object_name, envir = new_environment))
       }
     }
   }
+  notif(paste(msg, "done"), log_level = "debug")
   
   plan(sequential)
   
