@@ -1,7 +1,11 @@
 get_backend_folder_save_data <- function() {
-  return(file.path(Sys.getenv("HOME"), "backend") |>
-           normalizePath() |>
-           sub(pattern = "//", replacement = "/"))
+  folder_path <- file.path(Sys.getenv("HOME"), "backend") |>
+    normalizePath(mustWork = FALSE) |>
+    sub(pattern = "//", replacement = "/")
+  if (isFALSE(dir.exists(folder_path))) {
+    dir.create(folder_path, recursive = TRUE)
+  }
+  return(folder_path)
 }
 
 CalcProbaMat<-function(IVECloc, LimitsMatloc,Above=rep(TRUE,dim(IVECloc)[2]))
