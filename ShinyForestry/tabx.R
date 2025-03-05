@@ -54,7 +54,7 @@ fetch_api_data_post <- function(json_payload) {
 
 fetch_api_data <- function() {
   
-  url <- paste0("http://127.0.0.1:8010/generate_parcels")
+  url <- paste0("http://127.0.0.1:8011/generate_parcels")
   # Make the API request
   response <- httr::GET(url)
   # Check if the response is successful
@@ -357,12 +357,20 @@ server <- function(input, output, session) {
   # !TODO do these need to be reset?
   new_data <- reactiveVal(NULL) # most recent data
   filtered_data <- reactiveVal(NULL) # data filtered by year
+  filtered_data_blocked <- reactiveVal(NULL) # data filtered by year
   panel_expanded <- reactiveVal(FALSE)
   output_data <- reactiveVal(NULL)
+  previously_blocked <- reactiveVal(data.frame(parcel_id = character(), blocked_until_year = integer()))
   
   current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
   # clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
   clicked_polygons <- reactiveVal(data.frame(
+    parcel_id = character(),  # Empty initially
+    blocked_until_year = numeric(),
+    stringsAsFactors = FALSE
+  ))
+  
+  clicked_polygons_injest <- reactiveVal(data.frame(
     parcel_id = character(),  # Empty initially
     blocked_until_year = numeric(),
     stringsAsFactors = FALSE
@@ -567,15 +575,24 @@ server <- function(input, output, session) {
       # Apply the filter based on the selected year
       new_data(new_data_fetched)
       
+      print(new_data_fetched)
+      
       # Initialize clicked_polygons() with all parcel_ids and a default blocked_until_year
       clicked_polygons(data.frame(
-        parcel_id = new_data_fetched$parcel_id,  
-        blocked_until_year = 0,  
+        parcel_id = new_data_fetched$parcel_id,
+        blocked_until_year = new_data_fetched$blocked_until_year,
+        stringsAsFactors = FALSE
+      ))
+      
+      clicked_polygons_injest(data.frame(
+        parcel_id = new_data_fetched$parcel_id,
+        blocked_until_year = new_data_fetched$blocked_until_year,
         stringsAsFactors = FALSE
       ))
       
       filtered_data_subset <- new_data_fetched[new_data_fetched$planting_year <= input_year, ]
       filtered_data(filtered_data_subset)
+      
       current_layers(filtered_data_subset$parcel_id)
       
       # Update conifer and deciduous data based on the fetched data
@@ -636,6 +653,17 @@ server <- function(input, output, session) {
             # popup = "Unavailable for planting"
           ) %>%
           
+          addPolygons(
+            data = filtered_data_subset,  # Filtered data based on the year
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
+            fillOpacity = FILL_OPACITY,
+            layerId = ~parcel_id,
+            label = ~parcel_id,
+            # popup = ~planting_type
+          ) %>%
+          
           # Add legend
           addLegend(
             position = "topright",
@@ -656,7 +684,7 @@ server <- function(input, output, session) {
   })
   
   # Initialize the map on app start
-  initialize_or_update_map(YEAR_MIN)
+  initialize_or_update_map(YEAR_MIN, json_payload = NULL)
   
   # Handle submit event to update the map
   observeEvent(input$submit, {
@@ -772,12 +800,19 @@ server <- function(input, output, session) {
       return()
     }
     
-    # Check safely if the parcel exists in the list
-    parcel_exists <- any(current_clicked$parcel_id == clicked_parcel_id, na.rm = TRUE)
+    # Check if the parcel exists in the list
+    parcel_index <- which(current_clicked$parcel_id == clicked_parcel_id)
     
-    if (parcel_exists) {
-      # Update the `blocked_until_year` for the clicked parcel
-      current_clicked$blocked_until_year[current_clicked$parcel_id == clicked_parcel_id] <- selected_year
+    if (length(parcel_index) > 0) {
+      # If the parcel is already blocked until the selected year, reset it to 0
+      if (current_clicked$blocked_until_year[parcel_index] == selected_year) {
+        current_clicked$blocked_until_year[parcel_index] <- 0
+        print(paste("Parcel", clicked_parcel_id, "unblocked (set to year 0)."))
+      } else {
+        # Otherwise, update it to the selected year
+        current_clicked$blocked_until_year[parcel_index] <- selected_year
+        print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
+      }
     } else {
       print("Clicked parcel is not in the list.")  # Debugging message
       return()
@@ -816,9 +851,10 @@ current_clicked <- clicked_polygons()
 # In your server code:
 values_changed <- !identical(current_values, initial_values())
 current_clicked <- clicked_polygons()
+current_clicked_in <- clicked_polygons_injest()
 
 # Check if values have changed or if there are any blocked parcels
-if (values_changed || nrow(current_clicked[current_clicked$blocked_until_year != 0, ]) != 0) {
+if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0)) { # !TODO this is broken now that I keep the clicked stuff
   # Disable Save button as changes require submission
   shinyjs::disable("save")  # Disable the save button
   
@@ -870,6 +906,11 @@ if (values_changed || nrow(current_clicked[current_clicked$blocked_until_year !=
         blocked_parcels <- NULL
         unblocked_parcels <- NULL
       }
+      
+      # Handle unclicks
+      prev_blocked <- previously_blocked()
+      unclicked_parcels <- prev_blocked[!(prev_blocked$parcel_id %in% blocked_parcels$parcel_id), ]
+      previously_blocked(blocked_parcels)
       
       # # Filter the data based on the selected year and update `filtered_data`
       # filtered_data_subset <- current_data[current_data$planting_year <= input_year, ]
@@ -928,6 +969,7 @@ if (values_changed || nrow(current_clicked[current_clicked$blocked_until_year !=
       }
       
       current_layers(current_ids)
+      # Need to do something similar for blocked
       
       # Now handle Blocked Parcels (those that are blocked until input_year)
       if (length(blocked_parcels) > 0) {
@@ -944,6 +986,23 @@ if (values_changed || nrow(current_clicked[current_clicked$blocked_until_year !=
             group = "BlockedPolygons",
             layerId = blk$parcel_id,  # Reassign the same layerId for blocked polygons
             label = ~paste("Parcel ID:", parcel_id, "Blocked Until:", blocked_parcels$blocked_until_year[blocked_parcels$parcel_id == parcel_id])
+          )
+      }
+      
+      if (length(unclicked_parcels) > 0) {
+        unclk <- current_data[current_data$parcel_id %in% unclicked_parcels$parcel_id, ]
+        
+        # Recolor unblocked polygons and update them (reassign color based on planting_type)
+        leafletProxy("map") %>%
+          addPolygons(
+            data = unclk,  # Data for unblocked parcels
+            weight = 1,
+            color = PARCEL_LINE_COLOUR,
+            fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+            fillOpacity = FILL_OPACITY,
+            group = "UnblockedPolygons",
+            layerId = unclk$parcel_id,  # Reassign the same layerId for unblocked polygons
+            label = ~paste("Parcel ID:", parcel_id)
           )
       }
       
