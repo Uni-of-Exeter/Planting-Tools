@@ -79,9 +79,11 @@ function(req, res, file_to_upload) {
   
   acceptable_file_names <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
   
-  elicitor_outout_folder <- normalizePath(file.path("ElicitorOutput"))
-  if (isFALSE(dir.exists(elicitor_outout_folder))) {
-    dir.create(elicitor_outout_folder, recursive = TRUE)
+  save_folder <- get_folder_save_data()
+  elicitor_output_folder <- normalizePath(file.path(save_folder, "ElicitorOutput"))
+  
+  if (isFALSE(dir.exists(elicitor_output_folder))) {
+    dir.create(elicitor_output_folder, recursive = TRUE)
   }
   
   
@@ -93,7 +95,7 @@ function(req, res, file_to_upload) {
     res$status <- 400
     return(paste("Bad request: The file name is incorrect, it should be one of", acceptable_file_names, "and you sent", filename))
   }
-  file_path <- normalizePath(file.path(elicitor_outout_folder, filename))
+  file_path <- normalizePath(file.path(elicitor_output_folder, filename))
   
   file.copy(from = multi$file_to_upload$datapath, to = file_path,
             overwrite = TRUE)
@@ -117,7 +119,9 @@ function(req, res, file_to_upload) {
 #* @response 404 Not found: The file was not found
 function(res, filename, md5sum) {
   
-  file <- file.path("ElicitorOutput", filename)
+  save_folder <- get_folder_save_data()
+  elicitor_output_folder <- normalizePath(file.path(save_folder, "ElicitorOutput"))
+  file <- file.path(elicitor_output_folder, filename)
   if (file.exists(file)) {
     
     hash <- tools::md5sum(file)
