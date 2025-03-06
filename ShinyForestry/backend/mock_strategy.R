@@ -58,8 +58,8 @@ generate_parcel_data <- function() {
   planting_years <- sample(2025:2049, n, replace = TRUE)
   planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
   planting_years[is.na(planting_types)] <- NA
-  is_available <- FALSE
-  blocked_until_year <- NA
+  is_avail <- FALSE
+  blocked_until <- 0
   
   parcel_data <- st_sf(
     parcel_id = empty_parcel_data$parcel_id,
@@ -67,10 +67,12 @@ generate_parcel_data <- function() {
     parcel_area = parcel_areas,
     planting_year = planting_years,
     planting_type = planting_types,
-    is_blocked = is_blocked,
+    is_available = is_avail,
+    blocked_until_year = blocked_until,
     crs = st_crs(FullTable)
   )
   
+  print(parcel_data)
   return(parcel_data)
 }
 
@@ -95,7 +97,7 @@ function() {
   return(slider_info)
 }
 
-# Example Outpuit
+# Example Output
 # 
 # {
 #   "planting_year": {
@@ -137,6 +139,56 @@ function() {
 # 8  2a110f23-eb3c-4608-a2e6-28c4e2fd673e POLYGON ((-1.762628 50.8344...
 # 9  3451c88f-3298-4159-89d9-7bd79b4ff513 POLYGON ((-1.762547 50.8200...
 # 10 fa5558f3-a884-44cd-a9db-6b1876ff68cc POLYGON ((-1.760264 50.8301...
+
+
+
+
+
+
+
+# ---- GENERATE_PARCELS
+# -- Expected Input
+# {
+#   "carbon": 800,
+#   "species": 12,
+#   "species_goat_moth": 90,
+#   "species_stag_beetle": 20,
+#   "species_lichens": 2,
+#   "area": 7,
+#   "recreation": 10,
+#   "blocked_parcels": [
+#     {
+#       "parcel_id": "4fe067d1-d80d-4d33-8323-4a4403d2b4a5",
+#       "blocked_until_year": 2025
+#     },
+#     {
+#       "parcel_id": "9af563df-2be3-4520-bdd0-dbd26638a063",
+#       "blocked_until_year": 2025
+#     }
+#   ]
+# } 
+
+# -- Expected Output list(values, geojson)
+# {
+#   "carbon": 852,
+#   "species": 18,
+#   "species_goat_moth": 91,
+#   "species_stag_beetle": 22,
+#   "species_lichens": 4,
+#   "area": 5,
+#   "recreation": 16,
+# } 
+#                               parcel_id parcel_area planting_year planting_type is_available blocked_until_year is_blocked                       geometry
+# 1  bdd124e7-a162-4602-bff3-eb5e438d1440 0.022698955            NA          <NA>        FALSE                  0         NA POLYGON ((-1.756976 50.8314...
+# 2  162f46c9-dd15-42eb-aa6d-fbbafe002bb6 0.036774571          2043       Conifer        FALSE                  0         NA POLYGON ((-1.766385 50.8160...
+# 3  cc38292e-c59c-46b5-84b5-b4a015622d61 0.034369548          2038       Conifer        FALSE                  0         NA POLYGON ((-1.765671 50.8316...
+# 4  558f048b-c156-4bf8-9f8f-5dbfce356210 0.027595724            NA          <NA>        FALSE                  0         NA POLYGON ((-1.759141 50.8113...
+# 5  48fe3001-8443-4f08-b403-d2304a6c80a9 0.009152795            NA          <NA>        FALSE                  0         NA POLYGON ((-1.759423 50.8109...
+# 6  7b66b5a2-8f68-4bba-adf8-6285fc96940a 0.021871169          2044     Deciduous        FALSE                  0         NA POLYGON ((-1.761 50.83261, ...
+# 7  a41dfe2f-1856-4806-bf8d-7955d10565bc 0.015572843            NA          <NA>        FALSE                  0         NA POLYGON ((-1.763823 50.825,...
+# 8  e52438b7-acf3-4428-b148-bd5b5ea7313e 0.017445100            NA          <NA>        FALSE                  0         NA POLYGON ((-1.762628 50.8344...
+# 9  c033b36f-e7dd-4bdb-9deb-a008e442c413 0.015956941          2045       Conifer        FALSE                  0         NA POLYGON ((-1.762547 50.8200...
+# 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>        FALSE                  0         NA POLYGON ((-1.760264 50.8301...
 
 
 #* Generate parcel data
@@ -186,8 +238,13 @@ function(req) {
       print(parcel)
       print(paste("Parcel ID: ", parcel$parcel_id))  # Debug: print parcel_id
     }
+  } else if (is.list(blocked_parcels)) {
+    # If blocked_parcels is an empty list, create an empty data frame
+    if (length(blocked_parcels) == 0) {
+      blocked_parcels <- data.frame(parcel_id = character(0), blocked_until_year = numeric(0))
+    }
   } else {
-    return(list(error = "`blocked_parcels` must be a data frame."))
+    return(list(error = "`blocked_parcels` must be a data frame or a list."))
   }
   
   # Continue with backend logic
@@ -200,10 +257,26 @@ function(req) {
     parcel_data$blocked_until_year[parcel_data$parcel_id == parcel$parcel_id] <- parcel$blocked_until_year
   }
   
+  # Create dummy payload
+  payload <- list(
+    carbon = as.numeric(body$carbon * runif(1, min = 0.9, max = 1.1)),
+    species = as.numeric(body$species * runif(1, min = 0.9, max = 1.1)),
+    species_goat_moth = as.numeric(body$species_goat_moth * runif(1, min = 0.9, max = 1.1)),
+    species_stag_beetle = as.numeric(body$species_stag_beetle * runif(1, min = 0.9, max = 1.1)),
+    species_lichens = as.numeric(body$species_lichens * runif(1, min = 0.9, max = 1.1)),
+    area = as.numeric(body$area * runif(1, min = 0.9, max = 1.1)),
+    recreation = as.numeric(body$recreation * runif(1, min = 0.9, max = 1.1))
+  )
+  
   # Convert to GeoJSON
   geojson <- geojsonsf::sf_geojson(parcel_data)
-  return(geojson)
+  
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
 }
+
 
 
 #* Generate parcel data
@@ -214,22 +287,22 @@ function() {
   # Generate parcel data
   parcel_data <- generate_parcel_data()
   geojson <- geojsonsf::sf_geojson(parcel_data)
-  return(geojson)
+  
+  payload <- list(
+    carbon = as.numeric(2),
+    species = as.numeric(3),
+    species_goat_moth = as.numeric(4),
+    species_stag_beetle = as.numeric(2),
+    species_lichens = as.numeric(6),
+    area = as.numeric(3),
+    recreation = as.numeric(4)
+  )
+  
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
 }
-
-
-# Example Output
-#                               parcel_id parcel_area planting_year planting_type is_blocked                       geometry
-# 1  f4b4e4d0-7f09-4d26-a7b7-bab5b3151a57 0.022698955            NA          <NA>      FALSE POLYGON ((-1.756976 50.8314...
-# 2  26841c10-5fdb-4988-8795-50ef9038ed5d 0.036774571          2026       Conifer      FALSE POLYGON ((-1.766385 50.8160...
-# 3  cb4fdd41-11ac-426e-b4d6-c04ea47ea14d 0.034369548            NA          <NA>      FALSE POLYGON ((-1.765671 50.8316...
-# 4  cae4aa35-d2a9-415c-86ef-873d281855d3 0.027595724            NA          <NA>      FALSE POLYGON ((-1.759141 50.8113...
-# 5  bd20ad23-6046-46b8-8efa-ddb018d6d865 0.009152795          2035     Deciduous      FALSE POLYGON ((-1.759423 50.8109...
-# 6  26864357-0046-448e-8b08-ebf00c61fa0a 0.021871169          2048       Conifer      FALSE POLYGON ((-1.761 50.83261, ...
-# 7  447118a9-ede7-48cb-af07-c5fa822193e5 0.015572843            NA          <NA>      FALSE POLYGON ((-1.763823 50.825,...
-# 8  2a110f23-eb3c-4608-a2e6-28c4e2fd673e 0.017445100            NA          <NA>      FALSE POLYGON ((-1.762628 50.8344...
-# 9  3451c88f-3298-4159-89d9-7bd79b4ff513 0.015956941            NA          <NA>      FALSE POLYGON ((-1.762547 50.8200...
-# 10 fa5558f3-a884-44cd-a9db-6b1876ff68cc 0.035769157          2030     Deciduous      FALSE POLYGON ((-1.760264 50.8301...
 
 
 # Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`
