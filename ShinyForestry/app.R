@@ -13,10 +13,14 @@ set.seed(1)
 
 BACKEND_HOST <- "http://144.173.60.164:40000"
 
+FolderSource <- normalizePath(".")
+
 if (file.exists("ShinyForestry")) {
   elicitor_folder <- normalizePath(file.path("ShinyForestry", "ElicitorOutput"))
+  FolderSource <- normalizePath(file.path("ShinyForestry"))
 } else {
   elicitor_folder <- normalizePath(file.path("ElicitorOutput"))
+  FolderSource <- normalizePath(".")
 }
 
 # If a file does not exist, stop everything
