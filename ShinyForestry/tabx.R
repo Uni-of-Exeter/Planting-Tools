@@ -24,7 +24,7 @@ FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(nor
 
 fetch_api_data_post <- function(json_payload) {
   
-  url <- "http://127.0.0.1:8011/generate_parcels"
+  url <- "http://127.0.0.1:8012/generate_parcels"
   
   # Make the API POST request with JSON payload
   response <- httr::POST(
@@ -40,11 +40,13 @@ fetch_api_data_post <- function(json_payload) {
   if (httr::status_code(response) == 200) {
     
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
-    geojson <- jsonlite::fromJSON(content_raw)
-    geojson_parsed <- st_read(geojson, quiet = TRUE)
+    api_response <- jsonlite::fromJSON(content_raw)
     
-    print(geojson_parsed)
-    return(geojson_parsed)
+    geojson <- api_response$geojson
+    geojson_parsed <- st_read(geojson, quiet=TRUE)
+    
+    values <- api_response$values
+    return(list(geojson_parsed, values))
     
   } else {
     stop(paste("Request failed with status:", httr::status_code(response)))
@@ -54,17 +56,20 @@ fetch_api_data_post <- function(json_payload) {
 
 fetch_api_data <- function() {
   
-  url <- paste0("http://127.0.0.1:8011/generate_parcels")
+  url <- paste0("http://127.0.0.1:8012/generate_parcels")
   # Make the API request
   response <- httr::GET(url)
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
 
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
-    geojson <- jsonlite::fromJSON(content_raw)
+    api_response <- jsonlite::fromJSON(content_raw)
+    
+    geojson <- api_response$geojson
     geojson_parsed <- st_read(geojson, quiet=TRUE)
     
-    return(geojson_parsed)
+    values <- api_response$values
+    return(list(geojson_parsed, values))
     } 
   else {
     stop(paste("Request failed with status:", httr::status_code(response)))
@@ -73,7 +78,7 @@ fetch_api_data <- function() {
 
 # Function to fetch slider data
 fetch_slider_values <- function() {
-  url <- "http://127.0.0.1:8010/slider_values"
+  url <- "http://127.0.0.1:8012/slider_values"
   response <- httr::GET(url)
   
   if (httr::status_code(response) == 200) {
@@ -208,6 +213,10 @@ ui <- fluidPage(
         accordion_panel(
           "Saved Strategies",
           uiOutput("saved_strategies")
+        ),
+        accordion_panel(
+          "Values",
+          uiOutput("recent_vals")  # Placeholder for dynamic sliders
         )
         # accordion_panel(
         #   "Dynamic Sliders",
@@ -356,6 +365,8 @@ server <- function(input, output, session) {
   
   # !TODO do these need to be reset?
   new_data <- reactiveVal(NULL) # most recent data
+  new_vals <- reactiveVal(NULL) # most recent values
+  
   filtered_data <- reactiveVal(NULL) # data filtered by year
   filtered_data_blocked <- reactiveVal(NULL) # data filtered by year
   panel_expanded <- reactiveVal(FALSE)
@@ -375,6 +386,23 @@ server <- function(input, output, session) {
     blocked_until_year = numeric(),
     stringsAsFactors = FALSE
   ))
+  
+  output$recent_vals <- renderUI({
+    # Get the current value of the reactive variable
+    current_value <- new_vals()
+    
+    # Create a list of name-value pairs dynamically
+    value_list <- lapply(names(current_value), function(name) {
+      tagList(
+        strong(name),  # Name in bold
+        ": ",
+        round(current_value[[name]], POPUP_SIGFIG), HTML("</br>")  # Value of the current element
+      )
+    })
+    
+    # Return the list of name-value pairs as a tag list
+    do.call(tagList, value_list)
+  })
   
   saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
@@ -563,17 +591,23 @@ server <- function(input, output, session) {
     # Fetch the data from the API when initializing or submitting
     # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
 
-    new_data_fetched <- if (!is.null(data)) {
-      data
+    new_fetched <- if (!is.null(data)) {
+      list(data, NULL)
     } else if (!is.null(json_payload)) {
       fetch_api_data_post(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
     } else {
       fetch_api_data()  # Use GET otherwise
     }
     
+    new_data_fetched <- new_fetched[[1]]
+    new_values_fetched <- new_fetched[[2]]
+    
+    print(new_values_fetched)
+    
     if (!is.null(new_data_fetched)) {
       # Apply the filter based on the selected year
       new_data(new_data_fetched)
+      new_vals(new_values_fetched)
       
       print(new_data_fetched)
       
@@ -685,6 +719,7 @@ server <- function(input, output, session) {
   
   # Initialize the map on app start
   initialize_or_update_map(YEAR_MIN, json_payload = NULL)
+  
   
   # Handle submit event to update the map
   observeEvent(input$submit, {
