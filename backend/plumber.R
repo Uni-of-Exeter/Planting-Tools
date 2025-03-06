@@ -1106,6 +1106,15 @@ function(res, LOG_LEVEL = "info") {
   # Merge the environment into the global environment
   list2env(as.list(new_environment), envir = .GlobalEnv)
   
+  
+  rm(list("ElicitorAppFolder",
+          "DataFilesFolder",
+          "DownscalingImagesFolder",
+          "CalculatedFilesFolder",
+          "save_folder",
+          "save_folder_elicitoroutput"),
+     envir = new_environment)
+  
   notif("Backend initialization ... done")
   
   res$status <- 200
