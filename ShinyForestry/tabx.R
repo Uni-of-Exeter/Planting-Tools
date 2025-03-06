@@ -15,16 +15,16 @@ library(units)
 library(shinyWidgets)
 library(plotly)
 library(leaflet.extras)
+library(glue)
 
-setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/")
+source("config.R")
 
-source("ShinyForestry/config.R")
-
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ShinyForestry/ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
+FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
 
 fetch_api_data_post <- function(json_payload) {
   
-  url <- "http://127.0.0.1:8012/generate_parcels"
+  url <- "http://127.0.0.1:8000/generate_parcels"
+  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
   
   # Make the API POST request with JSON payload
   response <- httr::POST(
@@ -56,7 +56,9 @@ fetch_api_data_post <- function(json_payload) {
 
 fetch_api_data <- function() {
   
-  url <- paste0("http://127.0.0.1:8012/generate_parcels")
+  url <- "http://127.0.0.1:8000/generate_parcels"
+  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
+  
   # Make the API request
   response <- httr::GET(url)
   # Check if the response is successful
@@ -78,7 +80,9 @@ fetch_api_data <- function() {
 
 # Function to fetch slider data
 fetch_slider_values <- function() {
-  url <- "http://127.0.0.1:8012/slider_values"
+  url <- "http://127.0.0.1:8000/generate_parcels"
+  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
+  
   response <- httr::GET(url)
   
   if (httr::status_code(response) == 200) {
@@ -603,6 +607,7 @@ server <- function(input, output, session) {
     new_values_fetched <- new_fetched[[2]]
     
     print(new_values_fetched)
+    print(new_data_fetched)
     
     if (!is.null(new_data_fetched)) {
       # Apply the filter based on the selected year
