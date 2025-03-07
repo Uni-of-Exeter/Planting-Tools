@@ -1091,12 +1091,15 @@ function(res, LOG_LEVEL = "info") {
   notif(msg, log_level = "debug")
   for (object_name in ls(new_environment)) {
     object <- get(object_name, envir = new_environment)
-    if ("function" %in% class(object)) {
-      # Remove if not part of base package
-      packages <- find(object_name)
-      if (isFALSE("package:base" %in% packages)) {
-        try(rm(list = object_name, envir = new_environment))
-      }
+    if (isTRUE("function" %in% class(object)) &&
+        isFALSE("reactive" %in% class(object))) {
+        
+        # Remove if not part of base package
+        packages <- find(object_name)
+        if (isFALSE("package:base" %in% packages)) {
+          try(rm(list = object_name, envir = new_environment))
+        }
+        
     }
   }
   notif(paste(msg, "done"), log_level = "debug")
