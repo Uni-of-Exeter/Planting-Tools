@@ -13,10 +13,9 @@ library(uuid)
 library(geojsonsf)
 
 # Define file paths
-setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/ShinyForestry/")
 FolderSource <- normalizePath(getwd())
-ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
-CalculatedFilesFolder <- normalizePath(file.path(FolderSource, "CalculatedFiles"))
+ElicitorAppFolder <- normalizePath(file.path(FolderSource, "../../ShinyForestry/ElicitorOutput"))
+CalculatedFilesFolder <- normalizePath(file.path(FolderSource, "../../ShinyForestry/CalculatedFiles"))
 
 print("Loading data...")
 FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
