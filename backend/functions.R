@@ -2666,8 +2666,11 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
           across(starts_with("Bio_Mean"),
                  # ~ sum(.x) / sum(proportion_intersection_in_bio)),
                  function(.x) {
-                   # # Only increase the progress bar every many iterations to avoid spending too much time printing things
-                   if (dplyr::cur_group_id() == 1) {pb(message = msg)}
+                   # Only increase the progress bar every many iterations to avoid spending too much time printing things
+                   if (dplyr::cur_group_id() == 1) {
+                     pb(message = msg)
+                     notif(paste("5/7 subjob", msg), log_level = "debug", limit_log_level = limit_log_level)
+                   }
                    sum(.x) / sum(proportion_intersection_in_bio)
                  }),
           
