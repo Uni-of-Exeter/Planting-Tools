@@ -840,9 +840,9 @@ function(res, LOG_LEVEL = "info") {
                                                limit_log_level = LOG_LEVEL)
     
     
-    
-    Simul636YearOverrideReactive<-reactiveVal(vector("list",dim(simul636YearType$YEAR)[2]))
-    Simul636YearTypeOverrideReactive<-reactiveVal(vector("list",dim(simul636YearType$YEAR)[2]))
+    # Load the value into a reactive variable on the frontend directly
+    Simul636YearOverrideReactive_toload_in_reactiveVal <- vector("list",dim(simul636YearType$YEAR)[2])
+    Simul636YearTypeOverrideReactive_toload_in_reactiveVal <- vector("list",dim(simul636YearType$YEAR)[2])
     
     
     
@@ -1091,8 +1091,7 @@ function(res, LOG_LEVEL = "info") {
   notif(msg, log_level = "debug")
   for (object_name in ls(new_environment)) {
     object <- get(object_name, envir = new_environment)
-    if (isTRUE("function" %in% class(object)) &&
-        isFALSE("reactive" %in% class(object))) {
+    if (isTRUE("function" %in% class(object))) {
         
         # Remove if not part of base package
         packages <- find(object_name)

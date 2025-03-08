@@ -132,6 +132,10 @@ file.remove(temp_file)
 # Merge the backend environment into the global environment
 list2env(as.list(env), envir = .GlobalEnv)
 
+# Load reactive variables properly
+Simul636YearOverrideReactive <- reactiveVal(Simul636YearOverrideReactive_toload_in_reactiveVal)
+Simul636YearTypeOverrideReactive <- reactiveVal(Simul636YearTypeOverrideReactive_toload_in_reactiveVal)
+
 msg <- paste(msg, "done")
 notif(msg)
 
