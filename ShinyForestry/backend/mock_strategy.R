@@ -57,7 +57,6 @@ generate_parcel_data <- function() {
   planting_years <- sample(2025:2049, n, replace = TRUE)
   planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
   planting_years[is.na(planting_types)] <- NA
-  is_avail <- FALSE
   blocked_until <- 0
   
   parcel_data <- st_sf(
@@ -66,7 +65,6 @@ generate_parcel_data <- function() {
     parcel_area = parcel_areas,
     planting_year = planting_years,
     planting_type = planting_types,
-    is_available = is_avail,
     blocked_until_year = blocked_until,
     crs = st_crs(FullTable)
   )
@@ -84,39 +82,21 @@ function() {
   list(status = "OK", message = "Plumber API is running")
 }
 
-
 #* Get slider values
 #* @get /slider_values
 #* @serializer json
 function() {
   slider_info <- list(
-    planting_year = list(min = 2025, max = 2049),
-    parcel_area = list(min = min(FullTable$area, na.rm = TRUE), max = max(FullTable$area, na.rm = TRUE))
+    carbon = list(min = 500, max = 1000, default = 800),
+    species = list(min = 0, max = 25, default = 10),
+    species_goat_moth = list(min = 0, max = 100, default = 25),
+    species_stag_beetle = list(min = 0, max = 100, default = 30),
+    species_lichens = list(min = 0, max = 5, default = 2),
+    area = list(min = 0, max = 15, default = 10),
+    recreation = list(min = 0, max = 20, default = 15)
   )
   return(slider_info)
 }
-
-# Example Output
-# 
-# {
-#   "planting_year": {
-#     "min": [
-#       2025
-#     ],
-#     "max": [
-#       2049
-#     ]
-#   },
-#   "parcel_area": {
-#     "min": [
-#       0.005
-#     ],
-#     "max": [
-#       0.452
-#     ]
-#   }
-# }
-
 
 #* Generate empty parcels
 #* @get /empty_parcels
@@ -258,13 +238,13 @@ function(req) {
   
   # Create dummy payload
   payload <- list(
-    carbon = as.numeric(body$carbon * runif(1, min = 0.9, max = 1.1)),
-    species = as.numeric(body$species * runif(1, min = 0.9, max = 1.1)),
-    species_goat_moth = as.numeric(body$species_goat_moth * runif(1, min = 0.9, max = 1.1)),
-    species_stag_beetle = as.numeric(body$species_stag_beetle * runif(1, min = 0.9, max = 1.1)),
-    species_lichens = as.numeric(body$species_lichens * runif(1, min = 0.9, max = 1.1)),
-    area = as.numeric(body$area * runif(1, min = 0.9, max = 1.1)),
-    recreation = as.numeric(body$recreation * runif(1, min = 0.9, max = 1.1))
+    carbon = as.numeric(body$carbon), # 3* runif(1, min = 0.9, max = 1.1)),
+    species = as.numeric(body$species), # * runif(1, min = 0.9, max = 1.1)),
+    species_goat_moth = as.numeric(body$species_goat_moth), # * runif(1, min = 0.9, max = 1.1)),
+    species_stag_beetle = as.numeric(body$species_stag_beetle), # * runif(1, min = 0.9, max = 1.1)),
+    species_lichens = as.numeric(body$species_lichens), # * runif(1, min = 0.9, max = 1.1)),
+    area = as.numeric(body$area), # * runif(1, min = 0.9, max = 1.1)),
+    recreation = as.numeric(body$recreation) # * runif(1, min = 0.9, max = 1.1))
   )
   
   # Convert to GeoJSON
@@ -275,33 +255,5 @@ function(req) {
     geojson = geojson
   ))
 }
-
-
-
-#* Generate parcel data
-#* @get /generate_parcels
-#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
-#* @serializer json
-function() {
-  # Generate parcel data
-  parcel_data <- generate_parcel_data()
-  geojson <- geojsonsf::sf_geojson(parcel_data)
-  
-  payload <- list(
-    carbon = as.numeric(2),
-    species = as.numeric(3),
-    species_goat_moth = as.numeric(4),
-    species_stag_beetle = as.numeric(2),
-    species_lichens = as.numeric(6),
-    area = as.numeric(3),
-    recreation = as.numeric(4)
-  )
-  
-  return(list(
-    values = payload,
-    geojson = geojson
-  ))
-}
-
 
 # Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`
