@@ -20,8 +20,6 @@ CalculatedFilesFolder <- normalizePath(file.path(FolderSource, "../../ShinyFores
 print("Loading data...")
 FullTable <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableMerged.geojson")))
 FullTableNotAvail <- st_read(normalizePath(file.path(ElicitorAppFolder, "FullTableNotAvail.geojson")))
-load(normalizePath(file.path(CalculatedFilesFolder, "simul636YearType.RData")))
-load(normalizePath(file.path(CalculatedFilesFolder, "SubsetMeetTargets.RData")))
 print("Data loading complete.")
 
 # Global variable for empty parcels
