@@ -45,7 +45,7 @@ fetch_api_data_post <- function(json_payload) {
     geojson <- api_response$geojson
     geojson_parsed <- st_read(geojson, quiet=TRUE)
     
-    Sys.sleep(5)
+    Sys.sleep(1)
     values <- api_response$values
     return(list(geojson_parsed, values))
     
@@ -194,7 +194,6 @@ ui <- fluidPage(
       mainPanel(
         class = "main-panel",
         leafletOutput("map", height = "100%"),
-        
         absolutePanel(
           id = "year-slider",
           sliderInput("year", "Planting Year", 
@@ -709,19 +708,28 @@ server <- function(input, output, session) {
   current_year <- reactive({
     input$year
   })
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   # Handle submit event to update the map
   observeEvent(input$submit, {
+    
+    shinyjs::disable("save")
+    shinyjs::disable("reset")
+    shinyjs::disable("submit")
+    shinyjs::disable("carbon")
+    shinyjs::disable("species")
+    shinyjs::disable("species_goat_moth")
+    shinyjs::disable("species_stag_beetle")
+    shinyjs::disable("species_lichens")
+    shinyjs::disable("area")
+    shinyjs::disable("recreation")    
+    shinyjs::disable("carbon_checkbox")
+    shinyjs::disable("species_checkbox")
+    shinyjs::disable("species_goat_moth_checkbox")
+    shinyjs::disable("species_stag_beetle_checkbox")
+    shinyjs::disable("species_lichens_checkbox")
+    shinyjs::disable("area_checkbox")
+    shinyjs::disable("recreation_checkbox")    
+    
     # Save the initial values when the submit button is clicked
     initial_values(list(
       carbon = input$carbon,
@@ -771,7 +779,7 @@ server <- function(input, output, session) {
     
     # Enable the save button when submit is pressed
     shinyjs::enable("save")
-    
+    shinyjs::enable("reset")
     # target = as.numeric(unlist(initial_values()))[1:7]
     
     # output$radarPlot <- renderPlotly({
@@ -811,6 +819,20 @@ server <- function(input, output, session) {
     #   fig
     # })
     
+    shinyjs::enable("carbon")
+    shinyjs::enable("species")
+    shinyjs::enable("species_goat_moth")
+    shinyjs::enable("species_stag_beetle")
+    shinyjs::enable("species_lichens")
+    shinyjs::enable("area")
+    shinyjs::enable("recreation")
+    shinyjs::enable("carbon_checkbox")
+    shinyjs::enable("species_checkbox")
+    shinyjs::enable("species_goat_moth_checkbox")
+    shinyjs::enable("species_stag_beetle_checkbox")
+    shinyjs::enable("species_lichens_checkbox")
+    shinyjs::enable("area_checkbox")
+    shinyjs::enable("recreation_checkbox")  
   })
   
   # Not Tested
