@@ -135,7 +135,7 @@ ui <- fluidPage(
       left: 0; 
       width: 100%; 
       height: 100%; 
-      background-color: rgba(0, 0, 0, 9);  /* Dark background */
+      background-color: rgba(0, 60, 60, 1.0);  /* Dark background */
       color: white; 
       display: flex; 
       justify-content: center; 
