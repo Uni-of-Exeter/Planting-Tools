@@ -45,6 +45,7 @@ fetch_api_data_post <- function(json_payload) {
     geojson <- api_response$geojson
     geojson_parsed <- st_read(geojson, quiet=TRUE)
     
+    Sys.sleep(5)
     values <- api_response$values
     return(list(geojson_parsed, values))
     
@@ -73,6 +74,11 @@ ui <- fluidPage(
   useShinyjs(), # Enable JavaScript functionalities
   theme = bs_theme(bootswatch = "lumen"), # Optional theming
   tags$head(
+    # Add the Google Fonts link for Outfit font
+    tags$link(
+      rel = "stylesheet", 
+      href = "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap"
+    ),
     # Add the Bootstrap Icons library to ensure the icons are available
     tags$link(
       rel = "stylesheet", 
@@ -121,120 +127,121 @@ ui <- fluidPage(
         background: none !important;
         opacity: 1 !important;
     }
+    
+    /* Loading overlay styles */
+    #loading {
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background-color: rgba(0, 0, 0, 9);  /* Dark background */
+      color: white; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      font-size: 24px; 
+      font-weight: light;
+      font-family: 'Outfit', sans-serif; /* Apply Outfit font */
+      z-index: 9999;
+      opacity: 1;  /* Initially fully visible */
+    }
 
   ")),
   
-  div(
-    style = "display: flex; height: 100vh; flex-direction: row; width: 100%;",
-    sidebarPanel(
-      id = "sidebar",
-      width = 3,
-      
-      # Alert with info icon and message
-      HTML('
-        <div class="alert alert-dismissible alert-info">
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          <div class="d-flex align-items-center">
-            <i class="bi bi-info-circle" style="font-size: 1.5rem; margin-right: 10px;"></i>
-            <p class="mb-0">Use the checkboxes and sliders to enable/disable targets and adjust their values.</p>
+  # Wrap everything in app_content and loading divs
+  div(id = "loading", 
+      "Loading... Please wait"
+  ),
+  
+  # Main content of the page wrapped in app_content
+  div(id = "app_content", 
+    # style = "display: none;",  # Initially hidden\
+    style = "display: block;",  # Initially hidden
+    div(
+      style = "display: flex; height: 100vh; flex-direction: row; width: 100%;",
+      sidebarPanel(
+        id = "sidebar",
+        width = 3,
+        
+        # Alert with info icon and message
+        HTML('
+          <div class="alert alert-dismissible alert-info">
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-info-circle" style="font-size: 1.5rem; margin-right: 10px;"></i>
+              <p class="mb-0">Use the checkboxes and sliders to enable/disable targets and adjust their values.</p>
+            </div>
           </div>
-        </div>
-      '),
-      # div(
-      #   style = "padding: 20px; background-color: #f0f0f0; border-radius: 8px;
-      #            box-shadow: 0px 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;",
-      #   h3(HTML("<strong>ADD-TREES</strong>")),
-      #   p("Use the checkboxes and sliders to enable/disable targets and adjust their values.")
-      # ),
-      accordion(
-        id = "main_accordion",
-        accordion_panel(
-          "Targets",
-          id = "targets_accordion",
-          uiOutput("dynamic_sliders"),
-          actionButton("submit", "Submit"),
-          actionButton("reset", "Reset"),
-          actionButton("save", "Save Strategy")
-        ),
-        # accordion(
-        #   accordion_panel(
-        #     "Radar Chart",
-        #     plotlyOutput("radarPlot")
-        #   )
-        # ),
-        accordion_panel(
-          "Saved Strategies",
-          uiOutput("saved_strategies")
-        ),
-      )
-    ),
-    mainPanel(
-      class = "main-panel",
-      leafletOutput("map", height = "100%"),
-      # Absolute Panel for the year-slider, inside the map container
-      absolutePanel(
-        id = "year-slider",
-        sliderInput("year", "Planting Year", 
-                    min = YEAR_MIN, 
-                    max = YEAR_MAX, 
-                    value = YEAR_DEFAULT, 
-                    step = 1, 
-                    animate = TRUE,
-                    ticks = TRUE,  
-                    animateOptions(interval = 100, loop = FALSE),
-                    sep = "",
-                    width = "100%" # This will make the slider take 100% width of the container
-        ),
-        bottom = "50px", 
-        left = "50%", 
-        style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);",
-
-        div(
-          style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px;",
+        '),
+        
+        accordion(
+          id = "main_accordion",
+          accordion_panel(
+            "Targets",
+            id = "targets_accordion",
+            uiOutput("dynamic_sliders"),
+            actionButton("submit", "Submit"),
+            actionButton("reset", "Reset"),
+            actionButton("save", "Save Strategy")
+          ),
+          accordion_panel(
+            "Saved Strategies",
+            uiOutput("saved_strategies")
+          )
+        )
+      ),
+      mainPanel(
+        class = "main-panel",
+        leafletOutput("map", height = "100%"),
+        
+        absolutePanel(
+          id = "year-slider",
+          sliderInput("year", "Planting Year", 
+                      min = YEAR_MIN, 
+                      max = YEAR_MAX, 
+                      value = YEAR_DEFAULT, 
+                      step = 1, 
+                      animate = TRUE,
+                      ticks = TRUE,  
+                      animateOptions(interval = 100, loop = FALSE),
+                      sep = "",
+                      width = "100%" # This will make the slider take 100% width of the container
+          ),
+          bottom = "50px", 
+          left = "50%", 
+          style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);",
           
-          # Left-Aligned Time-Series Toggle Button
-          actionButton(
-            inputId = "toggle_plot",
-            label = "Show Time-Series",
-            style = "
-                width: 180px;
-                height: 40px;
-                line-height: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-top: -17px;"
+          div(
+            style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px;",
+            actionButton(
+              inputId = "toggle_plot",
+              label = "Show Time-Series",
+              style = "
+                  width: 180px;
+                  height: 40px;
+                  line-height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin-top: -17px;"
+            ),
+            radioGroupButtons(
+              inputId = "view_toggle",
+              choices = c("Annual", "Cumulative"),
+              selected = "Cumulative",
+              status = "primary",
+              justified = TRUE,
+              width = '220px'
+            )
           ),
           
-          # actionButton(
-          #   inputId = "toggle_radar_plot",
-          #   label = "Show Outcomes",
-          #   style = "
-          #       width: 160px; 
-          #       height: 40px; 
-          #       line-height: 20px; 
-          #       display: flex; 
-          #       align-items: center; 
-          #       justify-content: center;
-          #       margin-top: -17px;"
-          # ),
-          # Right-Aligned Annual/Cumulative Toggle
-          radioGroupButtons(
-            inputId = "view_toggle",
-            choices = c("Annual", "Cumulative"),
-            selected = "Cumulative",
-            status = "primary",
-            justified = TRUE,
-            width = '220px'
+          div(id = "time_series_plot", style = "display: none",
+              plotlyOutput("areaPlot", height = "300px")
+          ),
+          div(id = "radar_plot", style = "display: none",
+              plotlyOutput("radarPlot", height = "300px")
           )
-        ),
-        
-        # Time-Series Plot (Initially hidden, shown when toggled)... Plotly sometimes has an issue where it's overflowing
-        div(id = "time_series_plot", style = "display: none",
-            plotlyOutput("areaPlot", height = "300px")
-        ),
-        div(id = "radar_plot", style = "display: none",
-            plotlyOutput("radarPlot", height = "300px")
         )
       )
     )
@@ -242,8 +249,11 @@ ui <- fluidPage(
 )
 
 
+
 server <- function(input, output, session) {
   
+  rv <- reactiveValues()
+  rv$setupComplete <- FALSE
   map_view <- reactiveValues(lat = LAT_DEFAULT, lon = LON_DEFAULT, zoom = ZOOM_DEFAULT)
   
   # !TODO do these need to be reset?
@@ -257,8 +267,7 @@ server <- function(input, output, session) {
   previously_blocked <- reactiveVal(data.frame(parcel_id = character(), blocked_until_year = integer()))
   
   current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
-  # clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
-  
+
   saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
   plot_type <- reactiveVal("cumulative") 
@@ -276,83 +285,6 @@ server <- function(input, output, session) {
     # num_clicked_polygons = 0 # not sure if this is the best way, what about if polygons are blocked online... I guess that's fine.
   ))
   
-  
-  
-  default_values <- fetch_slider_values()  # Fetch once at startup
-  default_payload <<- list(
-    carbon = default_values$carbon$default,
-    species = default_values$species$default,
-    species_goat_moth = default_values$species_goat_moth$default,
-    species_stag_beetle = default_values$species_stag_beetle$default,
-    species_lichens = default_values$species_lichens$default,
-    area = default_values$area$default,
-    recreation = default_values$recreation$default,
-    blocked_parcels = list()
-  )
-  
-  # Render UI for sliders dynamically
-  # This also needs to use the mapping in the config.R!
-  output$dynamic_sliders <- renderUI({
-    tagList(
-      fluidRow(
-        column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
-        column(SLIDER_COL, sliderInput("carbon", "Tree Carbon Stored (tonnes of CO2):",
-                              min = default_values$carbon$min, 
-                              max = default_values$carbon$max, 
-                              value = default_values$carbon$default
-        ))
-      ),
-      fluidRow(
-        column(CHECKBOX_COL, checkboxInput("species_checkbox", NULL, value = TRUE)),
-        column(SLIDER_COL, sliderInput("species", "Species Richness (All):",
-                              min = default_values$species$min, 
-                              max = default_values$species$max, 
-                              value = default_values$species$default
-        ))
-      ),
-      fluidRow(
-        column(CHECKBOX_COL, checkboxInput("species_goat_moth_checkbox", NULL, value = TRUE)),
-        column(SLIDER_COL, sliderInput("species_goat_moth", "Goat Moth (Presence, %):", 
-                              min = default_values$species_goat_moth$min, 
-                              max = default_values$species_goat_moth$max, 
-                              value = default_values$species_goat_moth$default
-        ))
-      ),
-      fluidRow(
-        column(CHECKBOX_COL, checkboxInput("species_stag_beetle_checkbox", NULL, value = TRUE)),
-        column(SLIDER_COL, sliderInput("species_stag_beetle", "Stag Beetle (Presence, %):", 
-                              min = default_values$species_stag_beetle$min, 
-                              max = default_values$species_stag_beetle$max, 
-                              value = default_values$species_stag_beetle$default
-        ))
-      ),
-      fluidRow(
-        column(CHECKBOX_COL, checkboxInput("species_lichens_checkbox", NULL, value = TRUE)),
-        column(SLIDER_COL, sliderInput("species_lichens", "Species Richness (Lichens):", 
-                              min = default_values$species_lichens$min, 
-                              max = default_values$species_lichens$max, 
-                              value = default_values$species_lichens$default
-        ))
-      ),
-      fluidRow(
-        column(CHECKBOX_COL, checkboxInput("area_checkbox", NULL, value = TRUE)),
-        column(SLIDER_COL, sliderInput("area", "Area Planted (km^2):",
-                              min = default_values$area$min, 
-                              max = default_values$area$max, 
-                              value = default_values$area$default
-        ))
-      ),
-      fluidRow(
-        column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
-        column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", 
-                              min = default_values$recreation$min, 
-                              max = default_values$recreation$max, 
-                              value = default_values$recreation$default
-        ))
-      )
-    )
-  })
-  
   clicked_polygons <- reactiveVal(data.frame(
     parcel_id = character(),  # Empty initially
     blocked_until_year = numeric(),
@@ -364,6 +296,7 @@ server <- function(input, output, session) {
     blocked_until_year = numeric(),
     stringsAsFactors = FALSE
   ))
+  
   
   # hacky JS to make sure plotly plot doesn't bug out
   observe({
@@ -421,7 +354,7 @@ server <- function(input, output, session) {
       Target = c(100, 100, 100, 100, 100, 100, 100),
       Actual = c(80, 77, 97, 74, 99, 104, 102) # mocked data
     )
-      
+    
     fig <- plot_ly(
       type = 'scatterpolar',
       fill = 'toself',
@@ -452,8 +385,8 @@ server <- function(input, output, session) {
       )
     
     fig
-    })
-    
+  })
+  
   # Render time-series plot for both Conifer and Deciduous
   output$areaPlot <- renderPlotly({
     data <- processed_data()  # Get precomputed data
@@ -499,10 +432,10 @@ server <- function(input, output, session) {
         displayModeBar = TRUE  # Keep the toolbar
       )
   })
-
+  
   observeEvent(input$toggle_plot, {
     shinyjs::toggle(id = "time_series_plot", anim = TRUE)
-
+    
     # Change button text dynamically
     new_label <- if (input$toggle_plot %% 2 == 1) {
       # "📉 Hide Time-Series"
@@ -511,7 +444,7 @@ server <- function(input, output, session) {
       # "📈 Show Time-Series"
       "Show Time-Series"
     }
-
+    
     updateActionButton(session, "toggle_plot", label = new_label)
   })
   
@@ -531,7 +464,7 @@ server <- function(input, output, session) {
   initialize_or_update_map <- function(input_year, data = NULL, json_payload = NULL) {
     # Fetch the data from the API when initializing or submitting
     # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
-
+    
     new_fetched <- if (!is.null(data)) {
       list(data, NULL)
     } else {
@@ -588,7 +521,7 @@ server <- function(input, output, session) {
       # Render the leaflet map with the updated data
       output$map <- renderLeaflet({
         
-
+        
         legend_html <- paste0(
           "<b>Outcomes</b> (Compare to Targets)<br><br>",
           "<table style='width:100%; text-align:left;'>",
@@ -669,7 +602,7 @@ server <- function(input, output, session) {
             title = "Planting Type",
             opacity = 1.0
           ) %>%
-        
+          
           addControl(html = legend_html, position='topright')
       })
     } else {
@@ -677,11 +610,101 @@ server <- function(input, output, session) {
     }
   }
   
-  # Initialize the map on app start
-  default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
-  print(default_json_payload)
-  initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+  # Initialisation Block
+  observe({
+    default_values <- fetch_slider_values()  # Fetch once at startup
+    default_payload <<- list(
+      carbon = default_values$carbon$default,
+      species = default_values$species$default,
+      species_goat_moth = default_values$species_goat_moth$default,
+      species_stag_beetle = default_values$species_stag_beetle$default,
+      species_lichens = default_values$species_lichens$default,
+      area = default_values$area$default,
+      recreation = default_values$recreation$default,
+      blocked_parcels = list()
+    )
+    
+    # Render UI for sliders dynamically
+    # This also needs to use the mapping in the config.R!
+    output$dynamic_sliders <- renderUI({
+      tagList(
+        fluidRow(
+          column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
+          column(SLIDER_COL, sliderInput("carbon", "Tree Carbon Stored (tonnes of CO2):",
+                                min = default_values$carbon$min, 
+                                max = default_values$carbon$max, 
+                                value = default_values$carbon$default
+          ))
+        ),
+        fluidRow(
+          column(CHECKBOX_COL, checkboxInput("species_checkbox", NULL, value = TRUE)),
+          column(SLIDER_COL, sliderInput("species", "Species Richness (All):",
+                                min = default_values$species$min, 
+                                max = default_values$species$max, 
+                                value = default_values$species$default
+          ))
+        ),
+        fluidRow(
+          column(CHECKBOX_COL, checkboxInput("species_goat_moth_checkbox", NULL, value = TRUE)),
+          column(SLIDER_COL, sliderInput("species_goat_moth", "Goat Moth (Presence, %):", 
+                                min = default_values$species_goat_moth$min, 
+                                max = default_values$species_goat_moth$max, 
+                                value = default_values$species_goat_moth$default
+          ))
+        ),
+        fluidRow(
+          column(CHECKBOX_COL, checkboxInput("species_stag_beetle_checkbox", NULL, value = TRUE)),
+          column(SLIDER_COL, sliderInput("species_stag_beetle", "Stag Beetle (Presence, %):", 
+                                min = default_values$species_stag_beetle$min, 
+                                max = default_values$species_stag_beetle$max, 
+                                value = default_values$species_stag_beetle$default
+          ))
+        ),
+        fluidRow(
+          column(CHECKBOX_COL, checkboxInput("species_lichens_checkbox", NULL, value = TRUE)),
+          column(SLIDER_COL, sliderInput("species_lichens", "Species Richness (Lichens):", 
+                                min = default_values$species_lichens$min, 
+                                max = default_values$species_lichens$max, 
+                                value = default_values$species_lichens$default
+          ))
+        ),
+        fluidRow(
+          column(CHECKBOX_COL, checkboxInput("area_checkbox", NULL, value = TRUE)),
+          column(SLIDER_COL, sliderInput("area", "Area Planted (km^2):",
+                                min = default_values$area$min, 
+                                max = default_values$area$max, 
+                                value = default_values$area$default
+          ))
+        ),
+        fluidRow(
+          column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
+          column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", 
+                                min = default_values$recreation$min, 
+                                max = default_values$recreation$max, 
+                                value = default_values$recreation$default
+          ))
+        )
+      )
+    })
   
+    # Initialize the map on app start
+    default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
+    print(default_json_payload)
+    initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+    rv$setupComplete <- TRUE
+  })
+  
+  # Once setup is complete, hide the loading screen and show the main content
+  observe({
+    if (rv$setupComplete) {
+      print("setup complete")
+      # shinyjs::show(id = "app_content")  # Show the main app content
+      
+      shinyjs::runjs('$("#loading").fadeOut(1000);')
+      # shinyjs::hide(id = "loading")  # Hide the loading screen
+      # shinyjs::show(id = "app_content")  # Show the main app content
+    }
+  })
   # A reactive expression to track the current year
   current_year <- reactive({
     input$year
