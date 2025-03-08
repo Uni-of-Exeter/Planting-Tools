@@ -29,6 +29,17 @@ PARCEL_LINE_COLOUR <- "#000000"
 FILL_OPACITY <- 0.7
 
 COLOUR_MAPPING <- c("Conifer" = "#006400", "Deciduous" = "#008080", "Available" = AVAILABLE_PARCEL_COLOUR, "Unavailable" = UNAVAILABLE_PARCEL_COLOUR, "Blocked" = BLOCKED_PARCEL_COLOUR)
+COLOUR_MAPPING2 <- c("Conifer" = "#ff0", "Deciduous" = "#dd0", "Available" = AVAILABLE_PARCEL_COLOUR, "Unavailable" = UNAVAILABLE_PARCEL_COLOUR, "Blocked" = BLOCKED_PARCEL_COLOUR)
 # MOCK_SLEEP_TIME <- 0.8
-API_PORT <- 8032
-API_HOST <- 127.0.0.1
+API_PORT <- 8001
+API_HOST <- "127.0.0.1"
+
+SLIDER_NAMES <- list(
+  carbon = list(name = "Tree Carbon Stored", unit = HTML("Tonnes of CO<sub>2</sub>")),
+  species = list(name = "Species Richness", unit = "All"),
+  species_goat_moth = list(name = "Goat Moth Presence", unit = "%"),
+  species_stag_beetle = list(name = "Stag Beetle Presence", unit = "%"),
+  species_lichens = list(name = "Lichen Presence", unit = "%"),
+  area = list(name = "Area Planted", unit = HTML("km<sup>2</sup>")),
+  recreation = list(name = "Recreation", unit = HTML("Visits per month"))
+)
