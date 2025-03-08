@@ -141,7 +141,6 @@ ui <- fluidPage(
       justify-content: center; 
       align-items: center; 
       font-size: 24px; 
-      font-weight: light;
       font-family: 'Outfit', sans-serif; /* Apply Outfit font */
       z-index: 9999;
       opacity: 1;  /* Initially fully visible */
@@ -621,6 +620,18 @@ server <- function(input, output, session) {
       area = default_values$area$default,
       recreation = default_values$recreation$default,
       blocked_parcels = list()
+    )
+    
+    initial_values(
+      list(
+        carbon = default_values$carbon$default,
+        species = default_values$species$default,
+        species_goat_moth = default_values$species_goat_moth$default,
+        species_stag_beetle = default_values$species_stag_beetle$default,
+        species_lichens = default_values$species_lichens$default,
+        area = default_values$area$default,
+        recreation = default_values$recreation$default
+      )
     )
     
     # Render UI for sliders dynamically
