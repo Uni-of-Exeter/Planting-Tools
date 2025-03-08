@@ -53,44 +53,15 @@ fetch_api_data_post <- function(json_payload) {
   }
 }
 
-
-fetch_api_data <- function() {
-  
-  url <- "http://127.0.0.1:8000/generate_parcels"
-  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
-  
-  # Make the API request
+fetch_slider_values <- function() {
+  url <- glue("http://{API_HOST}:{API_PORT}/slider_values")
   response <- httr::GET(url)
-  # Check if the response is successful
   if (httr::status_code(response) == 200) {
-
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
     api_response <- jsonlite::fromJSON(content_raw)
-    
-    geojson <- api_response$geojson
-    geojson_parsed <- st_read(geojson, quiet=TRUE)
-    
-    values <- api_response$values
-    return(list(geojson_parsed, values))
-    } 
+    return(api_response)
+  } 
   else {
-    stop(paste("Request failed with status:", httr::status_code(response)))
-    }
-}
-
-# Function to fetch slider data
-fetch_slider_values <- function() {
-  url <- "http://127.0.0.1:8000/generate_parcels"
-  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
-  
-  response <- httr::GET(url)
-  
-  if (httr::status_code(response) == 200) {
-    content_raw <- httr::content(response, "text", encoding = "UTF-8")
-    slider_data <- jsonlite::fromJSON(content_raw)
-    
-    return(slider_data)
-  } else {
     stop(paste("Request failed with status:", httr::status_code(response)))
   }
 }
@@ -101,6 +72,13 @@ ui <- fluidPage(
   title = "ADD-TREES",
   useShinyjs(), # Enable JavaScript functionalities
   theme = bs_theme(bootswatch = "lumen"), # Optional theming
+  tags$head(
+    # Add the Bootstrap Icons library to ensure the icons are available
+    tags$link(
+      rel = "stylesheet", 
+      href = "https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+    )
+  ),
   tags$style(HTML("
     body {
       margin: 0;
@@ -151,63 +129,33 @@ ui <- fluidPage(
     sidebarPanel(
       id = "sidebar",
       width = 3,
-      div(
-        style = "padding: 20px; background-color: #f0f0f0; border-radius: 8px;
-                 box-shadow: 0px 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;",
-        h3(HTML("<strong>ADD-TREES</strong>")),
-        p("Use the checkboxes and sliders to enable/disable targets and adjust their values.")
-      ),
+      
+      # Alert with info icon and message
+      HTML('
+        <div class="alert alert-dismissible alert-info">
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          <div class="d-flex align-items-center">
+            <i class="bi bi-info-circle" style="font-size: 1.5rem; margin-right: 10px;"></i>
+            <p class="mb-0">Use the checkboxes and sliders to enable/disable targets and adjust their values.</p>
+          </div>
+        </div>
+      '),
+      # div(
+      #   style = "padding: 20px; background-color: #f0f0f0; border-radius: 8px;
+      #            box-shadow: 0px 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;",
+      #   h3(HTML("<strong>ADD-TREES</strong>")),
+      #   p("Use the checkboxes and sliders to enable/disable targets and adjust their values.")
+      # ),
       accordion(
         id = "main_accordion",
         accordion_panel(
           "Targets",
           id = "targets_accordion",
-          tagList(
-            fluidRow(
-              column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
-              column(SLIDER_COL, sliderInput("carbon", "Tree carbon stored (tonnes of CO2):", min = CARBON_MIN, max = CARBON_MAX, value = CARBON_DEFAULT))
-            ),
-            fluidRow(
-              column(CHECKBOX_COL, checkboxInput("species_checkbox", NULL, value = TRUE)),
-              column(SLIDER_COL, sliderInput("species", "Species richness (All):", min = 0, max = 25, value = SPECIES_DEFAULT))
-            ),
-            fluidRow(
-              column(CHECKBOX_COL, checkboxInput("species_goat_moth_checkbox", NULL, value = TRUE)),
-              column(SLIDER_COL, sliderInput("species_goat_moth", "Goat Moth (Presence, %):", min = 0, max = 100, value = SPECIES_GM_DEFAULT))
-            ),
-            fluidRow(
-              column(CHECKBOX_COL, checkboxInput("species_stag_beetle_checkbox", NULL, value = TRUE)),
-              column(SLIDER_COL, sliderInput("species_stag_beetle", "Stag Beetle (Presence, %):", min = 0, max = 100, value = SPECIES_SB_DEFAULT))
-            ),
-            fluidRow(
-              column(CHECKBOX_COL, checkboxInput("species_lichens_checkbox", NULL, value = TRUE)),
-              column(SLIDER_COL, sliderInput("species_lichens", "Species Richness (Lichens):", min = 0, max = 5, value = SPECIES_LICHENS_DEFAULT))
-            ),
-            fluidRow(
-              column(CHECKBOX_COL, checkboxInput("area_checkbox", NULL, value = TRUE)),
-              column(SLIDER_COL, sliderInput("area", "Area planted (km²):", min = 0, max = 15, value = AREA_DEFAULT))
-            ),
-            fluidRow(
-              column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
-              column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", min = 0, max = 20, value = RECREATION_DEFAULT))
-            )
-          ),
+          uiOutput("dynamic_sliders"),
           actionButton("submit", "Submit"),
           actionButton("reset", "Reset"),
           actionButton("save", "Save Strategy")
         ),
-        # accordion_panel(
-        #   "Statutory Metrics",
-        #   tagList(
-        #     p("Empty.")
-        #   )
-        # ),
-        # accordion_panel(
-        #   "Outcomes",
-        #   tagList(
-        #     p("Empty.")
-        #   )
-        # ),
         # accordion(
         #   accordion_panel(
         #     "Radar Chart",
@@ -218,14 +166,6 @@ ui <- fluidPage(
           "Saved Strategies",
           uiOutput("saved_strategies")
         ),
-        accordion_panel(
-          "Values",
-          uiOutput("recent_vals")  # Placeholder for dynamic sliders
-        )
-        # accordion_panel(
-        #   "Dynamic Sliders",
-        #   uiOutput("dynamic_sliders")  # Placeholder for dynamic sliders
-        # )
       )
     ),
     mainPanel(
@@ -248,32 +188,7 @@ ui <- fluidPage(
         bottom = "50px", 
         left = "50%", 
         style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);",
-        
-        # div(
-        #   style = "display: flex; justify-content: center; width: 100%;",
-        #   radioGroupButtons(
-        #     inputId = "view_toggle",
-        #     choices = c("Annual", "Cumulative"),
-        #     selected = "Cumulative",
-        #     status = "primary",
-        #     justified = TRUE, # Makes them equal width
-        #     width = '220px'
-        #   )
-        # ),
-        # 
-        # # Using an accordion-style panel here, like the sidebar
-        # accordion(
-        #   open = FALSE,
-        #   accordion_panel(
-        #     "Time-Series",
-        #     multiple = FALSE,
-        #     tagList(
-        #       plotlyOutput("areaPlot", height = "250px")
-        #     ),
-        #     style = "border: none;",  # Remove border around the entire accordion header
-        #   )
-        # )
-        
+
         div(
           style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px;",
           
@@ -331,42 +246,6 @@ server <- function(input, output, session) {
   
   map_view <- reactiveValues(lat = LAT_DEFAULT, lon = LON_DEFAULT, zoom = ZOOM_DEFAULT)
   
-  # slider_data <- reactiveVal(NULL)
-  # 
-  # user_inputs <- reactiveValues(sliders = list(), checkboxes = list())
-  # 
-  # slider_data <- fetch_slider_values()
-  # 
-  # # Initialize storage with default values
-  # for (slider_name in names(slider_data)) {
-  #   user_inputs$sliders[[slider_name]] <- (slider_data[[slider_name]]$min + slider_data[[slider_name]]$max) / 2  # Default slider position
-  #   user_inputs$checkboxes[[slider_name]] <- TRUE  # Default checkbox state
-  # }
-  
-  # output$dynamic_controls <- renderUI({
-  #   data <- slider_data()
-  #   if (is.null(data)) return(NULL)
-  #   
-  #   controls_list <- lapply(names(data), function(slider_name) {
-  #     fluidRow(
-  #       column(2, checkboxInput(
-  #         inputId = paste0(slider_name, "_checkbox"),
-  #         label = NULL,
-  #         value = user_inputs$checkboxes[[slider_name]]
-  #       )),
-  #       column(10, sliderInput(
-  #         inputId = slider_name,
-  #         label = paste(slider_name, ":", data[[slider_name]]$min, "-", data[[slider_name]]$max),
-  #         min = data[[slider_name]]$min,
-  #         max = data[[slider_name]]$max,
-  #         value = user_inputs$sliders[[slider_name]]
-  #       ))
-  #     )
-  #   })
-  #   
-  #   do.call(tagList, controls_list)
-  # })
-  
   # !TODO do these need to be reset?
   new_data <- reactiveVal(NULL) # most recent data
   new_vals <- reactiveVal(NULL) # most recent values
@@ -379,34 +258,6 @@ server <- function(input, output, session) {
   
   current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
   # clicked_polygons <- reactiveVal(list()) # Reactive value to store clicked polygons
-  clicked_polygons <- reactiveVal(data.frame(
-    parcel_id = character(),  # Empty initially
-    blocked_until_year = numeric(),
-    stringsAsFactors = FALSE
-  ))
-  
-  clicked_polygons_injest <- reactiveVal(data.frame(
-    parcel_id = character(),  # Empty initially
-    blocked_until_year = numeric(),
-    stringsAsFactors = FALSE
-  ))
-  
-  output$recent_vals <- renderUI({
-    # Get the current value of the reactive variable
-    current_value <- new_vals()
-    
-    # Create a list of name-value pairs dynamically
-    value_list <- lapply(names(current_value), function(name) {
-      tagList(
-        strong(name),  # Name in bold
-        ": ",
-        round(current_value[[name]], POPUP_SIGFIG), HTML("</br>")  # Value of the current element
-      )
-    })
-    
-    # Return the list of name-value pairs as a tag list
-    do.call(tagList, value_list)
-  })
   
   saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
@@ -423,6 +274,95 @@ server <- function(input, output, session) {
     recreation = NULL
     # year = NULL
     # num_clicked_polygons = 0 # not sure if this is the best way, what about if polygons are blocked online... I guess that's fine.
+  ))
+  
+  
+  
+  default_values <- fetch_slider_values()  # Fetch once at startup
+  default_payload <<- list(
+    carbon = default_values$carbon$default,
+    species = default_values$species$default,
+    species_goat_moth = default_values$species_goat_moth$default,
+    species_stag_beetle = default_values$species_stag_beetle$default,
+    species_lichens = default_values$species_lichens$default,
+    area = default_values$area$default,
+    recreation = default_values$recreation$default,
+    blocked_parcels = list()
+  )
+  
+  # Render UI for sliders dynamically
+  # This also needs to use the mapping in the config.R!
+  output$dynamic_sliders <- renderUI({
+    tagList(
+      fluidRow(
+        column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
+        column(SLIDER_COL, sliderInput("carbon", "Tree Carbon Stored (tonnes of CO2):",
+                              min = default_values$carbon$min, 
+                              max = default_values$carbon$max, 
+                              value = default_values$carbon$default
+        ))
+      ),
+      fluidRow(
+        column(CHECKBOX_COL, checkboxInput("species_checkbox", NULL, value = TRUE)),
+        column(SLIDER_COL, sliderInput("species", "Species Richness (All):",
+                              min = default_values$species$min, 
+                              max = default_values$species$max, 
+                              value = default_values$species$default
+        ))
+      ),
+      fluidRow(
+        column(CHECKBOX_COL, checkboxInput("species_goat_moth_checkbox", NULL, value = TRUE)),
+        column(SLIDER_COL, sliderInput("species_goat_moth", "Goat Moth (Presence, %):", 
+                              min = default_values$species_goat_moth$min, 
+                              max = default_values$species_goat_moth$max, 
+                              value = default_values$species_goat_moth$default
+        ))
+      ),
+      fluidRow(
+        column(CHECKBOX_COL, checkboxInput("species_stag_beetle_checkbox", NULL, value = TRUE)),
+        column(SLIDER_COL, sliderInput("species_stag_beetle", "Stag Beetle (Presence, %):", 
+                              min = default_values$species_stag_beetle$min, 
+                              max = default_values$species_stag_beetle$max, 
+                              value = default_values$species_stag_beetle$default
+        ))
+      ),
+      fluidRow(
+        column(CHECKBOX_COL, checkboxInput("species_lichens_checkbox", NULL, value = TRUE)),
+        column(SLIDER_COL, sliderInput("species_lichens", "Species Richness (Lichens):", 
+                              min = default_values$species_lichens$min, 
+                              max = default_values$species_lichens$max, 
+                              value = default_values$species_lichens$default
+        ))
+      ),
+      fluidRow(
+        column(CHECKBOX_COL, checkboxInput("area_checkbox", NULL, value = TRUE)),
+        column(SLIDER_COL, sliderInput("area", "Area Planted (km^2):",
+                              min = default_values$area$min, 
+                              max = default_values$area$max, 
+                              value = default_values$area$default
+        ))
+      ),
+      fluidRow(
+        column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
+        column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", 
+                              min = default_values$recreation$min, 
+                              max = default_values$recreation$max, 
+                              value = default_values$recreation$default
+        ))
+      )
+    )
+  })
+  
+  clicked_polygons <- reactiveVal(data.frame(
+    parcel_id = character(),  # Empty initially
+    blocked_until_year = numeric(),
+    stringsAsFactors = FALSE
+  ))
+  
+  clicked_polygons_injest <- reactiveVal(data.frame(
+    parcel_id = character(),  # Empty initially
+    blocked_until_year = numeric(),
+    stringsAsFactors = FALSE
   ))
   
   # hacky JS to make sure plotly plot doesn't bug out
@@ -514,8 +454,6 @@ server <- function(input, output, session) {
     fig
     })
     
-  
-  
   # Render time-series plot for both Conifer and Deciduous
   output$areaPlot <- renderPlotly({
     data <- processed_data()  # Get precomputed data
@@ -562,7 +500,6 @@ server <- function(input, output, session) {
       )
   })
 
-  
   observeEvent(input$toggle_plot, {
     shinyjs::toggle(id = "time_series_plot", anim = TRUE)
 
@@ -597,10 +534,8 @@ server <- function(input, output, session) {
 
     new_fetched <- if (!is.null(data)) {
       list(data, NULL)
-    } else if (!is.null(json_payload)) {
-      fetch_api_data_post(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
     } else {
-      fetch_api_data()  # Use GET otherwise
+      fetch_api_data_post(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
     }
     
     new_data_fetched <- new_fetched[[1]]
@@ -613,6 +548,8 @@ server <- function(input, output, session) {
       # Apply the filter based on the selected year
       new_data(new_data_fetched)
       new_vals(new_values_fetched)
+      
+      stopifnot(all(sort(names(new_values_fetched)) == sort(names(SLIDER_NAMES))))
       
       print(new_data_fetched)
       
@@ -650,6 +587,27 @@ server <- function(input, output, session) {
       
       # Render the leaflet map with the updated data
       output$map <- renderLeaflet({
+        
+
+        legend_html <- paste0(
+          "<b>Outcomes</b> (Compare to Targets)<br><br>",
+          "<table style='width:100%; text-align:left;'>",
+          paste0(
+            lapply(names(new_vals()), function(name) {
+              # Get the display name from SLIDER_NAMES
+              display_name <- SLIDER_NAMES[[name]]$name
+              # Get the unit for each slider
+              unit <- SLIDER_NAMES[[name]]$unit
+              # Get the current value
+              value <- round(new_vals()[[name]], POPUP_SIGFIG)
+              
+              # Format the name, value, and unit into a table row
+              sprintf("<tr><td>%s:</td> <td>%s %s</td></tr>", display_name, value, unit)
+            }),
+            collapse = "\n"
+          ),
+          "</table></div>"
+        )
         
         leaflet() %>% 
           # addTiles() %>% 
@@ -710,20 +668,33 @@ server <- function(input, output, session) {
             labels = names(COLOUR_MAPPING),
             title = "Planting Type",
             opacity = 1.0
-          )
+          ) %>%
+        
+          addControl(html = legend_html, position='topright')
       })
     } else {
       print("API fetch failed, no data to update.")
     }
   }
   
+  # Initialize the map on app start
+  default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
+  print(default_json_payload)
+  initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+  
   # A reactive expression to track the current year
   current_year <- reactive({
     input$year
   })
   
-  # Initialize the map on app start
-  initialize_or_update_map(YEAR_MIN, json_payload = NULL)
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   # Handle submit event to update the map
