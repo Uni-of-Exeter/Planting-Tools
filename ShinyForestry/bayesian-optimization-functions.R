@@ -576,7 +576,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
   
   return(DoE_high_dimension_categorical)
 }
-  
+
 transform_FullTable_wide_to_long <- function(FullTable_arg,
                                              SCENARIO_arg = SCENARIO,
                                              MAXYEAR_arg = MAXYEAR,
@@ -766,8 +766,8 @@ get_outcomes_from_strategy <- function(parameter_vector,
                              by = parcel_id][
                                , sum(V1)
                              ]
-
-
+  
+  
   # Carbon 0.7 ms ----
   sum_carbon <- FullTable_long[
     # Filter rows
@@ -846,7 +846,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   names(sum_richness) <- tmp[, outcome_sub_type]
   
   sum_richness_sd <- sapply(sum_richness, function(x){return(0)})
-
+  
   # End ----
   
   return(list("sum_carbon" = sum_carbon,
