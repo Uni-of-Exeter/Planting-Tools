@@ -96,6 +96,7 @@ server <- function(input, output, session) {
   )
 
   map_page_server("map", state$map)
+  preferences_page_server("prefs", state$map)
   
   # Listen for the signal that map has been rendered
   observeEvent(input$mapRendered, {
