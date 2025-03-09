@@ -24,7 +24,7 @@ FullTableNotAvailTWO <- FullTableNotAvail %>%
 ui <- fluidPage(
   title = "ADD-TREES",
   theme = shinythemes::shinytheme("lumen"),
-  
+  useShinyjs(), # Enable JavaScript functionalities
   # Custom styles for full-width maps and other elements
   tags$style(HTML("
     .no-padding {
@@ -51,20 +51,33 @@ ui <- fluidPage(
       border-radius: 8px;
       border: 1px solid #ccc;
       box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
-      width: 200px;
+      width: auto; /* Allow dynamic width */
+      max-width: 300px; /* Prevent it from getting too wide */
+      min-width: 150px; /* Prevent it from getting too small */
       height: auto;
       position: absolute;
+      white-space: nowrap; /* Keeps text from wrapping */
     }
-    .value-box.map1 {
+    
+    /* Positioning for each value box */
+    .value-box.map2 {
       top: 20px;
       left: 75%;
       transform: translateX(-50%);
     }
-    .value-box.map2 {
+    
+    .value-box.map1 {
       top: 20px;
       left: 25%;
       transform: translateX(-50%);
     }
+    
+    /* Improve table appearance */
+    .value-box table {
+      border-collapse: collapse;
+      width: auto; /* Ensures table takes only necessary space */
+    }
+
   ")),
   
   # Fluid row for the maps
@@ -108,11 +121,13 @@ ui <- fluidPage(
   # Value boxes for map1 and map2
   div(id = "value-box-1", class = "value-box map1", 
       uiOutput("value_box_one"),
-      actionButton("submit", "Choose", class = "btn btn-primary")),  # This will hold the dynamic content for map1
+      actionButton("submit_one", "Choose this strategy", class = "btn btn-secondary")  # Start as grey
+  ),
   
   div(id = "value-box-2", class = "value-box map2", 
       uiOutput("value_box_two"), 
-      actionButton("submit", "Choose", class = "btn btn-primary"))  # This will hold the dynamic content for map2
+      actionButton("submit_two", "Choose this strategy", class = "btn btn-secondary")  # Start as grey
+  )
 )
 
 
@@ -472,43 +487,104 @@ server <- function(input, output) {
   })
   
   output$value_box_two <- renderUI({
-    current_value <- new_vals_one()
+    current_value <- new_vals_two()
     
-    value_list <- lapply(names(current_value), function(name) {
-      div(
-        style = "display: flex; justify-content: space-between; width: 100%;",
-        strong(name),  # Bold Name
-        ": ",
-        span(style = "margin-left: auto;", round(current_value[[name]], POPUP_SIGFIG))  # Value aligned to the right
-      )
-    })
+    # Generate table rows dynamically
+    table_rows <- paste0(
+      lapply(names(current_value), function(name) {
+        display_name <- SLIDER_NAMES[[name]]$name
+        unit <- SLIDER_NAMES[[name]]$unit
+        value <- round(current_value[[name]], POPUP_SIGFIG)
+        
+        # Format each row with labels aligned left and values aligned right
+        sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td> 
+              <td style='text-align:left;'>%s %s</td></tr>", 
+                display_name, value, unit)
+      }),
+      collapse = "\n"
+    )
     
-    do.call(tagList, value_list)
+    # Construct the legend-like content with tabbed format
+    legend_html <- paste0(
+      "<table style='width:100%;'>",  # Ensuring the table takes full width
+      table_rows,  # Add dynamically generated rows
+      "</table><br>"
+    )
+    
+    HTML(legend_html)  # Return HTML to be rendered
   })
   
   output$value_box_one <- renderUI({
     # Get the current value of the reactive variable
-    current_value <- new_vals_two()
+    current_value <- new_vals_one()
     
-    # Create a list of name-value pairs dynamically
-    value_list <- lapply(names(current_value), function(name) {
-      div(
-        style = "display: flex; justify-content: space-between; width: 100%;",
-        strong(name),  # Bold Name
-        ": ",
-        span(style = "margin-left: auto;", round(current_value[[name]], POPUP_SIGFIG))  # Value aligned to the right
-      )
-    })
-    do.call(tagList, value_list)
+    # Generate table rows dynamically
+    table_rows <- paste0(
+      lapply(names(current_value), function(name) {
+        display_name <- SLIDER_NAMES[[name]]$name
+        unit <- SLIDER_NAMES[[name]]$unit
+        value <- round(current_value[[name]], POPUP_SIGFIG)
+        
+        # Format each row with labels aligned left and values aligned right
+        sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td> 
+              <td style='text-align:left;'>%s %s</td></tr>", 
+                display_name, value, unit)
+      }),
+      collapse = "\n"
+    )
+    
+    # Construct the legend-like content with tabbed format
+    legend_html <- paste0(
+      "<table style='width:100%;'>",  # Ensuring the table takes full width
+      table_rows,  # Add dynamically generated rows
+      "</table><br>"
+    )
+    
+    HTML(legend_html)  # Return HTML to be rendered
   })
   
   current_year <- reactive({
     input$year
   })
   
-  observeEvent(input$submit, {
+  observeEvent(input$submit_one, {
+    # Change button color to green and disable both buttons
+    shinyjs::addClass("submit_one", "btn-success")
+    shinyjs::removeClass("submit_one", "btn-secondary")
+    shinyjs::disable("submit_one")
+    shinyjs::disable("submit_two")
+    
+    # Run the initialize function immediately
     initialize_or_update_map(current_year())
+    
+    # Reset the buttons back to their original state (inline)
+    shinyjs::enable("submit_one")
+    shinyjs::enable("submit_two")
+    shinyjs::removeClass("submit_one", "btn-success")
+    shinyjs::addClass("submit_one", "btn-secondary")  # Back to original color
+    shinyjs::removeClass("submit_two", "btn-success")
+    shinyjs::addClass("submit_two", "btn-secondary")  # Back to original color
   })
+  
+  observeEvent(input$submit_two, {
+    # Change button color to green and disable both buttons
+    shinyjs::addClass("submit_two", "btn-success")
+    shinyjs::removeClass("submit_two", "btn-secondary")
+    shinyjs::disable("submit_one")
+    shinyjs::disable("submit_two")
+    
+    # Run the initialize function immediately
+    initialize_or_update_map(current_year())
+    
+    # Reset the buttons back to their original state (inline)
+    shinyjs::enable("submit_one")
+    shinyjs::enable("submit_two")
+    shinyjs::removeClass("submit_one", "btn-success")
+    shinyjs::addClass("submit_one", "btn-secondary")  # Back to original color
+    shinyjs::removeClass("submit_two", "btn-success")
+    shinyjs::addClass("submit_two", "btn-secondary")  # Back to original color
+  })
+  
   
 }
 
