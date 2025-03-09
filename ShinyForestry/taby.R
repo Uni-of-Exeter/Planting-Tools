@@ -103,7 +103,6 @@ ui <- fluidPage(
         width = '220px'
       )
     ),
-    
   ),
   
   # Value boxes for map1 and map2
@@ -119,7 +118,7 @@ ui <- fluidPage(
 
 fetch_api_data <- function() {
   
-  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
+  url <- glue("http://{API_HOST}:{API_PORT}/random_strategy")
   # Make the API request
   response <- httr::GET(url)
   # Check if the response is successful
@@ -155,15 +154,15 @@ server <- function(input, output) {
     leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
       addProviderTiles(providers$CartoDB.Voyager) %>%  # Use your custom base map layer
       setView(lng = LON_DEFAULT, lat = LAT_DEFAULT, zoom = ZOOM_DEFAULT) %>%
-    # Add legend
-    addLegend(
-      position = "topright",
-      colors = adjustcolor(unname(COLOUR_MAPPING), alpha.f = FILL_OPACITY),
-      labels = names(COLOUR_MAPPING),
-      title = "Planting Type",
-      opacity = 1.0
-    ) %>%
-    syncWith("maps")  # Sync the map with map1
+      # Add legend
+      addLegend(
+        position = "topright",
+        colors = adjustcolor(unname(COLOUR_MAPPING), alpha.f = FILL_OPACITY),
+        labels = names(COLOUR_MAPPING),
+        title = "Planting Type",
+        opacity = 1.0
+      ) %>%
+      syncWith("maps")  # Sync the map with map1
   })
   
   new_data_one <- reactiveVal(NULL)
@@ -228,7 +227,7 @@ server <- function(input, output) {
           label = ~parcel_id,
           # popup = "No planting"
         ) %>%
-
+        
         # Add filtered polygons based on the selected year
         addPolygons(
           data = filtered_data_subset_one,  # Filtered data based on the year
@@ -263,8 +262,8 @@ server <- function(input, output) {
           label = ~parcel_id,
           # popup = ~planting_type
         )
-
-
+      
+      
     } else {
       print("API fetch failed, no data to update.")
     }
@@ -295,7 +294,7 @@ server <- function(input, output) {
           label = ~parcel_id,
           # popup = "No planting"
         ) %>%
-
+        
         # Add filtered polygons based on the selected year
         addPolygons(
           data = filtered_data_subset_two,  # Filtered data based on the year
