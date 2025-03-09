@@ -53,23 +53,26 @@ map_page_ui <- function(id) {
 map_page_server <- function(id, state) {
   moduleServer(id, function(input, output, session) {
     
-    # Update state when sliders change
-    observeEvent(input$zoom_slider, { state$zoom <- input$zoom_slider })
-    observeEvent(input$lat_slider, { state$lat <- input$lat_slider })
-    observeEvent(input$lng_slider, { state$lng <- input$lng_slider })
-    
-    # Reset button logic
-    observeEvent(input$reset, {
-      state$zoom <- state$zoom
-      state$lat <- state$lat
-      state$lng <- state$lon
-    })
+    Sys.sleep(3)
     
     # Render the map with dynamic settings
     output$map <- renderLeaflet({
       leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
         addProviderTiles(providers$CartoDB.Voyager) %>%
         setView(lng = state$lng, lat = state$lat, zoom = state$zoom)
+    })
+    
+    # This is where we use shinyjs and JavaScript to detect when the map is fully rendered
+    observe({
+      # JavaScript to detect when the map has finished rendering
+      shinyjs::runjs('
+        var mapCheckInterval = setInterval(function() {
+          if (document.querySelector(".leaflet-container")) {
+            clearInterval(mapCheckInterval);  // Stop checking once the map is rendered
+            Shiny.setInputValue("mapRendered", true);  // Trigger an event to the server
+          }
+        }, 100);
+      ')
     })
   })
 }

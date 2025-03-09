@@ -2,10 +2,6 @@ preferences_page_ui <- function(id) {
   ns <- NS(id)
   
   tagList(
-    # Custom styling for preferences page (load the preferences_page.css in the header)
-    tags$head(
-      tags$link(rel = "stylesheet", href = "preferences_page.css")  # Link the custom CSS
-    ),
     # Page content
     div(id = "preferences-page", 
         # Fluid row for the maps

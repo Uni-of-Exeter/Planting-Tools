@@ -36,58 +36,74 @@ custom_theme <- bs_theme(
 )
 
 # Define UI
-ui <- page_navbar(
-  title = "ADD-TREES",
-  useShinyjs(), 
-  theme = custom_theme,
+# Define UI
+ui <- fluidPage(
   
-  # Link the external CSS file
-  tags$head(
-    tags$link(
-      rel = "stylesheet", 
-      href = "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap"
-    ),
-    tags$link(
-      rel = "stylesheet", 
-      href = "https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
-    ),
-    tags$link(
-      rel = "stylesheet", 
-      type = "text/css",
-      href = "custom.css"
-    )
+  useShinyjs(),  # Initialize shinyjs
+  
+  # Full-page loading screen (visible on app startup)
+  div(id = "loading", 
+      div(class = "spinner")
   ),
   
-  tabPanel(title = "Map", map_page_ui("map")),
-  tabPanel(title = "Preferences", preferences_page_ui("prefs")),
-  # tabPanel(title = "Alternative Approaches", alternative_approaches_page_ui("alt") ),
-  # tabPanel(title = "Exploration", exploration_page_ui("explore")),
-  # tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
-  
-  nav_spacer(),
-  nav_item(tags$a("AI for Net Zero",
-                  href = "https://netzeroplus.ac.uk/",
-                  target = "_blank")
+  # Wrap the entire content in a div with an ID
+  div(id = "app_content",  
+      # The main content of the app (page_navbar)
+      page_navbar(
+        title = "ADD-TREES",
+        theme = custom_theme,
+        
+        # Link the external CSS files
+        tags$head(
+          tags$link(
+            rel = "stylesheet", 
+            href = "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap"
+          ),
+          tags$link(
+            rel = "stylesheet", 
+            href = "https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+          ),
+          tags$link(
+            rel = "stylesheet", 
+            type = "text/css",
+            href = "custom.css"
+          )
+        ),
+        
+        tabPanel(title = "Map", map_page_ui("map")),
+        tabPanel(title = "Preferences", preferences_page_ui("prefs")),
+        nav_spacer(),
+        nav_item(tags$a("AI for Net Zero",
+                        href = "https://netzeroplus.ac.uk/",
+                        target = "_blank")
+        )
+      )
   )
 )
 
 server <- function(input, output, session) {
   
-  # Structured state for each page
+
   state <- reactiveValues(
-    map = list(zoom = 13, lat = 50.820184, lng = -1.733029),
-    prefs = list(),
-    alt = list(),
-    explore = list(),
-    downscale = list()
+    map = list(
+      zoom = 13, 
+      lat = 50.820184, 
+      lng = -1.733029
+    ),
+    setup = list(
+      setupComplete = FALSE
+    )
   )
-  
-  # Pass only the required state to each page
+
   map_page_server("map", state$map)
-  preferences_page_server("prefs", state$prefs)
-  alternative_approaches_page_server("alt", state$alt)
-  exploration_page_server("explore", state$explore)
-  downscaling_page_server("downscale", state$downscale)
+  
+  # Listen for the signal that map has been rendered
+  observeEvent(input$mapRendered, {
+    Sys.sleep(0.5)
+    shinyjs::runjs('$("#loading").fadeOut(2000);')
+    # Once the map is rendered, hide the loading screen and show the app content
+  })
 }
+
 
 shinyApp(ui, server)
