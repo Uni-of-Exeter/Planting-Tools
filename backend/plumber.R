@@ -2,6 +2,9 @@ library(plumber)
 library(jsonlite)
 library(future)
 
+RNGversion("4.0.0")
+set.seed(1)
+
 normalizePath <- function(path, winslash = "\\", mustWork = FALSE) {
   base::normalizePath(path, winslash = winslash, mustWork = mustWork)
 }
