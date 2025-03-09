@@ -27,7 +27,7 @@ if (os == "windows" || isTRUE(requireNamespace("rstudioapi", quietly = TRUE) && 
 # future:::ClusterRegistry("stop")
 
 # more --> less: debug / info / warning / error / none
-LOG_LEVEL <- "debug"
+MAX_LIMIT_LOG_LEVEL <- "debug"
 
 FolderSource <- normalizePath(".")
 
@@ -163,14 +163,16 @@ function(res, filename, md5sum) {
 #* curl -X PUT -H "Accept: text/plain" localhost:<port>/initialization
 #* @put /initialize
 #* @serializer rds
-#* @param LOG_LEVEL more --> less: debug / info / warning / error / none
+#* @param MAX_LIMIT_LOG_LEVEL more --> less: debug / info / warning / error / none
 #* @response 200 Success: Initialized the app, did pre-processing
 #* @response 403 Forbidden: Missing one or more input files from the elicitor
 #* @response 500 Internal Server Error: One of the elicitor files is not readable
-function(res, LOG_LEVEL = "info") {
+function(res, MAX_LIMIT_LOG_LEVEL = "info") {
   
   library(future)
   plan(futureplan, workers = min(4, future::availableCores()))
+  
+  formals(notif)$max_limit_log_level <- MAX_LIMIT_LOG_LEVEL
   # plan(sequential)
   notif("Backend initialization ...")
   
@@ -590,7 +592,7 @@ function(res, LOG_LEVEL = "info") {
                                                                                   jncc100 = jncc100,
                                                                                   climatecells = climatecells,
                                                                                   MAXYEAR = MAXYEAR,
-                                                                                  limit_log_level = LOG_LEVEL)
+                                                                                  max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
       msg <- paste(msg, "done")
       notif(msg)
       # Free a lot of RAM
@@ -837,7 +839,7 @@ function(res, LOG_LEVEL = "info") {
                                                D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
                                                init = list(n = 100), budget = 100,
                                                control = RREMBO_CONTROL,
-                                               limit_log_level = LOG_LEVEL)
+                                               max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
     
     
     # Load the value into a reactive variable on the frontend directly
@@ -1115,7 +1117,8 @@ function(res, LOG_LEVEL = "info") {
               "save_folder",
               "save_folder_elicitoroutput",
               "plantingtools_folder",
-              "FolderSource"),
+              "FolderSource",
+              "MAX_LIMIT_LOG_LEVEL"),
      envir = new_environment)
   
   notif("Backend initialization ... done")

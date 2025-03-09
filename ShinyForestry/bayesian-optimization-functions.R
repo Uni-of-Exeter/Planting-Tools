@@ -2,7 +2,7 @@
 generate_legal_samples <- function(n,
                                    random_or_maximin_lhs = "random",
                                    FullTable_arg,
-                                   limit_log_level = LOG_LEVEL,
+                                   max_limit_log_level = MAX_LIMIT_LOG_LEVEL,
                                    RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                    MAXYEAR_arg = MAXYEAR,
                                    SPECIES_arg = SPECIES,
@@ -21,22 +21,22 @@ generate_legal_samples <- function(n,
   
   if (is.null(RREMBO_HYPER_PARAMETERS)) {
     msg <- "generate_legal_samples() has been called without specifying the argument RREMBO_HYPER_PARAMETERS_arg"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
   # maximinLHS takes too long when n and d are too large, randomLHS is almost instantaneous
   msg <- paste("RREMBO generating data. Generate data part 1 (", random_or_maximin_lhs, "and map to higher dimension) ...")
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   if (random_or_maximin_lhs == "maximin") {
     DoE_low_dimension <- lhs::maximinLHS(n, d)
   } else if (random_or_maximin_lhs == "random") {
     DoE_low_dimension <- lhs::randomLHS(n, d)
   }
   
-  notif("Map to higher dimension ...", log_level = "debug", limit_log_level = limit_log_level)
+  notif("Map to higher dimension ...", log_level = "debug", max_limit_log_level = max_limit_log_level)
   DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = DoE_low_dimension, A = A)
-  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+  notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = DoE_high_dimension,
                                                                                                        RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
@@ -44,7 +44,7 @@ generate_legal_samples <- function(n,
                                                                                                        MAXYEAR_arg = MAXYEAR,
                                                                                                        SPECIES_arg = SPECIES,
                                                                                                        year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
-  notif(paste("generate_legal_samples() done"), log_level = "debug", limit_log_level = limit_log_level)
+  notif(paste("generate_legal_samples() done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   return(list(sample_low_dimension = DoE_low_dimension,
               sample_high_dimension = DoE_high_dimension,
               sample_high_dimension_categorical = DoE_high_dimension_categorical))
@@ -55,7 +55,7 @@ generate_legal_unique_samples <- function(n,
                                           area_sum_is_constrained = FALSE,
                                           previous_values = NULL,
                                           FullTable_arg,
-                                          limit_log_level = LOG_LEVEL,
+                                          max_limit_log_level = MAX_LIMIT_LOG_LEVEL,
                                           RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                           MAXYEAR_arg = MAXYEAR,
                                           SPECIES_arg = SPECIES,
@@ -79,7 +79,7 @@ generate_legal_unique_samples <- function(n,
   
   if (isTRUE(RRembo) && is.null(RREMBO_HYPER_PARAMETERS)) {
     msg <- "generate_legal_unique_samples() has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -101,7 +101,7 @@ generate_legal_unique_samples <- function(n,
       return()
     }
     msg <- paste0("Attempt ", attempts, "/", max_attempts, " at generating inputs (", nrow(valid_samples), "/", n, " so far)... ")
-    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+    notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
     
     # Keep old rows if they were really random
     if (random_or_maximin_lhs == "random" && nrow(valid_samples) > 0) {
@@ -136,17 +136,17 @@ generate_legal_unique_samples <- function(n,
     
     if (isTRUE(RRembo_smart)) {
       msg <- "generate_legal_unique_samples() -> generate_samples_RRembo() ..."
-      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+      notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
       samples <- generate_samples_RRembo(d = d,
                                          lower = rep(0, D),
                                          upper = rep(1, D),
                                          legal_non_zero_values = legal_non_zero_values,
                                          RRembo_hyper_parameters = RREMBO_HYPER_PARAMETERS,
-                                         limit_log_level = limit_log_level)
-      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+                                         max_limit_log_level = max_limit_log_level)
+      notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
     } else {
       msg <- "generate_legal_unique_samples() -> generate_legal_samples() ..."
-      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+      notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
       if (attempts > 1 && nrow(valid_samples) > 1) {
         
         temp <- lhs::optAugmentLHS(lhs = as.matrix(valid_samples_low_dimension), m = rows, mult = 1)
@@ -168,7 +168,7 @@ generate_legal_unique_samples <- function(n,
                         sample_high_dimension_categorical = temp_high_dimension_categorical)
       } else {
         samples <- generate_legal_samples(n = rows,
-                                          limit_log_level = limit_log_level,
+                                          max_limit_log_level = max_limit_log_level,
                                           RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                           FullTable_arg = FullTable,
                                           MAXYEAR_arg = MAXYEAR,
@@ -176,7 +176,7 @@ generate_legal_unique_samples <- function(n,
                                           area_sum_threshold_numeric = area_sum_threshold,
                                           year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
       }
-      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+      notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
     }
     
     samples_low_dimension <- samples$sample_low_dimension
@@ -193,7 +193,7 @@ generate_legal_unique_samples <- function(n,
     if (isTRUE(area_sum_is_constrained)) {
       if (is.null(area_sum_threshold)) {
         msg <- "generate_legal_unique_samples was called with area_sum_is_constrained = TRUE but no value for area_sum_threshold_numeric_arg"
-        notif(msg, log_level = "error", limit_log_level = limit_log_level)
+        notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
         stop(paste("[ERROR]", msg))
       }
       # Remove rows where the sum is less than area_sum_threshold
@@ -283,7 +283,7 @@ generate_legal_unique_samples <- function(n,
     attempts <- attempts + 1
   }
   msg <- "... generate_legal_unique_samples() -> loop done"
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   # Return the first n valid samples
   valid_samples <- as.matrix(valid_samples)
@@ -292,7 +292,7 @@ generate_legal_unique_samples <- function(n,
     msg <- paste0("The number of rows generated with generate_legal_unique_samples is lower than expected: ",
                   nrow(valid_samples), " instead of ", n,
                   ". Maximum number of iterations (", attempts, ") reached.")
-    notif(msg, log_level = "warning", limit_log_level = limit_log_level)
+    notif(msg, log_level = "warning", max_limit_log_level = max_limit_log_level)
   }
   # Work even if no valid samples are found
   if (nb_rows_to_return >= 1) {
@@ -314,7 +314,7 @@ generate_legal_unique_samples <- function(n,
 
 RRembo_defaults <- function(d, D, init,
                             budget = 100, control,
-                            limit_log_level = LOG_LEVEL) {
+                            max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   if (is.null(control$Atype)) 
     control$Atype <- "isotropic"
   if (is.null(control$testU)) 
@@ -345,9 +345,9 @@ RRembo_defaults <- function(d, D, init,
     control$roll <- FALSE
   if (is.null(init$Amat)) {
     msg <- "RREMBO generating data. Creating the random embedding matrix A ..."
-    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+    notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
     A <- selectA(d, D, type = control$Atype, control = list(maxit = control$maxitOptA))
-    notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+    notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   }
   else {
     A <- init$Amat
@@ -431,12 +431,12 @@ RRembo_defaults <- function(d, D, init,
               bxsize = bxsize))
 }
 
-RRembo_project_low_dimension_to_high_dimension_basic <- function(DoE_low_dimension, A, limit_log_level = LOG_LEVEL) {
+RRembo_project_low_dimension_to_high_dimension_basic <- function(DoE_low_dimension, A, max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   if (ncol(A) != ncol(DoE_low_dimension)) {
     msg <- paste0("In RRembo_project_low_dimension_to_high_dimension_basic(), matrix sizes are not compatible for the product.",
                   "A has dimensions ", paste(dim(A), collapse = "x"),
                   " but t(DoE_low_dimension) has dimensions ", paste(dim(t(DoE_low_dimension)), collapse = "x"))
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   DoE_high_dimension <- tcrossprod(as.matrix(DoE_low_dimension), A)
@@ -932,11 +932,11 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
                                     init = NULL,
                                     # init$n, init$Amat
                                     RRembo_hyper_parameters = NULL,
-                                    limit_log_level = LOG_LEVEL) {
+                                    max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   
   if (is.null(RRembo_hyper_parameters)) {
     msg <- "generate_samples_RRembo() has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -953,58 +953,58 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
   if (control$reverse) {
     if (is.null(init$low_dim_design)) {
       msg <- paste0("RREMBO generating data. Generate low dimension data (", control$designtype, ") ...")
-      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+      notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
       DoE_low_dimension <- designZ(n.init, tA, bxsize, type = control$designtype)
-      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+      notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
     } else {
       indtest <- testZ(init$low_dim_design, tA)
       if (!all(indtest)) {
         msg <- "Not all initial low dimensional designs belong to Z."
-        notif(msg, log_level = "warning", limit_log_level = limit_log_level)
+        notif(msg, log_level = "warning", max_limit_log_level = max_limit_log_level)
       }
       DoE_low_dimension <- init$low_dim_design
     }
     msg <- "RREMBO generating data. Generate high dimension data (smart projection low-dim to high-dim) ..."
-    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+    notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
     DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_zonotope(DoE_low_dimension = DoE_low_dimension,
                                                                                   A = A,
                                                                                   Amat = Amat,
                                                                                   Aind = Aind,
                                                                                   upper = upper,
                                                                                   lower = lower)
-    notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+    notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   } else {
     if (is.null(init$low_dim_design)) {
       msg <- "RREMBO generating data. Generate low dimension data ..."
-      notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+      notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
       DoE_low_dimension <- designU(n.init, A, bxsize, type = control$designtype, 
                                    standard = control$standard)
-      notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+      notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
     } else {
       DoE_low_dimension <- init$low_dim_design
     }
     msg <- "RREMBO generating data. Generate high dimension data (basic projection low-dim to high-dim) ..."
-    notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+    notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
     DoE_high_dimension <- RRembo_project_low_dimension_to_high_dimension_original(DoE_low_dimension = DoE_low_dimension,
                                                                                   A = A,
                                                                                   Amat = Amat,
                                                                                   Aind = Aind,
                                                                                   upper = upper,
                                                                                   lower = lower)
-    notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+    notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   }
   msg <- "RREMBO generating data. Generate low dimension data part 2 (Psi_Y_nonort) ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   DoE_low_dimension <- map(DoE_low_dimension, A)
-  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+  notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   # Turn values between 0 and 1 to legal area values by rounding then multiplying
   msg <- "RREMBO generating data. Generate high dimension data part 2 (map to categorical values) ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   values <- continuous_to_categorical(values = DoE_high_dimension,
                                       legal_non_zero_values = legal_non_zero_values)
-  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
-  notif("... generate_samples_RRembo() done", log_level = "debug", limit_log_level = limit_log_level)
+  notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
+  notif("... generate_samples_RRembo() done", log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   return(list(sample_high_dimension = DoE_high_dimension,
               sample_high_dimension_categorical = values,
@@ -1019,11 +1019,11 @@ EI_Rembo <- function(x, model, mval = -10, RRembo_hyper_parameters = NULL,
                      M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                      type = "expected improvement",
                      minimize_objective_function = TRUE,
-                     limit_log_level = LOG_LEVEL) {
+                     max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   
   if (is.null(RRembo_hyper_parameters)) {
     msg <- "EI_Rembo has been called without specifying the argument RRembo_hyper_parameters"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -1132,17 +1132,17 @@ normalize_minmax <- function(x) {
 }
 
 # Active Subspace Method
-dimension_reduction_asm_weights <- function(inputs, outputs, limit_log_level = LOG_LEVEL) {
+dimension_reduction_asm_weights <- function(inputs, outputs, max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   library(BASS)
   library(concordance)
   library(zipfR)
   source(file.path("functions", "concordance-extra-function.R"))
   
-  mymodel <- bass(xx = inputs, y = outputs, verbose = isTRUE(limit_log_level != "none"))
+  mymodel <- bass(xx = inputs, y = outputs, verbose = isTRUE(max_limit_log_level != "none"))
   msg <- "Calculating ASM covariance matrix ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   covariance_matrix <- C_bass(mymodel)
-  notif(paste(msg, "done"), log_level = "debug", limit_log_level = limit_log_level)
+  notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   # Perform eigenvalue decomposition
   eigen_decomp <- eigen(covariance_matrix)
@@ -1180,11 +1180,11 @@ dimension_reduction_asm_generate_new_inputs <- function(inputs, weights) {
 dimension_reduction_pca <- function(inputs,
                                     percentage_variance_explained = NULL,
                                     center = FALSE, scale = FALSE,
-                                    limit_log_level = LOG_LEVEL,
+                                    max_limit_log_level = MAX_LIMIT_LOG_LEVEL,
                                     ...) {
   if (is.null(percentage_variance_explained)) {
     msg <- "In dimension_reduction_pca, specify percentage_variance_explained"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -1203,16 +1203,16 @@ dimension_reduction_pca_generate_new_inputs <- function(pca_object, inputs, numb
 dimension_reduction_svd <- function(inputs,
                                     percentage_variance_explained = NULL,
                                     number_of_components = NULL,
-                                    limit_log_level = LOG_LEVEL) {
+                                    max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   
   if (is.null(percentage_variance_explained) && is.null(number_of_components)) {
     msg <- "In dimension_reduction_svd, specify either percentage_variance_explained or number_of_components"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   if (!is.null(percentage_variance_explained) && !is.null(number_of_components)) {
     msg <- "In dimension_reduction_svd, specify either percentage_variance_explained or number_of_components, but not both"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -1255,12 +1255,12 @@ dimension_reduction_mca <- function(inputs,
   
   if (is.null(percentage_variance_explained) && is.null(number_of_components)) {
     msg <- "In dimension_reduction_mca, specify either percentage_variance_explained or number_of_components"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   if (!is.null(percentage_variance_explained) && !is.null(number_of_components)) {
     msg <- "In dimension_reduction_mca, specify either percentage_variance_explained or number_of_components, but not both"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   
@@ -1318,7 +1318,7 @@ dimension_reduction_mca_generate_new_inputs <- function(mca_object, inputs, cate
   return(result)
 }
 
-fastest_design_point_selection_method <- function(gp_model, input_candidates_for_gp, batch_size, workers, parallel, limit_log_level = LOG_LEVEL) {
+fastest_design_point_selection_method <- function(gp_model, input_candidates_for_gp, batch_size, workers, parallel, max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   
   # If the inputs have low dimensions, don't waste time, "mice" is good and fast
   n <- nrow(gp_model$data$X)
@@ -1371,7 +1371,7 @@ fastest_design_point_selection_method <- function(gp_model, input_candidates_for
   
   if (all(is.infinite(unlist(time)))) {
     msg <- "All Bayesian optimization batch methods (dgpsi -> pei, vigf, mice, alm) failed"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   return(names(time)[which.min(time)])
@@ -1577,10 +1577,10 @@ acquisition_function <- function(gp_predicted_means,
 }
 
 # https://dspace.mit.edu/handle/1721.1/128591
-batch_selection <- function(acquisition_values, batch_size = 1, limit_log_level = LOG_LEVEL) {
+batch_selection <- function(acquisition_values, batch_size = 1, max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   if (batch_size > length(acquisition_values)) {
     msg <- "In batch_selection, the batch_size is larger than the number of possible values"
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     stop(paste("[ERROR]", msg))
   }
   return(order(acquisition_values, decreasing = TRUE)[1:batch_size])
@@ -1770,7 +1770,7 @@ gp_performance <- function(gp_means,
   residual_sum_of_squares <- sum((gp_means - true_outputs)^2)
   if (total_sum_of_squares == 0) {
     msg <- "Total sum of squares is zero, R-squared is not defined."
-    notif(msg, log_level = "warning", limit_log_level = limit_log_level)
+    notif(msg, log_level = "warning", max_limit_log_level = max_limit_log_level)
     return(NA)
   } else {
     r_squared <- 1 - residual_sum_of_squares / total_sum_of_squares
@@ -1831,7 +1831,7 @@ notif <- function(msg = "",
                   # Default logging level (debug, info, warning, error, none)
                   log_level = "info",
                   # Maximum allowed logging level. Anything above is not sent (e,g, if set to "error", messages of level "info" are not sent)
-                  limit_log_level = LOG_LEVEL) {
+                  max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   
   log_level_msg <- toupper(log_level)
   log_level <- switch(
@@ -1842,8 +1842,8 @@ notif <- function(msg = "",
     "info" = 3,
     "debug" = 4,
   )
-  limit_log_level <- switch(
-    limit_log_level,
+  max_limit_log_level <- switch(
+    max_limit_log_level,
     "none" = 0,
     "error" = 1,
     "warning" = 2,
@@ -1851,7 +1851,7 @@ notif <- function(msg = "",
     "debug" = 4,
   )
   
-  if (log_level > limit_log_level) return()
+  if (log_level > max_limit_log_level) return()
   
   if (isFALSE(rbind)) {
     msg <- paste0(Sys.time(), " [", log_level_msg, "] ", msg)
@@ -1962,7 +1962,7 @@ get_foldersource <- function() {
   return(FolderSource)
 }
 
-get_latest_task_id <- function(limit_log_level = LOG_LEVEL, file_suffix = SESSION_FILE_SUFFIX) {
+get_latest_task_id <- function(max_limit_log_level = MAX_LIMIT_LOG_LEVEL, file_suffix = SESSION_FILE_SUFFIX) {
   FolderSource <- get_foldersource()
   task_id_filename <- normalizePath(file.path(FolderSource, paste0("task_id", file_suffix, ".txt")))
   lockfile_name <- normalizePath(file.path(FolderSource, paste0("task_id_lockfile", file_suffix)))
@@ -1970,7 +1970,7 @@ get_latest_task_id <- function(limit_log_level = LOG_LEVEL, file_suffix = SESSIO
   mylock <- flock::lock(lockfile_name)
   if (isFALSE(file.exists(task_id_filename))) {
     msg <- paste("get_latest_task_id() is trying to read the file", task_id_filename, "but it does not exist")
-    notif(msg, log_level = "error", limit_log_level = limit_log_level)
+    notif(msg, log_level = "error", max_limit_log_level = max_limit_log_level)
     flock::unlock(mylock)
     stop(paste("[ERROR]", msg))
   }
@@ -2004,7 +2004,7 @@ bayesian_optimization <- function(
     year_of_max_no_planting_threshold_vector,
     outcomes_to_maximize_sum_threshold_vector = NULL,
     outcomes_to_minimize_sum_threshold_vector = NULL,
-    limit_log_level = LOG_LEVEL,
+    max_limit_log_level = MAX_LIMIT_LOG_LEVEL,
     PLOT = FALSE,
     
     # We track the task ID. If it changes from get_latest_task_id(), this gets cancelled.
@@ -2044,7 +2044,7 @@ bayesian_optimization <- function(
   RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
   
   pb <- progressr_object
-  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Starting a Bayesian Optimization ..."), limit_log_level = limit_log_level)
+  notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Starting a Bayesian Optimization ..."), max_limit_log_level = max_limit_log_level)
   # if (isFALSE(reticulate::py_module_available("dgpsi"))) {
   #   tryCatch({dgpsi::init_py(verb = TRUE)},
   #            error = function(e) {warning(e);stop(reticulate::py_last_error())})
@@ -2065,7 +2065,7 @@ bayesian_optimization <- function(
     return(FALSE)
   }
   msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Generating initial 80 inputs and outputs...")
-  notif(msg, limit_log_level = limit_log_level)
+  notif(msg, max_limit_log_level = max_limit_log_level)
   obj_inputs_full_constrained <- generate_legal_unique_samples(n = 10 * 4,
                                                                FullTable_arg = FullTable,
                                                                MAXYEAR_arg = MAXYEAR,
@@ -2077,7 +2077,7 @@ bayesian_optimization <- function(
                                                                RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                RRembo_smart = RREMBO_SMART,
                                                                current_task_id = current_task_id,
-                                                               limit_log_level = limit_log_level)
+                                                               max_limit_log_level = max_limit_log_level)
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
@@ -2092,7 +2092,7 @@ bayesian_optimization <- function(
                                                                  RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                  RRembo_smart = RREMBO_SMART,
                                                                  current_task_id = current_task_id,
-                                                                 limit_log_level = limit_log_level)
+                                                                 max_limit_log_level = max_limit_log_level)
   
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
@@ -2130,7 +2130,7 @@ bayesian_optimization <- function(
                        preference_weights_maximize = preference_weights_maximize,
                        tolvec = tolvec,
                        alpha = alpha)
-  notif(paste0(msg, "done"), limit_log_level = limit_log_level)
+  notif(paste0(msg, "done"), max_limit_log_level = max_limit_log_level)
   
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
@@ -2140,13 +2140,13 @@ bayesian_optimization <- function(
   
   # Fitting GP ----
   msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", Fitting GP...")
-  notif(msg, limit_log_level = limit_log_level)
+  notif(msg, max_limit_log_level = max_limit_log_level)
   gp_model <- dgpsi::gp(obj_inputs_for_gp, obj_outputs,
                         name = KERNEL,
                         vecchia = TRUE,
                         M = NUMBER_OF_VECCHIA_NEIGHBOURS,
                         verb = FALSE)
-  notif(paste0(msg, "done"), limit_log_level = limit_log_level)
+  notif(paste0(msg, "done"), max_limit_log_level = max_limit_log_level)
   if (isTRUE(current_task_id != get_latest_task_id())) {
     return(FALSE)
   }
@@ -2170,7 +2170,7 @@ bayesian_optimization <- function(
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set...")
     pb(message = msg)
     msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
-    notif(msg, limit_log_level = limit_log_level)
+    notif(msg, max_limit_log_level = max_limit_log_level)
     
     # if (rstudioapi::isBackgroundJob()) {
     #   message("[INFO] ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... ")
@@ -2190,7 +2190,7 @@ bayesian_optimization <- function(
                                                                                 RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                                 RRembo_smart = RREMBO_SMART,
                                                                                 current_task_id = current_task_id,
-                                                                                limit_log_level = limit_log_level)
+                                                                                max_limit_log_level = max_limit_log_level)
     new_candidates_obj_inputs_full_unconstrained <- generate_legal_unique_samples(n = 25,
                                                                                   FullTable_arg = FullTable,
                                                                                   MAXYEAR_arg = MAXYEAR,
@@ -2202,7 +2202,7 @@ bayesian_optimization <- function(
                                                                                   RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                                   RRembo_smart = RREMBO_SMART,
                                                                                   current_task_id = current_task_id,
-                                                                                  limit_log_level = limit_log_level)
+                                                                                  max_limit_log_level = max_limit_log_level)
     
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
@@ -2263,7 +2263,7 @@ bayesian_optimization <- function(
     #   message("done")
     # }
     msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Generating candidate set... done")
-    notif(msg, limit_log_level = limit_log_level)
+    notif(msg, max_limit_log_level = max_limit_log_level)
     
     if (isTRUE(current_task_id != get_latest_task_id())) {
       return(FALSE)
@@ -2273,7 +2273,7 @@ bayesian_optimization <- function(
     pb_amount <- pb_amount + 1 / max_loop_progress_bar
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function at max(EI) and min(GP_mean) ...")
     pb(message = msg)
-    notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), limit_log_level = limit_log_level)
+    notif(paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg), max_limit_log_level = max_limit_log_level)
     
     best_inputs_for_gp <- matrix(NA, nrow = nrow(optimization_inital_values), ncol = ncol(optimization_inital_values))
     for (i in 1:nrow(optimization_inital_values)) {
@@ -2311,7 +2311,7 @@ bayesian_optimization <- function(
       
       if (optimum$convergence != 0) {
         msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", In B.O. iteration ", i, ", the acquisition function optimization failed to converge with message: ", optimum$message)
-        notif(msg, log_level = "warning", limit_log_level = limit_log_level)
+        notif(msg, log_level = "warning", max_limit_log_level = max_limit_log_level)
       }
       
       best_inputs_for_gp[i, ] <- optimum$par
@@ -2358,7 +2358,7 @@ bayesian_optimization <- function(
     }
     
     msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Optimizing acquisition function ... done")
-    notif(msg, limit_log_level = limit_log_level)
+    notif(msg, max_limit_log_level = max_limit_log_level)
     
     ## Objective function on the new inputs ----
     # pb_amount <- pb_amount + 1 / max_loop_progress_bar
@@ -2403,7 +2403,7 @@ bayesian_optimization <- function(
     msg <- paste0(pb_amount * max_loop_progress_bar, "/", max_loop_progress_bar, " Updating GP... ")
     pb(message = msg)
     msg <- paste0("task ", current_task_id, ", pid ", Sys.getpid(), ", ", i, "/", BAYESIAN_OPTIMIZATION_ITERATIONS, " subjob ", msg)
-    notif(msg, limit_log_level = limit_log_level)
+    notif(msg, max_limit_log_level = max_limit_log_level)
     obj_inputs <- rbind(obj_inputs, best_inputs)
     obj_inputs_for_gp <- rbind(obj_inputs_for_gp, best_inputs_for_gp)
     obj_outputs <- c(obj_outputs, best_outputs)
@@ -2413,13 +2413,13 @@ bayesian_optimization <- function(
     }
     begin_inside <- Sys.time()
     gp_model <- dgpsi::update(gp_model, obj_inputs_for_gp, obj_outputs,
-                              verb = isTRUE(limit_log_level != "none"),
+                              verb = isTRUE(max_limit_log_level != "none"),
                               # Refit every 2 loop iterations
                               refit = isTRUE(i %% 2 == 0),
                               # Retrain every 15 loop iterations
                               reset = isTRUE(i %% 15 == 0))
     time_update_gp <- Sys.time() - begin_inside
-    notif(paste(msg, "done"), limit_log_level = limit_log_level)
+    notif(paste(msg, "done"), max_limit_log_level = max_limit_log_level)
     
     ## See what takes time ----
     time <- rbind(time,
@@ -2486,7 +2486,7 @@ bayesian_optimization <- function(
       "time per solution" = paste(time_per_solution, unit_time_per_solution)
     )
     # print(notif_msg)
-    notif(notif_msg, rbind  = TRUE, limit_log_level = limit_log_level)
+    notif(notif_msg, rbind  = TRUE, max_limit_log_level = max_limit_log_level)
     
     # Sum area / Sum carbon
     if (isTRUE(PLOT)) {
@@ -2820,7 +2820,7 @@ bayesian_optimization <- function(
       "total time" = paste(round(end - begin, 1), units(end - begin))
     )
     # print(notif_msg)
-    notif(notif_msg, rbind  = TRUE, limit_log_level = limit_log_level)
+    notif(notif_msg, rbind  = TRUE, max_limit_log_level = max_limit_log_level)
   }
   
   if (isTRUE(current_task_id != get_latest_task_id())) {

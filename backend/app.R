@@ -31,7 +31,7 @@ sapply(filenames, function(filename) {
 library(tools)
 
 # more --> less: debug / info / warning / error / none
-LOG_LEVEL <- "debug"
+MAX_LIMIT_LOG_LEVEL <- "debug"
 source(normalizePath(file.path("bayesian-optimization-functions.R")), local = TRUE)
 
 # If the files exist and have correct hashes, do not upload them.
@@ -92,7 +92,7 @@ server <- function(input, output, session,
                    N_TARGETS_ARG1 = N_TARGETS,
                    NAME_CONVERSION_ARG1 = NAME_CONVERSION,
                    TARGETS_ARG1 = TARGETS,
-                   LOG_LEVEL_ARG = LOG_LEVEL,
+                   MAX_LIMIT_LOG_LEVEL_ARG = MAX_LIMIT_LOG_LEVEL,
                    SCENARIO_ARG = SCENARIO) {
   set.seed(1)
   
@@ -104,7 +104,7 @@ server <- function(input, output, session,
   N_TARGETS <- N_TARGETS_ARG1
   TARGETS <- TARGETS_ARG1
   NAME_CONVERSION <- NAME_CONVERSION_ARG1
-  LOG_LEVEL <- LOG_LEVEL_ARG
+  MAX_LIMIT_LOG_LEVEL <- MAX_LIMIT_LOG_LEVEL_ARG
   SCENARIO <- SCENARIO_ARG
   
   SESSION_FILE_SUFFIX <- paste0("_", session$token)
@@ -1836,7 +1836,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
               }
               
               showNotification(paste("[ERROR]", msg))
-              notif(msg, log_level = "error", limit_log_level = LOG_LEVEL)
+              notif(msg, log_level = "error", max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
               return(FALSE)
             } %>%
               finally(function() {
@@ -1869,7 +1869,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                                                     area_sum_threshold = AreaSliderVal(),
                                                     outcomes_to_maximize_sum_threshold_vector = c("Carbon" = CarbonSliderVal(), BioSliderVals, "Visits" = VisitsSliderVal()),
                                                     outcomes_to_minimize_sum_threshold_vector = NULL,
-                                                    limit_log_level = LOG_LEVEL,
+                                                    max_limit_log_level = MAX_LIMIT_LOG_LEVEL,
                                                     PLOT = FALSE,
                                                     
                                                     BAYESIAN_OPTIMIZATION_ITERATIONS = 10,
@@ -2193,14 +2193,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       #                                                                                                N_TARGETS_ARG3 = N_TARGETS,
       #                                                                                               TARGETS_ARG2 = TARGETS,
       #                                                                                              prior_list = prior_list,
-      #              #                                                                                             limit_log_level = LOG_LEVEL)
+      #              #                                                                                             max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
       #        SelectedLine[[1]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1, 1],],
       #                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 1],],
       #                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 1],])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
       #        SelectedLine[[2]] <- list(YEAR=datAll2$YEAR[ LinesToCompare[1,2],],
       #                                  TYPE=datAll2$TYPE[ LinesToCompare[1, 2],],
       #                                  OUTPUTS=datAll2$OUTPUTS[ LinesToCompare[1, 2],])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
-      #                                                                                             global_log_level = LOG_LEVEL)
+      #                                                                                             global_log_level = MAX_LIMIT_LOG_LEVEL)
       SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[1,],
                                 TYPE=LinesToCompare$TYPE[1,],
                                 OUTPUTS=LinesToCompare$OUTPUTS[1,])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]

@@ -435,7 +435,7 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
                                                                        N_TARGETS_ARG3,
                                                                        TARGETS_ARG2,
                                                                        prior_list,
-                                                                       limit_log_level = LOG_LEVEL) {
+                                                                       max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   N_TARGETS <- N_TARGETS_ARG3
   TARGETS <- TARGETS_ARG2
   indices_strategies_meet_all_targets <- which(VecNbMet0() == N_TARGETS)
@@ -472,7 +472,7 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
     }
     # We couldn't find enough target-compatible strategies to avoid preference strategy duplication
     if (i == 10) {
-      notif("We couldn't find enough target-compatible strategies to avoid preference strategy duplication", log_level = "warning", limit_log_level = limit_log_level)
+      notif("We couldn't find enough target-compatible strategies to avoid preference strategy duplication", log_level = "warning", max_limit_log_level = max_limit_log_level)
     }
     
     # temp is SelectedSimMat2[two_strategies_that_meet_all_targets, TARGETS]
@@ -2231,7 +2231,7 @@ subset_meet_targets <- function(PROBAMAT, SelectedSimMat2, CONDPROBAPositiveLIST
 
 # The richness are average probabilities for a group of species to appear in a parcel
 add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SCENARIO = 26,
-                                 limit_log_level = LOG_LEVEL) {
+                                 max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   # Convert from sf to tibble
   FullTable2 <- FullTable %>%
     sf::st_drop_geometry() %>%
@@ -2246,7 +2246,7 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   
   # Biodiversity for planting (year 0)
   msg <- "Adding biodiversity at year 0 ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   small_fulltable_dt <- FullTable2 %>%
     dplyr::select(contains("_Planting"), parcel_id) %>%
@@ -2274,11 +2274,11 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   biodiversity_planting <- biodiversity_planting[, parcel_id := NULL]
   
   msg <- paste0(msg, "done")
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   # Biodiversity for no_planting (year maxyear)
   msg <- "Adding biodiversity when no planting (i.e. planting at MAXYEAR) ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   small_fulltable_dt <- FullTable2 %>%
     dplyr::select(contains("_NoPlanting"), parcel_id) %>%
@@ -2306,7 +2306,7 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   biodiversity_no_planting <- biodiversity_no_planting[, parcel_id := NULL]
   
   msg <- paste0(msg, "done")
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   
   # Add an artifical group for all species
@@ -2314,7 +2314,7 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
   unique_groups <- groups
   
   msg <- "Adding richness per planting year ..."
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   richnesses <- data.table()
   for (group in unique_groups) {
@@ -2344,7 +2344,7 @@ add_richness_columns <- function(FullTable, groups, maxyear, NAME_CONVERSION, SC
     }
   }
   msg <- paste0(msg, "done")
-  notif(msg, log_level = "debug", limit_log_level = limit_log_level)
+  notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   
   rm(FullTable2)
   # Convert back to sf object
@@ -2489,7 +2489,7 @@ get_richness_from_fulltable <- function(strategy_vector, FullTable_arg = FullTab
   return(richness)
 }
 
-convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob_list,jncc100,climatecells, MAXYEAR = MAXYEAR, limit_log_level = LOG_LEVEL) {
+convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elicitor_table,seer2km,speciesprob_list,jncc100,climatecells, MAXYEAR = MAXYEAR, max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   
   # Take the Biodiversity probabilities from Matlab
   # and merge them with BristolFullTableMerged.geojson
@@ -2579,9 +2579,9 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   polygons_jules$polygon_id_jules <- seq_along(polygons_jules$geometry)
   # TODO: parallelize? Filter -> check how Bertrand does it
   msg <- "Intersecting biodiversity square cells and the shapefile's polygons ..."
-  notif(msg, limit_log_level = limit_log_level)
+  notif(msg, max_limit_log_level = max_limit_log_level)
   intersection <- st_intersection(polygons_bio, polygons_jules)
-  notif(paste(msg, "done"), limit_log_level = limit_log_level)
+  notif(paste(msg, "done"), max_limit_log_level = max_limit_log_level)
   
   # Look at the area difference rowwise for mutate
   compute_difference_area <- function(geom1, geom2) {
@@ -2595,7 +2595,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   
   # Calculate the proportion of areas (intersection / bio)
   msg <- "Calculate the biodiversity values in shapefile cells, weighted by area ..."
-  notif(msg, limit_log_level = limit_log_level)
+  notif(msg, max_limit_log_level = max_limit_log_level)
   
   # We use progression bars inside and outside of functions, and this causes problems, local({}) solves them
   # https://github.com/futureverse/progressr/issues/105
@@ -2613,7 +2613,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         {
           msg <- "Calculate the areas"
           pb(message = msg)
-          notif(paste("1/7", msg), limit_log_level = limit_log_level)
+          notif(paste("1/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
         } %>%
         dplyr::mutate(area_bio = st_area(geometry_bio),
@@ -2624,7 +2624,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         {
           msg <- "Calculate the ratio of areas"
           pb(message = msg)
-          notif(paste("2/7", msg), limit_log_level = limit_log_level)
+          notif(paste("2/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
         } %>%
         dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
@@ -2634,7 +2634,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         {
           msg <- "Assume uniformity, multiply probability and standard deviations by proportion"
           pb(message = msg)
-          notif(paste("3/7", msg), limit_log_level = limit_log_level)
+          notif(paste("3/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
         } %>%
         dplyr::mutate(dplyr::across(starts_with("Bio"),
@@ -2643,7 +2643,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         {
           msg <- "Reduce to 100(%) if value is above"
           pb(message = msg)
-          notif(paste("4/7", msg), limit_log_level = limit_log_level)
+          notif(paste("4/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
         } %>%
         # Reduce to 100(%) if value is above
@@ -2655,7 +2655,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         {
           msg <- "Average biodiversities across (carbon, new) parcels"
           pb(message = msg)
-          notif(paste("5/7", msg), limit_log_level = limit_log_level)
+          notif(paste("5/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
         } %>%
         as_tibble() %>%
@@ -2669,7 +2669,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
                    # Only increase the progress bar every many iterations to avoid spending too much time printing things
                    if (dplyr::cur_group_id() == 1) {
                      pb(message = msg)
-                     notif(paste("5/7 subjob", msg), log_level = "debug", limit_log_level = limit_log_level)
+                     notif(paste("5/7 subjob", msg), log_level = "debug", max_limit_log_level = max_limit_log_level)
                    }
                    sum(.x) / sum(proportion_intersection_in_bio)
                  }),
@@ -2683,7 +2683,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         {
           msg <- "Compute area differences"
           pb(message = msg)
-          notif(paste("6/7", msg), limit_log_level = limit_log_level)
+          notif(paste("6/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
         } %>%
         dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
@@ -2696,7 +2696,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         {
           msg <- "Merge back to original table"
           pb(message = msg)
-          notif(paste("7/7", msg), limit_log_level = limit_log_level)
+          notif(paste("7/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
         } %>%
         left_join(polygons_jules, by = "polygon_id_jules") %>%
@@ -2708,7 +2708,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     })
   
   
-  notif(paste(msg, "done"), limit_log_level = limit_log_level)
+  notif(paste(msg, "done"), max_limit_log_level = max_limit_log_level)
   
   # Re-order
   FullTable <- bind_cols(FullTable %>%
@@ -2726,7 +2726,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   
   if (any(FullTable$area_diff >= 1)) {
     msg <- "The merged geometries from the intersections do not sum the ones intersected with the elicitor (jules): more than 1km square difference"
-    notif(msg, log_level = "warning", limit_log_level = limit_log_level)
+    notif(msg, log_level = "warning", max_limit_log_level = max_limit_log_level)
   }
   
   FullTable <- FullTable %>% dplyr::select(-area_diff) %>% st_as_sf()
