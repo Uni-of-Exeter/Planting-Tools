@@ -55,24 +55,23 @@ map_page_server <- function(id, state) {
     
     Sys.sleep(3)
     
-    # Render the map with dynamic settings
+    # Render the map
     output$map <- renderLeaflet({
       leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
         addProviderTiles(providers$CartoDB.Voyager) %>%
         setView(lng = state$lng, lat = state$lat, zoom = state$zoom)
     })
-    
-    # This is where we use shinyjs and JavaScript to detect when the map is fully rendered
+    # JS to detect when the map is rendered; fed back to main app
     observe({
-      # JavaScript to detect when the map has finished rendering
       shinyjs::runjs('
         var mapCheckInterval = setInterval(function() {
           if (document.querySelector(".leaflet-container")) {
             clearInterval(mapCheckInterval);  // Stop checking once the map is rendered
-            Shiny.setInputValue("mapRendered", true);  // Trigger an event to the server
+            Shiny.setInputValue("mappageRendered", true, {priority: "event"});  // Set the input value
           }
         }, 100);
       ')
     })
   })
 }
+

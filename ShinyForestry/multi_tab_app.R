@@ -83,27 +83,31 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-
   state <- reactiveValues(
     map = list(
       zoom = 13, 
       lat = 50.820184, 
       lng = -1.733029
     ),
-    setup = list(
-      setupComplete = FALSE
-    )
+    prefs = list(NULL),
+    initialized = FALSE
   )
 
   map_page_server("map", state$map)
-  preferences_page_server("prefs", state$map)
+  preferences_page_server("prefs", state$prefs)
   
-  # Listen for the signal that map has been rendered
-  observeEvent(input$mapRendered, {
-    Sys.sleep(0.5)
-    shinyjs::runjs('$("#loading").fadeOut(2000);')
-    # Once the map is rendered, hide the loading screen and show the app content
+  # Initialization that is required for the `loadingCompleted` state to be False
+  observe({
+    req(!state$initialized) 
+    if (!is.null(input$mappageRendered) && input$mappageRendered) {
+      # Hide the loading screen and show the app content
+      shinyjs::runjs('$("#loading").fadeOut(2000);')  # Fade out the loading screen
+      
+      # Mark the loading as completed in the state
+      state$initialized <- TRUE
+    }
   })
+  
 }
 
 
