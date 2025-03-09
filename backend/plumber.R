@@ -1120,8 +1120,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
               "save_folder",
               "save_folder_elicitoroutput",
               "plantingtools_folder",
-              "FolderSource",
-              "MAX_LIMIT_LOG_LEVEL"),
+              "FolderSource"),
      envir = new_environment)
   
   notif("Backend initialization ... done")
