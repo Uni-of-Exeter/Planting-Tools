@@ -2605,7 +2605,9 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
       # nb_of_groups length(unique(intersection$polygon_id_jules)) * nb_BioMean_columns length(intersection %>% dplyr::select(starts_with("Bio_Mean"))) +
       # 5 because of the new columns from mutate()
       # pb <- progressor(steps = 6 + length(unique(intersection$polygon_id_jules)) * length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean"))) + 5, message = msg)
-      nb_groups <- length(unique(intersection$polygon_id_jules))
+      nb_groups <- length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean")))
+      group_count_env <- new.env()
+      group_count_env$group_count <- 0
       pb <- progressor(steps = 6 + nb_groups + 5, message = msg)
       FullTable <- intersection %>%
         
@@ -2665,11 +2667,12 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
           # intersect and divide by the sum of proportions, to get a weighted average
           across(starts_with("Bio_Mean"),
                  # ~ sum(.x) / sum(proportion_intersection_in_bio)),
-                 function(.x) {
+                 function(.x, group_count_env_arg = group_count_env) {
                    # Only increase the progress bar every many iterations to avoid spending too much time printing things
                    if (dplyr::cur_group_id() == 1) {
+                     group_count_env_arg$group_count <- group_count_env_arg$group_count + 1
                      pb(message = msg)
-                     notif(paste("5/7 subjob", msg), log_level = "debug", max_limit_log_level = max_limit_log_level)
+                     notif(paste("5/7 subjob", group_count_env_arg$group_count, "/", nb_groups, msg), log_level = "debug", max_limit_log_level = max_limit_log_level)
                    }
                    sum(.x) / sum(proportion_intersection_in_bio)
                  }),
