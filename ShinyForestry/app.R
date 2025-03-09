@@ -33,12 +33,12 @@ if (file.exists(normalizePath(file.path("bayesian-optimization-functions.R"), mu
 
 # If the backend was already initialized, saved to disk, and environment variable is valid, use it
 run_initalization_on_backend <- FALSE
-backend_initialization_env_file <- file.path(elicitor_folder, "backend_env.rds")
+backend_initialization_env_file <- normalizePath(file.path(elicitor_folder, "backend_env.rds"))
 if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.environment(env))) {
+  if (isFALSE(is.list(env))) {
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     run_initalization_on_backend <- TRUE
   }
