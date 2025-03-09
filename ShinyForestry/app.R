@@ -31,17 +31,23 @@ if (file.exists(normalizePath(file.path("bayesian-optimization-functions.R"), mu
   source(normalizePath(file.path("backend", "bayesian-optimization-functions.R")), local = TRUE)
 }
 
-# If the backend was already initiated and saved to disk, use it
+# If the backend was already initialized, saved to disk, and environment variable is valid, use it
+run_initalization_on_backend <- FALSE
 backend_initialization_env_file <- file.path(elicitor_folder, "backend_env.rds")
 if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
   if (isFALSE(is.environment(env))) {
-    stop(backend_initialization_env_file, " seems to be corrupted. Delete it and launch the app again.")
+    notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
+    run_initalization_on_backend <- TRUE
   }
   
 } else {
+  run_initalization_on_backend <- TRUE
+}
+
+if (isTRUE(run_initalization_on_backend)) {
   
   # If a file does not exist, stop everything
   filenames <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
