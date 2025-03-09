@@ -24,7 +24,7 @@ if (file.exists("ShinyForestry")) {
 }
 
 # more --> less: debug / info / warning / error / none
-MAX_LIMIT_LOG_LEVEL <- "error"
+MAX_LIMIT_LOG_LEVEL <- "debug"
 if (file.exists(normalizePath(file.path("bayesian-optimization-functions.R"), mustWork = FALSE))) {
   source(normalizePath(file.path("bayesian-optimization-functions.R")), local = TRUE)
 } else {
