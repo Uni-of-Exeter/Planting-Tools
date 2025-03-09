@@ -1833,6 +1833,9 @@ notif <- function(msg = "",
                   # Maximum allowed logging level. Anything above is not sent (e,g, if set to "error", messages of level "info" are not sent)
                   max_limit_log_level = MAX_LIMIT_LOG_LEVEL) {
   
+  # Avoid sending notifications out of order
+  Sys.sleep(0.1)
+  
   log_level_msg <- toupper(log_level)
   log_level <- switch(
     log_level,
