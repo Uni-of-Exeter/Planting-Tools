@@ -17,7 +17,13 @@ library(plotly)
 library(leaflet.extras)
 library(glue)
 
+library(raster)
+library(leaflet.minicharts)
+library(manipulateWidget)
+
+
 # Source module files
+source("global.R")  # Load global settings
 source("modules/map_page.R")
 source("modules/preferences_page.R")
 source("modules/alternative_approaches_page.R")

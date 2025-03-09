@@ -3,6 +3,7 @@ body {
   padding: 0;
   overflow: hidden;
 }
+
 .tab-pane.active {
   padding: 0 !important;
   margin: 0 !important;
@@ -12,6 +13,7 @@ body {
   padding: 0 !important;
   margin: 0 !important;
 }
+
 .bslib-gap-spacing {
   gap: 0 !important;
 }
@@ -19,18 +21,19 @@ body {
 /* Some Bootstrap padding issue on left/right of screen */
 .container-fluid { 
   padding: 0;
-  }
+}
+
 /* Remove padding from all Bootstrap column classes (col-xs, col-sm, col-md, col-lg) */
-  .col-xs-3, .col-sm-3, .col-md-3, .col-lg-3,
-  .col-xs-9, .col-sm-9, .col-md-9, .col-lg-9 {
+.col-xs-3, .col-sm-3, .col-md-3, .col-lg-3,
+.col-xs-9, .col-sm-9, .col-md-9, .col-lg-9 {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
 .navbar {
   height: 60px !important;  /* Set navbar height to 60px */
-  padding-left: 32px !important;   /* counteract changes to bootstrap */
-  padding-right: 16px !important;  /* counteract changes to bootstrap */
+  padding-left: 32px !important;   /* Counteract changes to bootstrap */
+  padding-right: 16px !important;  /* Counteract changes to bootstrap */
   margin: 0px !important;   /* Remove any margin */
 }
 
@@ -57,7 +60,7 @@ body {
   flex-grow: 1;
   height: calc(100vh - 60px);
   position: relative;  /* Required to position year slider */
-    padding: 0px;
+  padding: 0px;
   background-color: #f0f0f0;
 }
 
@@ -69,7 +72,131 @@ body {
 
 .leaflet-control {
   background: rgba(255, 255, 255, 0.9); /* Background colour to zero */
-    box-shadow: none !important; /* Remove box-shadow */
-    border: none !important; /* Remove border */
+  box-shadow: none !important; /* Remove box-shadow */
+  border: none !important; /* Remove border */
 }
 
+
+/* Ensure no global CSS overrides */
+#preferences-page {
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+#preferences-page .tab-pane.active {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#preferences-page .html-fill-item, #preferences-page .html-fill-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#preferences-page .bslib-gap-spacing {
+  gap: 0 !important;
+}
+
+/* Some Bootstrap padding issue on left/right of screen */
+#preferences-page .container-fluid { 
+  padding: 0;
+}
+
+/* Remove padding from all Bootstrap column classes (col-xs, col-sm, col-md, col-lg) */
+#preferences-page .col-xs-6, #preferences-page .col-sm-6, #preferences-page .col-md-6, #preferences-page .col-lg-6 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Ensure that row has no margin/padding */
+#preferences-page .row {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#preferences-page .navbar {
+  height: 60px !important;  /* Set navbar height to 60px */
+  padding-left: 32px !important;   /* counteract changes to bootstrap */
+  padding-right: 16px !important;  /* counteract changes to bootstrap */
+  margin: 0px !important;   /* Remove any margin */
+}
+
+#preferences-page .main-panel {
+  height: calc(100vh - 60px);  /* Adjust for navbar height */
+  padding: 0px;
+  background-color: #f0f0f0;
+}
+
+/* Map Containers for Preferences Page */
+#preferences-page .leaflet-container {
+  height: calc(100vh - 60px) !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#preferences-page .leaflet-control {
+  background: rgba(255, 255, 255, 0.9); /* background-color to zero */
+  box-shadow: none !important; /* remove box-shadow */
+  border: none !important; /* remove border */
+}
+
+/* Sidebar content adjustment for preferences page */
+#preferences-page .sidebarPanel {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Heading styling for Preferences Page */
+#preferences-page h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Value box specific to preferences page */
+#preferences-page .value-box {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+  width: auto;
+  max-width: 300px;
+  min-width: 150px;
+  position: absolute;
+  top: 20px;
+  left: 25%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Slider panel specific to preferences page */
+#preferences-page .slider-panel {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+  width: 33%;
+}
+
+/* Radio buttons container for preferences page */
+#preferences-page .radio-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+#preferences-page .no-padding {
+  padding: 0 !important;
+}
+
+/* Prevent any padding for the first/second maps in preferences page */
+#preferences-page .main-panel .no-padding {
+  padding: 0 !important;
+}
