@@ -1925,25 +1925,25 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
         }else{FourUniqueRowsReactive(NULL)
           PreviousFourUniqueRowsReactive(NULL)}
         if (dim(SubsetMeetTargetsReactiveUnique()$YEAR)[1] > 0) {
-          if (max(tmpYearType$SelectedSimMat2$Carbon) != min(tmpYearType$SelectedSimMat2$Carbon)) {
-            DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon) - min(tmpYearType$SelectedSimMat2$Carbon))
+          if (max(tmpYearType$SelectedSimMat2$Carbon, na.rm = TRUE) != min(tmpYearType$SelectedSimMat2$Carbon, na.rm = TRUE)) {
+            DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon, na.rm = TRUE) - min(tmpYearType$SelectedSimMat2$Carbon, na.rm = TRUE))
           } else {
-            DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon))
+            DistSliderCarbon <- (SubsetMeetTargets$OUTPUTS$Carbon - SelecTargetCarbon) / (max(tmpYearType$SelectedSimMat2$Carbon, na.rm = TRUE))
           }
-          # if (max(SelectedSimMat2$redsquirrel) != min(SelectedSimMat2$redsquirrel)) {
-          #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel) - min(SelectedSimMat2$redsquirrel))
+          # if (max(SelectedSimMat2$redsquirrel, na.rm = TRUE) != min(SelectedSimMat2$redsquirrel, na.rm = TRUE)) {
+          #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel, na.rm = TRUE) - min(SelectedSimMat2$redsquirrel, na.rm = TRUE))
           # } else {
-          #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel))
+          #   DistSliderBio <- (SubsetMeetTargets$redsquirrel - SelecTargetBio) / (max(SelectedSimMat2$redsquirrel, na.rm = TRUE))
           # }
           DistSliderBioListDataframes <- list()
           for (x in SPECIES) {
             SelecTargetBiospecie <- get(paste0("SelecTargetBio", x))[[1]]
             var_name <- paste0("DistSliderBio", x)
-            if (max(tmpYearType$SelectedSimMat2[x]) != min(tmpYearType$SelectedSimMat2[x])) {
-              value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]]) - min(tmpYearType$SelectedSimMat2[[x]]))
+            if (max(tmpYearType$SelectedSimMat2[x], na.rm = TRUE) != min(tmpYearType$SelectedSimMat2[x], na.rm = TRUE)) {
+              value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]], na.rm = TRUE) - min(tmpYearType$SelectedSimMat2[[x]], na.rm = TRUE))
             } else {
-              if (max(tmpYearType$SelectedSimMat2[x]) != 0) {
-                value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]]))
+              if (max(tmpYearType$SelectedSimMat2[x], na.rm = TRUE) != 0) {
+                value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie) / (max(tmpYearType$SelectedSimMat2[[x]], na.rm = TRUE))
               } else {
                 value <- (SubsetMeetTargets[["OUTPUTS"]][[x]] - SelecTargetBiospecie)
               }
@@ -1951,15 +1951,15 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
             assign(var_name, value)
             DistSliderBioListDataframes[x] <- data.frame(x = value)
           }
-          if (max(tmpYearType$SelectedSimMat2$Area) != min(tmpYearType$SelectedSimMat2$Area)) {
-            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["OUTPUTS"]][["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area) - min(tmpYearType$SelectedSimMat2$Area))
+          if (max(tmpYearType$SelectedSimMat2$Area, na.rm = TRUE) != min(tmpYearType$SelectedSimMat2$Area, na.rm = TRUE)) {
+            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["OUTPUTS"]][["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area, na.rm = TRUE) - min(tmpYearType$SelectedSimMat2$Area, na.rm = TRUE))
           } else {
-            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["OUTPUTS"]][["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area))
+            DistSliderArea <- (SelecTargetArea-SubsetMeetTargets[["OUTPUTS"]][["Area"]] ) / (max(tmpYearType$SelectedSimMat2$Area, na.rm = TRUE))
           }
-          if (max(tmpYearType$SelectedSimMat2$Visits) != min(tmpYearType$SelectedSimMat2$Visits)) {
-            DistSliderVisits <- (SubsetMeetTargets[["OUTPUTS"]][["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits) - min(tmpYearType$SelectedSimMat2$Visits))
+          if (max(tmpYearType$SelectedSimMat2$Visits, na.rm = TRUE) != min(tmpYearType$SelectedSimMat2$Visits, na.rm = TRUE)) {
+            DistSliderVisits <- (SubsetMeetTargets[["OUTPUTS"]][["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits, na.rm = TRUE) - min(tmpYearType$SelectedSimMat2$Visits, na.rm = TRUE))
           } else {
-            DistSliderVisits <- (SubsetMeetTargets[["OUTPUTS"]][["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits))
+            DistSliderVisits <- (SubsetMeetTargets[["OUTPUTS"]][["Visits"]] - SelecTargetVisits) / (max(tmpYearType$SelectedSimMat2$Visits, na.rm = TRUE))
           }
           
           if (isTRUE(current_task_id != get_latest_task_id())) {
@@ -1968,11 +1968,11 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           }
 
           DistSliderBioDataframe <- do.call(cbind, DistSliderBioListDataframes)
-          # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits))
-          # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits))
-          #SelecdMinRows <- which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe) + DistSliderArea + DistSliderVisits)
+          # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio + DistSliderArea + DistSliderVisits, na.rm = TRUE))
+          # SelecdMinRows <- which((DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits) == min(DistSliderCarbon + DistSliderBio1 + DistSliderBio2 + DistSliderArea + DistSliderVisits, na.rm = TRUE))
+          #SelecdMinRows <- which.min(DistSliderCarbon + rowSums(DistSliderBioDataframe, na.rm = TRUE) + DistSliderArea + DistSliderVisits)
           #SelectedMins <- SubsetMeetTargets[SelecdMinRows, ]
-          #SelecRow <- which.min(rowSums(SelectedMins[1:length(SavedVec), ]))
+          #SelecRow <- which.min(rowSums(SelectedMins[1:length(SavedVec, na.rm = TRUE), ]))
           # We consider that all biodiversity are as important and carbon and visits. The area is not taken into account in the minimization
           # as it is a below target
           SUMM <- DistSliderCarbon + rowSums(DistSliderBioDataframe)+  DistSliderVisits
