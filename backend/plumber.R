@@ -1126,7 +1126,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
   notif("Backend initialization ... done")
   
   res$status <- 200
-  return(as.list(new_environment))
+  return(new_environment)
 }
 
 
