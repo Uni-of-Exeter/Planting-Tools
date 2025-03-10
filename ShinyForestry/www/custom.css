@@ -151,19 +151,6 @@ body {
   border: none !important; /* remove border */
 }
 
-/* Sidebar content adjustment for preferences page */
-#preferences-page .sidebarPanel {
-  height: 100%;
-  overflow-y: auto;
-}
-
-/* Heading styling for Preferences Page */
-#preferences-page h3 {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-
 /* Value box specific to preferences page */
 #preferences-page .value-box {
   background-color: rgba(255, 255, 255, 0.9);
@@ -263,4 +250,83 @@ body {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+
+/* Alt */
+
+#alt-page body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#alt-page .tab-pane.active {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#alt-page .html-fill-item, .html-fill-container {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#alt-page .bslib-gap-spacing {
+    gap: 0 !important;
+}
+
+/* Fix Bootstrap container padding issue */
+#alt-page .container-fluid { 
+    padding: 0 !important;
+}
+
+/* Remove padding from Bootstrap grid system */
+#alt-page .col-xs-6, .col-sm-6, .col-md-6, .col-lg-6 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Ensure the row has no margin or padding */
+#alt-page .row {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Navbar Styling */
+#alt-page .navbar {
+    height: 60px !important;
+    padding-left: 32px !important;
+    padding-right: 16px !important;
+    margin: 0 !important;
+    background-color: #003c3c;  /* Dark green navbar */
+}
+
+/* Main Panel Adjustments */
+#alt-page .main-panel {
+    height: calc(100vh - 60px); /* Full height minus navbar */
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+/* Leaflet Map Container */
+#alt-page .leaflet-container {
+    height: calc(50vh - 30px) !important; /* Each map takes half of viewport height */
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Leaflet Control Styling */
+#alt-page .leaflet-control {
+    background: rgba(255, 255, 255, 0.9); /* Make background semi-transparent */
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Sidebar Panel */
+#alt-page .sidebarPanel {
+    height: 100%;
+    overflow-y: auto;
+}
+
+
     

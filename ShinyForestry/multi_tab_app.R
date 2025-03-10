@@ -75,6 +75,7 @@ ui <- fluidPage(
         
         tabPanel(title = "Map", map_page_ui("map")),
         tabPanel(title = "Preferences", preferences_page_ui("prefs")),
+        tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
         nav_spacer(),
         nav_item(tags$a("AI for Net Zero",
                         href = "https://netzeroplus.ac.uk/",
@@ -104,6 +105,7 @@ server <- function(input, output, session) {
     
   map_page_server("map", state)
   preferences_page_server("prefs", state)
+  alt_page_server("alt", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
