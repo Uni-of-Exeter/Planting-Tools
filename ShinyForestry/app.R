@@ -143,10 +143,6 @@ if (isTRUE(run_initalization_on_backend)) {
 # Merge the backend environment into the global environment
 list2env(as.list(env), envir = .GlobalEnv)
 
-# Load reactive variables properly
-Simul636YearOverrideReactive <- reactiveVal(Simul636YearOverrideReactive_toload_in_reactiveVal)
-Simul636YearTypeOverrideReactive <- reactiveVal(Simul636YearTypeOverrideReactive_toload_in_reactiveVal)
-
 msg <- paste(msg, "done")
 notif(msg)
 
@@ -419,6 +415,10 @@ server <- function(input, output, session,
                    MAX_LIMIT_LOG_LEVEL_ARG = MAX_LIMIT_LOG_LEVEL,
                    SCENARIO_ARG = SCENARIO) {
   set.seed(1)
+  
+  # Load reactive variables properly
+  Simul636YearOverrideReactive <- reactiveVal(Simul636YearOverrideReactive_toload_in_reactiveVal)
+  Simul636YearTypeOverrideReactive <- reactiveVal(Simul636YearTypeOverrideReactive_toload_in_reactiveVal)
   
   # hideTab(inputId = "tabs", target = "Exploration")
   # hideTab(inputId = "tabs", target = "Preferences")
