@@ -161,15 +161,32 @@ body {
   padding: 10px;
   border-radius: 8px;
   border: 1px solid #ccc;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-  width: auto;
-  max-width: 300px;
-  min-width: 150px;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+  width: auto; /* Allow dynamic width */
+  max-width: 350px; /* Prevent it from getting too wide */
+  min-width: 250px; /* Prevent it from getting too small */
+  height: auto;
   position: absolute;
-  top: 20px;
+  white-space: wrap; /* Keeps text from wrapping */
+}
+
+/* Positioning for each value box */
+#preferences-page .value-box.map2 {
+   top: 68px; /* 60px navbar + 8px border radius (just a shot in the dark) */
+   left: 75%;
+  transform: translateX(-50%);
+}
+
+#preferences-page .value-box.map1 {
+  top: 68px; /* 60px navbar + 8px border radius (just a shot in the dark) */
   left: 25%;
   transform: translateX(-50%);
-  white-space: nowrap;
+}
+
+/* Improve table appearance */
+#preferences-page .value-box table {
+  border-collapse: collapse;
+  width: auto; /* Ensures table takes only necessary space */
 }
 
 /* Slider panel specific to preferences page */

@@ -67,7 +67,6 @@ generate_parcel_data <- function() {
     crs = st_crs(FullTable)
   )
   
-  print(parcel_data)
   return(parcel_data)
 }
 
@@ -250,6 +249,34 @@ function(req) {
   
   return(list(
     values = payload,
+    geojson = geojson
+  ))
+}
+
+#* Generate parcel data
+#* @get /random_strategy
+#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
+#* @serializer json
+function() {
+  # Generate parcel data
+  parcel_data <- generate_parcel_data()
+  geojson <- geojsonsf::sf_geojson(parcel_data)
+  
+  values <- list(
+    carbon = as.numeric(500),
+    species = as.numeric(5), 
+    species_goat_moth = as.numeric(4),
+    species_stag_beetle = as.numeric(9),
+    species_lichens = as.numeric(10),
+    area = as.numeric(15),
+    recreation = as.numeric(10) 
+  )
+  
+  # Add a small random number between -0.5 and 0.5 to each value
+  values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
+  
+  return(list(
+    values = values,
     geojson = geojson
   ))
 }

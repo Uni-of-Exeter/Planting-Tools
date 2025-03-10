@@ -24,18 +24,21 @@ library(manipulateWidget)
 
 # Source module files
 source("global.R")  # Load global settings
+source("config.R")  # Load config 
+
 source("modules/map_page.R")
 source("modules/preferences_page.R")
 source("modules/alternative_approaches_page.R")
 source("modules/exploration_page.R")
 source("modules/downscaling_page.R")
 
+source("utils/api_functions.R")
+
 custom_theme <- bs_theme(
   bootswatch = "lumen",
   "navbar-bg" = "#003c3c"
 )
 
-# Define UI
 # Define UI
 ui <- fluidPage(
   
@@ -86,26 +89,43 @@ server <- function(input, output, session) {
   state <- reactiveValues(
     map = list(
       zoom = 13, 
-      lat = 50.820184, 
+      lat = 50.820184,
       lng = -1.733029
     ),
-    prefs = list(NULL),
+    map_tab = list(
+      initialized = FALSE,
+      slider_defaults = list(NULL)
+    ),
+    pref_tab = list(
+      initialized = FALSE
+    ),
     initialized = FALSE
   )
-
-  map_page_server("map", state$map)
-  preferences_page_server("prefs", state$prefs)
+    
+  map_page_server("map", state)
+  preferences_page_server("prefs", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
-    req(!state$initialized) 
-    if (!is.null(input$mappageRendered) && input$mappageRendered) {
-      # Hide the loading screen and show the app content
-      shinyjs::runjs('$("#loading").fadeOut(2000);')  # Fade out the loading screen
+    if (!is.null(input$mappageRendered) && input$mappageRendered 
+      && !is.null(input$prefpageRendered) && input$prefpageRendered) {
+    # req(!state$initialized)
+    # if (state$map_tab$initialized && state$pref_tab$initialized) {
+      
+      # Hide the loading screen after both maps are rendered
+      Sys.sleep(0.5)  # Small delay for smoother transition
+      
+      # Fade out the loading screen (can now be triggered after clicking back to map)
+      shinyjs::runjs('$("#loading").fadeOut(1000);')  # Fade out the loading screen
       
       # Mark the loading as completed in the state
       state$initialized <- TRUE
     }
+  })
+  
+  observe({
+      print("main script")
+      print(reactiveValuesToList(state))  # Debugging print to check state
   })
   
 }
