@@ -1821,7 +1821,7 @@ notif <- function(msg = "",
                   # cURL flags (when using ntfy)
                   curl_flags = NULL,
                   # Notify on ntfy with what priority notifications (https://docs.ntfy.sh/publish/?h=priority#message-priority)
-                  ntfy = TRUE, ntfy_priority = "default",
+                  ntfy = FALSE, ntfy_priority = "default",
                   # Useful to print data.frames correctly on ntfy
                   rbind = FALSE, pad_character = "_",
                   # Log to a unique file per Shiny session (`server(...)` instance)
