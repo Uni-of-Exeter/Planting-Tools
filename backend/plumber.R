@@ -858,7 +858,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
     ConvertSample <- sample(1:NSamp, 200)
     
     # Outcomes
-    if (isFALSE(exists("outcomes"))) {
+    if (isFALSE(exists("outcomes", inherits = FALSE))) {
       msg <- paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
       notif(msg)
       while (!file.exists(normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))) {
@@ -1080,11 +1080,10 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
       
     }
     
-    # rm(save_folder_elicitoroutput, save_folder)
-    if (exists("SquaresLoad")) {
+    if (exists("SquaresLoad", inherits = FALSE)) {
       rm(SquaresLoad)
     }
-    if (exists("Sqconv")) {
+    if (exists("Sqconv", inherits = FALSE)) {
       rm(Sqconv)
     }
     
@@ -1107,7 +1106,6 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
     }
   }
   notif(paste(msg, "done"), log_level = "debug")
-  
   plan(sequential)
   
   # Merge the environment into the global environment
