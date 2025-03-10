@@ -1856,12 +1856,14 @@ notif <- function(msg = "",
   
   if (log_level > max_limit_log_level) return()
   
+  options(digits.secs = 6)
   if (isFALSE(rbind)) {
     msg <- paste0(Sys.time(), " [", log_level_msg, "] ", msg)
   } else {
     msg <- rbind(c(paste0(Sys.time(), " [", log_level_msg, "] "), rep(NA, ncol(msg))),
                  msg)
   }
+  options(digits.secs = NULL)
   
   pad_notif_message <- function(msg, pad_character = "_") {
     max_key_width <- max(nchar(rownames(msg)))
