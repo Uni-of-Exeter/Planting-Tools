@@ -1,7 +1,7 @@
 # ALREADY DONE IN THE APP (begin)
 
 # Load function files
-LOG_LEVEL <- "error"
+MAX_LIMIT_LOG_LEVEL <- "error"
 FolderSource <- normalizePath(getwd())
 if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
@@ -138,7 +138,7 @@ RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
                                            D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
                                            init = list(n = 100), budget = 100,
                                            control = RREMBO_CONTROL,
-                                           limit_log_level = LOG_LEVEL)
+                                           max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
 # ALREADY DONE IN THE APP (end)
 
 DoE_low_dimension <- lhs::randomLHS(10, RREMBO_HYPER_PARAMETERS$d)

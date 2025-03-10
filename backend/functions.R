@@ -357,7 +357,7 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth,PrintLegend=
     map<-  addTiles(map,options=tileOptions(opacity = 0.3)) 
     map<-fitBounds(map,lng1 = min_x2, lat1 = min_y2, 
                    lng2 = max_x2, lat2 =max_y2) #%>%
-    
+ 
     
   }else{
     for(ii in 1: length(ListMaps)){
@@ -383,16 +383,16 @@ BaseMap2<-function(SelectedMap,layerId=NULL,shconv,GreyPolygonWidth,PrintLegend=
   }  
   map<-addPolygons(map,data=ListMaps,color="grey",weight=GreyPolygonWidth, fillOpacity = GREY_BACKGROUND_OPACITY)
   if(PrintLegend){
-    map<-addLegend(map, colors = c(
-      rgb(17,119,51,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255),#rgb(128,0,128,alpha = 128, maxColorValue = 255),
-      rgb(68,170,152,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255),
-      rgb(128,128,128,alpha = min(trunc(1.5*255*NOTAVAIL_OPACITY),255), maxColorValue = 255),#rgb(0,128,0,alpha = 128, maxColorValue = 255)
-      rgb(255,0,0,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255)
-    ),#c("purple", "green"), 
-    labels = c("Conifer", "Deciduous","Not available","Blocked"), 
-    title = "Planting type", 
-    position = "bottomright", 
-    opacity = 1)}
+  map<-addLegend(map, colors = c(
+                               rgb(17,119,51,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255),#rgb(128,0,128,alpha = 128, maxColorValue = 255),
+                                 rgb(68,170,152,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255),
+                               rgb(128,128,128,alpha = min(trunc(1.5*255*NOTAVAIL_OPACITY),255), maxColorValue = 255),#rgb(0,128,0,alpha = 128, maxColorValue = 255)
+                               rgb(255,0,0,alpha = trunc(255*POLYGON_OPACITY), maxColorValue = 255)
+                                 ),#c("purple", "green"), 
+                 labels = c("Conifer", "Deciduous","Not available","Blocked"), 
+                 title = "Planting type", 
+                 position = "bottomright", 
+                 opacity = 1)}
   return(list(map=map,max_x2=max_x2,min_x2=min_x2,max_y2=max_y2,min_y2=min_y2))
 }
 
@@ -775,33 +775,33 @@ pick_two_strategies_that_meet_targets_update_pref_reactive <- function(VecNbMet0
 # }
 
 observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2 for input$choose2
-                                            input,
-                                            output,
-                                            session,
-                                            infpref_reactive,
-                                            ConvertSample,
-                                            LinesToCompareReactive,
-                                            ClickedVector,
-                                            NbRoundsMax,
-                                            CurrentRound,
-                                            FullTable,
-                                            FullTableNotAvail,
-                                            VecNbMet0,
-                                            shconv,
-                                            SelectedSimMatGlobal,
-                                            pref_reactive,
-                                            ColourScheme,
-                                            ColorLighteningFactor,
-                                            ColorDarkeningFactor,
-                                            SPECIES_ARG3,
-                                            SPECIES_ENGLISH_ARG3,
-                                            N_TARGETS_ARG2,
-                                            TARGETS_ARG1,
-                                            GreyPolygonWidth,
-                                            UnitPolygonColours,
-                                            ClickedVectorYear,
-                                            ClickedVectorYearType) {
-  
+                                   input,
+                                   output,
+                                   session,
+                                   infpref_reactive,
+                                   ConvertSample,
+                                   LinesToCompareReactive,
+                                   ClickedVector,
+                                   NbRoundsMax,
+                                   CurrentRound,
+                                   FullTable,
+                                   FullTableNotAvail,
+                                   VecNbMet0,
+                                   shconv,
+                                   SelectedSimMatGlobal,
+                                   pref_reactive,
+                                   ColourScheme,
+                                   ColorLighteningFactor,
+                                   ColorDarkeningFactor,
+                                   SPECIES_ARG3,
+                                   SPECIES_ENGLISH_ARG3,
+                                   N_TARGETS_ARG2,
+                                   TARGETS_ARG1,
+                                   GreyPolygonWidth,
+                                   UnitPolygonColours,
+                                   ClickedVectorYear,
+                                   ClickedVectorYearType) {
+
   SPECIES <- SPECIES_ARG3
   SPECIES_ENGLISH <- SPECIES_ENGLISH_ARG3
   N_TARGETS <- N_TARGETS_ARG2
@@ -810,7 +810,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
   SavedVecYear <- ClickedVectorYear()
   SavedVecYearType <- ClickedVectorYearType()
   YearSelect<-input$YearPref-STARTYEAR
-  
+
   LinesToCompare <- as.matrix(LinesToCompareReactive())
   SelectedDropdown <- input$inSelect
   
@@ -821,248 +821,248 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
     calcBaseMap <- BaseMap2(SelectedDropdown,layerId="main100",shconv=shconv,GreyPolygonWidth=GreyPolygonWidth)
     
     SelectedSimMat2 <- SelectedSimMatGlobal
-    # if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
-    #  {
-    CR <- CurrentRound()
-    
-    length_pref_reactive_data <- nrow(pref_reactive()$data)
-    if (choose == 1) {
-      pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
-    } else if (choose == 2) {
-      pref_reactive()$addPref(c(length_pref_reactive_data, length_pref_reactive_data - 1))
-    }
-    # browser()
-    
-    
-    CR <- CR+1
-    CurrentRound(CR)
-    
-    listMaps <- list()
-    listMaps[[1]] <- calcBaseMap$map
-    listMaps[[2]] <- calcBaseMap$map
-    
-    SelectedLine <- list()
-    
-    LinesToCompare<-LinesToCompareReactive()
-    LinesToCompareYear_Type_Concatenation<-cbind(apply(as.matrix(LinesToCompare$YEAR),c(1,2),as.character),
-                                                 as.matrix(LinesToCompare$TYPE))
-    NumberNewStrategiesFound<-0
-    
-    
-    if(dim(FIXED_STRATEGIES_LIST$YEAR)[1]!=0){
-      FIXED_STRATEGIES_LIST_Year_Type_Concatenation<-data.frame(YEAR=FIXED_STRATEGIES_LIST$YEAR,
-                                                                TYPE=FIXED_STRATEGIES_LIST$TYPE)
-      lenghtFixedStrategies<-dim(FIXED_STRATEGIES_LIST$YEAR)[1]
-      CounterLoc<-1
-      while((CounterLoc<=lenghtFixedStrategies)&(NumberNewStrategiesFound<2))
-      {# Test if the line of the matrix is in the list of strategies already selected
-        if(sum((apply(t(matrix(as.character(FIXED_STRATEGIES_LIST_Year_Type_Concatenation[CounterLoc,])
-                               ,dim(LinesToCompareYear_Type_Concatenation)[2],
-                               dim(LinesToCompareYear_Type_Concatenation)[1]))==LinesToCompareYear_Type_Concatenation,1,prod)==1))==0
-        )
-        {LinesToCompare$YEAR<-rbind(LinesToCompare$YEAR,FIXED_STRATEGIES_LIST$YEAR[CounterLoc,])
-        LinesToCompare$TYPE<-rbind(LinesToCompare$YEAR,FIXED_STRATEGIES_LIST$TYPE[CounterLoc,])
-        LinesToCompare$OUTPUTS<-rbind(LinesToCompare$YEAR,FIXED_STRATEGIES_LIST$OUTPUTS[CounterLoc,])
-        NumberNewStrategiesFound<-NumberNewStrategiesFound+1
-        LinesToCompareYear_Type_Concatenation<-data.frame(YEAR=LinesToCompare$YEAR,TYPE=LinesToCompare$TYPE)
-        
-        
-        } 
-        CounterLoc<-CounterLoc+1
+   # if (dim(LinesToCompare)[1]>CurrentRound())#NbRoundsMax()
+  #  {
+      CR <- CurrentRound()
+   
+      length_pref_reactive_data <- nrow(pref_reactive()$data)
+      if (choose == 1) {
+        pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
+      } else if (choose == 2) {
+        pref_reactive()$addPref(c(length_pref_reactive_data, length_pref_reactive_data - 1))
       }
-    }
-    #if 2 strategies were not found in the list of fixed strategies, we try to find them in the target compatible space
-    SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
-    # browser()
-    if((dim(SubsetMeetTargetsUnique$YEAR)[1]!=0)&(NumberNewStrategiesFound<2)){
-      SubsetMeetTargetsUniqueYear_Type_Concatenation<-data.frame(YEAR=SubsetMeetTargetsUnique$YEAR,TYPE=SubsetMeetTargetsUnique$TYPE)
+     # browser()
+
       
-      lenghtStrategiesMeetTargets<-dim(SubsetMeetTargetsUnique$YEAR)[1]
-      IndexRandomizeOrder<-sample(1:lenghtStrategiesMeetTargets,lenghtStrategiesMeetTargets,replace=F)
-      CounterLoc<-1
-      while((CounterLoc<=lenghtStrategiesMeetTargets)&(NumberNewStrategiesFound<2))
-      {# Test if the line of the matrix is in the list of strategies that are target compatible
-        
-        CurrentStrategy<-as.character(SubsetMeetTargetsUniqueYear_Type_Concatenation[IndexRandomizeOrder[CounterLoc],])
-        if(sum((apply(t(matrix(CurrentStrategy
-                               ,dim(LinesToCompareYear_Type_Concatenation)[2],
-                               dim(LinesToCompareYear_Type_Concatenation)[1]))==LinesToCompareYear_Type_Concatenation,1,prod)==1))==0
-        )
-        {LinesToCompare$YEAR<-rbind(LinesToCompare$YEAR,SubsetMeetTargetsUnique$YEAR[IndexRandomizeOrder[CounterLoc],])
-        LinesToCompare$TYPE<-rbind(LinesToCompare$TYPE,SubsetMeetTargetsUnique$TYPE[IndexRandomizeOrder[CounterLoc],])
-        LinesToCompare$OUTPUTS<-rbind(LinesToCompare$OUTPUTS,SubsetMeetTargetsUnique$OUTPUTS[IndexRandomizeOrder[CounterLoc],])
-        
-        NumberNewStrategiesFound<-NumberNewStrategiesFound+1
-        LinesToCompareYear_Type_Concatenation<-cbind(apply(as.matrix(LinesToCompare$YEAR),c(1,2),as.character),
-                                                     as.matrix(LinesToCompare$TYPE))
-        } 
-        CounterLoc<-CounterLoc+1
+      CR <- CR+1
+      CurrentRound(CR)
+      
+      listMaps <- list()
+      listMaps[[1]] <- calcBaseMap$map
+      listMaps[[2]] <- calcBaseMap$map
+      
+      SelectedLine <- list()
+      
+      LinesToCompare<-LinesToCompareReactive()
+      LinesToCompareYear_Type_Concatenation<-cbind(apply(as.matrix(LinesToCompare$YEAR),c(1,2),as.character),
+                                                   as.matrix(LinesToCompare$TYPE))
+      NumberNewStrategiesFound<-0
+      
+      
+      if(dim(FIXED_STRATEGIES_LIST$YEAR)[1]!=0){
+        FIXED_STRATEGIES_LIST_Year_Type_Concatenation<-data.frame(YEAR=FIXED_STRATEGIES_LIST$YEAR,
+                                                                  TYPE=FIXED_STRATEGIES_LIST$TYPE)
+        lenghtFixedStrategies<-dim(FIXED_STRATEGIES_LIST$YEAR)[1]
+        CounterLoc<-1
+        while((CounterLoc<=lenghtFixedStrategies)&(NumberNewStrategiesFound<2))
+        {# Test if the line of the matrix is in the list of strategies already selected
+         if(sum((apply(t(matrix(as.character(FIXED_STRATEGIES_LIST_Year_Type_Concatenation[CounterLoc,])
+                                           ,dim(LinesToCompareYear_Type_Concatenation)[2],
+                                           dim(LinesToCompareYear_Type_Concatenation)[1]))==LinesToCompareYear_Type_Concatenation,1,prod)==1))==0
+                       )
+         {LinesToCompare$YEAR<-rbind(LinesToCompare$YEAR,FIXED_STRATEGIES_LIST$YEAR[CounterLoc,])
+         LinesToCompare$TYPE<-rbind(LinesToCompare$YEAR,FIXED_STRATEGIES_LIST$TYPE[CounterLoc,])
+         LinesToCompare$OUTPUTS<-rbind(LinesToCompare$YEAR,FIXED_STRATEGIES_LIST$OUTPUTS[CounterLoc,])
+         NumberNewStrategiesFound<-NumberNewStrategiesFound+1
+         LinesToCompareYear_Type_Concatenation<-data.frame(YEAR=LinesToCompare$YEAR,TYPE=LinesToCompare$TYPE)
+         
+         
+         } 
+          CounterLoc<-CounterLoc+1
+        }
       }
-      
-    }
-    
-    
-    #Otherwise we pick in the precalculated examples (target compatible or not)
-    
-    if(NumberNewStrategiesFound<2){
-      SelectedSimMat2_YearType_Concatenation<-SelectedSimMatGlobal_YearType_Concatenation#data.frame(YEAR=apply(as.matrix(SelectedSimMat2$YEAR),c(1,2),as.character),
-      #TYPE=as.matrix(SelectedSimMat2$TYPE))
-      
-      lenghtSimulMat2<-dim(SelectedSimMat2_YearType_Concatenation)[1]
-      IndexRandomizeOrder<-sample(1:lenghtSimulMat2,lenghtSimulMat2,replace=F)
-      CounterLoc<-1
-      while((CounterLoc<=lenghtSimulMat2)&(NumberNewStrategiesFound<2))
-      {# Test if the line of the matrix is in the list of strategies that are target compatible
-        CurrentStrategy<-as.character(SelectedSimMat2_YearType_Concatenation[IndexRandomizeOrder[CounterLoc],])
-        if(sum((apply(t(matrix(as.character(CurrentStrategy)
-                               ,dim(LinesToCompareYear_Type_Concatenation)[2],
-                               dim(LinesToCompareYear_Type_Concatenation)[1]))==LinesToCompareYear_Type_Concatenation,1,prod)==1))==0
-        )
-        {LinesToCompare$YEAR<-rbind(LinesToCompare$YEAR,SelectedSimMat2$YEAR[IndexRandomizeOrder[CounterLoc],])
-        LinesToCompare$TYPE<-rbind(LinesToCompare$TYPE,SelectedSimMat2$TYPE[IndexRandomizeOrder[CounterLoc],])
-        LinesToCompare$OUTPUTS<-rbind(LinesToCompare$OUTPUTS,SelectedSimMat2$OUTPUTS[IndexRandomizeOrder[CounterLoc],])
-        
-        NumberNewStrategiesFound<-NumberNewStrategiesFound+1
-        LinesToCompareYear_Type_Concatenation<-cbind(apply(as.matrix(LinesToCompare$YEAR),c(1,2),as.character),
-                                                     as.matrix(LinesToCompare$TYPE))
-        
-        } 
-        CounterLoc<-CounterLoc+1
-      }
-      
-    }
-    
-    
-    #else{if(dim(SubsetMeetTargetsUnique$YEAR)[1]>=2){
-    #  
-    #  RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],2,replace=F)
-    #  
-    #  LinesToCompare<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
-    #                       TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
-    #                       OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
-    #}else{
-    #  RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
-    #  LinesToCompare<-list(YEAR=SelectedSimMatGlobal$YEAR[RandomSubsetIndices,],
-    #                       TYPE=SelectedSimMatGlobal$TYPE[RandomSubsetIndices,],
-    #                       OUTPUTS=SelectedSimMatGlobal$OUTPUTS[RandomSubsetIndices,])
-    #}
-    
-    #}
-    
-    
-    
-    
-    
-    #RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],length(ConvertSample),replace=F)
-    #datAll2<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
-    #             TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
-    #            OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
-    
-    #LinesToCompare[CR, ] <- sample(1:dim(datAll2$YEAR)[1], 2, replace = F)
-    
-    LinesToCompareReactive(LinesToCompare)
-    
-    CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
-    
-    SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[ CurrentLengthLinesToCompare-1,],
-                              TYPE=LinesToCompare$TYPE[ CurrentLengthLinesToCompare-1,],
-                              OUTPUTS=LinesToCompare$OUTPUTS[ CurrentLengthLinesToCompare-1,])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
-    SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[CurrentLengthLinesToCompare,],
-                              TYPE=LinesToCompare$TYPE[CurrentLengthLinesToCompare,],
-                              OUTPUTS=LinesToCompare$OUTPUTS[CurrentLengthLinesToCompare,])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
-    
-    pref_reactive()$data_augment(rbind(SelectedLine[[1]]$OUTPUTS[TARGETS],SelectedLine[[2]]$OUTPUTS[TARGETS]))
-    #browser()
-    for (aai in 1:2) {
-      
-      TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
-      TypeB<-(SelectedLine[[aai]]$TYPE=="Deciduous")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
-      BlockedCells<-(SavedVecYearType>=YearSelect)
-      mapp<-listMaps[[aai]]
-      removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
-      COLOURS<-rep("transparent",length(TypeA))
-      
-      COLOURS[TypeA]<-"#117733"#"purple"
-      COLOURS[TypeB]<-"#44AA99"#green"
-      COLOURS[BlockedCells]<-"red"
-      mapp<-addPolygons(mapp,data=FullTable$geometry,
-                        layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
-      #removeControl(mapp,layerId="legend")
-      ############################################################################# TO CHANGE PREF ELICITATION           
-      
-      
-      # addControlText <- ""
-      #  for (i in 1:length(SPECIES)) {
-      #    specie_latin <- SPECIES[i]
-      #    specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
-      #    selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
-      #    selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
-      #    addControlText <- paste0(addControlText, specie_english, ": ", 
-      #                             round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
-      #  }
-      
-      
-      #mapp<-
-      #  addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
-      #                                round(2*SelectedLine[[aai]]$OUTPUTS$CarbonSD, 2), "<br>",
-      #                                addControlText,
-      #                                "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "<br>",
-      #                                "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
-      #                                "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
-      #                                "</p>"), position = "topright",layerId="legend")
-      if(aai==1){
-        PrefTextA(
-          FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
-                        SelectedLine[[aai]]$OUTPUTS$CarbonSD,
-                        SPECIES,SPECIES_ENGLISH,
-                        SelectedLine[[aai]]$OUTPUTS[SPECIES],
-                        SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
-                        SelectedLine[[aai]]$OUTPUTS$Area,
-                        SelectedLine[[aai]]$OUTPUTS$Visits,
-                        SelectedLine[[aai]]$OUTPUTS$VisitsSD)
+        #if 2 strategies were not found in the list of fixed strategies, we try to find them in the target compatible space
+        SubsetMeetTargetsUnique<-SubsetMeetTargetsReactiveUnique()
+     # browser()
+        if((dim(SubsetMeetTargetsUnique$YEAR)[1]!=0)&(NumberNewStrategiesFound<2)){
+          SubsetMeetTargetsUniqueYear_Type_Concatenation<-data.frame(YEAR=SubsetMeetTargetsUnique$YEAR,TYPE=SubsetMeetTargetsUnique$TYPE)
           
-        )}else{
-          PrefTextB(
-            FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
-                          SelectedLine[[aai]]$OUTPUTS$CarbonSD,
-                          SPECIES,SPECIES_ENGLISH,
-                          SelectedLine[[aai]]$OUTPUTS[SPECIES],
-                          SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
-                          SelectedLine[[aai]]$OUTPUTS$Area,
-                          SelectedLine[[aai]]$OUTPUTS$Visits,
-                          SelectedLine[[aai]]$OUTPUTS$VisitsSD) 
+          lenghtStrategiesMeetTargets<-dim(SubsetMeetTargetsUnique$YEAR)[1]
+          IndexRandomizeOrder<-sample(1:lenghtStrategiesMeetTargets,lenghtStrategiesMeetTargets,replace=F)
+          CounterLoc<-1
+          while((CounterLoc<=lenghtStrategiesMeetTargets)&(NumberNewStrategiesFound<2))
+          {# Test if the line of the matrix is in the list of strategies that are target compatible
+  
+            CurrentStrategy<-as.character(SubsetMeetTargetsUniqueYear_Type_Concatenation[IndexRandomizeOrder[CounterLoc],])
+            if(sum((apply(t(matrix(CurrentStrategy
+                                   ,dim(LinesToCompareYear_Type_Concatenation)[2],
+                                   dim(LinesToCompareYear_Type_Concatenation)[1]))==LinesToCompareYear_Type_Concatenation,1,prod)==1))==0
+            )
+            {LinesToCompare$YEAR<-rbind(LinesToCompare$YEAR,SubsetMeetTargetsUnique$YEAR[IndexRandomizeOrder[CounterLoc],])
+            LinesToCompare$TYPE<-rbind(LinesToCompare$TYPE,SubsetMeetTargetsUnique$TYPE[IndexRandomizeOrder[CounterLoc],])
+            LinesToCompare$OUTPUTS<-rbind(LinesToCompare$OUTPUTS,SubsetMeetTargetsUnique$OUTPUTS[IndexRandomizeOrder[CounterLoc],])
             
-          )
+            NumberNewStrategiesFound<-NumberNewStrategiesFound+1
+            LinesToCompareYear_Type_Concatenation<-cbind(apply(as.matrix(LinesToCompare$YEAR),c(1,2),as.character),
+                                                         as.matrix(LinesToCompare$TYPE))
+            } 
+            CounterLoc<-CounterLoc+1
+          }
           
         }
+        
+        
+        #Otherwise we pick in the precalculated examples (target compatible or not)
+        
+        if(NumberNewStrategiesFound<2){
+          SelectedSimMat2_YearType_Concatenation<-SelectedSimMatGlobal_YearType_Concatenation#data.frame(YEAR=apply(as.matrix(SelectedSimMat2$YEAR),c(1,2),as.character),
+                                                             #TYPE=as.matrix(SelectedSimMat2$TYPE))
+          
+          lenghtSimulMat2<-dim(SelectedSimMat2_YearType_Concatenation)[1]
+          IndexRandomizeOrder<-sample(1:lenghtSimulMat2,lenghtSimulMat2,replace=F)
+          CounterLoc<-1
+          while((CounterLoc<=lenghtSimulMat2)&(NumberNewStrategiesFound<2))
+          {# Test if the line of the matrix is in the list of strategies that are target compatible
+            CurrentStrategy<-as.character(SelectedSimMat2_YearType_Concatenation[IndexRandomizeOrder[CounterLoc],])
+            if(sum((apply(t(matrix(as.character(CurrentStrategy)
+                                   ,dim(LinesToCompareYear_Type_Concatenation)[2],
+                                   dim(LinesToCompareYear_Type_Concatenation)[1]))==LinesToCompareYear_Type_Concatenation,1,prod)==1))==0
+            )
+            {LinesToCompare$YEAR<-rbind(LinesToCompare$YEAR,SelectedSimMat2$YEAR[IndexRandomizeOrder[CounterLoc],])
+            LinesToCompare$TYPE<-rbind(LinesToCompare$TYPE,SelectedSimMat2$TYPE[IndexRandomizeOrder[CounterLoc],])
+            LinesToCompare$OUTPUTS<-rbind(LinesToCompare$OUTPUTS,SelectedSimMat2$OUTPUTS[IndexRandomizeOrder[CounterLoc],])
+            
+            NumberNewStrategiesFound<-NumberNewStrategiesFound+1
+            LinesToCompareYear_Type_Concatenation<-cbind(apply(as.matrix(LinesToCompare$YEAR),c(1,2),as.character),
+                                                         as.matrix(LinesToCompare$TYPE))
+            
+            } 
+            CounterLoc<-CounterLoc+1
+          }
+          
+        }
+        
+        
+      #else{if(dim(SubsetMeetTargetsUnique$YEAR)[1]>=2){
+      #  
+      #  RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],2,replace=F)
+      #  
+      #  LinesToCompare<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
+      #                       TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
+      #                       OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
+      #}else{
+      #  RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
+      #  LinesToCompare<-list(YEAR=SelectedSimMatGlobal$YEAR[RandomSubsetIndices,],
+      #                       TYPE=SelectedSimMatGlobal$TYPE[RandomSubsetIndices,],
+      #                       OUTPUTS=SelectedSimMatGlobal$OUTPUTS[RandomSubsetIndices,])
+      #}
+        
+      #}
       
       
+        
       
-      listMaps[[aai]]<-mapp
       
+      #RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],length(ConvertSample),replace=F)
+      #datAll2<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
+       #             TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
+        #            OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
       
-    }
-    #browser()
-    length_pref_reactive_data <- nrow(pref_reactive()$data)
-    #pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
+      #LinesToCompare[CR, ] <- sample(1:dim(datAll2$YEAR)[1], 2, replace = F)
+     
+      LinesToCompareReactive(LinesToCompare)
+      
+      CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
+      
+      SelectedLine[[1]] <- list(YEAR=LinesToCompare$YEAR[ CurrentLengthLinesToCompare-1,],
+                                TYPE=LinesToCompare$TYPE[ CurrentLengthLinesToCompare-1,],
+                                OUTPUTS=LinesToCompare$OUTPUTS[ CurrentLengthLinesToCompare-1,])#SelectedSimMat2[two_strategies_that_meet_all_targets[1], ]
+      SelectedLine[[2]] <- list(YEAR=LinesToCompare$YEAR[CurrentLengthLinesToCompare,],
+                                TYPE=LinesToCompare$TYPE[CurrentLengthLinesToCompare,],
+                                OUTPUTS=LinesToCompare$OUTPUTS[CurrentLengthLinesToCompare,])#SelectedSimMat2[two_strategies_that_meet_all_targets[2], ]
+      
+      pref_reactive()$data_augment(rbind(SelectedLine[[1]]$OUTPUTS[TARGETS],SelectedLine[[2]]$OUTPUTS[TARGETS]))
+      #browser()
+      for (aai in 1:2) {
+          
+          TypeA<-(SelectedLine[[aai]]$TYPE=="Conifers")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+          TypeB<-(SelectedLine[[aai]]$TYPE=="Deciduous")&(SelectedLine[[aai]]$YEAR<=YearSelect)&(SavedVecYearType<YearSelect)
+          BlockedCells<-(SavedVecYearType>=YearSelect)
+          mapp<-listMaps[[aai]]
+          removeShape(mapp,layerId=paste0("Square",1:length(TypeA)))
+          COLOURS<-rep("transparent",length(TypeA))
+          
+          COLOURS[TypeA]<-"#117733"#"purple"
+          COLOURS[TypeB]<-"#44AA99"#green"
+          COLOURS[BlockedCells]<-"red"
+          mapp<-addPolygons(mapp,data=FullTable$geometry,
+                            layerId=paste0("Square",1:length(TypeA)),color=COLOURS,fillColor=COLOURS,weight=1,fillOpacity = POLYGON_OPACITY)
+          #removeControl(mapp,layerId="legend")
+          ############################################################################# TO CHANGE PREF ELICITATION           
+          
+        
+         # addControlText <- ""
+        #  for (i in 1:length(SPECIES)) {
+        #    specie_latin <- SPECIES[i]
+        #    specie_english <- if (specie_latin == "All") "All Species Richness" else SPECIES_ENGLISH[i]
+        #    selectedBiospecie <- SelectedLine[[aai]]$OUTPUTS[[specie_latin]]
+        #    selectedBioSDspecie <- SelectedLine[[aai]]$OUTPUTS[[paste0( specie_latin,"SD")]]
+        #    addControlText <- paste0(addControlText, specie_english, ": ", 
+        #                             round(selectedBiospecie, 2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
+        #  }
+        
+          
+          #mapp<-
+          #  addControl(mapp,html = paste0("<p>Carbon: ", round(SelectedLine[[aai]]$OUTPUTS$Carbon, 2), "\u00B1", 
+          #                                round(2*SelectedLine[[aai]]$OUTPUTS$CarbonSD, 2), "<br>",
+          #                                addControlText,
+          #                                "Area Planted: ", round(SelectedLine[[aai]]$OUTPUTS$Area, 4), "<br>",
+          #                                "Visitors: ", round(SelectedLine[[aai]]$OUTPUTS$Visits, 2), 
+          #                                "\u00B1", round(2*SelectedLine[[aai]]$OUTPUTS$VisitsSD, 2),
+          #                                "</p>"), position = "topright",layerId="legend")
+          if(aai==1){
+            PrefTextA(
+              FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                            SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                            SPECIES,SPECIES_ENGLISH,
+                            SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                            SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                            SelectedLine[[aai]]$OUTPUTS$Area,
+                            SelectedLine[[aai]]$OUTPUTS$Visits,
+                            SelectedLine[[aai]]$OUTPUTS$VisitsSD)
+              
+            )}else{
+                               PrefTextB(
+                                 FormattedText(SelectedLine[[aai]]$OUTPUTS$Carbon,
+                                               SelectedLine[[aai]]$OUTPUTS$CarbonSD,
+                                               SPECIES,SPECIES_ENGLISH,
+                                               SelectedLine[[aai]]$OUTPUTS[SPECIES],
+                                               SelectedLine[[aai]]$OUTPUTS[paste0( SPECIES,"SD")],
+                                               SelectedLine[[aai]]$OUTPUTS$Area,
+                                               SelectedLine[[aai]]$OUTPUTS$Visits,
+                                               SelectedLine[[aai]]$OUTPUTS$VisitsSD) 
+                                 
+                               )
+                               
+                             }
+          
+          
+          
+          listMaps[[aai]]<-mapp
+        
     
-    
-    temp <- pref_reactive()$posterior_mean
-    infpref_reactive(temp)
-    
-    #}
+        }
+      #browser()
+        length_pref_reactive_data <- nrow(pref_reactive()$data)
+        #pref_reactive()$addPref(c(length_pref_reactive_data - 1, length_pref_reactive_data))
+        
+      
+        temp <- pref_reactive()$posterior_mean
+        infpref_reactive(temp)
+        
+      #}
     #else {
     #  CR <- CurrentRound()
-    
-    listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
-                                   SelectedDropdown = SelectedDropdown,
-                                   listMaps = listMaps)
-    
-    output$ClusterPage <- renderLeaflet({listMaps[[1]]})
-    output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})  
-    
+      
+      listMaps <- map_sell_not_avail(FullTableNotAvail = FullTableNotAvail,
+                                     SelectedDropdown = SelectedDropdown,
+                                     listMaps = listMaps)
+      
+      output$ClusterPage <- renderLeaflet({listMaps[[1]]})
+      output$ClusterPage2 <- renderLeaflet({listMaps[[2]]})  
+     
     #  
-    
+
   } 
   shinyjs::enable("choose1")
   shinyjs::enable("choose2")
@@ -1179,7 +1179,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
 #  #}
 #  # tolVec <- c(4, 0.05, 0.1, 2)
 #  Icalc <- MultiImpl(
-# TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
+    # TargetsVec = c(SelecTargetCarbon, SelecTargetBio, SelecTargetArea, SelecTargetVisits),
 #    TargetsVec = c(SelecTargetCarbon, SelecTargetBioVector, SelecTargetArea, SelecTargetVisits),
 #    # EYMat = data.frame(SelectedSimMat2$Carbon, SelectedSimMat2$redsquirrel, SelectedSimMat2$Area, SelectedSimMat2$Visits),
 #    EYMat = data.frame(SelectedSimMat2$Carbon, speciesMat, SelectedSimMat2$Area, SelectedSimMat2$Visits),
@@ -1302,7 +1302,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
 #  for (i in 1:length(SpeciesListSelected)) {
 #    specie_name <- names(SpeciesListSelected)[i]
 #    specie_value <- SpeciesListSelected[[i]]
-#   mat_name <- paste0(specie_name, "MAT")
+ #   mat_name <- paste0(specie_name, "MAT")
 #    value <- t(matrix(as.numeric(specie_value), length(SavedVecYearLoc), dim(SelectedSimMat)[1]))
 #    assign(mat_name, value)
 #  }
@@ -1490,11 +1490,11 @@ outputmap_calculateMatsYearType <- function(input,
   for (bb in 1:length(SavedVecYearTypeLoc))
   {
     if(!is.null(SAMPLELIST[[bb]])){  
-      
+  
       CarbonMATYearTypeORSavedVec[,bb]<-0
       TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
       TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
-      # browser()
+     # browser()
       CarbonMATYearTypeORSavedVec[TypeA,bb]<-as.numeric(CarbonSelectedYear[bb,1+SAMPLELIST[[bb]]$YEAR[TypeA]])      
       CarbonMATYearTypeORSavedVec[TypeB,bb]<-as.numeric(CarbonSelectedYear85[bb,1+SAMPLELIST[[bb]]$YEAR[TypeB]])
     }
@@ -1532,7 +1532,7 @@ outputmap_calculateMatsYearType <- function(input,
   CarbonSDMATYearTypeORSavedVec<-PrecalculatedCarbonSelectedTableTypeSD
   for (bb in 1:length(SavedVecYearTypeLoc))
   {  if(!is.null(SAMPLELIST[[bb]])){  
-    
+  
     CarbonSDMATYearTypeORSavedVec[,bb]<-0
     TypeA<-(SAMPLELIST[[bb]]$TYPE=="Conifers")
     TypeB<-(SAMPLELIST[[bb]]$TYPE=="Deciduous")
@@ -1613,8 +1613,8 @@ outputmap_calculateMatsYearType <- function(input,
   
   if(!CONCATENATION_SIM_MAT){
     TORETURN<-c(list(SelectedSimMat2 = SelectedSimMat2, Icalc = Icalc, LimitsMat = LimitsMat, SelecTargetCarbon = SelecTargetCarbon,
-                     SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
-                SelecTargetBioList,SAMPLELIST=SAMPLELIST)
+                   SelecTargetArea = SelecTargetArea, SelecTargetVisits = SelecTargetVisits),
+    SelecTargetBioList,SAMPLELIST=SAMPLELIST)
   }else{
     SelectedSimMat2_YearType_Concatenation<-data.frame(YEAR=apply(as.matrix(SelectedSimMatYearTypeORSavedVec$YEAR),c(1,2),as.character),
                                                        TYPE=as.matrix(SelectedSimMatYearTypeORSavedVec$TYPE))
@@ -1978,25 +1978,25 @@ add_suffix_to_duplicates <- function(vec) {
 }
 
 InitFindMaxSliderValuesYearType_NegativeVals <- function(SavedVecLoc,
-                                                         AreaSelected,
-                                                         CarbonSelected,
-                                                         CarbonSelectedYear,
-                                                         CarbonSelectedYear85,
-                                                         # RedSquirrelSelected,
-                                                         SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
-                                                         VisitsSelected,
-                                                         CarbonSelectedSD,
-                                                         CarbonSelectedSDYear,
-                                                         CarbonSelectedSDYear85,
-                                                         # RedSquirrelSelectedSD,
-                                                         SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
-                                                         VisitsSelectedSD,
-                                                         input_areaSlider_multiplicative_coefficient = TRUE,
-                                                         alpha,
-                                                         SavedVecYearLoc,
-                                                         MAXYEAR,
-                                                         PrecalcCarbonAllExtentsType,
-                                                         PrecalcCarbonAllExtentsSDType) {
+                                        AreaSelected,
+                                        CarbonSelected,
+                                        CarbonSelectedYear,
+                                        CarbonSelectedYear85,
+                                        # RedSquirrelSelected,
+                                        SpeciesListSelected, # list(Acanthis_cabaretSelected = Acanthis_cabaretSelected, ...)
+                                        VisitsSelected,
+                                        CarbonSelectedSD,
+                                        CarbonSelectedSDYear,
+                                        CarbonSelectedSDYear85,
+                                        # RedSquirrelSelectedSD,
+                                        SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
+                                        VisitsSelectedSD,
+                                        input_areaSlider_multiplicative_coefficient = TRUE,
+                                        alpha,
+                                        SavedVecYearLoc,
+                                        MAXYEAR,
+                                        PrecalcCarbonAllExtentsType,
+                                        PrecalcCarbonAllExtentsSDType) {
   
   simul636Loc <- matrix(1,2,length(SavedVecYearLoc))
   simul636YearLoc <- matrix(1,2,length(SavedVecYearLoc))
@@ -2600,115 +2600,115 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   # We use progression bars inside and outside of functions, and this causes problems, local({}) solves them
   # https://github.com/futureverse/progressr/issues/105
   
-  FullTable <- local({
-    # 6 steps +
-    # nb_of_groups length(unique(intersection$polygon_id_jules)) * nb_BioMean_columns length(intersection %>% dplyr::select(starts_with("Bio_Mean"))) +
-    # 5 because of the new columns from mutate()
-    # pb <- progressor(steps = 6 + length(unique(intersection$polygon_id_jules)) * length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean"))) + 5, message = msg)
-    nb_groups <- length(unique(intersection$polygon_id_jules))
-    group_count_env <- new.env()
-    group_count_env$group_count <- 0
-    pb <- progressor(steps = 6 + nb_groups + 5, message = msg)
-    FullTable <- intersection %>%
-      
-      # Calculate the areas
-      {
-        msg <- "Calculate the areas"
-        pb(message = msg)
-        notif(paste("1/7", msg), max_limit_log_level = max_limit_log_level)
-        invisible(.)
-      } %>%
-      dplyr::mutate(area_bio = st_area(geometry_bio),
-                    area_jules = st_area(geometry_jules),
-                    area_intersection = st_area(geometry)) %>%
-      
-      # Calculate the ratio of areas
-      {
-        msg <- "Calculate the ratio of areas"
-        pb(message = msg)
-        notif(paste("2/7", msg), max_limit_log_level = max_limit_log_level)
-        invisible(.)
-      } %>%
-      dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
-                    proportion_intersection_in_jules = area_intersection / area_jules) %>%
-      
-      # Assume uniformity, multiply probability and standard deviations by proportion
-      {
-        msg <- "Assume uniformity, multiply probability and standard deviations by proportion"
-        pb(message = msg)
-        notif(paste("3/7", msg), max_limit_log_level = max_limit_log_level)
-        invisible(.)
-      } %>%
-      dplyr::mutate(dplyr::across(starts_with("Bio"),
-                                  ~ .x * proportion_intersection_in_bio)) %>%
-      
-      {
-        msg <- "Reduce to 100(%) if value is above"
-        pb(message = msg)
-        notif(paste("4/7", msg), max_limit_log_level = max_limit_log_level)
-        invisible(.)
-      } %>%
-      # Reduce to 100(%) if value is above
-      # 100 and the columns need to be in the same unit
-      dplyr::mutate(dplyr::across(starts_with("Bio"),
-                                  ~ pmin(.x, units::as_units(100, units(.x))))) %>%
-      
-      # Group by polygon_id_jules and average over parcels
-      {
-        msg <- "Average biodiversities across (carbon, new) parcels"
-        pb(message = msg)
-        notif(paste("5/7", msg), max_limit_log_level = max_limit_log_level)
-        invisible(.)
-      } %>%
-      as_tibble() %>%
-      group_by(polygon_id_jules) %>%
-      summarise(
-        # For each polygon from Jules, sum over (pre-weighted) probabilities from areas that
-        # intersect and divide by the sum of proportions, to get a weighted average
-        across(starts_with("Bio_Mean"),
-               # ~ sum(.x) / sum(proportion_intersection_in_bio)),
-               function(.x, group_count_env_arg = group_count_env) {
-                 # Only increase the progress bar every many iterations to avoid spending too much time printing things
-                 if (dplyr::cur_group_id() == 1) {
-                   group_count_env_arg$group_count <- group_count_env_arg$group_count + 1
-                   pb(message = msg)
-                   notif(paste("5/7 subjob", group_count_env_arg$group_count, "/", nb_groups, msg), log_level = "debug", max_limit_log_level = max_limit_log_level)
-                 }
-                 sum(.x) / sum(proportion_intersection_in_bio)
-               }),
+    FullTable <- local({
+      # 6 steps +
+      # nb_of_groups length(unique(intersection$polygon_id_jules)) * nb_BioMean_columns length(intersection %>% dplyr::select(starts_with("Bio_Mean"))) +
+      # 5 because of the new columns from mutate()
+      # pb <- progressor(steps = 6 + length(unique(intersection$polygon_id_jules)) * length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean"))) + 5, message = msg)
+      nb_groups <- length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean")))
+      group_count_env <- new.env()
+      group_count_env$group_count <- 0
+      pb <- progressor(steps = 6 + nb_groups + 5, message = msg)
+      FullTable <- intersection %>%
         
-        geometry_union = suppressMessages(st_union(geometry)),
-        geometry_jules = suppressMessages(st_union(geometry_jules)),
+        # Calculate the areas
+        {
+          msg <- "Calculate the areas"
+          pb(message = msg)
+          notif(paste("1/7", msg), max_limit_log_level = max_limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(area_bio = st_area(geometry_bio),
+                      area_jules = st_area(geometry_jules),
+                      area_intersection = st_area(geometry)) %>%
         
-        polygon_id_jules = mean(polygon_id_jules)
-      ) %>% 
+        # Calculate the ratio of areas
+        {
+          msg <- "Calculate the ratio of areas"
+          pb(message = msg)
+          notif(paste("2/7", msg), max_limit_log_level = max_limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(proportion_intersection_in_bio = area_intersection / area_bio,
+                      proportion_intersection_in_jules = area_intersection / area_jules) %>%
+        
+        # Assume uniformity, multiply probability and standard deviations by proportion
+        {
+          msg <- "Assume uniformity, multiply probability and standard deviations by proportion"
+          pb(message = msg)
+          notif(paste("3/7", msg), max_limit_log_level = max_limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(dplyr::across(starts_with("Bio"),
+                                    ~ .x * proportion_intersection_in_bio)) %>%
+        
+        {
+          msg <- "Reduce to 100(%) if value is above"
+          pb(message = msg)
+          notif(paste("4/7", msg), max_limit_log_level = max_limit_log_level)
+          invisible(.)
+        } %>%
+        # Reduce to 100(%) if value is above
+        # 100 and the columns need to be in the same unit
+        dplyr::mutate(dplyr::across(starts_with("Bio"),
+                                    ~ pmin(.x, units::as_units(100, units(.x))))) %>%
+        
+        # Group by polygon_id_jules and average over parcels
+        {
+          msg <- "Average biodiversities across (carbon, new) parcels"
+          pb(message = msg)
+          notif(paste("5/7", msg), max_limit_log_level = max_limit_log_level)
+          invisible(.)
+        } %>%
+        as_tibble() %>%
+        group_by(polygon_id_jules) %>%
+        summarise(
+          # For each polygon from Jules, sum over (pre-weighted) probabilities from areas that
+          # intersect and divide by the sum of proportions, to get a weighted average
+          across(starts_with("Bio_Mean"),
+                 # ~ sum(.x) / sum(proportion_intersection_in_bio)),
+                 function(.x, group_count_env_arg = group_count_env) {
+                   # Only increase the progress bar every many iterations to avoid spending too much time printing things
+                   if (dplyr::cur_group_id() == 1) {
+                     group_count_env_arg$group_count <- group_count_env_arg$group_count + 1
+                     pb(message = msg)
+                     notif(paste("5/7 subjob", group_count_env_arg$group_count, "/", nb_groups, msg), log_level = "debug", max_limit_log_level = max_limit_log_level)
+                   }
+                   sum(.x) / sum(proportion_intersection_in_bio)
+                 }),
+          
+          geometry_union = suppressMessages(st_union(geometry)),
+          geometry_jules = suppressMessages(st_union(geometry_jules)),
+          
+          polygon_id_jules = mean(polygon_id_jules)
+        ) %>% 
+        
+        {
+          msg <- "Compute area differences"
+          pb(message = msg)
+          notif(paste("6/7", msg), max_limit_log_level = max_limit_log_level)
+          invisible(.)
+        } %>%
+        dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
+        
+        # Remove useless columns
+        as_tibble() %>%
+        dplyr::select(c(starts_with("Bio"), polygon_id_jules, area_diff)) %>%
+        
+        # Merge back to original table
+        {
+          msg <- "Merge back to original table"
+          pb(message = msg)
+          notif(paste("7/7", msg), max_limit_log_level = max_limit_log_level)
+          invisible(.)
+        } %>%
+        left_join(polygons_jules, by = "polygon_id_jules") %>%
+        
+        dplyr::select(-c(polygon_id_jules, starts_with("geometry_")))
       
-      {
-        msg <- "Compute area differences"
-        pb(message = msg)
-        notif(paste("6/7", msg), max_limit_log_level = max_limit_log_level)
-        invisible(.)
-      } %>%
-      dplyr::mutate(area_diff = map2_dbl(geometry_union, geometry_jules, compute_difference_area)) %>%
-      
-      # Remove useless columns
-      as_tibble() %>%
-      dplyr::select(c(starts_with("Bio"), polygon_id_jules, area_diff)) %>%
-      
-      # Merge back to original table
-      {
-        msg <- "Merge back to original table"
-        pb(message = msg)
-        notif(paste("7/7", msg), max_limit_log_level = max_limit_log_level)
-        invisible(.)
-      } %>%
-      left_join(polygons_jules, by = "polygon_id_jules") %>%
-      
-      dplyr::select(-c(polygon_id_jules, starts_with("geometry_")))
-    
-    pb(amount = 0)
-    return(FullTable)
-  })
+      pb(amount = 0)
+      return(FullTable)
+    })
   
   
   notif(paste(msg, "done"), max_limit_log_level = max_limit_log_level)
@@ -3023,7 +3023,7 @@ Carbon</span>: ", round(Carbon,2)#round(sum(CarbonMeanCalc), 2)
 }
 FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs, Area, Visits, VisitsSD)
 {
-  # browser()
+ # browser()
   addControlText <- NULL
   for (i in 1:length(SPECIES)) {
     specie_latin <- SPECIES[i]
@@ -3033,31 +3033,31 @@ FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs,
     #  addControlText <- paste0(addControlText, specie_english, ": ", 
     #                          round(selectedBiospecie, 2), "\u00B1", round(2 * selectedBioSDspecie, 2), "<br>")
     if(specie_latin %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")){
-      addControlText <-c(addControlText,
-                         #Please do not delete this code, it allows to add back the standard deviation on the labels
-                         #sprintf("%-12s :%.2f\u00B1%.2f\n",specie_english,selectedBiospecie,2 * selectedBioSDspecie)
-                         sprintf("%-32s:%.2f \n",paste0("Species richness (",specie_english,")"),selectedBiospecie)
-                         
-      )}else{
-        addControlText <-c(addControlText,
-                           #Please do not delete this code, it allows to add back the standard deviation on the labels
-                           #sprintf("%-12s :%.2f\u00B1%.2f\n",specie_english,selectedBiospecie,2 * selectedBioSDspecie)
-                           sprintf("%-32s:%.2f \n",paste0(specie_english," (Presence %)"),selectedBiospecie))
-      }
+    addControlText <-c(addControlText,
+                       #Please do not delete this code, it allows to add back the standard deviation on the labels
+                       #sprintf("%-12s :%.2f\u00B1%.2f\n",specie_english,selectedBiospecie,2 * selectedBioSDspecie)
+                       sprintf("%-32s:%.2f \n",paste0("Species richness (",specie_english,")"),selectedBiospecie)
+                       
+                       )}else{
+    addControlText <-c(addControlText,
+                       #Please do not delete this code, it allows to add back the standard deviation on the labels
+                       #sprintf("%-12s :%.2f\u00B1%.2f\n",specie_english,selectedBiospecie,2 * selectedBioSDspecie)
+                       sprintf("%-32s:%.2f \n",paste0(specie_english," (Presence %)"),selectedBiospecie))
+                       }
     
     
     #paste0(addControlText, specie_english, ": ", 
-    #                        round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
+     #                        round(selectedBiospecie,2), "\u00B1", sprintf("%.2f", 2 * selectedBioSDspecie), "\n")
   }
-  
+ 
   addControlText<-c(#sprintf("%-12s :%.2f\u00B1%.2f\n","Carbon", Carbon, 2*CarbonSD), 
-    sprintf("%-32s:%.2f\n","Carbon (Tonnes of CO2)", Carbon), 
-    addControlText,
-    sprintf("%-32s:%.4f \n",  "Area (km^2)", Area),
-    #sprintf("%-12s :%.2f\u00B1%.2f\n","Visitors", Visits, 2*VisitsSD)
-    sprintf("%-32s:%.2f \n","Visitors (Visits per month)", Visits)
-    
-  )
+                   sprintf("%-32s:%.2f\n","Carbon (Tonnes of CO2)", Carbon), 
+                    addControlText,
+                   sprintf("%-32s:%.4f \n",  "Area (km^2)", Area),
+                    #sprintf("%-12s :%.2f\u00B1%.2f\n","Visitors", Visits, 2*VisitsSD)
+                   sprintf("%-32s:%.2f \n","Visitors (Visits per month)", Visits)
+                    
+                    )
   
   addControlText<-paste0(addControlText, collapse = "")
   
