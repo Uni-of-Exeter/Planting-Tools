@@ -1,5 +1,10 @@
 # progress is required on Ubuntu: https://github.com/tidyverse/vroom/issues/538
 Imports:
+  gitcreds,
+  Rcpp,
+  RRembo,
+  dgpsi,
+  xfun,
   progress,
   car,
   shinyjs,
@@ -53,11 +58,15 @@ Imports:
   adaptMCMC,
   data.table,
   eaf,
-  RRembo,
-  dgpsi,
   testthat,
   pkgload,
-  devtools
+  devtools,
+  boot,
+  nnet,
+  survival,
+  cluster,
+  codetools
 Remotes:
-  https://github.com/mingdeyu/dgpsi-R.git,
-  https://github.com/mbinois/RRembo.git
+  mingdeyu/dgpsi-R,
+  mbinois/RRembo
+

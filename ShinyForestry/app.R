@@ -1,19 +1,4 @@
 # Created and maintained by Bertrand Nortier and Timothée Bacri
-#library(profvis)
-#library(htmlwidgets)
-
-# Ubuntu packages needed
-# sudo apt-get -y --no-install-recommends install libcurl4-openssl-dev
-# sudo apt-get -y --no-install-recommends install libfontconfig1-dev
-# sudo apt-get -y --no-install-recommends install libxml2-dev
-# sudo apt-get -y --no-install-recommends install libudunits2-dev
-# sudo apt-get -y --no-install-recommends install libssl-dev
-# sudo apt-get -y --no-install-recommends install libfontconfig1-dev
-# sudo apt-get -y --no-install-recommends install libproj-dev
-# sudo apt-get -y --no-install-recommends install cmake
-# sudo apt-get -y --no-install-recommends install libgdal-dev
-# sudo apt-get -y --no-install-recommends install libharfbuzz-dev
-# sudo apt-get -y --no-install-recommends install libfribidi-dev
 
 # options(warn=2, error=recover)
 # options(warn=2)
@@ -22,10 +7,11 @@ options(shiny.error = browser)
 options(shiny.reactlog = TRUE)
 options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 
-ANALYSISMODE<-TRUE
+ANALYSISMODE<-FALSE
 SHOW_TITLES_ON_CLUSTERING_PAGE<-F
 
 RUN_BO<-FALSE
+RNGversion("4.0.0")
 set.seed(1)
 #fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
 FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1))
@@ -69,8 +55,6 @@ if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderS
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
 }
 
-set.seed(1)
-
 STARTYEAR<-2025
 MAXYEAR<-2050-STARTYEAR-1
 SCENARIO <- 26
@@ -86,56 +70,47 @@ source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
 
-packages <- c(
-  # https://github.com/tidyverse/vroom/issues/538
-  "progress",
-  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog", "leaflet", "sf", "ggplot2",
-  "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
-  "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-  "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
-  "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-  "mvtnorm", "magrittr",
-  "rstudioapi",
-  "lhs", "sensitivity",
-  "progressr", "doFuture", "promises",
-  # # Active subspace method
-  "concordance", "BASS", "zipfR",
-  # To plot the best map, and save it to a file
-  "mapview", "webshot",
-  # File-locking, for multi-process
-  "flock",
-  "adaptMCMC", "data.table"
-)
-# Bertrand's computer has issues loading and installing packages
-if (Sys.getenv("USERNAME")=="bn267") {
+
+# Retrieve packages from DESCRIPTION (in plantingtools_folder)
+plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
+if (file.exists(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))) {
+  packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
+} else {
+  packages <- read.dcf(normalizePath(file.path(FolderSource, "DESCRIPTION")))[, "Imports"]
+}
+packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
+packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
+packages <- na.omit(packages)  # Remove any NAs
+
+# Install and load packages in DESCRIPTION
+if (Sys.getenv("USERNAME")=="bn267" || Sys.getenv("USERNAME")=="dw356") {
   library("dgpsi")
   library("RRembo")
   for(ll in 1:length(packages)) {
     library(packages[ll], character.only = TRUE)
   }
 } else {
+  if (isFALSE(require("remotes"))) {
+    install.packages('remotes', repos = 'https://cran.rstudio.com')
+    library(remotes)
+  }
   
-  if (!require(dgpsi)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "always", quiet = TRUE)
-    library("dgpsi")
-  }
-  if (!require(RRembo)) {
-    # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", verbose = FALSE)
-    install_and_load_packages("pkgload", verbose = FALSE)
-    install_and_load_packages("devtools", verbose = FALSE)
-    # RRembo needs mvtnorm loaded, and eaf
-    install_and_load_packages("mvtnorm", verbose = FALSE)
-    install_and_load_packages("eaf", verbose = FALSE)
-    devtools::install_github('mbinois/RRembo', upgrade = "always", quiet = TRUE)
-    library("RRembo")
-  }
-  install_and_load_packages(packages = packages, update = FALSE)
+  msg <- "Installing all packages ..." 
+  notif(msg)
+  remotes::install_deps(pkgdir = plantingtools_folder, repos = 'https://cran.rstudio.com')
+  
+  msg <- paste(msg, "done")
+  notif(msg)
+  
+  msg <- "Loading all packages ..." 
+  notif(msg)
+  
+  sapply(packages, library, character.only = TRUE)
+  
+  msg <- paste(msg, "done")
+  notif(msg)
 }
+
 if (RUN_BO) {
   dgpsi::init_py(verb = FALSE)
 }
@@ -146,9 +121,12 @@ progress_handlers <- list(
   handler_progress(
     format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
   )
-)
+) 
 if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
-  progress_handlers <- c(progress_handlers, handler_rstudio())
+  progress_handlers <- c(progress_handlers,
+                         handler_rstudio())
+} else {
+  progress_handlers <- c(progress_handlers, handler_txtprogressbar())
 }
 if (os == "windows") {
   progress_handlers <- c(progress_handlers, handler_winprogressbar())
@@ -688,12 +666,8 @@ if (isFALSE(RUN_BO)) {
   plan(sequential)
 }
 handlers(
-  list(
-    handler_shiny(),
-    handler_progress(
-      format   = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-    )
-  ),
+  c(handler_shiny(),
+    progress_handlers),
   on_missing = "ignore"
 )
 
@@ -1381,7 +1355,8 @@ the 'Choose' button below that option:"})
   
   output$Chart1<-renderPlot({
    
-    if(ANALYSISMODE){
+    #if(ANALYSISMODE){
+     # browser()
     if(ClusteringDone()){
       if(!is.null(SetToClusterReactive())&!is.null(Clustering_Results_Object_Reactive())&length(unique(Clustering_Category_VectorReactive()))==4){
     
@@ -1412,19 +1387,19 @@ the 'Choose' button below that option:"})
         To_Add_Or_Subtract_To_Scale_x<-max(abs(min(CoordPolyOrig[,1])),abs(max(CoordPolyOrig[,1])))/10
         To_Add_Or_Subtract_To_Scale_y<-max(abs(min(CoordPolyOrig[,2])),abs(max(CoordPolyOrig[,2])))/10
         
-        plot(DataClust,col= rgb(0.5, 0.5, 0.5, alpha = 0.5) ,
+        if(ANALYSISMODE){plot(DataClust,col= rgb(0.5, 0.5, 0.5, alpha = 0.5) ,
              xlim=c(min(CoordPolyOrig[,1])-To_Add_Or_Subtract_To_Scale_x,max(CoordPolyOrig[,1])+To_Add_Or_Subtract_To_Scale_x),
              ylim=c(min(CoordPolyOrig[,2])-To_Add_Or_Subtract_To_Scale_y,max(CoordPolyOrig[,2])+To_Add_Or_Subtract_To_Scale_y))
         points(pointCoordinatexy,col="red",pch=20)
-        polygon(CoordPolyOrig[,1],CoordPolyOrig[,2])
+        polygon(CoordPolyOrig[,1],CoordPolyOrig[,2])}else{plot(1, 1, type = "n", xlab = "", ylab = "", axes = FALSE, ann = FALSE)}
         
         if(!is.null(dim(DataClust))){
         Dist_Between_Selected_Points_And_Data_Points_After_tsne<-sqrt((DataClust[,1]-pointCoordinatexy[1])^2+(DataClust[,2]-pointCoordinatexy[2])^2)
         Selected_Point_In_Cluster_To_Display<-which.min(Dist_Between_Selected_Points_And_Data_Points_After_tsne)
         Selected_Point_In_Cluster_To_Display_Reactive(Selected_Point_In_Cluster_To_Display)
-        points(DataClust[Selected_Point_In_Cluster_To_Display,1],DataClust[Selected_Point_In_Cluster_To_Display,2],col="blue",pch=20)
+        if(ANALYSISMODE){points(DataClust[Selected_Point_In_Cluster_To_Display,1],DataClust[Selected_Point_In_Cluster_To_Display,2],col="blue",pch=20)}
         }else{Selected_Point_In_Cluster_To_Display_Reactive(1)
-          points(DataClust,col="blue",pch=20)}
+          if(ANALYSISMODE){points(DataClust,col="blue",pch=20)}}
       }else{
         plot.new()
         text(0.5, 0.5, "There is not a sufficient number of target compatible strategies to obtain clusters",cex = 1.5, col = "red", font = 2)}
@@ -1433,7 +1408,7 @@ the 'Choose' button below that option:"})
       text(0.5, 0.5, "Clustering has not been done yet",cex = 1.5, col = "red", font = 2)
     }  
       
-    }else{}
+  #  }else{}
       
       })
   
@@ -1470,7 +1445,6 @@ the 'Choose' button below that option:"})
   #    }
  #   }
 #  })
-  
   
   observeEvent({
     input$random
@@ -2248,7 +2222,7 @@ the 'Choose' button below that option:"})
                {
     
     if ((CreatedBaseMap()==1) && (UpdatedExtent()==1) && (prod(SlidersHaveBeenInitialized())==1) && (input$tabs=="Alternative approaches") && (ClusteringDone())) {
-    #browser()
+  
         YearSelect<-input$YearAlt-STARTYEAR
       PrevYearSelect<-PreviousYearSelectReactive()
       SavedVecYearType<-ClickedVectorYearType()
@@ -2460,7 +2434,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   #DONE
   # Check if the slider values have been updated after the initialization
   observeEvent(input$SliderMain,{
-   # browser()
+   
     SHBICurrent<-SlidersHaveBeenInitialized()
     if((CreatedBaseMap()==1)&(UpdatedExtent()==1)&(prod(SHBICurrent)==0)) {
       for (sl in SliderNames){
@@ -2822,11 +2796,6 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       
         if(RUN_BO){
           
-          if (isTRUE(current_task_id != get_latest_task_id())) {
-            notif(paste("Task", current_task_id, "cancelled."))
-            return()
-          }
-          
           msg <- paste0("task ", current_task_id, " BO start")
           notif(msg)
           showNotification(msg)
@@ -2881,7 +2850,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 }
                 
                 outcome <- get_outcomes_from_strategy(parameter_vector = bo_results$strategy_vector,
-                                                      FullTable_arg = FullTable)
+                                                      FullTable_long_arg = FullTable_long)
                 
                 # Otherwise, a feasible solution is found
                 area_sum <- outcome$sum_area
@@ -2975,9 +2944,14 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
           #   # max = BAYESIAN_OPTIMIZATION_ITERATIONS * 3,
           #   expr = {
           # my_progressr_object <- progressor(steps = 5 * 3, message = "Bayesian optimization")
+          FullTable_long <- transform_FullTable_wide_to_long(FullTable_arg = FullTable,
+                                                             SCENARIO_arg = SCENARIO,
+                                                             MAXYEAR_arg = MAXYEAR,
+                                                             verbose = FALSE)
           
           bayesian_optimization_extendedtask$invoke(seed = 1,
                                                     FullTable_arg = FullTable,
+                                                    FullTable_long_arg = FullTable_long,
                                                     MAXYEAR = MAXYEAR,
                                                     SCENARIO = SCENARIO,
                                                     year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector,
@@ -3114,7 +3088,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       #                                input_areaSlider_multiplicative_coefficient = FALSE,
       #                                 tolvec=tolvecReactive())
       
-      
+
       tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                                      SavedVecLoc = SavedVecYearType,
                                                      simul636YearTypeLoc = simul636YearType,
@@ -3259,7 +3233,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       for (target in TARGETS) {
         prior_list[[target]] <- prior_list_temp[[target]]
       }
-      
+    #  browser()
       # pref_reactive(prefObject(data = datAll2,
       #                          priors = prior_list))
       
@@ -3275,12 +3249,12 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
       else{if(dim(SubsetMeetTargetsUnique$YEAR)[1]>=2){
         
         RandomSubsetIndices<-sample(1:dim(SubsetMeetTargetsUnique$YEAR)[1],2,replace=F)
-        #browser()
+
         LinesToCompare<-list(YEAR=SubsetMeetTargetsUnique$YEAR[RandomSubsetIndices,],
                              TYPE=SubsetMeetTargetsUnique$TYPE[RandomSubsetIndices,],
                              OUTPUTS=SubsetMeetTargetsUnique$OUTPUTS[RandomSubsetIndices,])
       }else{
-        ##browser()
+
         RandomSubsetIndices<-sample(1:dim(SelectedSimMatGlobal$YEAR)[1],2,replace=F)
         LinesToCompare<-list(YEAR=SelectedSimMatGlobal$YEAR[RandomSubsetIndices,],
                              TYPE=SelectedSimMatGlobal$TYPE[RandomSubsetIndices,],
@@ -3560,7 +3534,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
                 listMaps[[2]]<-leafletProxy("ClusterPage2")
                  LinesToCompare<-LinesToCompareReactive()
                  SelectedLine<-list()
-                # browser()
+              
                  
                  CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
                  
@@ -3618,7 +3592,7 @@ displayed : trees planted from 2025 to year:",YearSelectReactive()+STARTYEAR))
   #                 listMaps[[2]]<-leafletProxy("ClusterPage2")
   #                 LinesToCompare<-LinesToCompareReactive()
   #                 SelectedLine<-list()
-  #                 # browser()
+  #                
   #                 
   #               #  CurrentLengthLinesToCompare<-dim(LinesToCompare$YEAR)[1]
   #              #   
@@ -3912,7 +3886,7 @@ if(!is.null(pref_reactive()$prefs)){
       #                                 SpeciesListSelectedSD = SpeciesListSelectedSD, # list(Acanthis_cabaretSelectedSD = Acanthis_cabaretSelectedSD, ...)
       #                                 VisitsSelectedSD = VisitsSelectedSD,
       #                                 alphaLVL = 0,tolvec=tolvecReactive()) # At the beginning we want to switch on all the sliders
-       # browser()
+     #  browser()
         
         tmpYearType <- outputmap_calculateMatsYearType(input = input,
                                                        SavedVecLoc = TwoRows[1,],
@@ -3943,7 +3917,6 @@ if(!is.null(pref_reactive()$prefs)){
         
         #################
         
- #   browser()        
         SelecRow<-1
 #        SelectedMins <- tmp$SelectedSimMat2
         SelectedMins <- tmpYearType$SelectedSimMat2
@@ -4317,6 +4290,69 @@ if(!is.null(pref_reactive()$prefs)){
     
   })
   
+  
+  # When user changes tab, the leaflet map is not correct
+  # User needs to resize maps to re-render them
+  # This fixes it (TODO: 2 tabs left to do)
+  observeEvent(input$tabs, {
+    runjs('$(document).trigger("shown.htmlwidgets");')
+    if (input$tabs == "Maps") {
+      runjs('
+            var widget = HTMLWidgets.find("#map");
+            widget.resize($("#map")[0], $("#map").width(), $("#map").height());
+          
+            ') 
+    }
+    if (input$tabs == "Preferences") {
+      runjs('
+  var widget = HTMLWidgets.find("#ClusterPage");
+      widget.resize($("#ClusterPage")[0], $("#ClusterPage").width(), $("#ClusterPage").height());
+   
+            ')
+      
+      runjs('
+    var widget2 = HTMLWidgets.find("#ClusterPage2");
+      widget2.resize($("#ClusterPage2")[0], $("#ClusterPage2").width(), $("#ClusterPage2").height());
+           ')
+      
+      
+    }
+    
+    # TODO: Fix this
+    #     if (input$tabs == "Alternative Approaches") {
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map2");
+    #       widget.resize($("#map2")[0], $("#map2").width(), $("#map2").height());
+    # ')
+    #       
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map3");
+    #       widget.resize($("#map3")[0], $("#map3").width(), $("#map3").height());
+    # ')
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map4");
+    #       widget.resize($("#map4")[0], $("#map4").width(), $("#map4").height());
+    # ')
+    #     }
+    
+    
+    # TODO: Fix this
+    #     if (input$tabs == "Exploration") {
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#map6");
+    #       widget.resize($("#map6")[0], $("#map6").width(), $("#map6").height());
+    #        $("#map6").data("leaflet").invalidateSize();
+    # ')
+    #       runjs('
+    #    var widget = HTMLWidgets.find("#Full-elements-container);
+    #       widget.resize($("#Full-elements-container")[0], $("#Full-elements-container").width(), $("#Full-elements-container").height());
+    #         $("#Full-elements-container").data("leaflet").invalidateSize();
+    # ')
+    #     }
+    
+    
+  })
+  
   # On session close, delete temporary files
   onSessionEnded(function() {
     if (SESSION_FILE_SUFFIX != "") {
@@ -4335,8 +4371,6 @@ if(!is.null(pref_reactive()$prefs)){
   onUnhandledError(function(err) {
     # The background processes check the task id, and end if they are not the latest task
     set_latest_task_id(-1)
-    # Force-close background processes
-    future::plan(future::sequential)
     
     if (SESSION_FILE_SUFFIX != "") {
       session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
@@ -4350,8 +4384,6 @@ if(!is.null(pref_reactive()$prefs)){
   observeEvent(input$crash, function(){
     # The background processes check the task id, and end if they are not the latest task
     set_latest_task_id(-1)
-    # Force-close background processes
-    future::plan(future::sequential)
     
     if (SESSION_FILE_SUFFIX != "") {
       session_files <- paste0(normalizePath(file.path(FolderSource)), "/*", SESSION_FILE_SUFFIX, "*")
