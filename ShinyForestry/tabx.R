@@ -17,9 +17,125 @@ library(plotly)
 library(leaflet.extras)
 library(glue)
 
-source("config.R")
+FolderSource <- normalizePath(".")
 
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
+BACKEND_HOST <- "http://144.173.60.164:40000"
+
+if (dir.exists("ShinyForestry")) {
+  elicitor_folder <- normalizePath(file.path("ShinyForestry", "ElicitorOutput"))
+  FolderSource <- normalizePath(file.path("ShinyForestry"))
+} else {
+  elicitor_folder <- normalizePath(file.path("ElicitorOutput"))
+  FolderSource <- normalizePath(".")
+}
+
+source(file.path(FolderSource, "config.R"))
+
+# more --> less: debug / info / warning / error / none
+MAX_LIMIT_LOG_LEVEL <- "debug"
+if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"), mustWork = FALSE))) {
+  source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
+} else {
+  source(normalizePath(file.path(FolderSource, "backend", "bayesian-optimization-functions.R")), local = TRUE)
+}
+
+# If the backend was already initialized, saved to disk, and environment variable is valid, use it
+run_initalization_on_backend <- FALSE
+backend_initialization_env_file <- normalizePath(file.path(elicitor_folder, "backend_env.rds"))
+if (file.exists(backend_initialization_env_file)) {
+  
+  env <- readRDS(backend_initialization_env_file)
+  # Ensure file is valid
+  if (isFALSE(is.list(env))) {
+    notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
+    file.remove(backend_initialization_env_file)
+    run_initalization_on_backend <- TRUE
+  }
+  
+} else {
+  run_initalization_on_backend <- TRUE
+}
+
+if (isTRUE(run_initalization_on_backend)) {
+  
+  # If a file does not exist, stop everything
+  filenames <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
+  sapply(filenames, function(filename) {
+    filepath <- file.path(elicitor_folder, filename)
+    if (isFALSE(file.exists(filepath))) {
+      stop(filename, "does not exist")
+    }
+  }) |> invisible()
+  
+  library(tools)
+  
+  library(curl)
+  # If the files exist and have correct hashes, do not upload them.
+  for (filename in filenames) {
+    filepath <- normalizePath(file.path(elicitor_folder, filename))
+    md5 <- tools::md5sum(filepath)
+    
+    notif(paste("Checking if", filename, "exists in the backend and is the same one as on this computer"), log_level = "debug")
+    response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/exists?filename=", filename, "&md5sum=", md5))
+    
+    # Get the response information
+    body <- rjson::fromJSON(rawToChar(response$content))
+    status <- response$status_code
+    if (status %in% c(400, 404)) {
+      
+      filepath <- normalizePath(filepath, winslash = "/")
+      result <- system(paste0('curl ',
+                              '-sSL ',
+                              '-X PUT ',
+                              '-H "accept: */*" ',
+                              # '-H "Content-Type: multipart/form-data" ',
+                              # '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
+                              # '-F "file_to_upload=@', filepath, ';type=application/octet-stream" ',
+                              '-F "file_to_upload=@', filepath, '" ',
+                              BACKEND_HOST, '/upload'),
+                       intern = TRUE) |>
+        rjson::fromJSON()
+      
+      if (result == "Success") {
+        msg <- paste0("Upload of ", filename, ": ", result)
+        notif(msg, log_level = "debug")
+      } else if (names(result) == "error") {
+        msg <- paste0("Error during upload of ", filename, ": ", result$error)
+        notif(msg, log_level = "error")
+        stop(msg)
+      }
+    } else if (status == 200) {
+      notif(paste(filename, "is valid"), log_level = "debug")
+    }
+  }
+  
+  # Initialize the environment
+  handle_PUT <- new_handle()
+  handle_setopt(handle_PUT, customrequest = "PUT")
+  url <- paste0(BACKEND_HOST, "/initialize?MAX_LIMIT_LOG_LEVEL=", MAX_LIMIT_LOG_LEVEL)
+  msg <- paste("initializing the backend", url, "...")
+  notif(msg)
+  response <- curl_fetch_memory(url = url,
+                                handle = handle_PUT)
+  notif(paste(msg, "done"))
+  if (response$status_code != 200) {
+    msg <- paste("Error initializing the backend, response object=", toString(response))
+    notif(msg, log_level = "error")
+    stop(msg)
+  }
+  
+  # Save the RDS response to file, then read it
+  msg <- "Reading the environment from the backend ..."
+  notif(msg)
+  
+  temp_file <- tempfile()
+  writeBin(response$content, temp_file)
+  env <- readRDS(temp_file)
+  file.remove(temp_file)
+  
+  # Save it to elicitor folder
+  saveRDS(env, backend_initialization_env_file)
+}
 
 fetch_api_data_post <- function(json_payload) {
   
