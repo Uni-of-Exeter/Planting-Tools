@@ -1,7 +1,21 @@
 library(shiny)
 library(leaflet)
-library(bslib)
-library(shinyjs)
+library(bslib)  # For Bootstrap-based accordion UI
+library(shinyjs) # For sidebar toggling
+library(shinycssloaders)
+library(uuid)
+library(plumber)
+library(geojsonsf)
+library(jsonlite)
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(httr)
+library(units)
+library(shinyWidgets)
+library(plotly)
+library(leaflet.extras)
+library(glue)
 
 source("utils/api_functions.R")
 source("config.R")
@@ -34,21 +48,21 @@ map_page_ui <- function(id) {
             "Targets",
             id = ns("targets_accordion"),
             uiOutput(ns("dynamic_sliders")),
-            actionButton(ns("submit"), "Submit"),
-            actionButton(ns("reset"), "Reset"),
-            actionButton(ns("save"), "Save Strategy")
+            actionButton(ns("submit_main"), "submit", class = "btn btn-secondary"),
+            actionButton(ns("reset_main"), "reset", class = "btn btn-secondary"),
+            actionButton(ns("save_main"), "Save Strategy")
           ),
-          accordion_panel(
-            "Saved Strategies",
-            uiOutput(ns("saved_strategies"))
-          )
+          # accordion_panel(
+          #   "Saved Strategies",
+          #   uiOutput(ns("saved_strategies"))
+          # )
         )
       ),
       
       mainPanel(
         class = "main-panel",
         leafletOutput(ns("map"), height = "100%"),
-        map_and_slider_ui(id = ns("map"), 2025, 2049, 2025)
+        map_and_slider_ui(id = ns("map"), 2025, 2049, 2025),
       )
     )
   )
@@ -58,6 +72,17 @@ map_page_server <- function(id, state) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    # A reactive expression to track the current year
+    current_year <- reactive({
+      input[[ns("year")]]
+    })
+    
+    observe({
+      print("map script")
+      print(reactiveValuesToList(state))  # Debugging print to check state
+    })
+    
+
     #----COPYPASTA
     
     new_data <- reactiveVal(NULL) # most recent data
@@ -84,8 +109,6 @@ map_page_server <- function(id, state) {
       species_lichens = NULL,
       area = NULL,
       recreation = NULL
-      # year = NULL
-      # num_clicked_polygons = 0 # not sure if this is the best way, what about if polygons are blocked online... I guess that's fine.
     ))
     
     clicked_polygons <- reactiveVal(data.frame(
@@ -100,7 +123,117 @@ map_page_server <- function(id, state) {
       stringsAsFactors = FALSE
     ))
     
-    #----/COPYPASTA
+    # JS to make sure plotly plot moves nicely
+    # This is currently broken with the namespace
+    #
+    #   observe({
+    #     # Trigger plot layout adjustment when the plot is shown
+    #     shinyjs::runjs("
+    #   // Listen for visibility change or toggle button click
+    #   $('#time_series_plot').on('shown.bs.collapse', function() {
+    #     setTimeout(function() {
+    #       Plotly.relayout('map-area_plot', { width: $('#time_series_plot').width() });
+    #     }, 100);  // Add small delay to ensure layout changes
+    #   });
+    # 
+    #   // Optionally, adjust layout when switching between Annual and Cumulative
+    #   $('#view_toggle').on('change', function() {
+    #     setTimeout(function() {
+    #       Plotly.relayout('map-area_plot', { width: $('#time_series_plot').width() });
+    #     }, 100);
+    #   });
+    #   
+    #   // Handle window resizing
+    #   $(window).resize(function() {
+    #     setTimeout(function() {
+    #       // Trigger plot resizing only if the plot is visible
+    #       if ($('#time_series_plot').is(':visible')) {
+    #         Plotly.relayout('map-area_plot', { width: $('#time_series_plot').width() });
+    #       }
+    #     }, 5);  // Add small delay for resize to stabilize
+    #   });
+    # ")
+    #   })
+    
+    processed_data <- reactive({
+      plot_data <- output_data()  # Get the combined data frame from the reactive expression
+      
+      # If no data, return NULL
+      if (is.null(plot_data)) return(NULL)
+      
+      # Convert total_area to km²
+      plot_data$total_area <- set_units(plot_data$total_area, "km^2")
+      
+      # Compute cumulative area for each planting type
+      cumulative_data <- plot_data %>%
+        arrange(planting_type, planting_year) %>%
+        group_by(planting_type) %>%
+        mutate(cumulative_area = cumsum(total_area)) %>%
+        ungroup()
+      
+      # Return both datasets in a list (ready for instant switching)
+      list(total = plot_data, cumulative = cumulative_data)
+    })
+    
+    # Render time-series plot for both Conifer and Deciduous
+    output[[ns("areaPlot")]] <- renderPlotly({
+      data <- processed_data()  # Get precomputed data
+      
+      # If no data, return NULL
+      if (is.null(data)) return(NULL)
+      
+      # Determine which dataset to use based on user selection
+      selected_plot <- if (input[[ns("view_toggle")]] == "Cumulative") {
+        data$cumulative %>% rename(y_value = cumulative_area)  # Rename for consistency
+      } else {
+        data$total %>% rename(y_value = total_area)
+      }
+      
+      # Create the plot
+      p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_type)) +
+        geom_line(size = 1, alpha = FILL_OPACITY) +
+        geom_point(size = 1.2) +
+        scale_color_manual(values = COLOUR_MAPPING) +
+        labs(title = ifelse(input[[ns("view_toggle")]] == "Cumulative",
+                            " ",
+                            " "),
+             x = "Year",
+             y = ifelse(input[[ns("view_toggle")]] == "Cumulative",
+                        "Cumulative Area Planted",
+                        "Total Area Planted"),
+             color = "Planting Type") +
+        theme_minimal(base_size = 10) +
+        theme(
+          legend.position = "none",
+          panel.background = element_rect(fill = "transparent", color = NA),
+          plot.background = element_rect(fill = "transparent", color = NA),
+          legend.background = element_rect(fill = "transparent"),
+          legend.box.background = element_rect(fill = "transparent")
+        ) 
+      
+      ggplotly(p) %>%
+        layout(
+          paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
+          plot_bgcolor = "rgba(255,255,255,0)"
+        ) %>%
+        config(
+          displayModeBar = TRUE  # Keep the toolbar
+        )
+    })
+    
+    observeEvent(input[[ns("toggle_plot")]], {
+      print("being clicked")
+      shinyjs::toggle(id = ns("time_series_plot"), anim = TRUE)
+      
+      # Change button text dynamically
+      new_label <- if (input[[ns("toggle_plot")]] %% 2 == 1) {
+        "Hide Time-Series"
+      } else {
+        "Show Time-Series"
+      }
+      
+      updateActionButton(session, ns("toggle_plot"), label = new_label)
+    })
     
     # Initialize leaflet map or update it on submit
     initialize_or_update_map <- function(input_year, data = NULL, json_payload = NULL) {
@@ -157,7 +290,6 @@ map_page_server <- function(id, state) {
         
         # Render the leaflet map with the updated data
         output$map <- renderLeaflet({
-          
           
           legend_html <- paste0(
             "<b>Outcomes</b> (c.f. Targets)<br><br>",
@@ -255,6 +387,7 @@ map_page_server <- function(id, state) {
         addProviderTiles(providers$CartoDB.Voyager) #, options = tileOptions(useCache = TRUE, crossOrigin = TRUE)) %>% 
       setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom)
     })
+    
     # Render the sliders
     observe({
       state$map_tab$slider_defaults <- get_slider_values()
@@ -273,56 +406,56 @@ map_page_server <- function(id, state) {
       output$dynamic_sliders <- renderUI({
         tagList(
           fluidRow(
-            column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput("carbon", HTML(paste0("Tree Carbon Stored (tonnes of CO<sub>2</sub>):")),
+            column(CHECKBOX_COL, checkboxInput(ns("carbon_checkbox"), NULL, value = TRUE)),
+            column(SLIDER_COL, sliderInput(ns("carbon"), HTML(paste0("Tree Carbon Stored (tonnes of CO<sub>2</sub>):")),
                                            min = state$map_tab$slider_defaults$carbon$min, 
                                            max = state$map_tab$slider_defaults$carbon$max, 
                                            value = state$map_tab$slider_defaults$carbon$default
             ))
           ),
           fluidRow(
-            column(CHECKBOX_COL, checkboxInput("species_checkbox", NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput("species", "Species Richness (All):",
+            column(CHECKBOX_COL, checkboxInput(ns("species_checkbox"), NULL, value = TRUE)),
+            column(SLIDER_COL, sliderInput(ns("species"), "Species Richness (All):",
                                            min = state$map_tab$slider_defaults$species$min, 
                                            max = state$map_tab$slider_defaults$species$max, 
                                            value = state$map_tab$slider_defaults$species$default
             ))
           ),
           fluidRow(
-            column(CHECKBOX_COL, checkboxInput("species_goat_moth_checkbox", NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput("species_goat_moth", "Goat Moth (Presence, %):", 
+            column(CHECKBOX_COL, checkboxInput(ns("species_goat_moth_checkbox"), NULL, value = TRUE)),
+            column(SLIDER_COL, sliderInput(ns("species_goat_moth"), "Goat Moth (Presence, %):", 
                                            min = state$map_tab$slider_defaults$species_goat_moth$min, 
                                            max = state$map_tab$slider_defaults$species_goat_moth$max, 
                                            value = state$map_tab$slider_defaults$species_goat_moth$default
             ))
           ),
           fluidRow(
-            column(CHECKBOX_COL, checkboxInput("species_stag_beetle_checkbox", NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput("species_stag_beetle", "Stag Beetle (Presence, %):", 
+            column(CHECKBOX_COL, checkboxInput(ns("species_stag_beetle_checkbox"), NULL, value = TRUE)),
+            column(SLIDER_COL, sliderInput(ns("species_stag_beetle"), "Stag Beetle (Presence, %):", 
                                            min = state$map_tab$slider_defaults$species_stag_beetle$min, 
                                            max = state$map_tab$slider_defaults$species_stag_beetle$max, 
                                            value = state$map_tab$slider_defaults$species_stag_beetle$default
             ))
           ),
           fluidRow(
-            column(CHECKBOX_COL, checkboxInput("species_lichens_checkbox", NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput("species_lichens", "Species Richness (Lichens):", 
+            column(CHECKBOX_COL, checkboxInput(ns("species_lichens_checkbox"), NULL, value = TRUE)),
+            column(SLIDER_COL, sliderInput(ns("species_lichens"), "Species Richness (Lichens):", 
                                            min = state$map_tab$slider_defaults$species_lichens$min, 
                                            max = state$map_tab$slider_defaults$species_lichens$max, 
                                            value = state$map_tab$slider_defaults$species_lichens$default
             ))
           ),
           fluidRow(
-            column(CHECKBOX_COL, checkboxInput("area_checkbox", NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput("area", HTML(paste0("Area Planted (km<sup>2</sup>):")),
+            column(CHECKBOX_COL, checkboxInput(ns("area_checkbox"), NULL, value = TRUE)),
+            column(SLIDER_COL, sliderInput(ns("area"), HTML(paste0("Area Planted (km<sup>2</sup>):")),
                                            min = state$map_tab$slider_defaults$area$min, 
                                            max = state$map_tab$slider_defaults$area$max, 
                                            value = state$map_tab$slider_defaults$area$default
             ))
           ),
           fluidRow(
-            column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", 
+            column(CHECKBOX_COL, checkboxInput(ns("recreation_checkbox"), NULL, value = TRUE)),
+            column(SLIDER_COL, sliderInput(ns("recreation"), "Recreation (visits per month):", 
                                            min = state$map_tab$slider_defaults$recreation$min, 
                                            max = state$map_tab$slider_defaults$recreation$max, 
                                            value = state$map_tab$slider_defaults$recreation$default
@@ -348,7 +481,345 @@ map_page_server <- function(id, state) {
     })
     
     # ----
-    
+
+    # Handle submit event to update the map
+    observeEvent(input$submit_main, {
+      print("submit clicked")
+      shinyjs::disable("save_main")
+      shinyjs::disable("reset_main")
+      shinyjs::disable("submit_main")
+      shinyjs::disable("carbon")
+      shinyjs::disable("species")
+      shinyjs::disable("species_goat_moth")
+      shinyjs::disable("species_stag_beetle")
+      shinyjs::disable("species_lichens")
+      shinyjs::disable("area")
+      shinyjs::disable("recreation")
+      shinyjs::disable("carbon_checkbox")
+      shinyjs::disable("species_checkbox")
+      shinyjs::disable("species_goat_moth_checkbox")
+      shinyjs::disable("species_stag_beetle_checkbox")
+      shinyjs::disable("species_lichens_checkbox")
+      shinyjs::disable("area_checkbox")
+      shinyjs::disable("recreation_checkbox")
+
+      # Save the initial values when the submit button is clicked
+      initial_values(list(
+        carbon = input$carbon,
+        species = input$species,
+        species_goat_moth = input$species_goat_moth,
+        species_stag_beetle = input$species_stag_beetle,
+        species_lichens = input$species_lichens,
+        area = input$area,
+        recreation = input$recreation
+        # year = input$year
+        # num_clicked_polygons = 0
+      ))
+
+      # Extract blocked parcels (if any exist)
+      blocked_parcels <- clicked_polygons()
+      blocked_parcels_filtered <- blocked_parcels[blocked_parcels$blocked_until_year > 0, ]
+
+      # Create the payload
+      payload <- list(
+        carbon = as.numeric(input$carbon),
+        species = as.numeric(input$species),
+        species_goat_moth = as.numeric(input$species_goat_moth),
+        species_stag_beetle = as.numeric(input$species_stag_beetle),
+        species_lichens = as.numeric(input$species_lichens),
+        area = as.numeric(input$area),
+        recreation = as.numeric(input$recreation),
+        blocked_parcels = if (nrow(blocked_parcels_filtered) > 0) {
+          # Create a list of blocked parcels
+          lapply(1:nrow(blocked_parcels_filtered), function(i) {
+            list(
+              parcel_id = blocked_parcels_filtered$parcel_id[i],
+              blocked_until_year = as.numeric(blocked_parcels_filtered$blocked_until_year[i])
+            )
+          })
+        } else {
+          list()  # Return an empty list if no blocked parcels exist
+        }
+      )
+
+      # Convert to JSON
+      json_payload <- jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE)
+
+      print("json payload")
+      print(json_payload)
+      # Update the map by calling the same function
+      initialize_or_update_map(current_year(), json_payload = json_payload)
+
+      # Enable the save button when submit is pressed
+      shinyjs::enable("save_main")
+      shinyjs::enable("reset_main")
+
+      shinyjs::enable("carbon")
+      shinyjs::enable("species")
+      shinyjs::enable("species_goat_moth")
+      shinyjs::enable("species_stag_beetle")
+      shinyjs::enable("species_lichens")
+      shinyjs::enable("area")
+      shinyjs::enable("recreation")
+      shinyjs::enable("carbon_checkbox")
+      shinyjs::enable("species_checkbox")
+      shinyjs::enable("species_goat_moth_checkbox")
+      shinyjs::enable("species_stag_beetle_checkbox")
+      shinyjs::enable("species_lichens_checkbox")
+      shinyjs::enable("area_checkbox")
+      shinyjs::enable("recreation_checkbox")
+    })
+     
+    # Implement clicking off
+    observeEvent(input$map_shape_click, {
+      click <- input$map_shape_click
+      clicked_parcel_id <- click$id  # Get clicked parcel_id
+      selected_year <- input[[ns("year")]]    # Get selected year
+
+      print(clicked_parcel_id)
+      
+      # Ensure clicked_polygons() is not NULL or empty
+      current_clicked <- clicked_polygons()
+
+      if (is.null(current_clicked) || nrow(current_clicked) == 0 || !"parcel_id" %in% colnames(current_clicked)) {
+        print("clicked_polygons() is empty, NULL, or missing parcel_id column.")
+        return()  # Exit early to avoid errors
+      }
+
+      # Ensure clicked_parcel_id is not NULL
+      if (is.null(clicked_parcel_id) || clicked_parcel_id == "") {
+        print("Invalid clicked_parcel_id.")
+        return()
+      }
+
+      # Check if the parcel exists in the list
+      parcel_index <- which(current_clicked$parcel_id == clicked_parcel_id)
+
+      if (length(parcel_index) > 0) {
+        # If the parcel is already blocked until the selected year, reset it to 0
+        if (current_clicked$blocked_until_year[parcel_index] == selected_year) {
+          current_clicked$blocked_until_year[parcel_index] <- 0
+          print(paste("Parcel", clicked_parcel_id, "unblocked (set to year 0)."))
+        } else {
+          # Otherwise, update it to the selected year
+          current_clicked$blocked_until_year[parcel_index] <- selected_year
+          print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
+        }
+      } else {
+        print("Clicked parcel is not in the list.")  # Debugging message
+        return()
+      }
+
+      # Update reactive value
+      clicked_polygons(current_clicked)
+
+      print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
+    })
+
+    observe({
+      # Get the current slider values with namespacing
+      current_values <- list(
+        carbon = input$carbon,
+        species = input$species,
+        species_goat_moth = input$species_goat_moth,
+        species_stag_beetle = input$species_stag_beetle,
+        species_lichens = input$species_lichens,
+        area = input$area,
+        recreation = input$recreation
+        # year = input$year
+        # num_clicked_polygons = 0
+      )
+
+      print("I am here and it's not a good place")
+      
+      # Compare current values with initial values
+      values_changed <- !identical(current_values, initial_values())
+      current_clicked <- clicked_polygons()
+      current_clicked_in <- clicked_polygons_injest()
+
+      print(setdiff(current_values, initial_values()))
+      print(setdiff(current_clicked_in, current_clicked))
+
+      # Check if values have changed or if there are any blocked parcels
+      if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0)) {
+        # Disable Save button as changes require submission
+        shinyjs::disable("save_main")  # Disable the save button
+
+        # Enable and highlight the Submit button (green)
+        shinyjs::enable("submit_main")  # Enable the submit button
+        shinyjs::addClass("submit_main", "btn-success")  # Add the green/active class
+
+      } else {
+        # Enable Save button if no changes have been made
+        shinyjs::enable("save_main")  # Enable the save button
+
+        print("disable submit")
+        # Disable Submit button if no changes have been made
+        shinyjs::disable("submit_main")  # Disable the submit button
+        shinyjs::removeClass("submit_main", "btn-success")  # Remove the green/active class
+        shinyjs::addClass("submit_main", "btn-secondary")  # Add the gray/disabled class
+      }
+    })
+
+    # the blocking part of the code hasn't really been tested
+    # there is currently a bug where if we click a parcel to block it, and then go > blocked_until_year,
+    # it's recoloured to it's eventual colour (regardless of when that change was supposed to happen); or dark gery if it never happens
+    # hackily fixed with:
+    #
+    # fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+    #
+    observe({
+      input_year <- input[[ns("year")]]
+      selected_view <- input[[ns("view_toggle")]]
+
+      if (!is.null(new_data())) {
+        # Access the most recently loaded data stored in the reactive `new_data`
+        current_data <- new_data()
+
+        # get clicked polygons
+        clicked_info <- clicked_polygons()
+
+        if (!is.null(clicked_info) && nrow(clicked_info) > 0) {
+          # Blocked polygons: those whose blocked_until_year is greater than or equal to the input_year
+          blocked_parcels <- clicked_info[clicked_info$blocked_until_year >= input_year, ]
+          print(clicked_info[clicked_info$blocked_until_year > 0, ])
+          # Unblocked parcels: those whose blocked_until_year is less than input_year
+          unblocked_parcels <- clicked_info[clicked_info$blocked_until_year < input_year, ]
+          unblocked_parcels <- unblocked_parcels[unblocked_parcels$blocked_until_year != 0, ]  # Ensure no "0" entries
+        } else {
+          blocked_parcels <- NULL
+          unblocked_parcels <- NULL
+        }
+
+        # Handle unclicks
+        prev_blocked <- previously_blocked()
+        unclicked_parcels <- prev_blocked[!(prev_blocked$parcel_id %in% blocked_parcels$parcel_id), ]
+        previously_blocked(blocked_parcels)
+
+        # # Filter the data based on the selected year and update `filtered_data`
+        # filtered_data_subset <- current_data[current_data$planting_year <= input_year, ]
+        # filtered_data(filtered_data_subset)  # Update the reactive filtered data
+
+        # **Modify Filtering Based on Selected View**
+        filtered_data_subset <- if (selected_view == "Cumulative") {
+          current_data[current_data$planting_year <= input_year, ]  # Up to the selected year
+        } else {
+          current_data[current_data$planting_year == input_year, ]  # Only the selected year
+        }
+        filtered_data(filtered_data_subset)  # Update the reactive filtered data
+
+        # Get the current IDs of the filtered polygons
+        current_ids <- unique(filtered_data_subset$parcel_id)
+
+        # Get the current state of the layers (those that are already on the map)
+        existing_layers <- current_layers()  # Use the reactive current_layers()
+
+        # Find the IDs that need to be added and removed
+        to_add <- setdiff(current_ids, existing_layers)
+        to_remove <- setdiff(existing_layers, current_ids)  # Ensure this is a vector of IDs
+
+        # try update polygons back with a new style
+        if (length(to_remove) > 0) {
+          # Get the data for all parcels that need to be recoloured from FullTable
+          updated_data <- current_data[current_data$parcel_id %in% to_remove, ]  # Use `to_remove` to filter
+
+          # Update the recolour of polygons in one go
+          leafletProxy("map") %>%
+            addPolygons(
+              data = updated_data,  # Use the updated data for the parcels in `to_remove`
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = AVAILABLE_PARCEL_COLOUR,
+              fillOpacity = FILL_OPACITY,
+              layerId = updated_data$parcel_id,  # Ensure to reassign the same layerId for all
+              # label = updated_data$parcel_id
+            )
+        }
+
+        # Add new polygons (those that are in filtered data but not on the map)
+        if (length(to_add) > 0) {
+          leafletProxy("map") %>%
+            addPolygons(
+              data = current_data[current_data$parcel_id %in% to_add, ],  # Filtered data for new polygons
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillOpacity = FILL_OPACITY,
+              group = "filteredPolygons",  # Group for filtered polygons
+              layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
+              label = ~parcel_id,
+              # popup = ~planting_type
+            )
+        }
+
+        current_layers(current_ids)
+        # Need to do something similar for blocked
+
+        # Now handle Blocked Parcels (those that are blocked until input_year)
+        if (length(blocked_parcels) > 0) {
+          blk <- current_data[current_data$parcel_id %in% blocked_parcels$parcel_id, ]
+
+          # Add blocked polygons with a distinct style (red color for blocked)
+          leafletProxy("map") %>%
+            addPolygons(
+              data = blk,  # Data for blocked parcels
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = BLOCKED_PARCEL_COLOUR,  # Indicating blocked parcels
+              fillOpacity = FILL_OPACITY,
+              group = "BlockedPolygons",
+              layerId = blk$parcel_id,  # Reassign the same layerId for blocked polygons
+              label = ~paste("Parcel ID:", parcel_id, "Blocked Until:", blocked_parcels$blocked_until_year[blocked_parcels$parcel_id == parcel_id])
+            )
+        }
+
+        if (length(unclicked_parcels) > 0) {
+          unclk <- current_data[current_data$parcel_id %in% unclicked_parcels$parcel_id, ]
+
+          # Recolor unblocked polygons and update them (reassign color based on planting_type)
+          leafletProxy("map") %>%
+            addPolygons(
+              data = unclk,  # Data for unblocked parcels
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+              fillOpacity = FILL_OPACITY,
+              group = "UnblockedPolygons",
+              layerId = unclk$parcel_id,  # Reassign the same layerId for unblocked polygons
+              label = ~paste("Parcel ID:", parcel_id)
+            )
+        }
+
+        # Handle Unblocked Parcels (those whose blocked_until_year is less than input_year)
+        if (length(unblocked_parcels) > 0) {
+          unblk <- current_data[current_data$parcel_id %in% unblocked_parcels$parcel_id, ]
+
+          # Recolor unblocked polygons and update them (reassign color based on planting_type)
+          leafletProxy("map") %>%
+            addPolygons(
+              data = unblk,  # Data for unblocked parcels
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+              fillOpacity = FILL_OPACITY,
+              group = "UnblockedPolygons",
+              layerId = unblk$parcel_id,  # Reassign the same layerId for unblocked polygons
+              label = ~paste("Parcel ID:", parcel_id)
+            )
+        }
+      }
+    })
+    # 
+    # # Enable/Disable sliders
+    observe({
+      toggleState("carbon", input$carbon_checkbox)
+      toggleState("species", input$species_checkbox)
+      toggleState("species_goat_moth", input$species_goat_moth_checkbox)
+      toggleState("species_stag_beetle", input$species_stag_beetle_checkbox)
+      toggleState("species_lichens", input$species_lichens_checkbox)
+      toggleState("area", input$area_checkbox)
+      toggleState("recreation", input$recreation_checkbox)
+    })
     
   })
 }

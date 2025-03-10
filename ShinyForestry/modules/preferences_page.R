@@ -31,7 +31,6 @@ preferences_page_ui <- function(id) {
             uiOutput(ns("value_box_one")),
             actionButton(ns("submit_one"), "Choose this strategy", class = "btn btn-secondary") 
         ),
-        
         div(id = "value-box-2", class = "value-box map2", 
             uiOutput(ns("value_box_two")), 
             actionButton(ns("submit_two"), "Choose this strategy", class = "btn btn-secondary")

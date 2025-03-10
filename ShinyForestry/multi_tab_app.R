@@ -123,11 +123,6 @@ server <- function(input, output, session) {
     }
   })
   
-  observe({
-      print("main script")
-      print(reactiveValuesToList(state))  # Debugging print to check state
-  })
-  
 }
 
 

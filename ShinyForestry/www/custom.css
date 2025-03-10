@@ -14,6 +14,13 @@ body {
   margin: 0 !important;
 }
 
+/* Make the Plotly mode bar fully transparent */
+/* target individual button containers */
+.js-plotly-plot .modebar > div {
+    background: none !important;
+    opacity: 1 !important;
+}
+
 .bslib-gap-spacing {
   gap: 0 !important;
 }
@@ -35,11 +42,12 @@ body {
   padding-left: 32px !important;   /* Counteract changes to bootstrap */
   padding-right: 16px !important;  /* Counteract changes to bootstrap */
   margin: 0px !important;   /* Remove any margin */
+  width: 100%;
 }
 
-#sidebar {
+#map-sidebar {
   overflow-y: auto;  /* Make sidebar scrollable if content overflows */
-  border-radius: 0px; /* Delete for nice curved boxes */
+  border-radius: 0px; /* delete for nice curved boxes */
   height: calc(100vh - 60px);
 }
 
@@ -50,7 +58,7 @@ body {
   width: 100%;
 }
 
-#accordion-panel {
+#map-accordion-panel {
   max-height: 80vh;  /* Set maximum height for the accordion */
   overflow-y: auto;  /* Allow scrolling if the content exceeds max-height */
 }
@@ -62,6 +70,7 @@ body {
   position: relative;  /* Required to position year slider */
   padding: 0px;
   background-color: #f0f0f0;
+  overflow: auto;
 }
 
 .leaflet-container {
@@ -162,12 +171,13 @@ body {
   border-radius: 8px;
   border: 1px solid #ccc;
   box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
-  width: auto; /* Allow dynamic width */
-  max-width: 350px; /* Prevent it from getting too wide */
-  min-width: 250px; /* Prevent it from getting too small */
+  width: 350px; /* Allow dynamic width */
+  /* max-width: 350px; Prevent it from getting too wide */
+  /* min-width: 300px; Prevent it from getting too small */
   height: auto;
   position: absolute;
   white-space: wrap; /* Keeps text from wrapping */
+  line-height: 20px;
 }
 
 /* Positioning for each value box */
