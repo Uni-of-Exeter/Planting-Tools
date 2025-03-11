@@ -30,7 +30,7 @@ exploration_page_server <- function(id, state) {
         addProviderTiles(providers$CartoDB.Voyager) %>%  # Use your custom base map layer
         setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom) %>%
         addLegend(
-          position = "topright",
+          position = "bottomright",
           colors = adjustcolor(unname(COLOUR_MAPPING), alpha.f = FILL_OPACITY),
           labels = names(COLOUR_MAPPING),
           title = "Planting Type",
@@ -247,34 +247,39 @@ exploration_page_server <- function(id, state) {
       print(paste("y updated to", values$direction_y))
     })
     
-    # create value_boxes dynamically
+    # Create value_boxes dynamically
+    # Create value_boxes dynamically
     output$value_boxes <- renderUI({
       div(class = "value-box-content",
           # Create the dynamic list of value boxes for names
           lapply(values$names, function(name) {
             tagList(
-              # +/- buttons next to the name
-              tags$div(style = "display: flex; align-items: center;",
-                       actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline-primary"),
-                       tags$span(style = "margin: 0 10px;", name),
-                       actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline-primary")
+              # Align + to the left, name in the center, - to the right
+              tags$div(style = "display: flex; justify-content: space-between; align-items: center; padding: 0 10px;", 
+                       actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline-primary"),
+                       tags$span(style = "flex-grow: 1; text-align: center;", name),  # Center aligned name
+                       actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline-primary")
               )
             )
           }),
           
           # Two direction sliders (one for X and one for Y) below the names
           sliderInput(ns("slider_x"), 
-                      "X", 
+                      "Direction: X", 
                       min = 0, 
                       max = 100, 
-                      value = 50),
+                      value = 50,
+                      width = "100%"),
           sliderInput(ns("slider_y"), 
-                      "Y", 
+                      "Direction: Y", 
                       min = 0, 
                       max = 100, 
-                      value = 50)
+                      value = 50,
+                      width = "100%")
       )
     })
+    
+    
     
     
     
