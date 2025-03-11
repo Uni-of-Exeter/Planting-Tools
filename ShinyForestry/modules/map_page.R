@@ -76,12 +76,6 @@ map_page_server <- function(id, state) {
     current_year <- reactive({
       input[[ns("year")]]
     })
-    
-    observe({
-      print("map script")
-      print(reactiveValuesToList(state))  # Debugging print to check state
-    })
-    
 
     #----COPYPASTA
     
@@ -630,15 +624,10 @@ map_page_server <- function(id, state) {
         # num_clicked_polygons = 0
       )
 
-      print("I am here and it's not a good place")
-      
       # Compare current values with initial values
       values_changed <- !identical(current_values, initial_values())
       current_clicked <- clicked_polygons()
       current_clicked_in <- clicked_polygons_injest()
-
-      print(setdiff(current_values, initial_values()))
-      print(setdiff(current_clicked_in, current_clicked))
 
       # Check if values have changed or if there are any blocked parcels
       if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0)) {
@@ -820,6 +809,38 @@ map_page_server <- function(id, state) {
       toggleState("area", input$area_checkbox)
       toggleState("recreation", input$recreation_checkbox)
     })
+    
+    # Observe the reset of the sliders
+    observeEvent(input$reset_main, {
+      print("resetting")
+      print(reactiveValuesToList(state))
+      
+      # Reset map view using isolate() to avoid reactivity issues
+      leafletProxy(ns("map")) %>%
+        setView(lat = state$map$lat, 
+                lng = state$map$lng, 
+                zoom = state$map$zoom)  # Make sure to use zoom, not default
+      
+      # Reset sliders to default values
+      updateSliderInput(session, "carbon", value = state$map_tab$slider_defaults$carbon$default)
+      updateSliderInput(session, "species", value = state$map_tab$slider_defaults$species$default)
+      updateSliderInput(session, "species_goat_moth", value = state$map_tab$slider_defaults$species_goat_moth$default)
+      updateSliderInput(session, "species_stag_beetle", value = state$map_tab$slider_defaults$species_stag_beetle$default)
+      updateSliderInput(session, "species_lichens", value = state$map_tab$slider_defaults$species_lichens$default)
+      updateSliderInput(session, "area", value = state$map_tab$slider_defaults$area$default)
+      updateSliderInput(session, "recreation", value = state$map_tab$slider_defaults$recreation$default)
+      updateSliderInput(session, "year", value = YEAR_MIN)  # Reset year slider
+      
+      # Reset checkboxes to default values
+      updateCheckboxInput(session, "carbon_checkbox", value = TRUE)
+      updateCheckboxInput(session, "species_checkbox", value = TRUE)
+      updateCheckboxInput(session, "species_goat_moth_checkbox", value = TRUE)
+      updateCheckboxInput(session, "species_stag_beetle_checkbox", value = TRUE)
+      updateCheckboxInput(session, "species_lichens_checkbox", value = TRUE)
+      updateCheckboxInput(session, "area_checkbox", value = TRUE)
+      updateCheckboxInput(session, "recreation_checkbox", value = TRUE)
+    })
+    
     
   })
 }
