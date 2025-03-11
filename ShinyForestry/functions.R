@@ -3070,3 +3070,129 @@ FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs,
 combine_foreach_rbind <- function(...) {
   mapply('rbind', ..., SIMPLIFY = FALSE)
 }
+calories_livestock_arable<- function(shapefile, yield_data, yield_sd,livestock_data, FullTable) {
+   
+   # Load necessary libraries
+   library(dplyr)
+   library(sf)
+   
+  # Ensure valid geometries
+  shapefile <- st_make_valid(shapefile)
+  
+  ### ---- Step 1: Process Arable Crop Calories (Mean & SD) ---- ###
+  
+  # Select parcels where X_agg == 3 (for arable crops)
+  d3 <- subset(shapefile, X_agg == 3)
+  
+  # Define crop rotations
+  rotations <- list(rotation_1 = c("spring_barley", "winter_wheat", "spring_barley", "spring_oats", "winter_wheat"))
+  
+  # Extend rotation to cover 2023-2050 (28 years)
+  rotations2050 <- list(rotation_1 = rep(rotations$rotation_1, length.out = 28))
+  
+  # Define calorie conversion function for crops (for both mean and SD)
+  calculate_calories <- function(yield, crop) {
+    yield_ha <- yield  # Convert yield to total kg
+    
+    if (crop == "winter_wheat") {
+      return ((yield_ha * 0.126 * 359) + (yield_ha * 0.015 * 837) + (yield_ha * 0.712 * 378))
+    } else if (crop == "spring_barley") {
+      return ((yield_ha * 0.125 * 355) + (yield_ha * 0.023 * 837) + (yield_ha * 0.735 * 395))
+    } else if (crop == "spring_oats") {
+      return ((yield_ha * 0.169 * 347) + (yield_ha * 0.069 * 837) + (yield_ha * 0.663 * 407))
+    } else {
+      return(NA)
+    }
+  }
+  
+  # Initialize dataframes for mean calories & SD calories
+  df_calories_mean <- data.frame(matrix(nrow = nrow(yield_data), ncol = ncol(yield_data)))
+  df_calories_sd <- data.frame(matrix(nrow = nrow(yield_sd), ncol = ncol(yield_sd)))
+  
+  colnames(df_calories_mean) <- paste0("Arable_Mean_calories_", 2023:2050)
+  colnames(df_calories_sd) <- paste0("Arable_SD_calories_", 2023:2050)
+  
+  # Compute calories for each crop for both mean & SD
+  for (i in 1:nrow(yield_data)) {
+    for (j in 1:ncol(yield_data)) {
+      crop <- rotations2050$rotation_1[j]  # Get crop type for the year
+      df_calories_mean[i, j] <- calculate_calories(yield_data[i, j], crop)  # Compute mean calories
+      df_calories_sd[i, j] <- calculate_calories(yield_sd[i, j], crop)  # Compute SD calories
+    }
+  }
+  
+  # Add parcel IDs
+  df_calories_mean <- cbind(gid = d3$gid, df_calories_mean)
+  df_calories_sd <- cbind(gid = d3$gid, df_calories_sd)
+  
+  # Ensure 'gid' is character type for merging
+  shapefile <- shapefile %>% mutate(gid = as.character(gid))
+  df_calories_mean <- df_calories_mean %>% mutate(gid = as.character(gid))
+  df_calories_sd <- df_calories_sd %>% mutate(gid = as.character(gid))
+  
+  # Generate column names
+  calories_columns_arable_mean <- paste0("Arable_Mean_calories_", 2023:2050)
+  calories_columns_arable_sd <- paste0("Arable_SD_calories_", 2023:2050)
+  
+  # Create an empty dataset with zeroed-out arable calorie columns for both Mean & SD
+  full_arable_calories <- shapefile %>%
+    select(gid, geometry) %>%
+    bind_cols(as.data.frame(matrix(0, nrow = nrow(shapefile), ncol = length(c(calories_columns_arable_mean, calories_columns_arable_sd)))))
+  
+  # Assign column names
+  colnames(full_arable_calories) <- c("gid", calories_columns_arable_mean, calories_columns_arable_sd, "geometry")
+  
+  # Find indices where `gid` matches and replace values
+  matched_indices_arable <- match(df_calories_mean$gid, full_arable_calories$gid)
+  full_arable_calories[matched_indices_arable, calories_columns_arable_mean] <- df_calories_mean[, calories_columns_arable_mean]
+  full_arable_calories[matched_indices_arable, calories_columns_arable_sd] <- df_calories_sd[, calories_columns_arable_sd]
+  
+  # Remove 'gid' and 'geometry' columns for the final dataset
+  full_arable_calories <- full_arable_calories %>% select(-gid) %>% st_drop_geometry()
+  
+   ### ---- Step 2: Process Livestock Calories ---- ###
+   
+   # Ensure `gid` is a character type for merging
+   df_calories_livestock <- livestock_data %>% mutate(gid = as.character(gid))
+   
+   # Generate column names for Livestock Calories (2023-2050)
+   calories_columns_livestock <- paste0("Livestock_calories_", 2023:2050)
+   
+   # Create an empty dataset for livestock calories
+   full_livestock_calories <- shapefile %>%
+     select(gid, geometry) %>%
+     bind_cols(as.data.frame(matrix(0, nrow = nrow(shapefile), ncol = length(calories_columns_livestock))))
+   
+   # Assign column names
+   colnames(full_livestock_calories) <- c("gid", calories_columns_livestock, "geometry")
+   
+   # Find matching indices for `gid`
+   matched_indices_livestock <- match(df_calories_livestock$gid, full_livestock_calories$gid)
+   
+   # Compute total Livestock Calories (Dairy + Beef + Sheep) for all years (2023-2050)
+   livestock_calories_total <- df_calories_livestock$dairy + df_calories_livestock$beef + df_calories_livestock$sheep
+   
+   # Assign values for all years at once
+   full_livestock_calories[matched_indices_livestock, calories_columns_livestock] <- livestock_calories_total
+   
+   # Remove 'gid' and 'geometry' columns before merging
+   full_livestock_calories_cleaned <- full_livestock_calories %>%
+     select(-gid) %>%
+     st_drop_geometry()
+   
+   
+   ### ---- Step 3: Merge All Data into FullTable ---- ###
+   
+   FullTable <- cbind(FullTable, full_arable_calories, full_livestock_calories_cleaned)
+   
+   # Ensure 'FullTable' is an sf object
+   FullTable <- st_as_sf(FullTable)
+   
+   return(FullTable)
+ }
+ 
+ #yield_data = get(load("df_yield.RData")) # you need to load RData
+ #yield_sd=get(load("df_yield_sd.RData"))
+ #FullTable<- calories_livestock_arable(shapefile= sf::st_read("C:/Users/mh1176/University of Exeter/Mancini, Mattia - PCSE-WOFOST/ParcelData/land_parcels.shp"), # change your path
+                                                  # yield_data = yield_data,livestock_data=sf::st_read("df_livestock.geojson"),yield_sd=yield_sd,
+                                                   #FullTable = sf::st_read("FullTableMerged.geojson"))
