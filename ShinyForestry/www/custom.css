@@ -474,18 +474,30 @@ body {
   width: auto; /* Ensures table takes only necessary space */
 }
 
+/* Improve table appearance */
+#alt-page .value-box table {
+  border-collapse: collapse;
+  width: auto; /* Ensures table takes only necessary space */
+}
+
 /* Value box specific to preferences page */
 #exploration-page .value-box {
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
-  width: 350px; /* Allow dynamic width */
+  width: 250px; /* Allow dynamic width */
   height: auto;
   position: absolute;
-  white-space: wrap; /* Keeps text from wrapping */
-
-  bottom: 50px; /* Adjust for navbar */
-  left: 10px; /* Right side of the first map */
+  white-space: nowrap; /* Ensures text doesn't wrap */
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px 10px 20px; 
+  border-radius: 8px; 
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.2)
+  top: 88px; /* Adjust for navbar + padding? */
+  right: 10px; /* Right side of the first map */
 }
+
+/* Add some padding to the sliders */
+#exploration-page .value-box input[type="range"] {
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 10px;
+}
+
