@@ -123,34 +123,34 @@ map_page_server <- function(id, state) {
     # JS to make sure plotly plot moves nicely
     # This is currently broken with the namespace
     #
-    #   observe({
-    #     # Trigger plot layout adjustment when the plot is shown
-    #     shinyjs::runjs("
-    #   // Listen for visibility change or toggle button click
-    #   $('#time_series_plot').on('shown.bs.collapse', function() {
-    #     setTimeout(function() {
-    #       Plotly.relayout('map-area_plot', { width: $('#time_series_plot').width() });
-    #     }, 100);  // Add small delay to ensure layout changes
-    #   });
-    # 
-    #   // Optionally, adjust layout when switching between Annual and Cumulative
-    #   $('#view_toggle').on('change', function() {
-    #     setTimeout(function() {
-    #       Plotly.relayout('map-area_plot', { width: $('#time_series_plot').width() });
-    #     }, 100);
-    #   });
-    #   
-    #   // Handle window resizing
-    #   $(window).resize(function() {
-    #     setTimeout(function() {
-    #       // Trigger plot resizing only if the plot is visible
-    #       if ($('#time_series_plot').is(':visible')) {
-    #         Plotly.relayout('map-area_plot', { width: $('#time_series_plot').width() });
-    #       }
-    #     }, 5);  // Add small delay for resize to stabilize
-    #   });
-    # ")
-    #   })
+    observe({
+      # Trigger plot layout adjustment when the plot is shown
+      shinyjs::runjs("
+        // Listen for visibility change or toggle button click
+        $('#map-map-time_series_plot').on('shown.bs.collapse', function() {
+          setTimeout(function() {
+            Plotly.relayout('map-map-areaPlot', { width: $('#map-map-time_series_plot').width() });
+          }, 100);  // Add small delay to ensure layout changes
+        });
+    
+        // Optionally, adjust layout when switching between Annual and Cumulative
+        $('#view_toggle').on('change', function() {
+          setTimeout(function() {
+            Plotly.relayout('map-map-areaplot', { width: $('#map-map-time_series_plot').width() });
+          }, 100);
+        });
+    
+        // Handle window resizing
+        $(window).resize(function() {
+          setTimeout(function() {
+            // Trigger plot resizing only if the plot is visible
+            if ($('#map-map-time_series_plot').is(':visible')) {
+              Plotly.relayout('map-map-areaPlot', { width: $('#map-map-time_series_plot').width() });
+            }
+          }, 5);  // Add small delay for resize to stabilize
+        });
+      ")
+    })
     
     processed_data <- reactive({
       plot_data <- output_data()  # Get the combined data frame from the reactive expression
