@@ -28,6 +28,9 @@ map_page_ui <- function(id) {
   tagList(
     div(
       style = "display: flex; height: 100vh; flex-direction: row; width: 100%;",
+      tags$head(
+        tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css")
+      ),
       sidebarPanel(
         id = ns("sidebar"),
         width = 3,
@@ -52,17 +55,17 @@ map_page_ui <- function(id) {
             actionButton(ns("reset_main"), "reset", class = "btn btn-secondary"),
             actionButton(ns("save_main"), "Save Strategy")
           ),
-          # accordion_panel(
-          #   "Saved Strategies",
-          #   uiOutput(ns("saved_strategies"))
-          # )
+          accordion_panel(
+            "Saved Strategies",
+            uiOutput(ns("saved_strategies"))
+          )
         )
       ),
       
       mainPanel(
         class = "main-panel",
         leafletOutput(ns("map"), height = "100%"),
-        map_and_slider_ui(id = ns("map"), 2025, 2049, 2025),
+        map_and_slider_ui(id = ns("map"), 2025, 2049, 2025, panel_width = "50%"),
       )
     )
   )
@@ -839,6 +842,122 @@ map_page_server <- function(id, state) {
       updateCheckboxInput(session, "species_lichens_checkbox", value = TRUE)
       updateCheckboxInput(session, "area_checkbox", value = TRUE)
       updateCheckboxInput(session, "recreation_checkbox", value = TRUE)
+    })
+    
+    
+    # Saving, Loading, Deleting
+    # Render the "Saved Strategies" accordion dynamically
+    output$saved_strategies <- renderUI({
+      strategies <- saved_strategies()
+      
+      if (length(strategies) == 0) {
+        return(tagList(
+          p("No strategies saved yet.")
+        ))
+      }
+      
+      # Create a list of strategies with UUID, Load, and Delete buttons
+      strategy_items <- lapply(names(strategies), function(key) {
+        # Create a simple line with UUID, Load button, and Delete button
+        div(
+          style = "display: flex; align-items: center; margin-bottom: 10px;",
+          span(key, style = "flex-grow: 1;"),  # UUID shown on the left
+          actionButton(ns(paste("load_strategy", key, sep = "_")), label = NULL, icon = icon("play"), class = "btn btn-second"),
+          actionButton(ns(paste("delete_strategy", key, sep = "_")), label = NULL, icon = icon("trash"), class = "btn btn-danger")
+        )
+      })
+      
+      tagList(strategy_items)
+    })
+    
+    # Save strategy when the "Save" button is clicked
+    # !TODO need to save the map stuff too!
+    observeEvent(input$save_main, {
+      # Save the current state (slider values)
+      strategy <- list(
+        saved_data = new_data(),
+        clicked_polygons = clicked_polygons(),
+        
+        carbon = input$carbon,
+        species = input$species,
+        species_goat_moth = input$species_goat_moth,
+        species_stag_beetle = input$species_stag_beetle,
+        species_lichens = input$species_lichens,
+        area = input$area,
+        recreation = input$recreation,
+        
+        year = input$year,
+        
+        carbon_checkbox = input$carbon_checkbox,
+        species_checkbox = input$species_checkbox,
+        species_goat_moth_checkbox = input$species_goat_moth_checkbox,
+        species_stag_beetle_checkbox = input$species_stag_beetle_checkbox,
+        species_lichens_checkbox = input$species_lichens_checkbox,
+        area_checkbox = input$area_checkbox,
+        recreation_checkbox = input$recreation_checkbox
+      )
+      
+      # Create a unique key for the new strategy using the counter
+      strategy_key <- paste(UUIDgenerate())
+      # Add this strategy to the saved strategies list with a unique key
+      strategies <- saved_strategies()
+      strategies[[strategy_key]] <- strategy
+      print(strategies)
+      saved_strategies(strategies)
+    })
+    
+    observe({
+      strategies <- saved_strategies()  # Reactive dependency
+      print(paste("Registered strategies:", paste(names(strategies), collapse = ", ")))
+      first_strategy <- names(strategies)[1]
+      print(paste("Namespace for first strategy:", paste("load_strategy", first_strategy, sep = "_")))
+      
+      lapply(names(saved_strategies()), function(key) {
+        # Dynamically handle load strategy for each strategy
+        observeEvent(input[[paste("load_strategy", key, sep = "_")]], {
+          strategy <- saved_strategies()[[key]]
+          
+          # Restore saved data
+          new_data(strategy$saved_data)
+          clicked_polygons(strategy$clicked_polygons)
+          
+          updateSliderInput(session, "carbon", value = strategy$carbon)
+          updateSliderInput(session, "species", value = strategy$species)
+          updateSliderInput(session, "species_goat_moth", value = strategy$species_goat_moth)
+          updateSliderInput(session, "species_stag_beetle", value = strategy$species_stag_beetle)
+          updateSliderInput(session, "species_lichens", value = strategy$species_lichens)
+          updateSliderInput(session, "area", value = strategy$area)
+          updateSliderInput(session, "recreation", value = strategy$recreation)
+          
+          updateCheckboxInput(session, "carbon_checkbox", value = strategy$carbon_checkbox)
+          updateCheckboxInput(session, "species_checkbox", value = strategy$species_checkbox)
+          updateCheckboxInput(session, "species_goat_moth_checkbox", value = strategy$species_goat_moth_checkbox)
+          updateCheckboxInput(session, "species_stag_beetle_checkbox", value = strategy$species_stag_beetle_checkbox)
+          updateCheckboxInput(session, "species_lichens_checkbox", value = strategy$species_lichens_checkbox)
+          updateCheckboxInput(session, "area_checkbox", value = strategy$area_checkbox)
+          updateCheckboxInput(session, "recreation_checkbox", value = strategy$recreation_checkbox)
+          
+          # Ensure the map updates with the loaded strategy
+          initialize_or_update_map(YEAR_MIN, strategy$saved_data)        
+        }, ignoreInit = TRUE, ignoreNULL = TRUE)
+      })
+    })
+    
+    # Delete strategy when the "Delete" button is clicked
+    observeEvent(saved_strategies(), {
+      lapply(names(saved_strategies()), function(key) {
+        observeEvent(input[[paste("delete_strategy", key, sep = "_")]], {
+
+          strategies <- saved_strategies()
+          strategies[[key]] <- NULL  # Remove the strategy from the list
+          
+          saved_strategies(strategies)
+        }, ignoreInit = TRUE, ignoreNULL = TRUE)
+      })
+    })
+    
+    observe({
+      print(paste("Available inputs:", paste(names(input), collapse = ", ")))
     })
     
     
