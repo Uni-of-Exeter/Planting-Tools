@@ -235,6 +235,7 @@ body {
 
 #app_content {
   display: block; /* Initially hidden */
+  height: 100vh;
 }
 
 .spinner {
@@ -328,5 +329,163 @@ body {
     overflow-y: auto;
 }
 
+/* EXPLORATION */
+/* Remove padding from all Bootstrap column classes (col-xs, col-sm, col-md, col-lg) */
 
-    
+#exploration-page {
+    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+}
+
+#exploration-page .leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#exploration-page .container-fluid,
+#exploration-page .row,
+#exploration-page .col-12 {
+    height: 100%;
+}
+
+#exploration-page .tab-pane.active {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#exploration-page .html-fill-item, .html-fill-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#exploration-page .bslib-gap-spacing {
+  gap: 0 !important;
+}
+
+/* Some Bootstrap padding issue on left/right of screen */
+#exploration-page .container-fluid { 
+  padding: 0;
+}
+
+#exploration-page .row {
+  margin: 0 !important;
+}
+
+#exploration-page .col-12, 
+#exploration-page .col-sm-12 {
+  padding: 0 !important;
+}
+
+#downscaling-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Full page height */
+  text-align: center;
+}
+
+/* Ensures the row and columns fill the space */
+#downscaling-page .full-height {
+  height: 60vh; /* Adjust if needed */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gif-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.gif-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px; /* Adjust based on your GIF size */
+}
+
+.gif {
+  max-width: 100%;
+  height: auto;
+}
+
+.image {
+  max-width: 100%;
+  height: auto;
+}
+
+
+
+/* Floating buttons for each map */
+#alt-page .floating-button {
+  position: absolute;
+  z-index: 1000; /* Make sure the buttons appear on top of the maps */
+  bottom: calc(50vh - 38px); /* Adjust for navbar: half of navbar + 8px buffer */
+  left: calc(50vw + 8px); /* Right side of the third map */
+}
+
+/* Value box specific to preferences page */
+#alt-page .value-box {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+  width: 350px; /* Allow dynamic width */
+  /* max-width: 350px; Prevent it from getting too wide */
+  /* min-width: 300px; Prevent it from getting too small */
+  height: auto;
+  position: absolute;
+  white-space: wrap; /* Keeps text from wrapping */
+  line-height: 20px;
+}
+
+#alt-page .value-box.map1 {
+  top: 68px; /* Adjust for navbar */
+  right: calc(50vw + 8px); /* Right side of the first map */
+}
+
+#alt-page .value-box.map2 {
+  top: 68px; /* Same height adjustment as map1 */
+  right: 8px; /* Adjust right positioning relative to map2 */
+}
+
+#alt-page .value-box.map3 {
+  top: calc(50vh + 38px); /* Adjust for navbar: half of navbar + 8px buffer */
+  right: calc(50vw + 8px); /* Right side of the third map */
+}
+
+#alt-page .value-box.map4 {
+  top: calc(50vh + 38px); /* Adjust for navbar: half of navbar + 8px buffer */
+  right: 8px; /* Right side of the fourth map */
+}
+
+/* Improve table appearance */
+#alt-page .value-box table {
+  border-collapse: collapse;
+  width: auto; /* Ensures table takes only necessary space */
+}
+
+/* Value box specific to preferences page */
+#exploration-page .value-box {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+  width: 350px; /* Allow dynamic width */
+  height: auto;
+  position: absolute;
+  white-space: wrap; /* Keeps text from wrapping */
+
+  bottom: 50px; /* Adjust for navbar */
+  left: 10px; /* Right side of the first map */
+}

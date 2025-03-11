@@ -49,8 +49,8 @@ preferences_page_server <- function(id, state) {
     output$map1 <- renderLeaflet({
       leaflet() %>%
         # enableTileCaching() %>% # this is great but seems to be slower on initial load
-        addProviderTiles(providers$CartoDB.Voyager) %>% #, options = tileOptions(useCache = TRUE, crossOrigin = TRUE)) %>%
         addResetMapButton() %>%
+        addProviderTiles(providers$CartoDB.Voyager) %>% #, options = tileOptions(useCache = TRUE, crossOrigin = TRUE)) %>%
         setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom) %>%
         syncWith("pref_maps")  # Sync the map with map2
     })

@@ -309,7 +309,7 @@ map_page_server <- function(id, state) {
             # addTiles() %>% 
             addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
             addResetMapButton() %>% 
-            setView(lng = LON_DEFAULT, lat = LAT_DEFAULT, zoom = ZOOM_DEFAULT) %>% 
+            setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom) %>% 
             # Add base layer (all parcels) from new_data
             addPolygons(
               data = new_data_fetched,  # Use the full dataset as the base layer

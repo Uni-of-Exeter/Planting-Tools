@@ -1,7 +1,7 @@
 library(shiny)
 library(leaflet)
 library(bslib)  
-library(shinyjs) 
+library(shinyjs)
 library(shinycssloaders)
 library(uuid)
 library(plumber)
@@ -76,6 +76,9 @@ ui <- fluidPage(
         tabPanel(title = "Map", map_page_ui("map")),
         tabPanel(title = "Preferences", preferences_page_ui("prefs")),
         tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
+        tabPanel(title = "Exploration", exploration_page_ui("explore")),
+        tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
+        
         nav_spacer(),
         nav_item(tags$a("AI for Net Zero",
                         href = "https://netzeroplus.ac.uk/",
@@ -100,19 +103,30 @@ server <- function(input, output, session) {
     pref_tab = list(
       initialized = FALSE
     ),
+    alt_tab = list(
+      initialized = FALSE,
+      map = list(
+        zoom = 12
+      )
+    ),
+    exp_tab = list(
+      initialized = FALSE
+    ),
     initialized = FALSE
   )
     
   map_page_server("map", state)
   preferences_page_server("prefs", state)
   alt_page_server("alt", state)
+  exploration_page_server("explore", state)
+  downscaling_page_server("downscale", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
     if (!is.null(input$mappageRendered) && input$mappageRendered 
-      && !is.null(input$prefpageRendered) && input$prefpageRendered) {
-    # req(!state$initialized)
-    # if (state$map_tab$initialized && state$pref_tab$initialized) {
+        && !is.null(input$prefpageRendered) && input$prefpageRendered
+        && !is.null(input$altpageRendered) && input$altpageRendered 
+        && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
       
       # Hide the loading screen after both maps are rendered
       Sys.sleep(0.5)  # Small delay for smoother transition
