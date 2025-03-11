@@ -3194,5 +3194,5 @@ calories_livestock_arable<- function(shapefile, yield_data, yield_sd,livestock_d
  #yield_data = get(load("df_yield.RData")) # you need to load RData
  #yield_sd=get(load("df_yield_sd.RData"))
  #FullTable<- calories_livestock_arable(shapefile= sf::st_read("C:/Users/mh1176/University of Exeter/Mancini, Mattia - PCSE-WOFOST/ParcelData/land_parcels.shp"), # change your path
-                                                  # yield_data = yield_data,livestock_data=sf::st_read("df_livestock.geojson"),yield_sd=yield_sd,
+                                                  # yield_data = df_yield,livestock_data=sf::st_read("df_livestock.geojson"),yield_sd=df_yield_sd,
                                                    #FullTable = sf::st_read("FullTableMerged.geojson"))
