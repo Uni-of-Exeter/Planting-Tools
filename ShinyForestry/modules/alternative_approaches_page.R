@@ -32,7 +32,7 @@ alt_page_ui <- function(id) {
         column(3, leafletOutput(ns("map4")), class = "no-padding", height="100vh")   # Fourth Map
       )
     ),
-    actionButton(ns("sample"), "Sample", class = "btn btn-success floating-button"),
+    # actionButton(ns("sample"), "Sample", class = "btn btn-success floating-button"),
     # actionButton(ns("select_two"), "Choose Strategy 2", class = "btn btn-secondary floating-button map2"),
     # actionButton(ns("select_three"), "Choose Strategy 3", class = "btn btn-secondary floating-button map3"),
     # actionButton(ns("select_four"), "Choose Strategy 4", class = "btn btn-secondary floating-button map4"),
@@ -40,7 +40,7 @@ alt_page_ui <- function(id) {
     div(id = "value-box-2", class = "value-box map2", uiOutput(ns("value_box_two"))),
     div(id = "value-box-3", class = "value-box map3", uiOutput(ns("value_box_three"))),
     div(id = "value-box-4", class = "value-box map4", uiOutput(ns("value_box_four"))),
-    map_and_slider_ui(id = ns("alt"), 2025, 2049, 2025, show_time_series=FALSE)
+    map_and_slider_ui_sample(id = ns("alt"), 2025, 2049, 2025, show_time_series=FALSE)
   )
 }
 
@@ -784,7 +784,8 @@ alt_page_server <- function(id, state) {
       HTML(legend_html)  # Return HTML to be rendered
     })
 
-    observeEvent(input$sample, {
+    observeEvent(input[[ns("sample")]], {
+      print('sample pressed')
       shinyjs::removeClass("sample", "btn-success")
       shinyjs::addClass("sample", "btn-secondary")
       shinyjs::disable("sample")
