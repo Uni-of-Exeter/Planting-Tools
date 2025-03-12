@@ -956,10 +956,6 @@ map_page_server <- function(id, state) {
       })
     })
     
-    observe({
-      print(paste("Available inputs:", paste(names(input), collapse = ", ")))
-    })
-    
     
   })
 }

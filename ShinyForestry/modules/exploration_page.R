@@ -31,8 +31,8 @@ exploration_page_server <- function(id, state) {
         setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom) %>%
         addLegend(
           position = "bottomright",
-          colors = adjustcolor(unname(COLOUR_MAPPING), alpha.f = FILL_OPACITY),
-          labels = names(COLOUR_MAPPING),
+          colors = adjustcolor(unname(head(COLOUR_MAPPING, -1)), alpha.f = FILL_OPACITY),
+          labels = names(head(COLOUR_MAPPING, -1)),
           title = "Planting Type",
           opacity = 1.0
         )
