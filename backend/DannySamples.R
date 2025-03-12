@@ -278,7 +278,141 @@ pref_elicitation_object <- prefObject(data = strategy_outcomes[strategies_compar
 
 #What happens on first preference tab launch
 #Make 2 strategies to compare
-tyears <- as.numeric(as.vector(Strategies[strategies_compared[1],startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
-tspecies <- as.vector(Strategies[strategies_compared[1],startsWith(colnames(Strategies),"treespecie")])
-blocked_until_year <- rep(0, length(parcel_ids))
-blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+#strategy i
+make_strategy_forfront_preftab <- function(index){
+  if(!index %in% c(1,2))
+    stop("Index should be 1 or 2 for the preference tab")
+  tyears <- as.numeric(as.vector(Strategies[strategies_compared[index],startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[strategies_compared[index],startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+
+  payload <- pref_elicitation_object$data[comparison_index + (index-1)]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+    #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+preferences_tab_first_click <- function(){
+  return(lapply(1:2, function(kk) make_strategy_forfront_preftab(kk)))
+}
+
+#Now when a choose is selected we need the number of the choice (left is 1, right is 2)
+#We need to update the pref object, then return 2 new strategies. 
+#We also sometimes need to spawn another action with future to do the MCMC (if comparison_index%%5<1)
+
+choose_button <- function(which_button){
+  if(!which_button %in% c(1,2))
+    stop("the choice should be 1 for the left button or 2 for the right button")
+  if(which_button == 1)
+    pref_elicitation_object$addPref(c(comparison_index,comparison_index+1))
+  else
+    pref_elicitation_object$addPref(c(comparison_index+1,comparison_index))
+  MCMCflag <- FALSE
+  if(comparison_index%%5<1){
+    #We will do MCMC after returning strategies
+    MCMCflag <- TRUE
+  }
+  comparison_index <<- comparison_index + 2
+  strategies_compared <<- valid_strategies[c(comparison_index,comparison_index+1)] #Note we need some error handling if no strategies left (only for aggressive blocking and someone who wants to do 1000 comparisons)
+  pref_elicitation_object$data <- rbind(pref_elicitation_object$data, strategy_outcomes[strategies_compared,..TARGETS])
+  return(lapply(1:2, function(jj) make_strategy_forfront_preftab(jj)))
+  #This next part is important and I think needs wrapping in future because we want to pass the data back before this is done, as it's after the return it wont happen until done properly, but I've tested and it works.
+  if(MCMCflag){
+    pref_elicitation_object$update(method="adapt")
+    preference_weights <<- pref_elicitation_object$posterior_mean
+  }
+}
+
+
+#####
+#Clustering for target compatible samples. 
+
+#This should happen if preference_weights gets updated
+#Or after submit_button when a new set of target compatible strategies is generated
+
+tsne_projected_target_compatible_data <- Rtsne::Rtsne(scale(target_compatible_strategies[,..TARGETS], center=FALSE, scale = sqrt(abs(preference_weights))), perplexity = min(30, (nrow(target_compatible_strategies)-1.01)/3))$Y
+
+clustered_samples <- mclust::Mclust(tsne_projected_target_compatible_data,G=4)
+clustered_samples$classification
+
+target_compatible_strategies[,cluster := clustered_samples$classification]
+target_compatible_strategies
+
+#Now target_compatible_strategies has a cluster column. Now we need a function to pass the 4 strategies to the front
+
+#What happens on first preference tab launch
+#Make 2 strategies to compare
+#strategy i
+make_strategy_forfront_altapproach <- function(index){
+  if(!index %in% c(1,2,3,4))
+    stop("Index should be 1, 2, 3 or 4 for alternative approaches")
+  samples_in_cluster <- target_compatible_strategies[cluster == index]
+  random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
+  tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- random_strategy[,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+#This will work both for tab select and the "Sample" button click
+alternative_approaches <- function(){
+  return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(kk)))
+}
+#tictoc::tic()
+#check <- alternative_approaches()
+#tictoc::toc()
+
