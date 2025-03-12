@@ -786,14 +786,14 @@ alt_page_server <- function(id, state) {
 
     observeEvent(input[[ns("sample")]], {
       print('sample pressed')
-      shinyjs::removeClass("sample", "btn-success")
-      shinyjs::addClass("sample", "btn-secondary")
-      shinyjs::disable("sample")
+      shinyjs::removeClass(ns("sample"), "btn-success")
+      shinyjs::addClass(ns("sample"), "btn-secondary")
+      shinyjs::disable(ns("sample"))
       
       initialize_or_update_map(current_year())
       
-      shinyjs::addClass("sample", "btn-success")
-      shinyjs::enable("sample")
+      shinyjs::addClass(ns("sample"), "btn-success")
+      shinyjs::enable(ns("sample"))
     })
     
   })
