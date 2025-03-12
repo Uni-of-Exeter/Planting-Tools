@@ -53,7 +53,7 @@ map_page_ui <- function(id) {
             uiOutput(ns("dynamic_sliders")),
             actionButton(ns("submit_main"), "submit", class = "btn btn-secondary"),
             actionButton(ns("reset_main"), "reset", class = "btn btn-secondary"),
-            actionButton(ns("save_main"), "Save Strategy")
+            actionButton(ns("save_main"), "Save in Session")
           ),
           accordion_panel(
             "Saved Strategies",
