@@ -7,7 +7,6 @@ library(manipulateWidget)
 library(shinythemes)
 library(sf)
 library(shinyWidgets)
-library(glue)
 library(dplyr)
 
 setwd("/Users/paulwright/Documents/work/ADD-TREES/Planting-Tools/")
@@ -133,7 +132,7 @@ ui <- fluidPage(
 
 fetch_api_data <- function() {
   
-  url <- glue("http://{API_HOST}:{API_PORT}/random_strategy")
+  url <- paste0(API_URL, "/random_strategy")
   # Make the API request
   response <- httr::GET(url)
   # Check if the response is successful
