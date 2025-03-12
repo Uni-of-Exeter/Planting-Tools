@@ -16,7 +16,7 @@ exploration_page_ui <- function(id) {
         )
     ),
     map_and_slider_ui(id = ns("explore"), 2025, 2049, 2025, show_time_series=FALSE),
-    div(id = "vb", class = "value-box", uiOutput(ns("value_boxes")))
+    div(class = "explore-box map1", uiOutput(ns("value_boxes")))
   )
 }
 
@@ -248,36 +248,43 @@ exploration_page_server <- function(id, state) {
     })
     
     # Create value_boxes dynamically
-    # Create value_boxes dynamically
     output$value_boxes <- renderUI({
-      div(class = "value-box-content",
-          # Create the dynamic list of value boxes for names
-          lapply(values$names, function(name) {
-            tagList(
-              # Align + to the left, name in the center, - to the right
-              tags$div(style = "display: flex; justify-content: space-between; align-items: center; padding: 0 10px;", 
-                       actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline-primary"),
-                       tags$span(style = "flex-grow: 1; text-align: center;", name),  # Center aligned name
-                       actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline-primary")
-              )
-            )
-          }),
+      div(class = "explore-box-content",
           
-          # Two direction sliders (one for X and one for Y) below the names
-          sliderInput(ns("slider_x"), 
-                      "Direction: X", 
-                      min = 0, 
-                      max = 100, 
-                      value = 50,
-                      width = "100%"),
-          sliderInput(ns("slider_y"), 
-                      "Direction: Y", 
-                      min = 0, 
-                      max = 100, 
-                      value = 50,
-                      width = "100%")
+          # Section for the +/- buttons
+          div(class = "button-container",
+              lapply(values$names, function(name) {
+                tagList(
+                  tags$div(style = "display: flex; justify-content: space-between; align-items: center; padding: 4px 10px;", 
+                           actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline-primary small-button"),
+                           tags$span(style = "flex-grow: 1; text-align: center;", name),  # Center aligned name
+                           actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline-primary small-button")
+                  )
+                )
+              })
+          ),
+          
+          # Divider between buttons and sliders
+          tags$div(class = "divider"),
+          
+          # Separate section for the sliders
+          div(class = "slider-container",
+              sliderInput(ns("slider_x"), 
+                          "Direction: X", 
+                          min = 0, 
+                          max = 100, 
+                          value = 50,
+                          width = "100%"),
+              sliderInput(ns("slider_y"), 
+                          "Direction: Y", 
+                          min = 0, 
+                          max = 100, 
+                          value = 50,
+                          width = "100%")
+          )
       )
     })
+    
     
     
     
