@@ -355,13 +355,25 @@ choose_button <- function(which_button){
 #This should happen if preference_weights gets updated
 #Or after submit_button when a new set of target compatible strategies is generated
 
-tsne_projected_target_compatible_data <- Rtsne::Rtsne(scale(target_compatible_strategies[,..TARGETS], center=FALSE, scale = sqrt(abs(preference_weights))), perplexity = min(30, (nrow(target_compatible_strategies)-1.01)/3))$Y
+cluster_samples <- function(){
+    tsne_projected_target_compatible_data <- Rtsne::Rtsne(scale(target_compatible_strategies[,..TARGETS], center=FALSE, scale = sqrt(abs(preference_weights))), perplexity = min(30, (nrow(target_compatible_strategies)-1.01)/3))$Y
+    clustered_samples <- mclust::Mclust(tsne_projected_target_compatible_data,G=4)
+    target_compatible_strategies <<- target_compatible_strategies[,cluster := clustered_samples$classification]
+    unique_clusters <- 1:4
+    cluster_projections <- lapply(unique_clusters, function(ZZ) {
+      projected <- tsne_projected_target_compatible_data %*% eigen(clustered_samples$parameters$variance$sigma[,,ZZ])$vectors
+      return(projected)  
+    })
+    projection_lookup <- setNames(cluster_projections, unique_clusters)
+    target_compatible_strategies[, c("pc_1", "pc_2") := {
+      proj <- projection_lookup[[as.character(.BY$cluster)]]  # Fetch correct projection for cluster
+      row_index <- .I  # Row index for correct alignment
+      list(proj[row_index, 1], proj[row_index, 2])  # Assign correct rows
+    }, by=cluster]
+}
+cluster_samples()
 
-clustered_samples <- mclust::Mclust(tsne_projected_target_compatible_data,G=4)
-clustered_samples$classification
 
-target_compatible_strategies[,cluster := clustered_samples$classification]
-target_compatible_strategies
 
 #Now target_compatible_strategies has a cluster column. Now we need a function to pass the 4 strategies to the front
 
@@ -416,3 +428,145 @@ alternative_approaches <- function(){
 #check <- alternative_approaches()
 #tictoc::toc()
 
+#Exploration tab
+#First we need a global variable containing the target compatible samples for a cluster. This will be amended on entering the exploration tab
+tc_samples_cluster <- target_compatible_strategies[cluster==1]
+#We also need a strategy_id to represent the current strategy shown. This will also be amended on entry
+cluster_strat_id <- tc_samples_cluster[sample(1:nrow(tc_samples_cluster),1)]$strategy_id
+#which.cluster must come from the front end (a map is selected on Alternative strategies) When we know this works, we just need to add a catch 
+#that defaults to cluster 1 (easy, but dont want to add it until the click into this page works)
+enter_exploration_tab <- function(which.cluster){
+  #Reassign global variable to the strategies that will populate the page
+  tc_samples_cluster <<- target_compatible_strategies[cluster==which.cluster]
+  #Send back a random strategy so the front end can plot it
+  random_strategy <- tc_samples_cluster[sample(1:nrow(tc_samples_cluster),1)]
+  #update global variable to point to strategy shown for button functions
+  cluster_strat_id <<- random_strategy$strategy_id
+  tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- random_strategy[,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+#enter_exploration_tab(2)
+
+#variable must be named as something in our table. May need to add a handle to change species from English to latin
+plus_button <- function(variable){
+  setorderv(tc_samples_cluster, variable, order = -1) 
+  current_row <- which(tc_samples_cluster$strategy_id == cluster_strat_id)
+  if(current_row > 1){#If we're in row one, we can't increase and will just return the same strategy we had before
+    cluster_strat_id <<- tc_samples_cluster$strategy_id[current_row - 1]
+    current_row <- current_row-1
+  }
+  tyears <- as.numeric(as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- tc_samples_cluster[current_row,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+#plus_button("carbon")
+#plus_button("Cossus_cossus")
+#plus_button("pc_1")
+
+#variable must be named as something in our table. May need to add a handle to change species from English to latin
+minus_button <- function(variable){
+  setorderv(tc_samples_cluster, variable, order = 1) 
+  current_row <- which(tc_samples_cluster$strategy_id == cluster_strat_id)
+  if(current_row > 1){#If we're in row one, we can't increase and will just return the same strategy we had before
+    cluster_strat_id <<- tc_samples_cluster$strategy_id[current_row - 1]
+    current_row <- current_row-1
+  }
+  tyears <- as.numeric(as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- tc_samples_cluster[current_row,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+#minus_button("Lichens")
