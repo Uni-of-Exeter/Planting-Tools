@@ -129,6 +129,11 @@ json_payload <- jsonlite::toJSON(payload <- payload, auto_unbox = TRUE, pretty=T
 
 #Info from front end comes in this JSON format. 
 
+#MAKE THE NULL STRATEGY. USE IT TO RETURN STRATEGIES WHEN CLUSTERING CANT BE DONE, WHEN NOTHING IS TARGET COMPATIBLE ETC. 
+null_strategy <- matrix(0, nrow = 1, ncol = n_parcels*3)
+colnames(null_strategy) <- colnames(Strategies)
+null_strategy[1,(2*n_parcels+1):(3*n_parcels)] <- "Conifers"
+null_outcomes <- get_outcome_dt(null_strategy, FullTable_working)
 
 #Function to return optimal strategy from submit button
 #Function must also keep the target and target compatible strategies for use elsewhere
@@ -185,13 +190,18 @@ submit_button <- function(from_front_end){
                                                        area < target_area & 
                                                        (target_visits - visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
                                                        Reduce(`&`, lapply(SPECIES, function(col) 100 * (targets_bio[[col]] - get(col)) < (-sqrt(alpha/(1-alpha))) )) ]
-  optimal_strategy_forfrontend <- target_compatible_strategies[which.max(objective)]
-  #NEED TO CATCH EMPTY STRATEGIES IF TARGETS NOT MET HERE. PROBABLY PASS A DEFAULT NO PLANTING
+  if(nrow(target_compatible_strategies)>0){
+    optimal_strategy_forfrontend <- target_compatible_strategies[which.max(objective)]
   #Now wrap the optimal strategy into the right format
-  tyears <- as.numeric(as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
-  tspecies <- as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"treespecie")])
-  blocked_until_year <- rep(0, length(parcel_ids))
-  blocked_until_year[which(parcel_ids %in% from_submit_button$blocked_parcels$parcel_id)] <- from_submit_button$blocked_parcels$blocked_until_year
+    tyears <- as.numeric(as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  }else{#return the null strategy
+    optimal_strategy_forfrontend <- null_outcomes
+    tyears <- as.numeric(as.vector(null_strategy[1,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(null_strategy[1,startsWith(colnames(Strategies),"treespecie")])
+  }
+    blocked_until_year <- rep(0, length(parcel_ids))
+    blocked_until_year[which(parcel_ids %in% from_submit_button$blocked_parcels$parcel_id)] <- from_submit_button$blocked_parcels$blocked_until_year
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
@@ -356,6 +366,12 @@ choose_button <- function(which_button){
 #Or after submit_button when a new set of target compatible strategies is generated
 
 cluster_samples <- function(){
+  #CANT CLUSTER IF NOT ENOUGH SAMPLES. 
+  if(nrow(target_compatible_strategies)<6){
+    notif("Too few target compatible samples to cluster")
+    target_compatible_strategies <<- target_compatible_strategies[,cluster := 1]
+    return(invisible())
+  }
     tsne_projected_target_compatible_data <- Rtsne::Rtsne(scale(target_compatible_strategies[,..TARGETS], center=FALSE, scale = sqrt(abs(preference_weights))), perplexity = min(30, (nrow(target_compatible_strategies)-1.01)/3))$Y
     clustered_samples <- mclust::Mclust(tsne_projected_target_compatible_data,G=4)
     target_compatible_strategies <<- target_compatible_strategies[,cluster := clustered_samples$classification]
@@ -422,7 +438,10 @@ make_strategy_forfront_altapproach <- function(index){
 
 #This will work both for tab select and the "Sample" button click
 alternative_approaches <- function(){
-  return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(kk)))
+  if(all(target_compatible_strategies$cluster==1))
+    return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(1)))
+  else
+    return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(kk)))
 }
 #tictoc::tic()
 #check <- alternative_approaches()
@@ -436,6 +455,8 @@ cluster_strat_id <- tc_samples_cluster[sample(1:nrow(tc_samples_cluster),1)]$str
 #which.cluster must come from the front end (a map is selected on Alternative strategies) When we know this works, we just need to add a catch 
 #that defaults to cluster 1 (easy, but dont want to add it until the click into this page works)
 enter_exploration_tab <- function(which.cluster){
+  if(all(target_compatible_strategies$cluster==1))
+    which.cluster <- 1
   #Reassign global variable to the strategies that will populate the page
   tc_samples_cluster <<- target_compatible_strategies[cluster==which.cluster]
   #Send back a random strategy so the front end can plot it
