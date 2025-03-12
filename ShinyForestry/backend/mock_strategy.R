@@ -1,12 +1,3 @@
-#
-# This is a Plumber API. You can run the API by clicking
-# the 'Run API' button above.
-#
-# Find out more about building APIs with Plumber here:
-#
-#    https://www.rplumber.io/
-#
-
 library(plumber)
 library(sf)
 library(uuid)
@@ -274,12 +265,12 @@ function() {
   
   # Add a small random number between -0.5 and 0.5 to each value
   values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
+
   return(list(
     values = values,
     geojson = geojson
   ))
 }
-
 
 # use parse/serializer
 # plumber::serializer_geojson()
@@ -362,7 +353,5 @@ function(choice) {
     strategy_2 = strategies[[2]]
   ))
 }
-
-
 
 # Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`
