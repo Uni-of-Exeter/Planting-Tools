@@ -1821,7 +1821,7 @@ notif <- function(msg = "",
                   # cURL flags (when using ntfy)
                   curl_flags = NULL,
                   # Notify on ntfy with what priority notifications (https://docs.ntfy.sh/publish/?h=priority#message-priority)
-                  ntfy = TRUE, ntfy_priority = "default",
+                  ntfy = FALSE, ntfy_priority = "default",
                   # Useful to print data.frames correctly on ntfy
                   rbind = FALSE, pad_character = "_",
                   # Log to a unique file per Shiny session (`server(...)` instance)
@@ -1856,7 +1856,7 @@ notif <- function(msg = "",
   
   if (log_level > max_limit_log_level) return()
   
-  options(digits.secs = 6)
+  options(digits.secs = 5)
   if (isFALSE(rbind)) {
     msg <- paste0(Sys.time(), " [", log_level_msg, "] ", msg)
   } else {
