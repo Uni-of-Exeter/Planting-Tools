@@ -215,11 +215,17 @@ exploration_page_server <- function(id, state) {
     })
     
     values <- reactiveValues(
-      names = c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits", "X", "Y"),
-      counts = setNames(rep(10, 9), c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits", "X", "Y"))
+      names = c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits"),
+      counts = setNames(rep(10, 7), c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits"))
+    )
+    
+    values_directions <- reactiveValues(
+      names = c("Principal direction", "Secondary Direction"),
+      counts = setNames(rep(10, 2), c("Principal direction", "Secondary Direction"))
     )
     
     # observe +/- dynamically
+    # min of 0, max of inf?
     observe({
       lapply(values$names, function(name) {
         observeEvent(input[[paste0("inc_", name)]], {
@@ -229,6 +235,22 @@ exploration_page_server <- function(id, state) {
         
         observeEvent(input[[paste0("dec_", name)]], {
           values$counts[[name]] <- max(0, values$counts[[name]] - 1)
+          print("decrease")
+        })
+      })
+    })
+    
+    # observe +/- dynamically
+    # min/max of 0 and 100
+    observe({
+      lapply(values_directions$names, function(name) {
+        observeEvent(input[[paste0("inc_", name)]], {
+          values_directions$counts[[name]] <- max(100, values_directions$counts[[name]] + 1)
+          print("increase")
+        })
+        
+        observeEvent(input[[paste0("dec_", name)]], {
+          values_directions$counts[[name]] <- max(0, values_directions$counts[[name]] - 1)
           print("decrease")
         })
       })
@@ -249,7 +271,23 @@ exploration_page_server <- function(id, state) {
                   )
                 )
               })
-          )
+          ),
+          
+          # Divider between buttons and sliders
+          tags$div(class = "divider"),
+          
+          # Separate section for the sliders
+          div(class = "button-container",
+              lapply(values_directions$names, function(name) {
+                tagList(
+                  tags$div(style = "display: flex; justify-content: space-between; align-items: center; padding: 4px 10px;", 
+                           actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline-primary small-button"),
+                           tags$span(style = "flex-grow: 1; text-align: center;", name),  # Center aligned name
+                           actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline-primary small-button")
+                  )
+                )
+              })
+          ),
       )
     })
     
