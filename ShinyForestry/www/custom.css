@@ -310,7 +310,8 @@ body {
 
 /* Leaflet Map Container */
 #alt-page .leaflet-container {
-    height: calc(50vh - 30px) !important; /* Each map takes half of viewport height */
+    /* height: calc(50vh - 30px) !important; Each map takes half of viewport height */
+    height: calc(100vh - 60px) !important; /* Each map takes half of viewport height */
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -448,23 +449,40 @@ body {
   line-height: 20px;
 }
 
+/* 2X2 GRID */
+/* #alt-page .value-box.map1 {
+  top: 68px;
+  right: calc(50vw + 8px); }
+
+#alt-page .value-box.map2 {
+  top: 68px;
+  right: 8px; }
+
+#alt-page .value-box.map3 {
+  top: calc(50vh + 38px); 
+  right: calc(50vw + 8px); } 
+
+#alt-page .value-box.map4 {
+  top: calc(50vh + 38px); 
+  right: 8px; } */
+
 #alt-page .value-box.map1 {
   top: 68px; /* Adjust for navbar */
-  right: calc(50vw + 8px); /* Right side of the first map */
+  right: calc(75vw + 8px); /* Right side of the first map */
 }
 
 #alt-page .value-box.map2 {
   top: 68px; /* Same height adjustment as map1 */
-  right: 8px; /* Adjust right positioning relative to map2 */
+  right: calc(50vw + 8px); /* Adjust right positioning relative to map2 */
 }
 
 #alt-page .value-box.map3 {
-  top: calc(50vh + 38px); /* Adjust for navbar: half of navbar + 8px buffer */
-  right: calc(50vw + 8px); /* Right side of the third map */
+  top: 68px; /* Adjust for navbar: half of navbar + 8px buffer */
+  right: calc(25vw + 8px); /* Right side of the third map */
 }
 
 #alt-page .value-box.map4 {
-  top: calc(50vh + 38px); /* Adjust for navbar: half of navbar + 8px buffer */
+  top: 68px; /* Adjust for navbar: half of navbar + 8px buffer */
   right: 8px; /* Right side of the fourth map */
 }
 

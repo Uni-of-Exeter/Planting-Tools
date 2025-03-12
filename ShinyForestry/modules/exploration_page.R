@@ -38,8 +38,6 @@ exploration_page_server <- function(id, state) {
         )
     })
 
-    outputOptions(output, "map1", suspendWhenHidden = FALSE)
-    
     current_year <- reactive({
       input[[ns("year")]]
     })

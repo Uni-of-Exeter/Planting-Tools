@@ -71,9 +71,6 @@ preferences_page_server <- function(id, state) {
         syncWith("pref_maps")  # Sync the map with map1
     })
 
-    outputOptions(output, "map1", suspendWhenHidden = FALSE)
-    outputOptions(output, "map2", suspendWhenHidden = FALSE)
-
     # JS to detect when the map is rendered; fed back to main app
     # if you do #map1 .leaflet-container it doesn't seem to work.
     observe({
