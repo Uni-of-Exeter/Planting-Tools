@@ -94,7 +94,7 @@ map_and_slider_ui_sample <- function(id, year_min, year_max, year_default, show_
         inputId = ns("sample"),
         label = "Sample",
         style = "
-          width: 180px;
+          width: 100px;
           height: 40px;
           line-height: 20px;
           display: flex;
