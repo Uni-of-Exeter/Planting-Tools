@@ -123,26 +123,27 @@ alt_page_server <- function(id, state) {
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
-      new_fetched_one <- get_random_strategy()  # Use GET otherwise
-      new_fetched_two <- get_random_strategy()  # Use GET otherwise
-      new_fetched_three <- get_random_strategy()  # Use GET otherwise
-      new_fetched_four <- get_random_strategy()  # Use GET otherwise
+      fetched_data <-  get_four_random_strategies()
+      new_fetched_one <- fetched_data[[1]]  # Use GET otherwise
+      new_fetched_two <- fetched_data[[2]]  # Use GET otherwise
+      new_fetched_three <- fetched_data[[3]]  # Use GET otherwise
+      new_fetched_four <- fetched_data[[4]]  # Use GET otherwise
       
-      new_data_fetched_one <- new_fetched_one[[1]]
+      new_data_fetched_one <- new_fetched_one$geojson
       new_data_fetched_one$parcel_id <- paste0(new_data_fetched_one$parcel_id, "_one")
-      new_values_fetched_one <- new_fetched_one[[2]]
+      new_values_fetched_one <- new_fetched_one$values
       
-      new_data_fetched_two <- new_fetched_two[[1]]
+      new_data_fetched_two <- new_fetched_two$geojson
       new_data_fetched_two$parcel_id <- paste0(new_data_fetched_two$parcel_id, "_two")
-      new_values_fetched_two <- new_fetched_two[[2]]
+      new_values_fetched_two <- new_fetched_two$values
 
-      new_data_fetched_three <- new_fetched_three[[1]]
+      new_data_fetched_three <- new_fetched_three$geojson
       new_data_fetched_three$parcel_id <- paste0(new_data_fetched_three$parcel_id, "_three")
-      new_values_fetched_three <- new_fetched_three[[2]]
+      new_values_fetched_three <- new_fetched_three$values
       
-      new_data_fetched_four <- new_fetched_four[[1]]
+      new_data_fetched_four <- new_fetched_four$geojson
       new_data_fetched_four$parcel_id <- paste0(new_data_fetched_four$parcel_id, "_four")
-      new_values_fetched_four <- new_fetched_four[[2]]
+      new_values_fetched_four <- new_fetched_four$values
       
       if (!is.null(new_data_fetched_one)) {
         # Apply the filter based on the selected year

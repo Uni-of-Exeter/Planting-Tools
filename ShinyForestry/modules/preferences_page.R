@@ -97,20 +97,24 @@ preferences_page_server <- function(id, state) {
     filtered_data_two <- reactiveVal(NULL)
     current_layers_two <- reactiveVal(list())
 
-    initialize_or_update_map <- function(input_year) {
+    initialize_or_update_map <- function(input_year, choice=1) {
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
 
-      new_fetched_one <- get_random_strategy()  # Use GET otherwise
-      new_fetched_two <- get_random_strategy()  # Use GET otherwise
-
-      new_data_fetched_one <- new_fetched_one[[1]]
+      
+      # this needs to be a POST endpoint
+      fetched_data <- post_preference_choice(as.integer(choice))
+      
+      new_fetched_one <- fetched_data[[1]]
+      new_fetched_two <- fetched_data[[2]]
+      
+      new_data_fetched_one <- new_fetched_one$geojson
       new_data_fetched_one$parcel_id <- paste0(new_data_fetched_one$parcel_id, "_one")
-      new_values_fetched_one <- new_fetched_one[[2]]
+      new_values_fetched_one <- new_fetched_one$values
 
-      new_data_fetched_two <- new_fetched_two[[1]]
+      new_data_fetched_two <- new_fetched_two$geojson
       new_data_fetched_two$parcel_id <- paste0(new_data_fetched_two$parcel_id, "_two")
-      new_values_fetched_two <- new_fetched_two[[2]]
+      new_values_fetched_two <- new_fetched_two$values
 
       if (!is.null(new_data_fetched_one)) {
         # Apply the filter based on the selected year
@@ -449,7 +453,7 @@ preferences_page_server <- function(id, state) {
       shinyjs::disable("submit_two")
 
       # Run the initialize function immediately
-      initialize_or_update_map(current_year())
+      initialize_or_update_map(current_year(), 1)
 
       # Reset the buttons back to their original state (inline)
       shinyjs::enable("submit_one")
@@ -468,7 +472,7 @@ preferences_page_server <- function(id, state) {
       shinyjs::disable("submit_two")
 
       # Run the initialize function immediately
-      initialize_or_update_map(current_year())
+      initialize_or_update_map(current_year(), 2)
 
       # Reset the buttons back to their original state (inline)
       shinyjs::enable("submit_one")

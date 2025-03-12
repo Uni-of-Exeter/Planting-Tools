@@ -31,7 +31,7 @@ FILL_OPACITY <- 0.7
 COLOUR_MAPPING <- c("Conifer" = "#006400", "Deciduous" = "#008080", "Available" = AVAILABLE_PARCEL_COLOUR, "Unavailable" = UNAVAILABLE_PARCEL_COLOUR, "Blocked" = BLOCKED_PARCEL_COLOUR)
 COLOUR_MAPPING2 <- c("Conifer" = "#ff0", "Deciduous" = "#dd0", "Available" = AVAILABLE_PARCEL_COLOUR, "Unavailable" = UNAVAILABLE_PARCEL_COLOUR, "Blocked" = BLOCKED_PARCEL_COLOUR)
 # MOCK_SLEEP_TIME <- 0.8
-API_PORT <- 8026
+API_PORT <- 8042
 API_HOST <- "127.0.0.1"
 
 SLIDER_NAMES <- list(

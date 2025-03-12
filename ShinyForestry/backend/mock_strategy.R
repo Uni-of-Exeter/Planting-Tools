@@ -259,7 +259,7 @@ function(req) {
 #* @serializer json
 function() {
   # Generate parcel data
-  parcel_data <- generate_parcel_data()
+  parcel_data <- generate_parcel_data() # 
   geojson <- geojsonsf::sf_geojson(parcel_data)
   
   values <- list(
@@ -274,11 +274,95 @@ function() {
   
   # Add a small random number between -0.5 and 0.5 to each value
   values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
-  
   return(list(
     values = values,
     geojson = geojson
   ))
 }
+
+
+# use parse/serializer
+# plumber::serializer_geojson()
+
+#* Generate parcel data for Alternative Approaches tab
+#* @get /four_random_strategies
+#* @serializer json
+function() {
+  generate_random_strategy <- function() {
+    # Generate parcel data
+    parcel_data <- generate_parcel_data()
+    geojson <- geojsonsf::sf_geojson(parcel_data)
+    
+    values <- list(
+      carbon = as.numeric(500),
+      species = as.numeric(5), 
+      species_goat_moth = as.numeric(4),
+      species_stag_beetle = as.numeric(9),
+      species_lichens = as.numeric(10),
+      area = as.numeric(15),
+      recreation = as.numeric(10) 
+    )
+    
+    # Add a small random number between -0.5 and 0.5 to each value
+    values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
+    
+    return(list(values = values, geojson = geojson))
+  }
+  
+  # Generate four random strategies
+  strategies <- replicate(4, generate_random_strategy(), simplify = FALSE)
+  
+  # Return the strategies
+  return(list(
+    strategy_1 = strategies[[1]],
+    strategy_2 = strategies[[2]],
+    strategy_3 = strategies[[3]],
+    strategy_4 = strategies[[4]]
+  ))
+}
+
+
+#* Generate two random strategies after receiving a user choice (1 or 2)
+#* @post /preference_choice
+#* @param choice Integer value (1 or 2)
+function(choice) {
+  generate_random_strategy <- function() {
+    # Generate parcel data
+    parcel_data <- generate_parcel_data()
+    geojson <- geojsonsf::sf_geojson(parcel_data)
+    
+    # Create the values for the strategy
+    values <- list(
+      carbon = as.numeric(500),
+      species = as.numeric(5), 
+      species_goat_moth = as.numeric(4),
+      species_stag_beetle = as.numeric(9),
+      species_lichens = as.numeric(10),
+      area = as.numeric(15),
+      recreation = as.numeric(10)
+    )
+    
+    # Add a small random variation between -0.5 and 0.5 to each value
+    values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
+    
+    return(list(values = values, geojson = geojson))
+  }
+  
+  # Validate the choice input (1 or 2)
+  if (!(choice %in% c(1, 2))) {
+    return(list(error = "Invalid input: 'choice' must be 1 or 2"))
+  }
+  
+  # Generate two random strategies
+  strategies <- replicate(2, generate_random_strategy(), simplify = FALSE)
+  
+  # Return the generated strategies
+  return(list(
+    strategy_1 = strategies[[1]],
+    strategy_2 = strategies[[2]]
+  ))
+}
+
+
 
 # Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`

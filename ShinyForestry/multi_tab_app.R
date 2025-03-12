@@ -43,7 +43,7 @@ custom_theme <- bs_theme(
 ui <- fluidPage(
   
   useShinyjs(),  # Initialize shinyjs
-  
+
   # Full-page loading screen (visible on app startup)
   div(id = "loading", 
       div(class = "spinner")
