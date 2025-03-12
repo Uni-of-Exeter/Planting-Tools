@@ -15,11 +15,8 @@ library(units)
 library(shinyWidgets)
 library(plotly)
 library(leaflet.extras)
-library(glue)
 
 FolderSource <- normalizePath(".")
-
-BACKEND_HOST <- "http://144.173.60.164:40000"
 
 if (dir.exists("ShinyForestry")) {
   elicitor_folder <- normalizePath(file.path("ShinyForestry", "ElicitorOutput"))
@@ -76,7 +73,7 @@ if (isTRUE(run_initalization_on_backend)) {
     md5 <- tools::md5sum(filepath)
     
     notif(paste("Checking if", filename, "exists in the backend and is the same one as on this computer"), log_level = "debug")
-    response <- curl_fetch_memory(url = paste0(BACKEND_HOST, "/exists?filename=", filename, "&md5sum=", md5))
+    response <- curl_fetch_memory(url = paste0(API_URL, "/exists?filename=", filename, "&md5sum=", md5))
     
     # Get the response information
     body <- rjson::fromJSON(rawToChar(response$content))
@@ -92,7 +89,7 @@ if (isTRUE(run_initalization_on_backend)) {
                               # '-F "file_to_upload=@', filepath, ';type=application/x-zip-compressed" ',
                               # '-F "file_to_upload=@', filepath, ';type=application/octet-stream" ',
                               '-F "file_to_upload=@', filepath, '" ',
-                              BACKEND_HOST, '/upload'),
+                              API_URL, '/upload'),
                        intern = TRUE) |>
         rjson::fromJSON()
       
@@ -112,7 +109,7 @@ if (isTRUE(run_initalization_on_backend)) {
   # Initialize the environment
   handle_PUT <- new_handle()
   handle_setopt(handle_PUT, customrequest = "PUT")
-  url <- paste0(BACKEND_HOST, "/initialize?MAX_LIMIT_LOG_LEVEL=", MAX_LIMIT_LOG_LEVEL)
+  url <- paste0(API_URL, "/initialize?MAX_LIMIT_LOG_LEVEL=", MAX_LIMIT_LOG_LEVEL)
   msg <- paste("initializing the backend", url, "...")
   notif(msg)
   response <- curl_fetch_memory(url = url,
@@ -128,10 +125,13 @@ if (isTRUE(run_initalization_on_backend)) {
   msg <- "Reading the environment from the backend ..."
   notif(msg)
   
-  temp_file <- tempfile()
-  writeBin(response$content, temp_file)
-  env <- readRDS(temp_file)
-  file.remove(temp_file)
+  # temp_file <- tempfile()
+  # writeBin(response$content, temp_file)
+  # env <- readRDS(temp_file)
+  # file.remove(temp_file)
+  
+  env <- plumber::parser_rds()(value = response$content)
+  list2env(as.list(env), envir = .GlobalEnv)
   
   # Save it to elicitor folder
   saveRDS(env, backend_initialization_env_file)
@@ -139,8 +139,8 @@ if (isTRUE(run_initalization_on_backend)) {
 
 fetch_api_data_post <- function(json_payload) {
   
-  url <- "http://127.0.0.1:8000/generate_parcels"
-  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
+  # url <- "http://127.0.0.1:8000/generate_parcels"
+  url <- paste0(API_URL, "/generate_parcels")
   
   # Make the API POST request with JSON payload
   response <- httr::POST(
@@ -171,7 +171,7 @@ fetch_api_data_post <- function(json_payload) {
 }
 
 fetch_slider_values <- function() {
-  url <- glue("http://{API_HOST}:{API_PORT}/slider_values")
+  url <- paste0(API_URL, "/slider_values")
   response <- httr::GET(url)
   if (httr::status_code(response) == 200) {
     content_raw <- httr::content(response, "text", encoding = "UTF-8")

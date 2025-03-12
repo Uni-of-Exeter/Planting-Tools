@@ -80,31 +80,27 @@ function(req) {
   forward()
 }
 
-# Global variable for empty parcels
-empty_parcel_data <- NULL
-
-# Function to generate empty parcel data
-generate_empty_parcel_data <- function(FullTable) {
-  if (!inherits(FullTable, "sf")) {
-    stop("FullTable must be an sf object.")
-  }
-  
-  n <- nrow(FullTable)
-  parcel_ids <- sapply(1:n, function(x) UUIDgenerate())
-  geometries <- st_geometry(FullTable)
-  
-  empty_parcel_data <- st_sf(
-    parcel_id = parcel_ids,
-    geometry = geometries,
-    crs = st_crs(FullTable)
-  )
-}
-
 # Function to generate parcel data
-generate_parcel_data <- function(empty_parcel_data) {
-  if (is.null(empty_parcel_data)) {
-    stop("Empty parcel data has not been initialized.")
+generate_parcel_data <- function(FullTable) {
+  
+  # Function to generate empty parcel data
+  generate_empty_parcel_data <- function(FullTable) {
+    if (!inherits(FullTable, "sf")) {
+      stop("FullTable must be an sf object.")
+    }
+    
+    n <- nrow(FullTable)
+    parcel_ids <- 1:n
+    geometries <- st_geometry(FullTable)
+    
+    empty_parcel_data <- st_sf(
+      parcel_id = parcel_ids,
+      geometry = geometries,
+      crs = st_crs(FullTable)
+    )
   }
+  
+  empty_parcel_data <- generate_empty_parcel_data(FullTable)
   
   n <- nrow(empty_parcel_data)
   parcel_areas <- FullTable$area
@@ -161,13 +157,6 @@ function() {
   return(slider_info)
 }
 
-#* Generate empty parcels
-#* @get /empty_parcels
-#* @serializer json
-function() {
-  geojson <- geojsonsf::sf_geojson(empty_parcel_data)
-  return(geojson)
-}
 
 # Example Output
 #                               parcel_id                       geometry
@@ -290,7 +279,7 @@ function(req) {
   }
   
   # Continue with backend logic
-  parcel_data <- generate_parcel_data(empty_parcel_data)
+  parcel_data <- generate_parcel_data(FullTable)
   
   # Update blocked parcels in the backend logic
   for (i in 1:nrow(blocked_parcels)) {
@@ -440,7 +429,7 @@ function(res, filename, md5sum) {
 #* @response 200 Success: Initialized the app, did pre-processing
 #* @response 403 Forbidden: Missing one or more input files from the elicitor
 #* @response 500 Internal Server Error: One of the elicitor files is not readable
-function(res, MAX_LIMIT_LOG_LEVEL = "info") {
+function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   
   library(future)
   plan(futureplan, workers = min(4, future::availableCores()))
@@ -1011,9 +1000,6 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
     FullTable <- value(future(sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson")))))
     FullTableNotAvail <- value(future(sf::st_read(normalizePath(file.path(save_folder_elicitoroutput, "FullTableNotAvail.geojson")))))
     notif(paste("Loading", normalizePath(file.path(save_folder_elicitoroutput, "FullTableMerged.geojson and FullTableNotAvail.geojson done"))))
-    
-    
-    generate_empty_parcel_data(FullTable)
     
     # future:::ClusterRegistry("stop")
     
