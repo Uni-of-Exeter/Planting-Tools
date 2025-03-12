@@ -2605,7 +2605,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     # nb_of_groups length(unique(intersection$polygon_id_jules)) * nb_BioMean_columns length(intersection %>% dplyr::select(starts_with("Bio_Mean"))) +
     # 5 because of the new columns from mutate()
     # pb <- progressor(steps = 6 + length(unique(intersection$polygon_id_jules)) * length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean"))) + 5, message = msg)
-    nb_groups <- length(unique(intersection$polygon_id_jules))
+    nb_groups <- length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean")))
     group_count_env <- new.env()
     group_count_env$group_count <- 0
     pb <- progressor(steps = 6 + nb_groups + 5, message = msg)

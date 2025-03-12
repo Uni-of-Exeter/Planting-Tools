@@ -32,8 +32,15 @@ COLOUR_MAPPING <- c("Conifer" = "#006400", "Deciduous" = "#008080", "Available" 
 COLOUR_MAPPING2 <- c("Conifer" = "#ff0", "Deciduous" = "#dd0", "Available" = AVAILABLE_PARCEL_COLOUR, "Unavailable" = UNAVAILABLE_PARCEL_COLOUR, "Blocked" = BLOCKED_PARCEL_COLOUR)
 # MOCK_SLEEP_TIME <- 0.8
 
-API_PORT <- 40000
-API_HOST <- "http://144.173.60.164"
+API_PORT <- Sys.getenv("API_PORT")
+if (API_PORT == "") {
+  API_PORT <- 40000
+}
+API_HOST <- Sys.getenv("API_HOST")
+if (API_HOST == "") {
+  API_HOST <- "144.173.60.164"
+}
+API_URL <- paste0("http://", API_HOST, ":", API_PORT)
 
 SLIDER_NAMES <- list(
   carbon = list(name = "Tree Carbon Stored", unit = HTML("Tonnes of CO<sub>2</sub>")),
