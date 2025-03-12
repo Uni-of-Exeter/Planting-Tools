@@ -1856,7 +1856,7 @@ notif <- function(msg = "",
   
   if (log_level > max_limit_log_level) return()
   
-  options(digits.secs = 6)
+  options(digits.secs = 5)
   if (isFALSE(rbind)) {
     msg <- paste0(Sys.time(), " [", log_level_msg, "] ", msg)
   } else {
