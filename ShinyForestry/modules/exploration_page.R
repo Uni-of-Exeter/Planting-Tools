@@ -215,8 +215,8 @@ exploration_page_server <- function(id, state) {
     })
     
     values <- reactiveValues(
-      names = c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits"),
-      counts = setNames(rep(10, 7), c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits"))
+      names = c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits", "X", "Y"),
+      counts = setNames(rep(10, 9), c("Carbon", "All", "Cossus_cossus", "Lucanus_cervus", "Lichens", "Area", "Visits", "X", "Y"))
     )
     
     # observe +/- dynamically
@@ -234,19 +234,6 @@ exploration_page_server <- function(id, state) {
       })
     })
     
-    # observe the sliders moving
-    observeEvent(input$slider_x, {
-      values$direction_x <- input$slider_x
-      # You can add any other logic you want to handle when Direction_x changes
-      print(paste("x updated to", values$direction_x))
-    })
-    
-    observeEvent(input$slider_y, {
-      values$direction_y <- input$slider_y
-      # You can add any other logic you want to handle when Direction_y changes
-      print(paste("y updated to", values$direction_y))
-    })
-    
     # Create value_boxes dynamically
     output$value_boxes <- renderUI({
       div(class = "explore-box-content",
@@ -262,25 +249,6 @@ exploration_page_server <- function(id, state) {
                   )
                 )
               })
-          ),
-          
-          # Divider between buttons and sliders
-          tags$div(class = "divider"),
-          
-          # Separate section for the sliders
-          div(class = "slider-container",
-              sliderInput(ns("slider_x"), 
-                          "Direction: X", 
-                          min = 0, 
-                          max = 100, 
-                          value = 50,
-                          width = "100%"),
-              sliderInput(ns("slider_y"), 
-                          "Direction: Y", 
-                          min = 0, 
-                          max = 100, 
-                          value = 50,
-                          width = "100%")
           )
       )
     })
