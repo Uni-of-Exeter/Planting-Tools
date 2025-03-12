@@ -10,14 +10,26 @@ alt_page_ui <- function(id) {
   ns <- NS(id)
   div(id = "alt-page",
     useShinyjs(),
+    # 2x2 Grid [need to change the CSS to move the value_box_...]
+    # tagList( 
+    #   fluidRow(
+    #     column(3, leafletOutput(ns("map1")), class = "no-padding"),  # First Map
+    #     column(3, leafletOutput(ns("map2")), class = "no-padding")   # Second Map
+    #   ),
+    #   fluidRow(
+    #     column(6, leafletOutput(ns("map3")), class = "no-padding"),  # Third Map
+    #     column(6, leafletOutput(ns("map4")), class = "no-padding")   # Fourth Map
+    #   )
+    # ),
+    # 4 columns
     tagList(
       fluidRow(
-        column(3, leafletOutput(ns("map1")), class = "no-padding"),  # First Map
-        column(3, leafletOutput(ns("map2")), class = "no-padding")   # Second Map
-      ),
-      fluidRow(
-        column(6, leafletOutput(ns("map3")), class = "no-padding"),  # Third Map
-        column(6, leafletOutput(ns("map4")), class = "no-padding")   # Fourth Map
+        column(3, leafletOutput(ns("map1")), class = "no-padding", height="100vh"),  # First Map
+        column(3, leafletOutput(ns("map2")), class = "no-padding", height="100vh"),   # Second Map
+        # ),
+        # fluidRow(
+        column(3, leafletOutput(ns("map3")), class = "no-padding",  height="100vh"),  # Third Map
+        column(3, leafletOutput(ns("map4")), class = "no-padding", height="100vh")   # Fourth Map
       )
     ),
     actionButton(ns("sample"), "Sample", class = "btn btn-success floating-button"),
@@ -64,6 +76,11 @@ alt_page_server <- function(id, state) {
         setView(lng = state$map$lng, lat = state$map$lat, zoom = state$alt_tab$map$zoom) %>%
         syncWith("maps")
     })
+    
+    outputOptions(output, "map1", suspendWhenHidden = FALSE)
+    outputOptions(output, "map2", suspendWhenHidden = FALSE)
+    outputOptions(output, "map3", suspendWhenHidden = FALSE)
+    outputOptions(output, "map4", suspendWhenHidden = FALSE)
     
     current_year <- reactive({
       input[[ns("year")]]

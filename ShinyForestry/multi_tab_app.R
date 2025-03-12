@@ -28,8 +28,7 @@ source("config.R")  # Load config
 
 source("modules/map_page.R")
 source("modules/preferences_page.R")
-# source("modules/alternative_approaches_page.R")
-source("modules/alternative_approaches_page_columns.R")
+source("modules/alternative_approaches_page.R")
 source("modules/exploration_page.R")
 source("modules/downscaling_page.R")
 
