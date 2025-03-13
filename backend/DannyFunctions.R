@@ -411,12 +411,12 @@ cluster_samples <- function(){
   #CANT CLUSTER IF NOT ENOUGH SAMPLES. 
   if(nrow(target_compatible_strategies)<6){
     notif("Too few target compatible samples to cluster")
-    target_compatible_strategies <<- target_compatible_strategies[,cluster := 1]
+    target_compatible_strategies <- target_compatible_strategies[,cluster := 1]
     return(invisible())
   }
   tsne_projected_target_compatible_data <- Rtsne::Rtsne(scale(target_compatible_strategies[,..TARGETS], center=FALSE, scale = sqrt(abs(preference_weights))), perplexity = min(30, (nrow(target_compatible_strategies)-1.01)/3))$Y
   clustered_samples <- mclust::Mclust(tsne_projected_target_compatible_data,G=4)
-  target_compatible_strategies <<- target_compatible_strategies[,cluster := clustered_samples$classification]
+  target_compatible_strategies <- target_compatible_strategies[,cluster := clustered_samples$classification]
   unique_clusters <- 1:4
   cluster_projections <- lapply(unique_clusters, function(ZZ) {
     projected <- tsne_projected_target_compatible_data %*% eigen(clustered_samples$parameters$variance$sigma[,,ZZ])$vectors
@@ -428,4 +428,93 @@ cluster_samples <- function(){
     row_index <- .I  # Row index for correct alignment
     list(proj[row_index, 1], proj[row_index, 2])  # Assign correct rows
   }, by=cluster]
+  
+  return(target_compatible_strategies)
+}
+
+
+#Make 2 strategies to compare
+#strategy i
+make_strategy_forfront_preftab <- function(index){
+  if(!index %in% c(1,2))
+    stop("Index should be 1 or 2 for the preference tab")
+  tyears <- as.numeric(as.vector(Strategies[strategies_compared[index],startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[strategies_compared[index],startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- pref_elicitation_object$data[comparison_index + (index-1)]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+#Now target_compatible_strategies has a cluster column. Now we need a function to pass the 4 strategies to the front
+
+#What happens on first preference tab launch
+#Make 2 strategies to compare
+#strategy i
+make_strategy_forfront_altapproach <- function(index){
+  if(!index %in% c(1,2,3,4)) {
+    stop("make_strategy_forfront_altapproach(): Index should be 1, 2, 3 or 4 for alternative approaches")
+  }
+  samples_in_cluster <- target_compatible_strategies[cluster == index]
+  random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
+  tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- random_strategy[,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
 }
