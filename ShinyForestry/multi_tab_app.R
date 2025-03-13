@@ -21,8 +21,11 @@ packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
 packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
-# Install packages
-remotes::install_deps(plantingtools_folder, upgrade = "never")
+# # Install packages
+# for(i in 1:length(packages)) {
+#   require(packages[i], character.only = TRUE)
+# }
+# remotes::install_deps(plantingtools_folder, upgrade = "never")
 
 # Load packages
 for(i in 1:length(packages)) {
