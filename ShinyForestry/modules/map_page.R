@@ -53,7 +53,7 @@ map_page_ui <- function(id) {
             uiOutput(ns("dynamic_sliders")),
             actionButton(ns("submit_main"), "submit", class = "btn btn-secondary"),
             actionButton(ns("reset_main"), "reset", class = "btn btn-secondary"),
-            actionButton(ns("save_main"), "Save in Session")
+            # actionButton(ns("save_main"), "Save in Session")
           ),
           accordion_panel(
             "Saved Strategies",
@@ -79,6 +79,7 @@ map_page_server <- function(id, state) {
     current_year <- reactive({
       input[[ns("year")]]
     })
+  
 
     #----COPYPASTA
     
@@ -97,16 +98,32 @@ map_page_server <- function(id, state) {
     strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
     plot_type <- reactiveVal("cumulative") 
     
-    # Track the initial slider values when the submit button is clicked
+    initial_values <- reactiveVal(list())  # Initialize as an empty list
     initial_values <- reactiveVal(list(
-      carbon = NULL,
-      species = NULL,
-      species_goat_moth = NULL,
-      species_stag_beetle = NULL,
-      species_lichens = NULL,
-      area = NULL,
-      recreation = NULL
+      carbon = 800,
+      species = 10,
+      species_goat_moth = 25,
+      species_stag_beetle = 30,
+      species_lichens = 2,
+      area = 10,
+      recreation = 15
     ))
+    # observe({
+    #   # Ensure state$map_tab is properly initialized
+    #   if (!is.null(state$map_tab$slider$names)) {
+    #     # Create the list of NULL values with slider names
+    #     slider_list <- setNames(
+    #       lapply(state$map_tab$slider$names, function(slider) NULL),
+    #       state$map_tab$slider$names
+    #     )
+    #     
+    #     print("slider_list")
+    #     print(slider_list)
+    #     
+    #     # Initialize initial_values reactiveVal with slider_list
+    #     initial_values(slider_list)
+    #   }
+    # })
     
     clicked_polygons <- reactiveVal(data.frame(
       parcel_id = character(),  # Empty initially
@@ -286,8 +303,7 @@ map_page_server <- function(id, state) {
         output_data(area_data)
         
         # Render the leaflet map with the updated data
-        output$map <- renderLeaflet({
-          
+                  
           legend_html <- paste0(
             "<b>Outcomes</b> (c.f. Targets)<br><br>",
             "<table style='width:100%; text-align:left;'>",
@@ -307,9 +323,8 @@ map_page_server <- function(id, state) {
             ),
             "</table></div>"
           )
-          
-          leaflet() %>% 
-            # addTiles() %>% 
+        output$map <- renderLeaflet({
+          leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
             addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
             addResetMapButton() %>% 
             setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom) %>% 
@@ -377,92 +392,82 @@ map_page_server <- function(id, state) {
       }
     }
     
-    # Render the map
-    output$map <- renderLeaflet({
-      leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
-        # enableTileCaching() %>%
-        addProviderTiles(providers$CartoDB.Voyager) #, options = tileOptions(useCache = TRUE, crossOrigin = TRUE)) %>% 
-      setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom)
-    })
-    
-    # Render the sliders
+    # Call API to render the sliders & generate a default payload
     observe({
-      state$map_tab$slider_defaults <- get_slider_values()
-      
-      default_payload <<- list(
-        carbon = state$map_tab$slider_defaults$carbon$default,
-        species = state$map_tab$slider_defaults$species$default,
-        species_goat_moth = state$map_tab$slider_defaults$species_goat_moth$default,
-        species_stag_beetle = state$map_tab$slider_defaults$species_stag_beetle$default,
-        species_lichens = state$map_tab$slider_defaults$species_lichens$default,
-        area = state$map_tab$slider_defaults$area$default,
-        recreation = state$map_tab$slider_defaults$recreation$default,
-        blocked_parcels = list()
-      )
-      
-      output$dynamic_sliders <- renderUI({
-        tagList(
-          fluidRow(
-            column(CHECKBOX_COL, checkboxInput(ns("carbon_checkbox"), NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput(ns("carbon"), HTML(paste0("Tree Carbon Stored (tonnes of CO<sub>2</sub>):")),
-                                           min = state$map_tab$slider_defaults$carbon$min, 
-                                           max = state$map_tab$slider_defaults$carbon$max, 
-                                           value = state$map_tab$slider_defaults$carbon$default
-            ))
-          ),
-          fluidRow(
-            column(CHECKBOX_COL, checkboxInput(ns("species_checkbox"), NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput(ns("species"), "Species Richness (All):",
-                                           min = state$map_tab$slider_defaults$species$min, 
-                                           max = state$map_tab$slider_defaults$species$max, 
-                                           value = state$map_tab$slider_defaults$species$default
-            ))
-          ),
-          fluidRow(
-            column(CHECKBOX_COL, checkboxInput(ns("species_goat_moth_checkbox"), NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput(ns("species_goat_moth"), "Goat Moth (Presence, %):", 
-                                           min = state$map_tab$slider_defaults$species_goat_moth$min, 
-                                           max = state$map_tab$slider_defaults$species_goat_moth$max, 
-                                           value = state$map_tab$slider_defaults$species_goat_moth$default
-            ))
-          ),
-          fluidRow(
-            column(CHECKBOX_COL, checkboxInput(ns("species_stag_beetle_checkbox"), NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput(ns("species_stag_beetle"), "Stag Beetle (Presence, %):", 
-                                           min = state$map_tab$slider_defaults$species_stag_beetle$min, 
-                                           max = state$map_tab$slider_defaults$species_stag_beetle$max, 
-                                           value = state$map_tab$slider_defaults$species_stag_beetle$default
-            ))
-          ),
-          fluidRow(
-            column(CHECKBOX_COL, checkboxInput(ns("species_lichens_checkbox"), NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput(ns("species_lichens"), "Species Richness (Lichens):", 
-                                           min = state$map_tab$slider_defaults$species_lichens$min, 
-                                           max = state$map_tab$slider_defaults$species_lichens$max, 
-                                           value = state$map_tab$slider_defaults$species_lichens$default
-            ))
-          ),
-          fluidRow(
-            column(CHECKBOX_COL, checkboxInput(ns("area_checkbox"), NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput(ns("area"), HTML(paste0("Area Planted (km<sup>2</sup>):")),
-                                           min = state$map_tab$slider_defaults$area$min, 
-                                           max = state$map_tab$slider_defaults$area$max, 
-                                           value = state$map_tab$slider_defaults$area$default
-            ))
-          ),
-          fluidRow(
-            column(CHECKBOX_COL, checkboxInput(ns("recreation_checkbox"), NULL, value = TRUE)),
-            column(SLIDER_COL, sliderInput(ns("recreation"), "Recreation (visits per month):", 
-                                           min = state$map_tab$slider_defaults$recreation$min, 
-                                           max = state$map_tab$slider_defaults$recreation$max, 
-                                           value = state$map_tab$slider_defaults$recreation$default
-            ))
+      if (is.null(state$map_tab$initialized) || !state$map_tab$initialized) {
+        # Fetch slider values from API
+        slider_values <- get_slider_values()
+        slider_names <- names(slider_values)
+        # Create the structured list under `$slider`
+        # !TODO units?
+        #
+        # state$map_tab$slider
+        # │
+        # ├── names  (List of slider names)
+        # │   ├── "carbon"
+        # │   ├── "species"
+        # │   ├── "species_goat_moth"
+        # │   ├── "species_stag_beetle"
+        # │   ├── "species_lichens"
+        # │   ├── "area"
+        # │   ├── "recreation"
+        # │
+        # └── values  (Named list of slider parameters)
+        #     ├── carbon
+        #     │   ├── min: 500
+        #     │   ├── max: 1000
+        #     │   └── default: 800
+        # ⋮   ⋮   
+        #
+        state$map_tab$slider <- list(
+          names = slider_names, # Store slider names explicitly
+          values = setNames(
+            lapply(slider_names, function(slider) {
+              list(
+                min = as.numeric(slider_values[[slider]]$min[[1]]),
+                max = as.numeric(slider_values[[slider]]$max[[1]]),
+                default = as.numeric(slider_values[[slider]]$default[[1]])
+              )
+            }),
+            slider_names # Assign correct names to values
           )
         )
-      })
-      default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
-      initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
-      state$map_tab$initialized <- TRUE 
+        
+        default_payload <- c(
+          setNames(
+            lapply(state$map_tab$slider$names, function(slider) {
+              state$map_tab$slider$values[[slider]]$default
+            }),
+            state$map_tab$slider$names
+          ),
+          list(blocked_parcels = list())  # Append blocked_parcels separately
+        )
+        
+        print("default payload")
+        print(default_payload)
+
+        print("setting sliders")
+        output$dynamic_sliders <- renderUI({
+          tagList(
+            lapply(state$map_tab$slider$names, function(slider) {
+              fluidRow(
+                column(CHECKBOX_COL, checkboxInput(ns(paste0(slider, "_checkbox")), NULL, value = TRUE)),
+                column(SLIDER_COL, sliderInput(
+                  ns(slider), 
+                  label = slider,  # Use the slider name as the label
+                  min = state$map_tab$slider$values[[slider]]$min,
+                  max = state$map_tab$slider$values[[slider]]$max,
+                  value = state$map_tab$slider$values[[slider]]$default
+                ))
+              )
+            })
+          )
+        })
+        
+        default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
+        initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+        state$map_tab$initialized <- TRUE 
+      }
     })
     
     # JS to detect when the map is rendered; fed back to main app
@@ -485,65 +490,52 @@ map_page_server <- function(id, state) {
       shinyjs::disable("save_main")
       shinyjs::disable("reset_main")
       shinyjs::disable("submit_main")
-      shinyjs::disable("carbon")
-      shinyjs::disable("species")
-      shinyjs::disable("species_goat_moth")
-      shinyjs::disable("species_stag_beetle")
-      shinyjs::disable("species_lichens")
-      shinyjs::disable("area")
-      shinyjs::disable("recreation")
-      shinyjs::disable("carbon_checkbox")
-      shinyjs::disable("species_checkbox")
-      shinyjs::disable("species_goat_moth_checkbox")
-      shinyjs::disable("species_stag_beetle_checkbox")
-      shinyjs::disable("species_lichens_checkbox")
-      shinyjs::disable("area_checkbox")
-      shinyjs::disable("recreation_checkbox")
+      
+      # Loop over the slider names to disable the sliders and checkboxes
+      lapply(state$map_tab$slider$names, function(slider) {
+        shinyjs::disable(slider)          
+        shinyjs::disable(paste0(slider, "_checkbox"))  
+      })
 
       # Save the initial values when the submit button is clicked
-      initial_values(list(
-        carbon = input$carbon,
-        species = input$species,
-        species_goat_moth = input$species_goat_moth,
-        species_stag_beetle = input$species_stag_beetle,
-        species_lichens = input$species_lichens,
-        area = input$area,
-        recreation = input$recreation
-        # year = input$year
-        # num_clicked_polygons = 0
-      ))
+      if (all(sapply(state$map_tab$slider$names, function(slider) !is.null(input[[slider]])))) {
+        initial_values(
+          setNames(
+            lapply(state$map_tab$slider$names, function(slider) {
+              num_value <- as.numeric(input[[slider]])  # Convert to numeric
+              if (is.na(num_value)) return(NULL)  # Handle cases where conversion fails (optional)
+              return(num_value)
+            }),
+            state$map_tab$slider$names  # Name the elements according to slider names
+          )
+        )
+      }
+      print("saved initial_values after submit")
+      print(initial_values)
 
       # Extract blocked parcels (if any exist)
       blocked_parcels <- clicked_polygons()
       blocked_parcels_filtered <- blocked_parcels[blocked_parcels$blocked_until_year > 0, ]
 
       # Create the payload
-      payload <- list(
-        carbon = as.numeric(input$carbon),
-        species = as.numeric(input$species),
-        species_goat_moth = as.numeric(input$species_goat_moth),
-        species_stag_beetle = as.numeric(input$species_stag_beetle),
-        species_lichens = as.numeric(input$species_lichens),
-        area = as.numeric(input$area),
-        recreation = as.numeric(input$recreation),
-        blocked_parcels = if (nrow(blocked_parcels_filtered) > 0) {
-          # Create a list of blocked parcels
-          lapply(1:nrow(blocked_parcels_filtered), function(i) {
-            list(
-              parcel_id = blocked_parcels_filtered$parcel_id[i],
-              blocked_until_year = as.numeric(blocked_parcels_filtered$blocked_until_year[i])
-            )
-          })
-        } else {
-          list()  # Return an empty list if no blocked parcels exist
-        }
-      )
+      payload <- initial_values()
+      
+      # Add blocked parcels to the payload
+      payload$blocked_parcels <- if (nrow(blocked_parcels_filtered) > 0) {
+        # Create a list of blocked parcels
+        lapply(1:nrow(blocked_parcels_filtered), function(i) {
+          list(
+            parcel_id = blocked_parcels_filtered$parcel_id[i],
+            blocked_until_year = as.numeric(blocked_parcels_filtered$blocked_until_year[i])
+          )
+        })
+      } else {
+        list()  # Return an empty list if no blocked parcels exist
+      }
 
       # Convert to JSON
       json_payload <- jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE)
 
-      print("json payload")
-      print(json_payload)
       # Update the map by calling the same function
       initialize_or_update_map(current_year(), json_payload = json_payload)
 
@@ -551,20 +543,11 @@ map_page_server <- function(id, state) {
       shinyjs::enable("save_main")
       shinyjs::enable("reset_main")
 
-      shinyjs::enable("carbon")
-      shinyjs::enable("species")
-      shinyjs::enable("species_goat_moth")
-      shinyjs::enable("species_stag_beetle")
-      shinyjs::enable("species_lichens")
-      shinyjs::enable("area")
-      shinyjs::enable("recreation")
-      shinyjs::enable("carbon_checkbox")
-      shinyjs::enable("species_checkbox")
-      shinyjs::enable("species_goat_moth_checkbox")
-      shinyjs::enable("species_stag_beetle_checkbox")
-      shinyjs::enable("species_lichens_checkbox")
-      shinyjs::enable("area_checkbox")
-      shinyjs::enable("recreation_checkbox")
+      # Loop over the slider names to enable the sliders and checkboxes
+      lapply(state$map_tab$slider$names, function(slider) {
+        shinyjs::enable(slider)
+        shinyjs::enable(paste0(slider, "_checkbox")) 
+      })
     })
      
     # Implement clicking off
@@ -615,20 +598,20 @@ map_page_server <- function(id, state) {
 
     observe({
       # Get the current slider values with namespacing
-      current_values <- list(
-        carbon = input$carbon,
-        species = input$species,
-        species_goat_moth = input$species_goat_moth,
-        species_stag_beetle = input$species_stag_beetle,
-        species_lichens = input$species_lichens,
-        area = input$area,
-        recreation = input$recreation
-        # year = input$year
-        # num_clicked_polygons = 0
+      current_values_list <- setNames(
+        lapply(state$map_tab$slider$names, function(slider) {
+          as.numeric(input[[slider]])  # Convert each slider value to numeric
+        }),
+        state$map_tab$slider$names  # Use slider names as the list names
       )
 
       # Compare current values with initial values
-      values_changed <- !identical(current_values, initial_values())
+      values_changed <- !identical(current_values_list, initial_values())
+      if (values_changed) {
+        print(current_values_list)
+        print(initial_values())
+      }
+
       current_clicked <- clicked_polygons()
       current_clicked_in <- clicked_polygons_injest()
 
@@ -653,13 +636,7 @@ map_page_server <- function(id, state) {
       }
     })
 
-    # the blocking part of the code hasn't really been tested
-    # there is currently a bug where if we click a parcel to block it, and then go > blocked_until_year,
-    # it's recoloured to it's eventual colour (regardless of when that change was supposed to happen); or dark gery if it never happens
-    # hackily fixed with:
-    #
-    # fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
-    #
+    # Blocking Parcels through clicks
     observe({
       input_year <- input[[ns("year")]]
       selected_view <- input[[ns("view_toggle")]]
@@ -802,15 +779,13 @@ map_page_server <- function(id, state) {
       }
     })
     # 
-    # # Enable/Disable sliders
+    # Enable/Disable sliders
     observe({
-      toggleState("carbon", input$carbon_checkbox)
-      toggleState("species", input$species_checkbox)
-      toggleState("species_goat_moth", input$species_goat_moth_checkbox)
-      toggleState("species_stag_beetle", input$species_stag_beetle_checkbox)
-      toggleState("species_lichens", input$species_lichens_checkbox)
-      toggleState("area", input$area_checkbox)
-      toggleState("recreation", input$recreation_checkbox)
+      # Loop through slider names and toggle state based on the corresponding checkbox
+      lapply(state$map_tab$slider$names, function(slider) {
+        checkbox_id <- paste0(slider, "_checkbox")
+        toggleState(slider, input[[checkbox_id]])
+      })
     })
     
     # Observe the reset of the sliders
@@ -824,24 +799,18 @@ map_page_server <- function(id, state) {
                 lng = state$map$lng, 
                 zoom = state$map$zoom)  # Make sure to use zoom, not default
       
-      # Reset sliders to default values
-      updateSliderInput(session, "carbon", value = state$map_tab$slider_defaults$carbon$default)
-      updateSliderInput(session, "species", value = state$map_tab$slider_defaults$species$default)
-      updateSliderInput(session, "species_goat_moth", value = state$map_tab$slider_defaults$species_goat_moth$default)
-      updateSliderInput(session, "species_stag_beetle", value = state$map_tab$slider_defaults$species_stag_beetle$default)
-      updateSliderInput(session, "species_lichens", value = state$map_tab$slider_defaults$species_lichens$default)
-      updateSliderInput(session, "area", value = state$map_tab$slider_defaults$area$default)
-      updateSliderInput(session, "recreation", value = state$map_tab$slider_defaults$recreation$default)
+      lapply(state$map_tab$slider$names, function(slider) {
+        updateSliderInput(session, slider, value = state$map_tab$slider$values[[slider]]$default)
+      })
+      
+      # Reset the 'year' slider explicitly
       updateSliderInput(session, "year", value = YEAR_MIN)  # Reset year slider
       
-      # Reset checkboxes to default values
-      updateCheckboxInput(session, "carbon_checkbox", value = TRUE)
-      updateCheckboxInput(session, "species_checkbox", value = TRUE)
-      updateCheckboxInput(session, "species_goat_moth_checkbox", value = TRUE)
-      updateCheckboxInput(session, "species_stag_beetle_checkbox", value = TRUE)
-      updateCheckboxInput(session, "species_lichens_checkbox", value = TRUE)
-      updateCheckboxInput(session, "area_checkbox", value = TRUE)
-      updateCheckboxInput(session, "recreation_checkbox", value = TRUE)
+      # Loop through checkbox names and update their values
+      lapply(state$map_tab$slider$names, function(slider) {
+        checkbox_id <- paste0(slider, "_checkbox")
+        updateCheckboxInput(session, checkbox_id, value = TRUE)
+      })
     })
     
     
@@ -870,91 +839,91 @@ map_page_server <- function(id, state) {
       tagList(strategy_items)
     })
     
-    # Save strategy when the "Save" button is clicked
-    # !TODO need to save the map stuff too!
-    observeEvent(input$save_main, {
-      # Save the current state (slider values)
-      strategy <- list(
-        saved_data = new_data(),
-        clicked_polygons = clicked_polygons(),
-        
-        carbon = input$carbon,
-        species = input$species,
-        species_goat_moth = input$species_goat_moth,
-        species_stag_beetle = input$species_stag_beetle,
-        species_lichens = input$species_lichens,
-        area = input$area,
-        recreation = input$recreation,
-        
-        year = input$year,
-        
-        carbon_checkbox = input$carbon_checkbox,
-        species_checkbox = input$species_checkbox,
-        species_goat_moth_checkbox = input$species_goat_moth_checkbox,
-        species_stag_beetle_checkbox = input$species_stag_beetle_checkbox,
-        species_lichens_checkbox = input$species_lichens_checkbox,
-        area_checkbox = input$area_checkbox,
-        recreation_checkbox = input$recreation_checkbox
-      )
-      
-      # Create a unique key for the new strategy using the counter
-      strategy_key <- paste(UUIDgenerate())
-      # Add this strategy to the saved strategies list with a unique key
-      strategies <- saved_strategies()
-      strategies[[strategy_key]] <- strategy
-      print(strategies)
-      saved_strategies(strategies)
-    })
-    
-    observe({
-      strategies <- saved_strategies()  # Reactive dependency
-      print(paste("Registered strategies:", paste(names(strategies), collapse = ", ")))
-      first_strategy <- names(strategies)[1]
-      print(paste("Namespace for first strategy:", paste("load_strategy", first_strategy, sep = "_")))
-      
-      lapply(names(saved_strategies()), function(key) {
-        # Dynamically handle load strategy for each strategy
-        observeEvent(input[[paste("load_strategy", key, sep = "_")]], {
-          strategy <- saved_strategies()[[key]]
-          
-          # Restore saved data
-          new_data(strategy$saved_data)
-          clicked_polygons(strategy$clicked_polygons)
-          
-          updateSliderInput(session, "carbon", value = strategy$carbon)
-          updateSliderInput(session, "species", value = strategy$species)
-          updateSliderInput(session, "species_goat_moth", value = strategy$species_goat_moth)
-          updateSliderInput(session, "species_stag_beetle", value = strategy$species_stag_beetle)
-          updateSliderInput(session, "species_lichens", value = strategy$species_lichens)
-          updateSliderInput(session, "area", value = strategy$area)
-          updateSliderInput(session, "recreation", value = strategy$recreation)
-          
-          updateCheckboxInput(session, "carbon_checkbox", value = strategy$carbon_checkbox)
-          updateCheckboxInput(session, "species_checkbox", value = strategy$species_checkbox)
-          updateCheckboxInput(session, "species_goat_moth_checkbox", value = strategy$species_goat_moth_checkbox)
-          updateCheckboxInput(session, "species_stag_beetle_checkbox", value = strategy$species_stag_beetle_checkbox)
-          updateCheckboxInput(session, "species_lichens_checkbox", value = strategy$species_lichens_checkbox)
-          updateCheckboxInput(session, "area_checkbox", value = strategy$area_checkbox)
-          updateCheckboxInput(session, "recreation_checkbox", value = strategy$recreation_checkbox)
-          
-          # Ensure the map updates with the loaded strategy
-          initialize_or_update_map(YEAR_MIN, strategy$saved_data)        
-        }, ignoreInit = TRUE, ignoreNULL = TRUE)
-      })
-    })
-    
-    # Delete strategy when the "Delete" button is clicked
-    observeEvent(saved_strategies(), {
-      lapply(names(saved_strategies()), function(key) {
-        observeEvent(input[[paste("delete_strategy", key, sep = "_")]], {
-
-          strategies <- saved_strategies()
-          strategies[[key]] <- NULL  # Remove the strategy from the list
-          
-          saved_strategies(strategies)
-        }, ignoreInit = TRUE, ignoreNULL = TRUE)
-      })
-    })
+    # # Save strategy when the "Save" button is clicked
+    # # !TODO need to save the map stuff too!
+    # observeEvent(input$save_main, {
+    #   # Save the current state (slider values)
+    #   strategy <- list(
+    #     saved_data = new_data(),
+    #     clicked_polygons = clicked_polygons(),
+    #     
+    #     carbon = input$carbon,
+    #     species = input$species,
+    #     species_goat_moth = input$species_goat_moth,
+    #     species_stag_beetle = input$species_stag_beetle,
+    #     species_lichens = input$species_lichens,
+    #     area = input$area,
+    #     recreation = input$recreation,
+    #     
+    #     year = input$year,
+    #     
+    #     carbon_checkbox = input$carbon_checkbox,
+    #     species_checkbox = input$species_checkbox,
+    #     species_goat_moth_checkbox = input$species_goat_moth_checkbox,
+    #     species_stag_beetle_checkbox = input$species_stag_beetle_checkbox,
+    #     species_lichens_checkbox = input$species_lichens_checkbox,
+    #     area_checkbox = input$area_checkbox,
+    #     recreation_checkbox = input$recreation_checkbox
+    #   )
+    #   
+    #   # Create a unique key for the new strategy using the counter
+    #   strategy_key <- paste(UUIDgenerate())
+    #   # Add this strategy to the saved strategies list with a unique key
+    #   strategies <- saved_strategies()
+    #   strategies[[strategy_key]] <- strategy
+    #   print(strategies)
+    #   saved_strategies(strategies)
+    # })
+    # 
+    # observe({
+    #   strategies <- saved_strategies()  # Reactive dependency
+    #   print(paste("Registered strategies:", paste(names(strategies), collapse = ", ")))
+    #   first_strategy <- names(strategies)[1]
+    #   print(paste("Namespace for first strategy:", paste("load_strategy", first_strategy, sep = "_")))
+    #   
+    #   lapply(names(saved_strategies()), function(key) {
+    #     # Dynamically handle load strategy for each strategy
+    #     observeEvent(input[[paste("load_strategy", key, sep = "_")]], {
+    #       strategy <- saved_strategies()[[key]]
+    #       
+    #       # Restore saved data
+    #       new_data(strategy$saved_data)
+    #       clicked_polygons(strategy$clicked_polygons)
+    #       
+    #       updateSliderInput(session, "carbon", value = strategy$carbon)
+    #       updateSliderInput(session, "species", value = strategy$species)
+    #       updateSliderInput(session, "species_goat_moth", value = strategy$species_goat_moth)
+    #       updateSliderInput(session, "species_stag_beetle", value = strategy$species_stag_beetle)
+    #       updateSliderInput(session, "species_lichens", value = strategy$species_lichens)
+    #       updateSliderInput(session, "area", value = strategy$area)
+    #       updateSliderInput(session, "recreation", value = strategy$recreation)
+    #       
+    #       updateCheckboxInput(session, "carbon_checkbox", value = strategy$carbon_checkbox)
+    #       updateCheckboxInput(session, "species_checkbox", value = strategy$species_checkbox)
+    #       updateCheckboxInput(session, "species_goat_moth_checkbox", value = strategy$species_goat_moth_checkbox)
+    #       updateCheckboxInput(session, "species_stag_beetle_checkbox", value = strategy$species_stag_beetle_checkbox)
+    #       updateCheckboxInput(session, "species_lichens_checkbox", value = strategy$species_lichens_checkbox)
+    #       updateCheckboxInput(session, "area_checkbox", value = strategy$area_checkbox)
+    #       updateCheckboxInput(session, "recreation_checkbox", value = strategy$recreation_checkbox)
+    #       
+    #       # Ensure the map updates with the loaded strategy
+    #       initialize_or_update_map(YEAR_MIN, strategy$saved_data)        
+    #     }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    #   })
+    # })
+    # 
+    # # Delete strategy when the "Delete" button is clicked
+    # observeEvent(saved_strategies(), {
+    #   lapply(names(saved_strategies()), function(key) {
+    #     observeEvent(input[[paste("delete_strategy", key, sep = "_")]], {
+    # 
+    #       strategies <- saved_strategies()
+    #       strategies[[key]] <- NULL  # Remove the strategy from the list
+    #       
+    #       saved_strategies(strategies)
+    #     }, ignoreInit = TRUE, ignoreNULL = TRUE)
+    #   })
+    # })
     
     
   })

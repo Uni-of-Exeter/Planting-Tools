@@ -97,8 +97,8 @@ server <- function(input, output, session) {
       lng = -1.733029
     ),
     map_tab = list(
-      initialized = FALSE,
-      slider_defaults = list(NULL)
+      initialized = FALSE
+      # slider_defaults = list(NULL) # to be populated by the initialisation API?
     ),
     pref_tab = list(
       initialized = FALSE
@@ -123,11 +123,11 @@ server <- function(input, output, session) {
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
-    if (!is.null(input$mappageRendered) && input$mappageRendered 
+    if (!is.null(input$mappageRendered) && input$mappageRendered
         && !is.null(input$prefpageRendered) && input$prefpageRendered
-        && !is.null(input$altpageRendered) && input$altpageRendered 
+        && !is.null(input$altpageRendered) && input$altpageRendered
         && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
-      
+        
       # Hide the loading screen after both maps are rendered
       Sys.sleep(0.5)  # Small delay for smoother transition
       

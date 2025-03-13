@@ -11,7 +11,9 @@ post_generate_parcels <- function(json_payload) {
     httr::content_type_json()
   )
   
+  print("json_payload")
   print(json_payload)
+  
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
     
@@ -21,7 +23,6 @@ post_generate_parcels <- function(json_payload) {
     geojson <- api_response$geojson
     geojson_parsed <- st_read(geojson, quiet=TRUE)
     
-    Sys.sleep(1)
     values <- api_response$values
     return(list(geojson_parsed, values))
     
@@ -121,8 +122,6 @@ post_preference_choice <- function(choice) {
     
     values_1 <- api_response[[1]]$values
     values_2 <- api_response[[2]]$values
-    
-    Sys.sleep(1)
     
     # Return the list containing both sets of values and geojson data
     return(list(
