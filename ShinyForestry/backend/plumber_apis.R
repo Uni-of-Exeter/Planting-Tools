@@ -2,10 +2,11 @@ library(plumber)
 library(jsonlite)
 library(future)
 
+
 RNGversion("4.0.0")
 set.seed(1)
 
-normalizePath <- function(path, winslash = "\\", mustWork = FALSE) {
+normalizePath <- function(path, winslash = "/", mustWork = FALSE) {
   base::normalizePath(path, winslash = winslash, mustWork = mustWork)
 }
 
@@ -32,10 +33,11 @@ if (os == "windows" || isTRUE(requireNamespace("rstudioapi", quietly = TRUE) && 
 # more --> less: debug / info / warning / error / none
 MAX_LIMIT_LOG_LEVEL <- "debug"
 
-FolderSource <- normalizePath(".")
-
+# FolderSource <- normalizePath("/Planting-Tools/ShinyForestry")
+FolderSource <- normalizePath(file.path(".."))
 # Overridden in server() block, necessary for source(...)
 SESSION_FILE_SUFFIX <- ""
+
 source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
@@ -53,6 +55,12 @@ for(ll in 1:length(packages)) {
   library(packages[ll], character.only = TRUE)
 }
 
+# Define file paths
+ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
+CalculatedFilesFolder <- normalizePath(file.path(FolderSource, "CalculatedFiles"))
+
+
+
 #* Log full request information
 #* @filter log_request
 function(req) {
@@ -65,11 +73,65 @@ function(req) {
   
   notif(paste0(req$REQUEST_METHOD, " -- ",
                req$rook.url_scheme, "://", req$HTTP_HOST, req$PATH_INFO, req$QUERY_STRING, " -- ",
-               "Headers = { ", paste(names(req$HEADERS), req$HEADERS, sep = ": ", collapse = "; "), " }"), ntfy = FALSE)
+               "Headers = { ", paste(names(req$HEADERS), req$HEADERS, sep = ": ", collapse = "; "), " }"),
+        ntfy = FALSE)
   
   # Forward the request to the next filter or endpoint
   forward()
 }
+
+# Function to generate parcel data
+generate_parcel_data <- function(FullTable) {
+  
+  # Function to generate empty parcel data
+  generate_empty_parcel_data <- function(FullTable) {
+    if (!inherits(FullTable, "sf")) {
+      stop("FullTable must be an sf object.")
+    }
+    
+    n <- nrow(FullTable)
+    parcel_ids <- 1:n
+    geometries <- st_geometry(FullTable)
+    
+    empty_parcel_data <- st_sf(
+      parcel_id = parcel_ids,
+      geometry = geometries,
+      crs = st_crs(FullTable)
+    )
+  }
+  
+  empty_parcel_data <- generate_empty_parcel_data(FullTable)
+  
+  n <- nrow(empty_parcel_data)
+  parcel_areas <- FullTable$area
+  planting_years <- sample(2025:2049, n, replace = TRUE)
+  planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
+  planting_years[is.na(planting_types)] <- NA
+  blocked_until <- 0
+  
+  parcel_data <- st_sf(
+    parcel_id = empty_parcel_data$parcel_id,
+    geometry = empty_parcel_data$geometry,
+    parcel_area = parcel_areas,
+    planting_year = planting_years,
+    planting_type = planting_types,
+    blocked_until_year = blocked_until,
+    crs = st_crs(FullTable)
+  )
+  
+  print(parcel_data)
+  return(parcel_data)
+}
+
+#* @apiTitle Parcel Data API
+#* @apiDescription Returns parcel data in GeoJSON format.
+
+# #* @get /health
+# #* @serializer json
+# function() {
+#   list(status = "OK", message = "Plumber API is running")
+#   res$status <- 200
+# }
 
 #* Health
 #* @get /health
@@ -78,6 +140,203 @@ function(res) {
   res$status <- 200
   return("OK")
 }
+
+#* Get slider values
+#* @get /slider_values
+#* @serializer json
+function() {
+  slider_info <- list(
+    carbon = list(min = 500, max = 1000, default = 800),
+    species = list(min = 0, max = 25, default = 10),
+    species_goat_moth = list(min = 0, max = 100, default = 25),
+    species_stag_beetle = list(min = 0, max = 100, default = 30),
+    species_lichens = list(min = 0, max = 5, default = 2),
+    area = list(min = 0, max = 15, default = 10),
+    recreation = list(min = 0, max = 20, default = 15)
+  )
+  return(slider_info)
+}
+
+
+# Example Output
+#                               parcel_id                       geometry
+# 1  f4b4e4d0-7f09-4d26-a7b7-bab5b3151a57 POLYGON ((-1.756976 50.8314...
+# 2  26841c10-5fdb-4988-8795-50ef9038ed5d POLYGON ((-1.766385 50.8160...
+# 3  cb4fdd41-11ac-426e-b4d6-c04ea47ea14d POLYGON ((-1.765671 50.8316...
+# 4  cae4aa35-d2a9-415c-86ef-873d281855d3 POLYGON ((-1.759141 50.8113...
+# 5  bd20ad23-6046-46b8-8efa-ddb018d6d865 POLYGON ((-1.759423 50.8109...
+# 6  26864357-0046-448e-8b08-ebf00c61fa0a POLYGON ((-1.761 50.83261, ...
+# 7  447118a9-ede7-48cb-af07-c5fa822193e5 POLYGON ((-1.763823 50.825,...
+# 8  2a110f23-eb3c-4608-a2e6-28c4e2fd673e POLYGON ((-1.762628 50.8344...
+# 9  3451c88f-3298-4159-89d9-7bd79b4ff513 POLYGON ((-1.762547 50.8200...
+# 10 fa5558f3-a884-44cd-a9db-6b1876ff68cc POLYGON ((-1.760264 50.8301...
+
+
+
+
+
+
+
+# ---- GENERATE_PARCELS
+# -- Expected Input
+# {
+#   "carbon": 800,
+#   "species": 12,
+#   "species_goat_moth": 90,
+#   "species_stag_beetle": 20,
+#   "species_lichens": 2,
+#   "area": 7,
+#   "recreation": 10,
+#   "blocked_parcels": [
+#     {
+#       "parcel_id": "4fe067d1-d80d-4d33-8323-4a4403d2b4a5",
+#       "blocked_until_year": 2025
+#     },
+#     {
+#       "parcel_id": "9af563df-2be3-4520-bdd0-dbd26638a063",
+#       "blocked_until_year": 2025
+#     }
+#   ]
+# } 
+
+# -- Expected Output list(values, geojson)
+# {
+#   "carbon": 852,
+#   "species": 18,
+#   "species_goat_moth": 91,
+#   "species_stag_beetle": 22,
+#   "species_lichens": 4,
+#   "area": 5,
+#   "recreation": 16,
+# } 
+#                               parcel_id parcel_area planting_year planting_type is_available blocked_until_year is_blocked                       geometry
+# 1  bdd124e7-a162-4602-bff3-eb5e438d1440 0.022698955            NA          <NA>         TRUE                  0         NA POLYGON ((-1.756976 50.8314...
+# 2  162f46c9-dd15-42eb-aa6d-fbbafe002bb6 0.036774571          2043       Conifer         TRUE                  0         NA POLYGON ((-1.766385 50.8160...
+# 3  cc38292e-c59c-46b5-84b5-b4a015622d61 0.034369548          2038       Conifer         TRUE                  0         NA POLYGON ((-1.765671 50.8316...
+# 4  558f048b-c156-4bf8-9f8f-5dbfce356210 0.027595724            NA          <NA>         TRUE                  0         NA POLYGON ((-1.759141 50.8113...
+# 5  48fe3001-8443-4f08-b403-d2304a6c80a9 0.009152795            NA          <NA>         TRUE                  0         NA POLYGON ((-1.759423 50.8109...
+# 6  7b66b5a2-8f68-4bba-adf8-6285fc96940a 0.021871169          2044     Deciduous         TRUE                  0         NA POLYGON ((-1.761 50.83261, ...
+# 7  a41dfe2f-1856-4806-bf8d-7955d10565bc 0.015572843            NA          <NA>         TRUE                  0         NA POLYGON ((-1.763823 50.825,...
+# 8  e52438b7-acf3-4428-b148-bd5b5ea7313e 0.017445100            NA          <NA>         TRUE                  0         NA POLYGON ((-1.762628 50.8344...
+# 9  c033b36f-e7dd-4bdb-9deb-a008e442c413 0.015956941          2045       Conifer         TRUE                  0         NA POLYGON ((-1.762547 50.8200...
+# 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>         TRUE                  0         NA POLYGON ((-1.760264 50.8301...
+
+
+#* Generate parcel data
+#* @post /generate_parcels
+#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
+#* @serializer json
+function(req) {
+  
+  body <- tryCatch(
+    jsonlite::fromJSON(req$postBody, simplifyVector = TRUE),
+    error = function(e) return(list(error = "Invalid JSON format."))
+  )
+  
+  # Debug: Print the incoming body to inspect its structure
+  print("Incoming body:")
+  print(body)
+  
+  # Validate required fields
+  required_fields <- c("carbon", "species", "species_goat_moth", "species_stag_beetle",
+                       "species_lichens", "area", "recreation", "blocked_parcels")
+  
+  if (!all(required_fields %in% names(body))) {
+    return(list(error = "Missing required fields in request body."))
+  }
+  
+  # Extract blocked parcels
+  blocked_parcels <- body$blocked_parcels
+  
+  # Debug: Check the structure of blocked_parcels
+  print("Blocked parcels:")
+  print(blocked_parcels)
+  str(blocked_parcels)  # Check the structure of blocked_parcels
+  
+  # If blocked_parcels is a data frame, you can check directly for columns
+  if (is.data.frame(blocked_parcels)) {
+    # Validate each row in the data frame
+    for (i in 1:nrow(blocked_parcels)) {
+      parcel <- as.data.frame(blocked_parcels[i, , drop = FALSE])  # Convert to data frame row
+      
+      # Check if required columns exist
+      if (!"parcel_id" %in% colnames(parcel) || !"blocked_until_year" %in% colnames(parcel)) {
+        return(list(error = "Each parcel must have 'parcel_id' and 'blocked_until_year'."))
+      }
+      
+      # Inspect parcel fields
+      print(paste("Inspecting parcel", i))
+      print(parcel)
+      print(paste("Parcel ID: ", parcel$parcel_id))  # Debug: print parcel_id
+    }
+  } else if (is.list(blocked_parcels)) {
+    # If blocked_parcels is an empty list, create an empty data frame
+    if (length(blocked_parcels) == 0) {
+      blocked_parcels <- data.frame(parcel_id = character(0), blocked_until_year = numeric(0))
+    }
+  } else {
+    return(list(error = "`blocked_parcels` must be a data frame or a list."))
+  }
+  
+  # Continue with backend logic
+  parcel_data <- generate_parcel_data(FullTable)
+  
+  # Update blocked parcels in the backend logic
+  for (i in 1:nrow(blocked_parcels)) {
+    parcel <- as.data.frame(blocked_parcels[i, , drop = FALSE])  # Convert to data frame row
+    parcel_data$is_blocked[parcel_data$parcel_id == parcel$parcel_id] <- TRUE
+    parcel_data$blocked_until_year[parcel_data$parcel_id == parcel$parcel_id] <- parcel$blocked_until_year
+  }
+  
+  # Create dummy payload
+  payload <- list(
+    carbon = as.numeric(body$carbon), # 3* runif(1, min = 0.9, max = 1.1)),
+    species = as.numeric(body$species), # * runif(1, min = 0.9, max = 1.1)),
+    species_goat_moth = as.numeric(body$species_goat_moth), # * runif(1, min = 0.9, max = 1.1)),
+    species_stag_beetle = as.numeric(body$species_stag_beetle), # * runif(1, min = 0.9, max = 1.1)),
+    species_lichens = as.numeric(body$species_lichens), # * runif(1, min = 0.9, max = 1.1)),
+    area = as.numeric(body$area), # * runif(1, min = 0.9, max = 1.1)),
+    recreation = as.numeric(body$recreation) # * runif(1, min = 0.9, max = 1.1))
+  )
+  
+  # Convert to GeoJSON
+  geojson <- geojsonsf::sf_geojson(parcel_data)
+  
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+#* Generate parcel data
+#* @get /random_strategy
+#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
+#* @serializer json
+function() {
+  # Generate parcel data
+  parcel_data <- generate_parcel_data()
+  geojson <- geojsonsf::sf_geojson(parcel_data)
+  
+  values <- list(
+    carbon = as.numeric(500),
+    species = as.numeric(5), 
+    species_goat_moth = as.numeric(4),
+    species_stag_beetle = as.numeric(9),
+    species_lichens = as.numeric(10),
+    area = as.numeric(15),
+    recreation = as.numeric(10) 
+  )
+  
+  # Add a small random number between -0.5 and 0.5 to each value
+  values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
+  
+  return(list(
+    values = values,
+    geojson = geojson
+  ))
+}
+
+# Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`
 
 
 # https://github.com/rstudio/plumber/issues/579#issuecomment-702432276
@@ -123,7 +382,7 @@ function(req, res, file_to_upload) {
   # An Elicitor file was changed, Calculated files must be re-computed
   calculated_files_folder <- normalizePath(file.path("CalculatedFiles"))
   files_to_remove <- list.files(path = calculated_files_folder)
-  file.remove(file.path(calculated_files_folder, files_to_remove)
+  file.remove(file.path(calculated_files_folder, files_to_remove))
   
   res$status <- 200
   return("Success")
@@ -170,7 +429,7 @@ function(res, filename, md5sum) {
 #* @response 200 Success: Initialized the app, did pre-processing
 #* @response 403 Forbidden: Missing one or more input files from the elicitor
 #* @response 500 Internal Server Error: One of the elicitor files is not readable
-function(res, MAX_LIMIT_LOG_LEVEL = "info") {
+function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   
   library(future)
   plan(futureplan, workers = min(4, future::availableCores()))
@@ -217,7 +476,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
     # futureplan <- future::sequential
     # future:::ClusterRegistry("stop")
     
-    FolderSource <- normalizePath(".")
+    FolderSource <- normalizePath(file.path(".."))
     # FolderSource <- normalizePath(file.path(getwd(), "..", "ShinyForestry"))
     # if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
     #   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
@@ -982,7 +1241,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
       file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData"))) &&
       file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData"))) &&
       file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))) {
-    # if (FALSE) {
+      # if (FALSE) {
       
       #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
       #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
@@ -1057,9 +1316,9 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
               
               if(simul636YearType[["TYPE"]][i, j]=="Conifers"){
                 PrecalcCarbonAllExtentsType[[ext]][i, j]<-CarbonSelectedYear[i,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                           simul636YearType$YEAR[i, j])]
+                                                                                      simul636YearType$YEAR[i, j])]
                 PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-CarbonSelectedSDYear[i,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                               simul636YearType$YEAR[i, j])]
+                                                                                          simul636YearType$YEAR[i, j])]
               }else{
                 PrecalcCarbonAllExtentsType[[ext]][i, j]<-CarbonSelectedYear85[i,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[i, j])]
                 PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-CarbonSelectedSDYear85[i,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[i, j])]
@@ -1096,13 +1355,13 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
   for (object_name in ls(new_environment)) {
     object <- get(object_name, envir = new_environment)
     if (isTRUE("function" %in% class(object))) {
-        
-        # Remove if not part of base package
-        packages <- find(object_name)
-        if (isFALSE("package:base" %in% packages)) {
-          try(rm(list = object_name, envir = new_environment))
-        }
-        
+      
+      # Remove if not part of base package
+      packages <- find(object_name)
+      if (isFALSE("package:base" %in% packages)) {
+        try(rm(list = object_name, envir = new_environment))
+      }
+      
     }
   }
   notif(paste(msg, "done"), log_level = "debug")
@@ -1124,7 +1383,5 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
   notif("Backend initialization ... done")
   
   res$status <- 200
-
   return(new_environment)
 }
-

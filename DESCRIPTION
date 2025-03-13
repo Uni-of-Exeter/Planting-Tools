@@ -1,10 +1,5 @@
 # progress is required on Ubuntu: https://github.com/tidyverse/vroom/issues/538
 Imports:
-  gitcreds,
-  Rcpp,
-  RRembo,
-  dgpsi,
-  xfun,
   progress,
   car,
   shinyjs,
@@ -13,7 +8,18 @@ Imports:
   shiny.fluent,
   reactlog,
   leaflet,
+  leaflet.extras,
+  plotly,
+  glue,
+  httr,
+  bslib,
+  shinycssloaders,
+  jsonlite,
+  units,
+  plotly,
   sf,
+  uuid,
+  geojsonsf,
   ggplot2,
   geosphere,
   feather,
@@ -58,15 +64,12 @@ Imports:
   adaptMCMC,
   data.table,
   eaf,
+  RRembo,
+  dgpsi,
   testthat,
   pkgload,
   devtools,
-  boot,
-  nnet,
-  survival,
-  cluster,
-  codetools
+  plumber
 Remotes:
-  mingdeyu/dgpsi-R,
-  mbinois/RRembo
-
+  https://github.com/mingdeyu/dgpsi-R.git,
+  https://github.com/mbinois/RRembo.git
