@@ -29,7 +29,4 @@ if (API_HOST == "") {
   API_HOST <- "144.173.60.164"
 }
 
-API_HOST <- "127.0.0.1"
-API_PORT <- 8042
-
 API_URL <- paste0("http://", API_HOST, ":", API_PORT)
