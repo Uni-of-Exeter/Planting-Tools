@@ -1,12 +1,42 @@
+library(data.table)
+library(jsonlite)
+
+# Function to process initialization$first_strategy
+process_first_strategy <- function(strategy) {
+  # Extract values and geojson from the first_strategy
+  values <- strategy$values
+  geojson <- strategy$geojson
+  geojson_parsed <- st_read(geojson, quiet=TRUE)
+  
+  # Debug: Check if values is a data.table and if it's not empty
+  if (length(values) == 0 || !inherits(values, "data.table")) {
+    stop("The 'values' data is either missing or not a data.table.")
+  }
+  
+  # Convert the data.table row into a named list (assuming only one row)
+  values_list <- as.list(values[1, ])  # Extract the first row and convert to list
+  
+  # Set the names of the list to match the column names of the data.table
+  names(values_list) <- colnames(values)
+  
+  # Construct the final output as a list containing values and geojson
+  output <- list(
+    geojson = geojson_parsed,  # Geojson object passed as is
+    values = values_list
+  )
+  
+  return(output)
+}
+
 # POST to /generate_parcels
 post_generate_parcels <- function(json_payload) {
   
-  url <- paste0(API_URL, "/generate_parcels")
+  url <- paste0(API_URL, "/submit_targets")
   
   # Make the API POST request with JSON payload
   response <- httr::POST(
     url,
-    body = json_payload, 
+    body = ("from_front_end" = json_payload), 
     encode = "json",
     httr::content_type_json()
   )

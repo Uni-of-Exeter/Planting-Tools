@@ -390,57 +390,73 @@ preferences_page_server <- function(id, state) {
       # Generate table rows dynamically
       table_rows <- paste0(
         lapply(names(current_value), function(name) {
-          display_name <- SLIDER_NAMES[[name]]$name
-          unit <- SLIDER_NAMES[[name]]$unit
+          # Get the index of the slider name in state$map_tab$slider$names
+          idx <- which(state$map_tab$slider$names == name)
+          
+          # Get the display name for the slider (from the slider names list)
+          display_name <- state$map_tab$slider$names[idx]
+          
+          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
+          # If unit is not available, you can use a default unit like "units"
+          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
-
+          
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-                <td style='text-align:left;'>%s %s</td></tr>",
+               <td style='text-align:left;'>%s %s</td></tr>",
                   display_name, value, unit)
         }),
         collapse = "\n"
       )
-
+      
       # Construct the legend-like content with tabbed format
       legend_html <- paste0(
         "<table style='width:100%;'>",  # Ensuring the table takes full width
         table_rows,  # Add dynamically generated rows
         "</table><br>"
       )
-
+      
       HTML(legend_html)  # Return HTML to be rendered
     })
 
     output$value_box_one <- renderUI({
-      # Get the current value of the reactive variable
       current_value <- new_vals_one()
-
+      
       # Generate table rows dynamically
       table_rows <- paste0(
         lapply(names(current_value), function(name) {
-          display_name <- SLIDER_NAMES[[name]]$name
-          unit <- SLIDER_NAMES[[name]]$unit
+          # Get the index of the slider name in state$map_tab$slider$names
+          idx <- which(state$map_tab$slider$names == name)
+          
+          # Get the display name for the slider (from the slider names list)
+          display_name <- state$map_tab$slider$names[idx]
+          
+          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
+          # If unit is not available, you can use a default unit like "units"
+          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
-
+          
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-                <td style='text-align:left;'>%s %s</td></tr>",
+               <td style='text-align:left;'>%s %s</td></tr>",
                   display_name, value, unit)
         }),
         collapse = "\n"
       )
-
+      
       # Construct the legend-like content with tabbed format
       legend_html <- paste0(
         "<table style='width:100%;'>",  # Ensuring the table takes full width
         table_rows,  # Add dynamically generated rows
         "</table><br>"
       )
-
+      
       HTML(legend_html)  # Return HTML to be rendered
     })
-
     current_year <- reactive({
       input[[ns("year")]]
     })

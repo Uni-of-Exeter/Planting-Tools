@@ -178,8 +178,8 @@ map_page_server <- function(id, state) {
       
       # Compute cumulative area for each planting type
       cumulative_data <- plot_data %>%
-        arrange(planting_type, planting_year) %>%
-        group_by(planting_type) %>%
+        arrange(planting_types, planting_year) %>%
+        group_by(planting_types) %>%
         mutate(cumulative_area = cumsum(total_area)) %>%
         ungroup()
       
@@ -202,7 +202,7 @@ map_page_server <- function(id, state) {
       }
       
       # Create the plot
-      p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_type)) +
+      p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_types)) +
         geom_line(size = 1, alpha = FILL_OPACITY) +
         geom_point(size = 1.2) +
         scale_color_manual(values = COLOUR_MAPPING) +
@@ -253,7 +253,7 @@ map_page_server <- function(id, state) {
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
       new_fetched <- if (!is.null(data)) {
-        list(data, NULL)
+        data
       } else {
         post_generate_parcels(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
       }
@@ -291,7 +291,7 @@ map_page_server <- function(id, state) {
           #   geometry = st_make_valid(geometry),  # Ensure valid geometries
           #   parcel_area = st_area(geometry)      # Calculate area of each polygon
           # ) %>%
-          dplyr::group_by(planting_year, planting_type) %>%
+          dplyr::group_by(planting_year, planting_types) %>%
           dplyr::summarise(total_area = sum(parcel_area, na.rm = TRUE), .groups = 'drop') %>%  # Avoid warning with `.groups`
           dplyr::arrange(planting_year)  # Ensures chronological order
         
@@ -346,7 +346,7 @@ map_page_server <- function(id, state) {
               data = filtered_data_subset,  # Filtered data based on the year
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
               fillOpacity = FILL_OPACITY,
               layerId = ~parcel_id,
               label = ~parcel_id,
@@ -368,7 +368,7 @@ map_page_server <- function(id, state) {
               data = filtered_data_subset,  # Filtered data based on the year
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
               fillOpacity = FILL_OPACITY,
               layerId = ~parcel_id,
               label = ~parcel_id,
@@ -433,32 +433,33 @@ map_page_server <- function(id, state) {
         #   )
         # )
         
-        slider_info <- data.table(
-          name = c("carbon", "species", "species_goat_moth", "species_stag_beetle", "species_lichens", "area", "recreation"),
-          min = c(500, 0, 0, 0, 0, 0, 0),
-          max = c(1000, 25, 100, 100, 5, 15, 20),
-          default = c(800, 10, 25, 30, 2, 10, 15)
-        )
+        # slider_info <- data.table(
+        #   name = c("carbon", "species", "species_goat_moth", "species_stag_beetle", "species_lichens", "area", "recreation"),
+        #   min = c(500, 0, 0, 0, 0, 0, 0),
+        #   max = c(1000, 25, 100, 100, 5, 15, 20),
+        #   default = c(800, 10, 25, 30, 2, 10, 15)
+        # )
         
         # Convert slider_info into the desired format
         state$map_tab$slider <- list(
-          names = slider_info$name,  # Extract the names of the sliders
+          names = colnames(slider_info),  # Use the column names (slider names)
           values = setNames(
-            lapply(1:nrow(slider_info), function(i) {
+            lapply(1:ncol(slider_info), function(i) {
               list(
-                min = slider_info$min[i],
-                max = slider_info$max[i],
-                default = slider_info$default[i]
+                min = slider_info[1, ..i],         # Get the min value (first row of each column)
+                max = slider_info[2, ..i],         # Get the max value (second row of each column)
+                default = slider_info[3, ..i]      # Get the default value (third row of each column)
               )
             }),
-            slider_info$name  # Assign names to the values
+            colnames(slider_info)  # Use the column names for the values
           )
         )
         
         default_payload <- c(
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
-              state$map_tab$slider$values[[slider]]$default
+              # Directly extract the numeric default value from the list without nesting
+              as.numeric(state$map_tab$slider$values[[slider]]$default)
             }),
             state$map_tab$slider$names
           ),
@@ -472,14 +473,23 @@ map_page_server <- function(id, state) {
         output$dynamic_sliders <- renderUI({
           tagList(
             lapply(state$map_tab$slider$names, function(slider) {
+              # Extract the min, max, and default values and ensure they are numeric
+              min_value <- as.numeric(state$map_tab$slider$values[[slider]]$min)
+              max_value <- as.numeric(state$map_tab$slider$values[[slider]]$max)
+              default_value <- as.numeric(state$map_tab$slider$values[[slider]]$default)
+              
+              # Debugging: Print min, max, default values to check their structure
+              print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
+              
+              # Create a fluidRow with a checkbox and sliderInput for each slider
               fluidRow(
                 column(CHECKBOX_COL, checkboxInput(ns(paste0(slider, "_checkbox")), NULL, value = TRUE)),
                 column(SLIDER_COL, sliderInput(
                   ns(slider), 
                   label = slider,  # Use the slider name as the label
-                  min = state$map_tab$slider$values[[slider]]$min,
-                  max = state$map_tab$slider$values[[slider]]$max,
-                  value = state$map_tab$slider$values[[slider]]$default
+                  min = min_value,
+                  max = max_value,
+                  value = default_value
                 ))
               )
             })
@@ -487,8 +497,8 @@ map_page_server <- function(id, state) {
         })
         
         default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
-        initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
-        # initialize_or_update_map(YEAR_MIN, data=)
+        # initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+        initialize_or_update_map(YEAR_MIN, data=process_first_strategy(first_strategy))
         state$map_tab$initialized <- TRUE 
       }
     })
@@ -735,7 +745,7 @@ map_page_server <- function(id, state) {
               data = current_data[current_data$parcel_id %in% to_add, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
@@ -774,7 +784,7 @@ map_page_server <- function(id, state) {
               data = unclk,  # Data for unblocked parcels
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_types])),  # Grey if not planted yet or NA
               fillOpacity = FILL_OPACITY,
               group = "UnblockedPolygons",
               layerId = unclk$parcel_id,  # Reassign the same layerId for unblocked polygons
@@ -792,7 +802,7 @@ map_page_server <- function(id, state) {
               data = unblk,  # Data for unblocked parcels
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_types])),  # Grey if not planted yet or NA
               fillOpacity = FILL_OPACITY,
               group = "UnblockedPolygons",
               layerId = unblk$parcel_id,  # Reassign the same layerId for unblocked polygons
@@ -898,6 +908,7 @@ map_page_server <- function(id, state) {
     #   saved_strategies(strategies)
     # })
     # 
+    # # WILL NEED TO RENAME first_strategy
     # observe({
     #   strategies <- saved_strategies()  # Reactive dependency
     #   print(paste("Registered strategies:", paste(names(strategies), collapse = ", ")))
