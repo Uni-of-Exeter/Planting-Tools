@@ -139,9 +139,6 @@ generate_parcel_data <- function(FullTable) {
 #* @response 200 Success: Service is healthy
 function(res) {
   res$status <- 200
-  if (exists("target_compatible_strategies", envir = .GlobalEnv)) {
-    notif(target_compatible_strategies, rbind = TRUE, log_level = "error")
-  }
   return("OK")
 }
 
