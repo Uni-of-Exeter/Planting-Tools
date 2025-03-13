@@ -1380,6 +1380,11 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
               "FolderSource"),
      envir = new_environment)
   
+  # We only need FullTableNotAvail
+  env <- new.env()
+  env$FullTableNotAvail <- FullTableNotAvail
+  new_environment <- env
+  
   notif("Backend initialization ... done")
   
   res$status <- 200
