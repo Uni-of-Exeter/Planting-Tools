@@ -143,13 +143,13 @@ if (isTRUE(run_initalization_on_backend)) {
 
 # Source module files
 source("global.R")  # Load global settings
-source("config.R")  # Load config 
+source("config.R")  # Load config
 
 source("modules/map_page.R")
-source("modules/preferences_page.R")
-source("modules/alternative_approaches_page.R")
-source("modules/exploration_page.R")
-source("modules/downscaling_page.R")
+# source("modules/preferences_page.R")
+# source("modules/alternative_approaches_page.R")
+# source("modules/exploration_page.R")
+# source("modules/downscaling_page.R")
 
 source("utils/api_functions.R")
 
@@ -235,17 +235,17 @@ server <- function(input, output, session) {
   )
     
   map_page_server("map", state)
-  preferences_page_server("prefs", state)
-  alt_page_server("alt", state)
-  exploration_page_server("explore", state)
-  downscaling_page_server("downscale", state)
+  # preferences_page_server("prefs", state)
+  # alt_page_server("alt", state)
+  # exploration_page_server("explore", state)
+  # downscaling_page_server("downscale", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
-    if (!is.null(input$mappageRendered) && input$mappageRendered
-        && !is.null(input$prefpageRendered) && input$prefpageRendered
-        && !is.null(input$altpageRendered) && input$altpageRendered
-        && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
+    if (!is.null(input$mappageRendered) && input$mappageRendered) {
+        # && !is.null(input$prefpageRendered) && input$prefpageRendered
+        # && !is.null(input$altpageRendered) && input$altpageRendered
+        # && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
         
       # Hide the loading screen after both maps are rendered
       Sys.sleep(0.5)  # Small delay for smoother transition
