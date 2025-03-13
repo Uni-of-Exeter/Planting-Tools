@@ -41,6 +41,7 @@ post_generate_parcels <- function(json_payload) {
     httr::content_type_json()
   )
   
+  print(">>>>>>>>>>>>")
   print("json_payload")
   print(json_payload)
   
@@ -54,6 +55,14 @@ post_generate_parcels <- function(json_payload) {
     geojson_parsed <- st_read(geojson, quiet=TRUE)
     
     values <- api_response$values
+    
+    print("json_response")
+    print("geojson")
+    print(geojson_parsed)
+    print("values")
+    print(values) 
+    print("<<<<<<<<<<<<<")
+    
     return(list(geojson_parsed, values))
     
   } else {
