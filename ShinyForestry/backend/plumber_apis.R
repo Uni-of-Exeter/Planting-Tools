@@ -138,25 +138,11 @@ generate_parcel_data <- function(FullTable) {
 #* @response 200 Success: Service is healthy
 function(res) {
   res$status <- 200
+  if (exists("target_compatible_strategies", envir = .GlobalEnv)) {
+    notif(target_compatible_strategies, rbind = TRUE, log_level = "error")
+  }
   return("OK")
 }
-
-#* Get slider values
-#* @get /slider_values
-#* @serializer json
-function() {
-  slider_info <- list(
-    carbon = list(min = 500, max = 1000, default = 800),
-    species = list(min = 0, max = 25, default = 10),
-    species_goat_moth = list(min = 0, max = 100, default = 25),
-    species_stag_beetle = list(min = 0, max = 100, default = 30),
-    species_lichens = list(min = 0, max = 5, default = 2),
-    area = list(min = 0, max = 15, default = 10),
-    recreation = list(min = 0, max = 20, default = 15)
-  )
-  return(slider_info)
-}
-
 
 # Example Output
 #                               parcel_id                       geometry
@@ -336,8 +322,167 @@ function() {
   ))
 }
 
-# Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`
 
+#* Submit targets to return a strategy
+#* Triggers a clustering in a new process in the background
+#* @POST /submit_targets
+#* @serializer json
+function() {
+  
+  # Takes in:
+  # {
+  #   "carbon": 852,
+  #   "species": 18,
+  #   "species_goat_moth": 91,
+  #   "species_stag_beetle": 22,
+  #   "species_lichens": 4,
+  #   "area": 5,
+  #   "recreation": 16,
+  # } 
+  
+  # runs: submit_button()
+  
+  # returns:
+  # -- Expected Output list(values, geojson)
+  # {
+  #   "carbon": 852,
+  #   "species": 18,
+  #   "species_goat_moth": 91,
+  #   "species_stag_beetle": 22,
+  #   "species_lichens": 4,
+  #   "area": 5,
+  #   "recreation": 16,
+  # } 
+  #                               parcel_id parcel_area planting_year planting_type is_available blocked_until_year is_blocked                       geometry
+  # 1  bdd124e7-a162-4602-bff3-eb5e438d1440 0.022698955            NA          <NA>         TRUE                  0         NA POLYGON ((-1.756976 50.8314...
+  # 2  162f46c9-dd15-42eb-aa6d-fbbafe002bb6 0.036774571          2043       Conifer         TRUE                  0         NA POLYGON ((-1.766385 50.8160...
+  # 3  cc38292e-c59c-46b5-84b5-b4a015622d61 0.034369548          2038       Conifer         TRUE                  0         NA POLYGON ((-1.765671 50.8316...
+  # 4  558f048b-c156-4bf8-9f8f-5dbfce356210 0.027595724            NA          <NA>         TRUE                  0         NA POLYGON ((-1.759141 50.8113...
+  # 5  48fe3001-8443-4f08-b403-d2304a6c80a9 0.009152795            NA          <NA>         TRUE                  0         NA POLYGON ((-1.759423 50.8109...
+  # 6  7b66b5a2-8f68-4bba-adf8-6285fc96940a 0.021871169          2044     Deciduous         TRUE                  0         NA POLYGON ((-1.761 50.83261, ...
+  # 7  a41dfe2f-1856-4806-bf8d-7955d10565bc 0.015572843            NA          <NA>         TRUE                  0         NA POLYGON ((-1.763823 50.825,...
+  # 8  e52438b7-acf3-4428-b148-bd5b5ea7313e 0.017445100            NA          <NA>         TRUE                  0         NA POLYGON ((-1.762628 50.8344...
+  # 9  c033b36f-e7dd-4bdb-9deb-a008e442c413 0.015956941          2045       Conifer         TRUE                  0         NA POLYGON ((-1.762547 50.8200...
+  # 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>         TRUE                  0         NA POLYGON ((-1.760264 50.8301...
+  
+  
+  from_submit_button <- plumber::parser_json()(value = from_front_end)
+  
+  #Amend global blocked_parcels
+  blocked_parcels <<- from_submit_button$blocked_parcels
+  #Extract targets
+  target_carbon <- from_submit_button$carbon
+  target_visits <- from_submit_button$recreation
+  target_area <- from_submit_button$area
+  bio_names <- names(from_submit_button)[ ! names(from_submit_button)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+  targets_bio <- from_submit_button[bio_names]
+  names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
+  #Convert English to Latin names for FullTable Compatibility
+  for(species in 1:length(targets_bio)){
+    t_name <- names(targets_bio)[species]
+    if(t_name != "All"){
+      specie_num <- which(NAME_CONVERSION$English_specie == t_name)
+      if(length(specie_num)>0){
+        #A species
+        names(targets_bio)[species] <- NAME_CONVERSION$Specie[specie_num]
+        #No need to change if its a group
+      }
+    }
+  }
+  #Filter strategies for blocked parcels and amend global compatible strategies
+  if(!is.null(from_submit_button$blocked_parcels)){
+    t_ids <- paste("plantingyear","parcel",from_submit_button$blocked_parcels$parcel_id,sep="_")
+    sampled_parcels <- Strategies[,t_ids,drop=F]
+    block_compatible <- matrix(0, nrow=nrow(sampled_parcels),ncol=ncol(sampled_parcels))
+    for(kk in 1:length(t_ids)){
+      block_compatible[,kk] <- sampled_parcels[,kk] > from_submit_button$blocked_parcels$blocked_until_year[kk]
+    }
+    valid_strategies <<- which(rowSums(block_compatible)==ncol(block_compatible))
+  }else{
+    valid_strategies <<- strategy_outcomes$strategy_id
+  }
+  #Find the target compatible strategies and assign global variable for use in other algorithms
+  target_compatible_strategies <<- strategy_outcomes[ strategy_id %in% valid_strategies &
+                                                        (target_carbon - carbon)/carbon_sd < (-sqrt(alpha/(1-alpha))) &
+                                                        area < target_area & 
+                                                        (target_visits - visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
+                                                        Reduce(`&`, lapply(SPECIES, function(col) 100 * (targets_bio[[col]] - get(col)) < (-sqrt(alpha/(1-alpha))) )) ]
+  if(nrow(target_compatible_strategies)>0){
+    optimal_strategy_forfrontend <- target_compatible_strategies[which.max(objective)]
+    #Now wrap the optimal strategy into the right format
+    tyears <- as.numeric(as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  }else{#return the null strategy
+    optimal_strategy_forfrontend <- null_outcomes
+    tyears <- as.numeric(as.vector(null_strategy[1,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(null_strategy[1,startsWith(colnames(Strategies),"treespecie")])
+  }
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% from_submit_button$blocked_parcels$parcel_id)] <- from_submit_button$blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- optimal_strategy_forfrontend[, ..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  
+  # Clustering as a side-effect, in a future, then push it to global environment
+  msg <- "Clustering starting as a new process"
+  notif(msg, log_level = "debug")
+  future_promise(expr = {
+    
+    msg <- "Clustering in a new process starting"
+    notif(msg, log_level = "debug")
+    
+    # Changes the global environment:
+    # target_compatible_strategies
+    # 
+    target_compatible_strategies <- cluster_samples()
+    return(target_compatible_strategies)
+    
+  }, seed = NULL) %...>% {
+    
+    # On success
+    target_compatible_strategies <- .
+    
+    msg <- "Clustering success, merging target_compatible_strategies to .GlobalEnv"
+    notif(msg, log_level = "debug")
+    target_compatible_strategies <<- target_compatible_strategies
+    return(TRUE)
+    
+  } %...!% {
+    
+    # On failure
+    msg <- "Clustering failure"
+    notif(msg, log_level = "error")
+    return(FALSE)
+    
+  }
+  
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
 
 # https://github.com/rstudio/plumber/issues/579#issuecomment-702432276
 # https://stackoverflow.com/questions/76968662/plumber-accepting-a-file-and-a-string-file-name
@@ -496,19 +641,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
     source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
     source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
-    
-    
-    # Retrieve packages from DESCRIPTION (in plantingtools_folder)
-    plantingtools_folder <- normalizePath(file.path(FolderSource, ".."))
-    packages <- read.dcf(normalizePath(file.path(plantingtools_folder, "DESCRIPTION")))[, "Imports"]
-    packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
-    packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
-    packages <- na.omit(packages)  # Remove any NAs
-    
-    # # Load packages in DESCRIPTION
-    for(i in 1:length(packages)) {
-      library(packages[i], character.only = TRUE)
-    }
+    source(normalizePath(file.path(FolderSource, "DannyFunctions.R")), local = FALSE)
     
     if (RUN_BO) {
       dgpsi::init_py(verb = FALSE)
@@ -1003,119 +1136,6 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     
     # future:::ClusterRegistry("stop")
     
-    STDMEAN <- 0.05
-    STDSTD <- 0.01
-    
-    # Random sampling
-    NSamp <- 2000
-    
-    #Now the random sample contains the year of planting/
-    msg <- paste0("Sampling ", NSamp, " random strategies ...")
-    notif(msg)
-    
-    Uniqunits <- unique(FullTable$units)
-    
-    simul636YearType <- local({
-      pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
-      simul636YearType <- foreach(
-        i = 1:NSamp,
-        .combine = combine_foreach_rbind,
-        .multicombine = TRUE,
-        .inorder = TRUE,
-        .options.future = list(
-          seed = TRUE
-        )
-      ) %dofuture% {
-        
-        # Part 1: simul636
-        pp <- runif(1)
-        RandSamp <- rmultinom(length(Uniqunits), 1, c(pp, 1 - pp))[1, ]
-        
-        result <- matrix(0, nrow = 1, ncol = dim(FullTable)[1])
-        for (j in 1:length(Uniqunits)) {
-          result[1, FullTable$units == Uniqunits[j]] <- RandSamp[j]
-        }
-        result_simul636 <- result
-        
-        
-        
-        # Part 2: simul636Year
-        
-        # Simul636Year is populated with the year of planting
-        # once simul636Year works it will replace simul636
-        # (MAXYEAR+1) is the code for no planting
-        # Otherwise 0 to MAXYEAR is the year of planting if planted.
-        result <- result_simul636
-        
-        result[1, result_simul636[1,]==0]<-(MAXYEAR+1)
-        probb<-runif(1,0.2,0.6)
-        size<-15*runif(1)
-        result[1, result_simul636[1,]!=0]<-pmin(rnbinom(sum(result_simul636[1,]),size=size,prob=probb),MAXYEAR)
-        
-        result_simul636Year <- result
-        
-        
-        
-        # Part 3: simul636YearType
-        
-        #### Simul636YearType is a similar table but it stops at year MAXYEAR and
-        #### instead, we pick a tree type (or no planting)
-        result <- list(YEAR=result_simul636-1,TYPE=t(apply(result_simul636,2,as.character)))
-        result[["TYPE"]][1, result_simul636[1,]==0]<-"NoPlanting"
-        probbType<-runif(1,0.5)
-        Planted<-(result_simul636[1,]==1)
-        if(sum(Planted)>0){
-          result[["TYPE"]][1, result_simul636[1,]==1]<-sample(c("Conifers","Deciduous"),sum(Planted),replace=TRUE,prob=c(probbType,1-probbType))}
-        
-        probb<-runif(1,0.2,0.6)
-        size<-15*runif(1)
-        DRAW<-pmin(rnbinom(sum(result_simul636[1,]),size=size,prob=probb),MAXYEAR)
-        result$YEAR[1, result$TYPE[1,]!="NoPlanting"]<-DRAW
-        
-        result_simul636YearType <- result
-        
-        # End
-        if (i %% (ceiling(NSamp / 100)) == 0) {pb(amount = ceiling(NSamp / 100))}
-        return(result_simul636YearType)
-      }
-      # Avoid warning message from progressor function
-      pb(amount = 0)
-      return(simul636YearType)
-    })
-    
-    msg <- paste(msg, "done")
-    notif(msg)
-    
-    handlers(
-      c(handler_shiny(),
-        progress_handlers),
-      on_missing = "ignore"
-    )
-    
-    RREMBO_CONTROL <- list(
-      # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
-      designtype = "LHS",
-      # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
-      reverse = FALSE)
-    RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
-                                               D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
-                                               init = list(n = 100), budget = 100,
-                                               control = RREMBO_CONTROL,
-                                               max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
-    
-    
-    # Load the value into a reactive variable on the frontend directly
-    Simul636YearOverrideReactive_toload_in_reactiveVal <- vector("list",dim(simul636YearType$YEAR)[2])
-    Simul636YearTypeOverrideReactive_toload_in_reactiveVal <- vector("list",dim(simul636YearType$YEAR)[2])
-    
-    
-    
-    alphaLVL <- 0.9
-    ILevel<- -(sqrt(alphaLVL/(1-alphaLVL)))
-    
-    MaxRounds <- 5
-    ConvertSample <- sample(1:NSamp, 200)
-    
     # Outcomes
     if (isFALSE(exists("outcomes", inherits = FALSE))) {
       msg <- paste("Waiting for", normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
@@ -1131,7 +1151,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       while (inherits(suppressWarnings(try(outcomes <- rjson::fromJSON(file = normalizePath(file.path(ElicitorAppFolder, "outcomes.json")))
                                            , silent = TRUE)),
                       "try-error")) {
-        Sys.sleep(1)
+        Sys.sleep(0.1)
         tries <- tries + 1
         if (tries > 10) {
           res$status <- 500
@@ -1173,171 +1193,97 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       notif(msg)
     }
     
+    
+    FullTable_long <- transform_FullTable_wide_to_long(FullTable_arg = FullTable,
+                                                       SCENARIO_arg = SCENARIO,
+                                                       MAXYEAR_arg = MAXYEAR,
+                                                       verbose = FALSE)
+    FullTable_long <- precompute_biodiversity(FullTable_long, MAXYEAR)
+    parcel_id <- unique(FullTable_long$parcel_id)
+    group_size <- length(parcel_id)
+    
+    precomputed_vals <- precompute_static_values(FullTable, MAXYEAR)
+    
+    
+    # Random sampling
+    NSamp <- 2000
+    
+    #Now the random sample contains the year of planting/
+    msg <- paste0("Sampling ", NSamp, " random strategies ...")
+    notif(msg)
+    
+    Strategies <- local({
+      pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
+      Strategies <- foreach(
+        i = 1:NSamp,
+        .combine = combine_foreach_rbind,
+        .multicombine = TRUE,
+        .inorder = TRUE,
+        .options.future = list(
+          seed = TRUE
+        )
+      ) %dofuture% {
+        
+        #Area
+        pp <- runif(1)
+        rand_samp <- as.integer(runif(n_parcels)< pp)
+        
+        #This part simply ensures that if we are doing decision units as clusters of parcels
+        #the same strategy is assigned to all parcels per unit
+        result <- matrix(0, nrow = 1, ncol = n_parcels)
+        for (j in 1:n_parcels) {
+          result[1, FullTable$units == Uniqunits[j]] <- rand_samp[j]
+        }
+        strategy_area <- t(precomputed_vals$area_possible_values_dataframe[cbind(1+result[1,],1:n_parcels)])
+        colnames(strategy_area) <- precomputed_vals$area_colnames
+        
+        #Year
+        strategy_year <- result
+        strategy_year[1, result[1,]==0] <- (MAXYEAR+1)#Coding no planting as planting in 2051?!
+        #This code adds a year layer, ensuring planting year is biased low. It replaces plant no plant with a year and year = MAXYEAR+1 is now "no plant" and 0 is plant immediately
+        probb<-runif(1,0.2,0.6)
+        size<-15*runif(1)
+        strategy_year[1, result[1,]!=0]<-pmin(rnbinom(sum(result[1,]),size=size,prob=probb),MAXYEAR)
+        colnames(strategy_year) <- precomputed_vals$plantingyear_colnames
+        
+        #Tree species
+        probbType<-runif(1,0.5)
+        strategy_species <- t(sample(c("Conifers", "Deciduous"),n_parcels,replace=TRUE,prob=c(probbType,1-probbType)))
+        colnames(strategy_species) <- precomputed_vals$treespecie_colnames
+        
+        #Combine into a strategy
+        return(cbind(strategy_area, strategy_year, strategy_species))
+      }
+      # Avoid warning message from progressor function
+      pb(amount = 0)
+      return(Strategies)
+    })
+    
+    msg <- paste(msg, "done")
+    notif(msg)
+    
+    handlers(
+      c(handler_shiny(),
+        progress_handlers),
+      on_missing = "ignore"
+    )
+    
+    RREMBO_CONTROL <- list(
+      # method to generate low dimensional data in RRembo::designZ ("LHS", "maximin", "unif"). default unif
+      designtype = "LHS",
+      # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
+      reverse = FALSE)
+    RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
+                                               D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                               init = list(n = 100), budget = 100,
+                                               control = RREMBO_CONTROL,
+                                               max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
+    
     # SPECIES <- c(NAME_CONVERSION[1:2, "Specie"], "Pollinators", "All")
     # SPECIES_ENGLISH <- c(NAME_CONVERSION[1:2, "English_specie"], "Pollinators", "All")
     N_SPECIES <- length(SPECIES)
-    TARGETS <- c("Carbon", SPECIES, "Area", "Visits")
+    TARGETS <- c("carbon", SPECIES, "area", "visits")
     N_TARGETS <- length(TARGETS)
-    
-    #Indicates if the quantity must be above (TRUE) or below the target (FALSE)
-    AboveTargets<-rep(TRUE,N_TARGETS)
-    AboveTargets[N_TARGETS-1]<-FALSE
-    
-    # slider_list <- list(
-    #   sliderInput("BioSliderAcanthis_cabaret", "Average Acanthis_cabaret % increase:", min = 0, max = 36, value = 25)
-    # )
-    # Add sliderInput("BioSliderSPECIE", "Average SPECIE % increase:", min = 0, max = 36, value = 25) for each specie
-    
-    verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree carbon stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
-                               lapply(SPECIES, function(x, fulltable, NAME_CONVERSION_ARG) {
-                                 NAME_CONVERSION <- NAME_CONVERSION_ARG
-                                 # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
-                                 # value <- round(max_specie / 2)
-                                 max_specie <- 36
-                                 value <- 1
-                                 
-                                 # If it is a group
-                                 if (x %in% c(NAME_CONVERSION$Group, NAME_CONVERSION$Group_pretty, "All")) {
-                                   text <- paste0("Species richness (", get_pretty_group(x, NAME_CONVERSION), ")")
-                                 } else {
-                                   # If it is a specie
-                                   text <- get_english_specie_from_specie(x, NAME_CONVERSION)
-                                   text <- get_pretty_english_specie(text, NAME_CONVERSION)
-                                   text <- paste(text, " (Presence, %):")
-                                 }
-                                 
-                                 return(bquote(sliderInput(paste0("BioSlider", .(x)),
-                                                           .(text),
-                                                           min = 0,
-                                                           max = .(max_specie),
-                                                           value = .(value),
-                                                           step = 0.5)))
-                               }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
-                               list(sliderInput("AreaSlider", HTML("Area planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=1)),
-                               list(sliderInput("VisitsSlider", "Recreation (visits per month):", min = 0, max = 750, value = 400)))
-    #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
-    SliderNames<- c("SliderMain",
-                    paste0("BioSlider", SPECIES),
-                    "AreaSlider","VisitsSlider")
-    
-    
-    #### Precalculate simul636 table with years
-    AllExtents<-sort(unique(FullTable$extent))
-    
-    
-    #PrecalcCarbonAllExtents<-list()
-    #PrecalcCarbonAllExtentsSD<-list()
-    
-    PrecalcCarbonAllExtentsType<-list()
-    PrecalcCarbonAllExtentsSDType<-list()
-    
-    PrecalcCarbonAllExtentsType2Lines<-list()
-    PrecalcCarbonAllExtentsSDType2Lines<-list()
-    
-    
-    if(#file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData"))) &&
-      #file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData"))) &&
-      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData"))) &&
-      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData"))) &&
-      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData"))) &&
-      file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))) {
-      # if (FALSE) {
-      
-      #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
-      #load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
-      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
-      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
-      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
-      load(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
-    } else {
-      #if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))){
-      #  file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
-      #}
-      #if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))){
-      #  file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
-      #}
-      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))){
-        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
-      }
-      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))){
-        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
-      }
-      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))){
-        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
-      }
-      if(file.exists(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))){
-        file.remove(normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
-      }
-      
-      
-      for (ext in AllExtents)
-      {
-        CarbonSelectedYear<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
-        CarbonSelectedYear$geometry<-NULL
-        CarbonSelectedSDYear<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",0:(MAXYEAR+1))]
-        CarbonSelectedSDYear$geometry<-NULL
-        
-        CarbonSelectedYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
-        CarbonSelectedYear85$geometry<-NULL
-        CarbonSelectedSDYear85<-FullTable[FullTable$extent == ext,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:(MAXYEAR+1))]
-        CarbonSelectedSDYear85$geometry<-NULL
-        
-        
-        # PrecalcCarbonAllExtents[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-        # PrecalcCarbonAllExtentsSD[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-        
-        PrecalcCarbonAllExtentsType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-        PrecalcCarbonAllExtentsSDType[[ext]]<-matrix(0,dim(simul636YearType$YEAR)[1],dim(FullTable[FullTable$extent=="NoExtent",])[1])
-        
-        PrecalcCarbonAllExtentsType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
-        PrecalcCarbonAllExtentsSDType2Lines[[ext]]<-matrix(0,2,dim(FullTable[FullTable$extent=="NoExtent",])[1])
-        
-        # This precalculated table is used once when the map if first displayed. We use 2 identical lines to avoid issues with the
-        # function call that expects a matrix in input.
-        
-        PrecalcCarbonAllExtentsType2Lines[[ext]][1,]<-CarbonSelectedYear85[,"Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
-        PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]<-CarbonSelectedSDYear85[,"Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear0"]
-        PrecalcCarbonAllExtentsType2Lines[[ext]][2,]<-PrecalcCarbonAllExtentsType2Lines[[ext]][1,]
-        PrecalcCarbonAllExtentsSDType2Lines[[ext]][2,]<- PrecalcCarbonAllExtentsSDType2Lines[[ext]][1,]
-        
-        for(i in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[1])
-        {
-          for(j in 1:dim(PrecalcCarbonAllExtentsType[[ext]])[2])
-          {
-            
-            # PrecalcCarbonAllExtents[[ext]][i, j]<-CarbonSelectedYear[j,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[i, j])]
-            #  PrecalcCarbonAllExtentsSD[[ext]][i, j]<-CarbonSelectedSDYear[j,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",simul636YearType$YEAR[i, j])]
-            
-            
-            if(simul636YearType[["TYPE"]][i, j]=="NoPlanting"){
-              PrecalcCarbonAllExtentsType[[ext]][i, j]<-0
-              PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-0
-            }else{
-              
-              if(simul636YearType[["TYPE"]][i, j]=="Conifers"){
-                PrecalcCarbonAllExtentsType[[ext]][i, j]<-CarbonSelectedYear[i,paste0("Carbon_Mean_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                      simul636YearType$YEAR[i, j])]
-                PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-CarbonSelectedSDYear[i,paste0("Carbon_SD_Scenario26_TreeSpecieConifers_PlantingYear",
-                                                                                          simul636YearType$YEAR[i, j])]
-              }else{
-                PrecalcCarbonAllExtentsType[[ext]][i, j]<-CarbonSelectedYear85[i,paste0("Carbon_Mean_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[i, j])]
-                PrecalcCarbonAllExtentsSDType[[ext]][i, j]<-CarbonSelectedSDYear85[i,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",simul636YearType$YEAR[i, j])]
-                
-              }
-            }
-          }
-        }
-      }
-      
-      #save(PrecalcCarbonAllExtents,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtents.RData")))
-      #save(PrecalcCarbonAllExtentsSD,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSD.RData")))
-      # Necessary
-      save(PrecalcCarbonAllExtentsType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType.RData")))
-      save(PrecalcCarbonAllExtentsSDType,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType.RData")))
-      save(PrecalcCarbonAllExtentsType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsType2Lines.RData")))
-      save(PrecalcCarbonAllExtentsSDType2Lines,file=normalizePath(file.path(CalculatedFilesFolder, "PrecalcCarbonAllExtentsSDType2Lines.RData")))
-      
-    }
     
     if (exists("SquaresLoad", inherits = FALSE)) {
       rm(SquaresLoad)
@@ -1346,24 +1292,176 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       rm(Sqconv)
     }
     
-    JulesMean <- 0;JulesSD <- 0;CorrespondenceJules <- 0;seer2km <- 0;jncc100 <- 0;speciesprob40 <- 0;climatecells <- 0
+    
+    #Needed for passing strategies to and from front
+    parcel_ids = paste0("id",parcel_id)
+    
+    #FullTable_working corrects the issue with visits only being available for year 0
+    FullTable_working <- copy(FullTable_long)
+    FullTable_working[, scenario := NULL]
+    
+    # Create lookup for Visits values (both Mean and SD for planting_year == 0)
+    visits_mean_sd_lookup <- FullTable_working[
+      planting_year == 0 & outcome_type == "Visits", 
+      .(parcel_id, treespecie, statistic_name, visits_value = outcome_value)
+    ]
+    # Step 1: Create all combinations of planting_year (1:25) for each unique row in visits_mean_sd_lookup
+    all_visits_years <- visits_mean_sd_lookup[
+      , .(planting_year = 1:25), by = .(parcel_id, treespecie, statistic_name, visits_value)
+    ]
+    # Step 2: Remove `visits_value` and assign it to `outcome_value`
+    all_visits_years[, `:=`(outcome_value = visits_value, visits_value = NULL)]
+    # Step 3: Ensure outcome_type is set to "Visits"
+    all_visits_years[, outcome_type := "Visits"]
+    # Step 4: Bind these new rows to FullTable_working
+    FullTable_working <- rbind(
+      FullTable_working,
+      all_visits_years,
+      use.names = TRUE,
+      fill = TRUE
+    )
+    FullTable_working <- FullTable_working[
+      is.na(outcome_sub_type) | outcome_sub_type %in% SPECIES
+    ]
+    
+    
+    #Find the outcomes from strategies
+    stop("LINE 1329")
+    msg <- "Find the outcomes from strategies ..."
+    notif(msg, log_level = "debug")
+    strategy_outcomes <- rbindlist(lapply(1:NSamp, function(jj) get_outcome_dt(Strategies[jj,], FullTable_working)))
+    strategy_outcomes[, strategy_id := 1:NSamp]
+    notif(paste(msg, "done"), log_level = "debug")
+    
+    #establish preference weights
+    msg <- "Establish preference weights ..."
+    notif(msg, log_level = "debug")
+    preference_weights <- c()
+    for(target in TARGETS){
+      preference_weights[target] <- 1/max(strategy_outcomes[,..target])
+      if(target=="area"){preference_weights[target] <- -preference_weights[target]}
+    }
+    notif(paste(msg, "done"), log_level = "debug")
+    
+    #Store objective function as weighted combination of outcomes
+    strategy_outcomes[, objective := rowSums(.SD * unlist(preference_weights)[TARGETS]), .SDcols = TARGETS]
+    
+    defaults <- NULL
+    get_slider_info <- function(){
+      max_values <- strategy_outcomes[, lapply(.SD, max, na.rm=TRUE), .SDcols = TARGETS]
+      names(max_values)[which(names(max_values)=="All")] <- "biodiversity"
+      names(max_values)[which(names(max_values)=="visits")] <- "recreation"
+      bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("carbon", "area", "recreation", "biodiversity")]
+      bio_names_latin
+      for(species in bio_names_latin){
+        specie_num <- which(NAME_CONVERSION$Specie == species)
+        if(length(specie_num)>0){
+          #A species
+          names(max_values)[which(names(max_values)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+          #No need to change if its a group
+        }
+      }
+      max_values[, (names(max_values)) := lapply(.SD, signif, digits=3)]
+      min_max <- rbind(as.list(setNames(rep(0,length(TARGETS)),names(max_values))), max_values)
+      defaults_quantile <- runif(1, 0.5,0.75)
+      defaults <<- max_values[1, .SD*defaults_quantile]
+      defaults[, (names(defaults)) := lapply(.SD, signif,digits=3)]
+      min_max_default <- rbind(min_max, defaults)
+      return(min_max_default)
+    }
+    slider_info <- get_slider_info()
+    
+    
+    #MAKE THE NULL STRATEGY. USE IT TO RETURN STRATEGIES WHEN CLUSTERING CANT BE DONE, WHEN NOTHING IS TARGET COMPATIBLE ETC. 
+    null_strategy <- matrix(0, nrow = 1, ncol = n_parcels*3)
+    colnames(null_strategy) <- colnames(Strategies)
+    null_strategy[1,(2*n_parcels+1):(3*n_parcels)] <- "Conifers"
+    null_outcomes <- get_outcome_dt(null_strategy, FullTable_working)
+    
+    #Function to return optimal strategy from submit button
+    #Function must also keep the target and target compatible strategies for use elsewhere
+    # Will need to have the 0 strategy in the sample set and use it if target_compatible empty
+    #First global variable is the list of valid_strategies which here is assigned to all. This will be amended by the submit_button
+    valid_strategies <- strategy_outcomes$strategy_id
+    #Second global variable amended is target_compatible_strategies, first assigned to all strategies here
+    target_compatible_strategies <- strategy_outcomes
+    #Blocked parcels is something we need to store once amended via a submit (it is used throughout the app)
+    blocked_parcels <- NULL
+    
+    get_first_strategy <- function(){
+      target_carbon <- defaults$carbon
+      target_visits <- defaults$visits
+      target_area <- defaults$area
+      bio_names <- names(defaults)[ ! names(defaults)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+      targets_bio <- defaults[,  ..bio_names]
+      names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
+      #Convert English to Latin names for FullTable Compatibility
+      for(species in 1:length(targets_bio)){
+        t_name <- names(targets_bio)[species]
+        if(t_name != "All"){
+          specie_num <- which(NAME_CONVERSION$English_specie == t_name)
+          if(length(specie_num)>0){
+            #A species
+            names(targets_bio)[species] <- NAME_CONVERSION$Specie[specie_num]
+            #No need to change if its a group
+          }
+        }
+      }
+      target_compatible_strategies <- strategy_outcomes[ (target_carbon - carbon)/carbon_sd < (-sqrt(alpha/(1-alpha))) &
+                                                            area < target_area & 
+                                                            (target_visits - visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
+                                                            Reduce(`&`, lapply(SPECIES, function(col) 100 * (targets_bio[[col]] - get(col)) < (-sqrt(alpha/(1-alpha))) )) ]
+      if(nrow(target_compatible_strategies)>0){
+        optimal_strategy_forfrontend <- target_compatible_strategies[which.max(objective)]
+        #Now wrap the optimal strategy into the right format
+        tyears <- as.numeric(as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+        tspecies <- as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+      }else{#return the null strategy
+        optimal_strategy_forfrontend <- null_outcomes
+        tyears <- as.numeric(as.vector(null_strategy[1,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+        tspecies <- as.vector(null_strategy[1,startsWith(colnames(Strategies),"treespecie")])
+      }
+      blocked_until_year <- rep(0, length(parcel_ids))
+      for_frontend <- st_sf(
+        parcel_id = parcel_ids,
+        geometry = FullTable$geometry,
+        parcel_area = FullTable$area,
+        planting_year = ifelse(tyears<2050,tyears,NA),
+        planting_types = ifelse(tyears<2050, tspecies, NA),
+        blocked_until_year = blocked_until_year,
+        crs = st_crs(FullTable)
+      )
+      #convert to geojson
+      geojson <- geojsonsf::sf_geojson(for_frontend)
+      
+      payload <- optimal_strategy_forfrontend[, ..TARGETS]
+      names(payload)[which(names(payload)=="All")] <- "biodiversity"
+      names(payload)[which(names(payload)=="visits")] <- "recreation"
+      bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+      bio_names_latin
+      for(species in bio_names_latin){
+        specie_num <- which(NAME_CONVERSION$Specie == species)
+        if(length(specie_num)>0){
+          #A species
+          names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+          #No need to change if its a group
+        }
+      }
+      return(list(
+        values = payload,
+        geojson = geojson,
+        target_compatible_strategies = target_compatible_strategies
+      ))
+    }
+    
+    # target_compatible_strategies is needed in the environment, but first_strategy needs only the other variables
+    first_strategy <- get_first_strategy()
+    target_compatible_strategies <- first_strategy$target_compatible_strategies
+    first_strategy$target_compatible_strategies <- NULL
+    
+    rm(list = c("JulesMean", "JulesSD", "CorrespondenceJules", "seer2km", "jncc100", "speciesprob40", "climatecells"))
   })
   
-  # Remove functions from environment (can't remove base functions though), they are already in the frontend and take a lot of space to return
-  msg <- "Removing functions from environment ..."
-  notif(msg, log_level = "debug")
-  for (object_name in ls(new_environment)) {
-    object <- get(object_name, envir = new_environment)
-    if (isTRUE("function" %in% class(object))) {
-      
-      # Remove if not part of base package
-      packages <- find(object_name)
-      if (isFALSE("package:base" %in% packages)) {
-        try(rm(list = object_name, envir = new_environment))
-      }
-      
-    }
-  }
   notif(paste(msg, "done"), log_level = "debug")
   plan(sequential)
   
@@ -1380,9 +1478,11 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
               "FolderSource"),
      envir = new_environment)
   
-  # We only need FullTableNotAvail
+  # We only need a few variables
   env <- new.env()
   env$FullTableNotAvail <- FullTableNotAvail
+  env$slider_info <- slider_info
+  env$first_strategy <- first_strategy
   new_environment <- env
   
   notif("Backend initialization ... done")
@@ -1390,3 +1490,6 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   res$status <- 200
   return(new_environment)
 }
+
+
+# Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`

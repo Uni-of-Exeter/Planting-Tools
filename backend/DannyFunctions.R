@@ -390,3 +390,27 @@ get_outcome_dt <- function(one_strategy, FullTable_long_arg){
                                          FullTable_long_arg = FullTable_long_arg)
   return(convert_outcome_to_dt(outcomes))
 }
+
+# Clustering
+cluster_samples <- function(){
+  #CANT CLUSTER IF NOT ENOUGH SAMPLES. 
+  if(nrow(target_compatible_strategies)<6){
+    notif("Too few target compatible samples to cluster")
+    target_compatible_strategies <<- target_compatible_strategies[,cluster := 1]
+    return(invisible())
+  }
+  tsne_projected_target_compatible_data <- Rtsne::Rtsne(scale(target_compatible_strategies[,..TARGETS], center=FALSE, scale = sqrt(abs(preference_weights))), perplexity = min(30, (nrow(target_compatible_strategies)-1.01)/3))$Y
+  clustered_samples <- mclust::Mclust(tsne_projected_target_compatible_data,G=4)
+  target_compatible_strategies <<- target_compatible_strategies[,cluster := clustered_samples$classification]
+  unique_clusters <- 1:4
+  cluster_projections <- lapply(unique_clusters, function(ZZ) {
+    projected <- tsne_projected_target_compatible_data %*% eigen(clustered_samples$parameters$variance$sigma[,,ZZ])$vectors
+    return(projected)  
+  })
+  projection_lookup <- setNames(cluster_projections, unique_clusters)
+  target_compatible_strategies[, c("pc_1", "pc_2") := {
+    proj <- projection_lookup[[as.character(.BY$cluster)]]  # Fetch correct projection for cluster
+    row_index <- .I  # Row index for correct alignment
+    list(proj[row_index, 1], proj[row_index, 2])  # Assign correct rows
+  }, by=cluster]
+}
