@@ -137,39 +137,6 @@ if (isTRUE(run_initalization_on_backend)) {
   saveRDS(env, backend_initialization_env_file)
 }
 
-fetch_api_data_post <- function(json_payload) {
-  
-  # url <- "http://127.0.0.1:8000/generate_parcels"
-  url <- paste0(API_URL, "/generate_parcels")
-  
-  # Make the API POST request with JSON payload
-  response <- httr::POST(
-    url,
-    body = json_payload, 
-    encode = "json",
-    httr::content_type_json()
-  )
-  
-  print(response)
-  
-  # Check if the response is successful
-  if (httr::status_code(response) == 200) {
-    
-    content_raw <- httr::content(response, "text", encoding = "UTF-8")
-    api_response <- jsonlite::fromJSON(content_raw)
-    
-    geojson <- api_response$geojson
-    geojson_parsed <- st_read(geojson, quiet=TRUE)
-    
-    Sys.sleep(1)
-    values <- api_response$values
-    return(list(geojson_parsed, values))
-    
-  } else {
-    stop(paste("Request failed with status:", httr::status_code(response)))
-  }
-}
-
 fetch_slider_values <- function() {
   url <- paste0(API_URL, "/slider_values")
   response <- httr::GET(url)

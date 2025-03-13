@@ -255,6 +255,8 @@ map_page_server <- function(id, state) {
       new_fetched <- if (!is.null(data)) {
         list(data, NULL)
       } else {
+        # TODO: PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS
+        stop("PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS")
         post_generate_parcels(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
       }
       
