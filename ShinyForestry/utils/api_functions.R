@@ -36,7 +36,7 @@ post_generate_parcels <- function(json_payload) {
   # Make the API POST request with JSON payload
   response <- httr::POST(
     url,
-    body = ("from_front_end" = json_payload), 
+    body = json_payload, 
     encode = "json",
     httr::content_type_json()
   )

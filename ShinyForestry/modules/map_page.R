@@ -97,15 +97,7 @@ map_page_server <- function(id, state) {
     plot_type <- reactiveVal("cumulative") 
     
     initial_values <- reactiveVal(list())  # Initialize as an empty list
-    initial_values <- reactiveVal(list(
-      carbon = 800,
-      species = 10,
-      species_goat_moth = 25,
-      species_stag_beetle = 30,
-      species_lichens = 2,
-      area = 10,
-      recreation = 15
-    ))
+
     # observe({
     #   # Ensure state$map_tab is properly initialized
     #   if (!is.null(state$map_tab$slider$names)) {
@@ -261,6 +253,7 @@ map_page_server <- function(id, state) {
       new_data_fetched <- new_fetched[[1]]
       new_values_fetched <- new_fetched[[2]]
       
+      print(new_data_fetched)
       if (!is.null(new_data_fetched)) {
         # Apply the filter based on the selected year
         new_data(new_data_fetched)
@@ -496,7 +489,7 @@ map_page_server <- function(id, state) {
           )
         })
         
-        default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
+        # default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
         # initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
         initialize_or_update_map(YEAR_MIN, data=process_first_strategy(first_strategy))
         state$map_tab$initialized <- TRUE 
@@ -589,6 +582,7 @@ map_page_server <- function(id, state) {
       clicked_parcel_id <- click$id  # Get clicked parcel_id
       selected_year <- input[[ns("year")]]    # Get selected year
 
+      print("clicked_parcel_id")
       print(clicked_parcel_id)
       
       # Ensure clicked_polygons() is not NULL or empty
@@ -641,7 +635,9 @@ map_page_server <- function(id, state) {
       # Compare current values with initial values
       values_changed <- !identical(current_values_list, initial_values())
       if (values_changed) {
+        print("current_values_list")
         print(current_values_list)
+        print("initial_values()")
         print(initial_values())
       }
 
