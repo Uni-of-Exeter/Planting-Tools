@@ -317,9 +317,9 @@ function(res, which_button) {
 #* @post /submit_targets
 #* @serializer json
 #* @parser json
-#* @param from_front_end Paul, put some text here
+#* @param from_submit_button JSON data that contains targets
 #* @response 200 Success: Returned strategy
-function(res, from_front_end) {
+function(res, from_submit_button) {
   
   # Takes in:
   # {
