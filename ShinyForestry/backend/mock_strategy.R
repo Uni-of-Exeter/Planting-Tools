@@ -355,24 +355,6 @@ function(choice) {
 
 # See 228
 
-#* Get slider values
-#* @get /slider_initialise
-#* @serializer json
-function() {
-  
-  # returns
-  # list(
-  #   carbon = list(min = 500, max = 1000, default = 800),
-  #   species = list(min = 0, max = 25, default = 10),
-  #   species_goat_moth = list(min = 0, max = 100, default = 25),
-  #   species_stag_beetle = list(min = 0, max = 100, default = 30),
-  #   species_lichens = list(min = 0, max = 5, default = 2),
-  #   area = list(min = 0, max = 15, default = 10),
-  #   recreation = list(min = 0, max = 20, default = 15)
-  # )
-
-}
-
 
 #* Submit targets to return a strategy
 #* @POST /submit_targets
@@ -487,7 +469,7 @@ function() {
   # input: 
   #  slider_name
   
-  # runs play_button()
+  # runs plus_button()
   
   # returns:
   # list(values, geojson) #see submit_strategy

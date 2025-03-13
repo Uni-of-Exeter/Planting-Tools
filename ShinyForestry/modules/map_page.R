@@ -262,6 +262,8 @@ map_page_server <- function(id, state) {
       new_fetched <- if (!is.null(data)) {
         data
       } else {
+        # TODO: PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS
+        stop("PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS")
         post_generate_parcels(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
       }
       
@@ -335,6 +337,7 @@ map_page_server <- function(id, state) {
           ),
           "</table></div>"
         )
+
         output$map <- renderLeaflet({
           leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
             addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
@@ -387,7 +390,7 @@ map_page_server <- function(id, state) {
               # popup = ~planting_type
             ) %>%
             
-            addControl(html = legend_html, position='topright') %>% 
+            # addControl(html = legend_html, position='topright') %>% 
             
             # Add legend
             addLegend(
