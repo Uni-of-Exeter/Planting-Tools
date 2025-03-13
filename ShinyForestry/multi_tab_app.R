@@ -54,7 +54,7 @@ if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.list(env))) {
+  if (isFALSE(is.environment(env))) {
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
     run_initalization_on_backend <- TRUE
