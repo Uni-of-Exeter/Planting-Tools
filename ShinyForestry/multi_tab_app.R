@@ -193,10 +193,10 @@ ui <- fluidPage(
         ),
         
         tabPanel(title = "Map", map_page_ui("map")),
-        tabPanel(title = "Preferences", preferences_page_ui("prefs")),
-        tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
-        tabPanel(title = "Exploration", exploration_page_ui("explore")),
-        tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
+        # tabPanel(title = "Preferences", preferences_page_ui("prefs")),
+        # tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
+        # tabPanel(title = "Exploration", exploration_page_ui("explore")),
+        # tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
         
         nav_spacer(),
         nav_item(tags$a("AI for Net Zero",
