@@ -316,7 +316,6 @@ function(res, which_button) {
 #* Triggers a clustering in a new process in the background
 #* @post /submit_targets
 #* @serializer json
-#* @parser json
 #* @param from_submit_button JSON data that contains targets
 #* @response 200 Success: Returned strategy
 function(res, from_submit_button) {
@@ -358,7 +357,12 @@ function(res, from_submit_button) {
   # 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>         TRUE                  0         NA POLYGON ((-1.760264 50.8301...
   
   
-  # from_submit_button <- plumber::parser_json()(value = from_front_end)
+  # from_submit_button <- plumber::parser_json()(value = from_submit_button)
+  body <- tryCatch(
+    jsonlite::fromJSON(req$postBody, simplifyVector = TRUE),
+    error = function(e) return(list(error = "Invalid JSON format."))
+  )
+  from_submit_button <- body
   
   #Amend global blocked_parcels
   blocked_parcels <<- from_submit_button$blocked_parcels
