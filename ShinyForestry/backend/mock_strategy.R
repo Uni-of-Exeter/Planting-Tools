@@ -107,12 +107,6 @@ function() {
 # 9  3451c88f-3298-4159-89d9-7bd79b4ff513 POLYGON ((-1.762547 50.8200...
 # 10 fa5558f3-a884-44cd-a9db-6b1876ff68cc POLYGON ((-1.760264 50.8301...
 
-
-
-
-
-
-
 # ---- GENERATE_PARCELS
 # -- Expected Input
 # {
@@ -226,13 +220,13 @@ function(req) {
   
   # Create dummy payload
   payload <- list(
-    carbon = as.numeric(body$carbon), # 3* runif(1, min = 0.9, max = 1.1)),
-    species = as.numeric(body$species), # * runif(1, min = 0.9, max = 1.1)),
-    species_goat_moth = as.numeric(body$species_goat_moth), # * runif(1, min = 0.9, max = 1.1)),
-    species_stag_beetle = as.numeric(body$species_stag_beetle), # * runif(1, min = 0.9, max = 1.1)),
-    species_lichens = as.numeric(body$species_lichens), # * runif(1, min = 0.9, max = 1.1)),
-    area = as.numeric(body$area), # * runif(1, min = 0.9, max = 1.1)),
-    recreation = as.numeric(body$recreation) # * runif(1, min = 0.9, max = 1.1))
+    carbon = as.numeric(body$carbon) * runif(1, min = 0.9, max = 1.1),
+    species = as.numeric(body$species) * runif(1, min = 0.9, max = 1.1),
+    species_goat_moth = as.numeric(body$species_goat_moth) * runif(1, min = 0.9, max = 1.1),
+    species_stag_beetle = as.numeric(body$species_stag_beetle) * runif(1, min = 0.9, max = 1.1),
+    species_lichens = as.numeric(body$species_lichens) * runif(1, min = 0.9, max = 1.1),
+    area = as.numeric(body$area) * runif(1, min = 0.9, max = 1.1),
+    recreation = as.numeric(body$recreation) * runif(1, min = 0.9, max = 1.1)
   )
   
   # Convert to GeoJSON
@@ -355,3 +349,150 @@ function(choice) {
 }
 
 # Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`
+
+
+
+
+# See 228
+
+#* Get slider values
+#* @get /slider_initialise
+#* @serializer json
+function() {
+  
+  # returns
+  # list(
+  #   carbon = list(min = 500, max = 1000, default = 800),
+  #   species = list(min = 0, max = 25, default = 10),
+  #   species_goat_moth = list(min = 0, max = 100, default = 25),
+  #   species_stag_beetle = list(min = 0, max = 100, default = 30),
+  #   species_lichens = list(min = 0, max = 5, default = 2),
+  #   area = list(min = 0, max = 15, default = 10),
+  #   recreation = list(min = 0, max = 20, default = 15)
+  # )
+
+}
+
+
+#* Submit targets to return a strategy
+#* @POST /submit_targets
+#* @serializer json
+function() {
+
+  # Takes in:
+  # {
+  #   "carbon": 852,
+  #   "species": 18,
+  #   "species_goat_moth": 91,
+  #   "species_stag_beetle": 22,
+  #   "species_lichens": 4,
+  #   "area": 5,
+  #   "recreation": 16,
+  # } 
+  
+  # runs: submit_button()
+  
+  # returns:
+  # -- Expected Output list(values, geojson)
+  # {
+  #   "carbon": 852,
+  #   "species": 18,
+  #   "species_goat_moth": 91,
+  #   "species_stag_beetle": 22,
+  #   "species_lichens": 4,
+  #   "area": 5,
+  #   "recreation": 16,
+  # } 
+  #                               parcel_id parcel_area planting_year planting_type is_available blocked_until_year is_blocked                       geometry
+  # 1  bdd124e7-a162-4602-bff3-eb5e438d1440 0.022698955            NA          <NA>         TRUE                  0         NA POLYGON ((-1.756976 50.8314...
+  # 2  162f46c9-dd15-42eb-aa6d-fbbafe002bb6 0.036774571          2043       Conifer         TRUE                  0         NA POLYGON ((-1.766385 50.8160...
+  # 3  cc38292e-c59c-46b5-84b5-b4a015622d61 0.034369548          2038       Conifer         TRUE                  0         NA POLYGON ((-1.765671 50.8316...
+  # 4  558f048b-c156-4bf8-9f8f-5dbfce356210 0.027595724            NA          <NA>         TRUE                  0         NA POLYGON ((-1.759141 50.8113...
+  # 5  48fe3001-8443-4f08-b403-d2304a6c80a9 0.009152795            NA          <NA>         TRUE                  0         NA POLYGON ((-1.759423 50.8109...
+  # 6  7b66b5a2-8f68-4bba-adf8-6285fc96940a 0.021871169          2044     Deciduous         TRUE                  0         NA POLYGON ((-1.761 50.83261, ...
+  # 7  a41dfe2f-1856-4806-bf8d-7955d10565bc 0.015572843            NA          <NA>         TRUE                  0         NA POLYGON ((-1.763823 50.825,...
+  # 8  e52438b7-acf3-4428-b148-bd5b5ea7313e 0.017445100            NA          <NA>         TRUE                  0         NA POLYGON ((-1.762628 50.8344...
+  # 9  c033b36f-e7dd-4bdb-9deb-a008e442c413 0.015956941          2045       Conifer         TRUE                  0         NA POLYGON ((-1.762547 50.8200...
+  # 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>         TRUE                  0         NA POLYGON ((-1.760264 50.8301...
+}
+
+#* Initialise Preferences tab
+#* @GET /preferences_initialise
+#* @serializer json
+function() {
+  
+  # Takes in:
+  # {
+  #   "carbon": 852,
+  #   "species": 18,
+  #   "species_goat_moth": 91,
+  #   "species_stag_beetle": 22,
+  #   "species_lichens": 4,
+  #   "area": 5,
+  #   "recreation": 16,
+  # } 
+  
+  # runs: preferences_tab_first_click()
+  
+  # returns: (see submit_strategy)
+  # list(
+  #     list(values, geojson),
+  #     list(values, geojson),
+  # )
+}
+
+#* Provide a preference (1 or 2)
+#* @POST /preferences
+#* @serializer json
+function() {
+  
+  # Takes in: either 1 or 2
+
+  # runs: choose_button()
+  
+  # returns: (see preferences_initialise)
+  # list(
+  #     list(values, geojson),
+  #     list(values, geojson),
+  # )
+}
+
+#* Obtain four alternative approaches
+#* @GET /alternative_approaches
+#* @serializer json
+function() {
+  # returns:
+  # list(
+  #     list(values, geojson),
+  #     list(values, geojson),
+  #     list(values, geojson),
+  #     list(values, geojson),
+  # )
+}
+
+#* Obtain four alternative approaches
+#* @GET /exploration_initialise
+#* @serializer json
+function() {
+  # input: a number from 1 - 4 for the cluster picked on the alternative_approaches tab
+  
+  # returns:
+  # list(values, geojson) #see submit_strategy
+}
+
+#* Obtain four alternative approaches
+#* @GET /exploration_plus_minus
+#* @serializer json
+function() {
+  # input: 
+  #   movement = "+" or "-"
+  #  slider_name
+  
+  # runs play_button() if "+" or minus_button() if "-"
+  
+  # returns:
+  # list(values, geojson) #see submit_strategy
+}
+
+
+
