@@ -182,13 +182,13 @@ fetch_slider_values <- function() {
     stop(paste("Request failed with status:", httr::status_code(response)))
   }
 }
-    
+
 # Define UI
 ui <- fluidPage(
   # ui <- navbarPage(
   title = "ADD-TREES",
   useShinyjs(), # Enable JavaScript functionalities
-  theme = bs_theme(bootswatch = "lumen"), # Optional theming
+  theme = bs_theme(version = 5, bootswatch = "lumen"), # Optional theming
   tags$head(
     # Add the Google Fonts link for Outfit font
     tags$link(
@@ -261,26 +261,42 @@ ui <- fluidPage(
       z-index: 9999;
       opacity: 1;  /* Initially fully visible */
     }
+    
+    /* Spinner styles */
+    .spinner {
+      border: 8px solid #00c896; 
+      border-top: 8px solid #003c3c; 
+      border-radius: 90%;
+      width: 50px;
+      height: 50px;
+      animation: spin 2s linear infinite;
+    }
+  
+    /* Spinner animation */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
   ")),
   
   # Wrap everything in app_content and loading divs
   div(id = "loading", 
-      "Loading... Please wait"
+      div(class = "spinner")
   ),
   
   # Main content of the page wrapped in app_content
   div(id = "app_content", 
-    # style = "display: none;",  # Initially hidden\
-    style = "display: block;",  # Initially hidden
-    div(
-      style = "display: flex; height: 100vh; flex-direction: row; width: 100%;",
-      sidebarPanel(
-        id = "sidebar",
-        width = 3,
-        
-        # Alert with info icon and message
-        HTML('
+      # style = "display: none;",  # Initially hidden\
+      style = "display: block;",  # Initially hidden
+      div(
+        style = "display: flex; height: 100vh; flex-direction: row; width: 100%;",
+        sidebarPanel(
+          id = "sidebar",
+          width = 3,
+          
+          # Alert with info icon and message
+          HTML('
           <div class="alert alert-dismissible alert-info">
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             <div class="d-flex align-items-center">
@@ -289,49 +305,49 @@ ui <- fluidPage(
             </div>
           </div>
         '),
-        
-        accordion(
-          id = "main_accordion",
-          accordion_panel(
-            "Targets",
-            id = "targets_accordion",
-            uiOutput("dynamic_sliders"),
-            actionButton("submit", "Submit"),
-            actionButton("reset", "Reset"),
-            actionButton("save", "Save Strategy")
-          ),
-          accordion_panel(
-            "Saved Strategies",
-            uiOutput("saved_strategies")
-          )
-        )
-      ),
-      mainPanel(
-        class = "main-panel",
-        leafletOutput("map", height = "100%"),
-        absolutePanel(
-          id = "year-slider",
-          sliderInput("year", "Planting Year", 
-                      min = YEAR_MIN, 
-                      max = YEAR_MAX, 
-                      value = YEAR_DEFAULT, 
-                      step = 1, 
-                      animate = TRUE,
-                      ticks = TRUE,  
-                      animateOptions(interval = 100, loop = FALSE),
-                      sep = "",
-                      width = "100%" # This will make the slider take 100% width of the container
-          ),
-          bottom = "50px", 
-          left = "50%", 
-          style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);",
           
-          div(
-            style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px;",
-            actionButton(
-              inputId = "toggle_plot",
-              label = "Show Time-Series",
-              style = "
+          accordion(
+            id = "main_accordion",
+            accordion_panel(
+              "Targets",
+              id = "targets_accordion",
+              uiOutput("dynamic_sliders"),
+              actionButton("submit", "Submit"),
+              actionButton("reset", "Reset"),
+              actionButton("save", "Save Strategy")
+            ),
+            accordion_panel(
+              "Saved Strategies",
+              uiOutput("saved_strategies")
+            )
+          )
+        ),
+        mainPanel(
+          class = "main-panel",
+          leafletOutput("map", height = "100%"),
+          absolutePanel(
+            id = "year-slider",
+            sliderInput("year", "Planting Year", 
+                        min = YEAR_MIN, 
+                        max = YEAR_MAX, 
+                        value = YEAR_DEFAULT, 
+                        step = 1, 
+                        animate = TRUE,
+                        ticks = TRUE,  
+                        animateOptions(interval = 100, loop = FALSE),
+                        sep = "",
+                        width = "100%" # This will make the slider take 100% width of the container
+            ),
+            bottom = "50px", 
+            left = "50%", 
+            style = "background-color: rgba(255, 255, 255, 0.9); padding: 10px 20px 10px 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2); width: 50%; transform: translateX(-50%);",
+            
+            div(
+              style = "display: flex; justify-content: space-between; align-items: center; width: 100%; height: 40px;",
+              actionButton(
+                inputId = "toggle_plot",
+                label = "Show Time-Series",
+                style = "
                   width: 180px;
                   height: 40px;
                   line-height: 20px;
@@ -339,26 +355,26 @@ ui <- fluidPage(
                   align-items: center;
                   justify-content: center;
                   margin-top: -17px;"
+              ),
+              radioGroupButtons(
+                inputId = "view_toggle",
+                choices = c("Annual", "Cumulative"),
+                selected = "Cumulative",
+                status = "primary",
+                justified = TRUE,
+                width = '220px'
+              )
             ),
-            radioGroupButtons(
-              inputId = "view_toggle",
-              choices = c("Annual", "Cumulative"),
-              selected = "Cumulative",
-              status = "primary",
-              justified = TRUE,
-              width = '220px'
+            
+            div(id = "time_series_plot", style = "display: none",
+                plotlyOutput("areaPlot", height = "300px")
+            ),
+            div(id = "radar_plot", style = "display: none",
+                plotlyOutput("radarPlot", height = "300px")
             )
-          ),
-          
-          div(id = "time_series_plot", style = "display: none",
-              plotlyOutput("areaPlot", height = "300px")
-          ),
-          div(id = "radar_plot", style = "display: none",
-              plotlyOutput("radarPlot", height = "300px")
           )
         )
       )
-    )
   )
 )
 
@@ -381,7 +397,7 @@ server <- function(input, output, session) {
   previously_blocked <- reactiveVal(data.frame(parcel_id = character(), blocked_until_year = integer()))
   
   current_layers <- reactiveVal(list()) # Keep track of layers currently on the map (filtered ones)
-
+  
   saved_strategies <- reactiveVal(list()) # Store saved strategies as a named list (acting as a hashmap)
   strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
   plot_type <- reactiveVal("cumulative") 
@@ -637,7 +653,7 @@ server <- function(input, output, session) {
         
         
         legend_html <- paste0(
-          "<b>Outcomes</b> (Compare to Targets)<br><br>",
+          "<b>Outcomes</b> (c.f. Targets)<br><br>",
           "<table style='width:100%; text-align:left;'>",
           paste0(
             lapply(names(new_vals()), function(name) {
@@ -708,6 +724,8 @@ server <- function(input, output, session) {
             # popup = ~planting_type
           ) %>%
           
+          addControl(html = legend_html, position='topright') %>% 
+          
           # Add legend
           addLegend(
             position = "topright",
@@ -715,9 +733,9 @@ server <- function(input, output, session) {
             labels = names(COLOUR_MAPPING),
             title = "Planting Type",
             opacity = 1.0
-          ) %>%
-          
-          addControl(html = legend_html, position='topright')
+          )
+        
+        
       })
     } else {
       print("API fetch failed, no data to update.")
@@ -756,63 +774,63 @@ server <- function(input, output, session) {
       tagList(
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
-          column(SLIDER_COL, sliderInput("carbon", "Tree Carbon Stored (tonnes of CO2):",
-                                min = default_values$carbon$min, 
-                                max = default_values$carbon$max, 
-                                value = default_values$carbon$default
+          column(SLIDER_COL, sliderInput("carbon", HTML(paste0("Tree Carbon Stored (tonnes of CO<sub>2</sub>):")),
+                                         min = default_values$carbon$min, 
+                                         max = default_values$carbon$max, 
+                                         value = default_values$carbon$default
           ))
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("species_checkbox", NULL, value = TRUE)),
           column(SLIDER_COL, sliderInput("species", "Species Richness (All):",
-                                min = default_values$species$min, 
-                                max = default_values$species$max, 
-                                value = default_values$species$default
+                                         min = default_values$species$min, 
+                                         max = default_values$species$max, 
+                                         value = default_values$species$default
           ))
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("species_goat_moth_checkbox", NULL, value = TRUE)),
           column(SLIDER_COL, sliderInput("species_goat_moth", "Goat Moth (Presence, %):", 
-                                min = default_values$species_goat_moth$min, 
-                                max = default_values$species_goat_moth$max, 
-                                value = default_values$species_goat_moth$default
+                                         min = default_values$species_goat_moth$min, 
+                                         max = default_values$species_goat_moth$max, 
+                                         value = default_values$species_goat_moth$default
           ))
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("species_stag_beetle_checkbox", NULL, value = TRUE)),
           column(SLIDER_COL, sliderInput("species_stag_beetle", "Stag Beetle (Presence, %):", 
-                                min = default_values$species_stag_beetle$min, 
-                                max = default_values$species_stag_beetle$max, 
-                                value = default_values$species_stag_beetle$default
+                                         min = default_values$species_stag_beetle$min, 
+                                         max = default_values$species_stag_beetle$max, 
+                                         value = default_values$species_stag_beetle$default
           ))
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("species_lichens_checkbox", NULL, value = TRUE)),
           column(SLIDER_COL, sliderInput("species_lichens", "Species Richness (Lichens):", 
-                                min = default_values$species_lichens$min, 
-                                max = default_values$species_lichens$max, 
-                                value = default_values$species_lichens$default
+                                         min = default_values$species_lichens$min, 
+                                         max = default_values$species_lichens$max, 
+                                         value = default_values$species_lichens$default
           ))
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("area_checkbox", NULL, value = TRUE)),
-          column(SLIDER_COL, sliderInput("area", "Area Planted (km^2):",
-                                min = default_values$area$min, 
-                                max = default_values$area$max, 
-                                value = default_values$area$default
+          column(SLIDER_COL, sliderInput("area", HTML(paste0("Area Planted (km<sup>2</sup>):")),
+                                         min = default_values$area$min, 
+                                         max = default_values$area$max, 
+                                         value = default_values$area$default
           ))
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
           column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", 
-                                min = default_values$recreation$min, 
-                                max = default_values$recreation$max, 
-                                value = default_values$recreation$default
+                                         min = default_values$recreation$min, 
+                                         max = default_values$recreation$max, 
+                                         value = default_values$recreation$default
           ))
         )
       )
     })
-  
+    
     # Initialize the map on app start
     default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
     print(default_json_payload)
@@ -824,9 +842,9 @@ server <- function(input, output, session) {
   observe({
     if (rv$setupComplete) {
       print("setup complete")
-      # shinyjs::show(id = "app_content")  # Show the main app content
-      
-      shinyjs::runjs('$("#loading").fadeOut(1000);')
+      shinyjs::show(id = "app_content")  # Show the main app content
+      Sys.sleep(3)
+      shinyjs::runjs('$("#loading").fadeOut(2000);')
       # shinyjs::hide(id = "loading")  # Hide the loading screen
       # shinyjs::show(id = "app_content")  # Show the main app content
     }
@@ -835,7 +853,7 @@ server <- function(input, output, session) {
   current_year <- reactive({
     input$year
   })
-
+  
   # Handle submit event to update the map
   observeEvent(input$submit, {
     
@@ -898,7 +916,7 @@ server <- function(input, output, session) {
     
     # Convert to JSON
     json_payload <- jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE)
-
+    
     print("json payload")
     print(json_payload)
     # Update the map by calling the same function
@@ -1008,7 +1026,7 @@ server <- function(input, output, session) {
   })
   
   
-
+  
   
   # Monitor changes to the sliders
   observe({
@@ -1026,40 +1044,40 @@ server <- function(input, output, session) {
     )
     
     # Compare current values with initial values
-# In your server code:
-values_changed <- !identical(current_values, initial_values())
-current_clicked <- clicked_polygons()
-
-# Check if values have changed or if there are any blocked parcels
-# In your server code:
-values_changed <- !identical(current_values, initial_values())
-current_clicked <- clicked_polygons()
-current_clicked_in <- clicked_polygons_injest()
-
-# Check if values have changed or if there are any blocked parcels
-if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0)) { # !TODO this is broken now that I keep the clicked stuff
-  # Disable Save button as changes require submission
-  shinyjs::disable("save")  # Disable the save button
-  
-  # Enable and highlight the Submit button (green)
-  shinyjs::enable("submit")  # Enable the submit button
-  # shinyjs::removeClass("submit", "btn-secondary")  # Remove the gray/disabled class
-  shinyjs::addClass("submit", "btn-success")  # Add the green/active class
-  
-} else {
-  # Enable Save button if no changes have been made
-  shinyjs::enable("save")  # Enable the save button
-  
-  # Disable Submit button if no changes have been made
-  shinyjs::disable("submit")  # Disable the submit button
-  shinyjs::removeClass("submit", "btn-success")  # Remove the green/active class
-  shinyjs::addClass("submit", "btn-secondary")  # Add the gray/disabled class
-}
-
-
+    # In your server code:
+    values_changed <- !identical(current_values, initial_values())
+    current_clicked <- clicked_polygons()
+    
+    # Check if values have changed or if there are any blocked parcels
+    # In your server code:
+    values_changed <- !identical(current_values, initial_values())
+    current_clicked <- clicked_polygons()
+    current_clicked_in <- clicked_polygons_injest()
+    
+    # Check if values have changed or if there are any blocked parcels
+    if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0)) { # !TODO this is broken now that I keep the clicked stuff
+      # Disable Save button as changes require submission
+      shinyjs::disable("save")  # Disable the save button
+      
+      # Enable and highlight the Submit button (green)
+      shinyjs::enable("submit")  # Enable the submit button
+      # shinyjs::removeClass("submit", "ben-secondary")  # Remove the gray/disabled class
+      shinyjs::addClass("submit", "btn-success")  # Add the green/active class
+      
+    } else {
+      # Enable Save button if no changes have been made
+      shinyjs::enable("save")  # Enable the save button
+      
+      # Disable Submit button if no changes have been made
+      shinyjs::disable("submit")  # Disable the submit button
+      shinyjs::removeClass("submit", "btn-success")  # Remove the green/active class
+      shinyjs::addClass("submit", "btn-secondary")  # Add the gray/disabled class
+    }
+    
+    
     
   })
- 
+  
   # the blocking part of the code hasn't really been tested
   # there is currently a bug where if we click a parcel to block it, and then go > blocked_until_year, 
   # it's recoloured to it's eventual colour (regardless of when that change was supposed to happen); or dark gery if it never happens
@@ -1309,7 +1327,7 @@ if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0))
         updateCheckboxInput(session, "species_lichens_checkbox", value = strategy$species_lichens_checkbox)
         updateCheckboxInput(session, "area_checkbox", value = strategy$area_checkbox)
         updateCheckboxInput(session, "recreation_checkbox", value = strategy$recreation_checkbox)
-
+        
         # Ensure the map updates with the loaded strategy
         initialize_or_update_map(strategy$year, strategy$saved_data)        
       })
@@ -1318,7 +1336,7 @@ if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0))
   
   # Observe the reset of the sliders
   observeEvent(input$reset, {
-
+    
     leafletProxy("map") %>%
       setView(lat = LAT_DEFAULT, lng = LON_DEFAULT, zoom = ZOOM_DEFAULT)
     
@@ -1357,7 +1375,7 @@ if (values_changed || (nrow(setdiff(current_clicked_in, current_clicked)) != 0))
       })
     })
   })
-
+  
 }
 
 # !TODO Save strategy on first load
