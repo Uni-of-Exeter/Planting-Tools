@@ -386,7 +386,7 @@ function(res, from_submit_button) {
     }
   }
   #Filter strategies for blocked parcels and amend global compatible strategies
-  if(!is.null(from_submit_button$blocked_parcels)){
+  if(length(from_submit_button$blocked_parcels)>0){
     t_ids <- paste("plantingyear","parcel",from_submit_button$blocked_parcels$parcel_id,sep="_")
     sampled_parcels <- Strategies[,t_ids,drop=F]
     block_compatible <- matrix(0, nrow=nrow(sampled_parcels),ncol=ncol(sampled_parcels))
@@ -1624,7 +1624,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     #Second global variable amended is target_compatible_strategies, first assigned to all strategies here
     target_compatible_strategies <- strategy_outcomes
     #Blocked parcels is something we need to store once amended via a submit (it is used throughout the app)
-    blocked_parcels <- NULL
+    blocked_parcels <- list()
     
     #alpha for implausibility 
     alpha <- 0.9
