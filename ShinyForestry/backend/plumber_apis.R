@@ -626,6 +626,7 @@ function(slider_name) {
       #No need to change if its a group
     }
   }
+  res$status <- 200
   return(list(
     values = payload,
     geojson = geojson
@@ -691,6 +692,8 @@ function(slider_name) {
       #No need to change if its a group
     }
   }
+  
+  res$status <- 200
   return(list(
     values = payload,
     geojson = geojson
