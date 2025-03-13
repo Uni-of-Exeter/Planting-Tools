@@ -20,8 +20,6 @@ library(glue)
 source("utils/api_functions.R")
 source("config.R")
 
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
-
 map_page_ui <- function(id) {
   ns <- NS(id)
   
