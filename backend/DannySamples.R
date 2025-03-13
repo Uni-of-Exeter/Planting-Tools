@@ -110,6 +110,45 @@ for(target in TARGETS){
 #Store objective function as weighted combination of outcomes
 strategy_outcomes[, objective := rowSums(.SD * unlist(preference_weights)[TARGETS]), .SDcols = TARGETS]
 
+defaults <- NULL
+get_slider_info <- function(){
+  max_values <- strategy_outcomes[, lapply(.SD, max, na.rm=TRUE), .SDcols = TARGETS]
+  names(max_values)[which(names(max_values)=="All")] <- "biodiversity"
+  names(max_values)[which(names(max_values)=="visits")] <- "recreation"
+  bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(max_values)[which(names(max_values)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  max_values[, (names(max_values)) := lapply(.SD, signif, digits=3)]
+  min_max <- rbind(as.list(setNames(rep(0,length(TARGETS)),names(max_values))), max_values)
+  defaults_quantile <- runif(1, 0.5,0.75)
+  defaults <<- max_values[1, .SD*defaults_quantile]
+  defaults[, (names(defaults)) := lapply(.SD, signif,digits=3)]
+  min_max_default <- rbind(min_max, defaults)
+  return(min_max_default)
+}
+get_slider_info()
+
+
+#function() {
+#  slider_info <- list(
+#    carbon = list(min = 500, max = 1000, default = 800),
+#    species = list(min = 0, max = 25, default = 10),
+#    species_goat_moth = list(min = 0, max = 100, default = 25),
+#    species_stag_beetle = list(min = 0, max = 100, default = 30),
+#    species_lichens = list(min = 0, max = 5, default = 2),
+#    area = list(min = 0, max = 15, default = 10),
+#    recreation = list(min = 0, max = 20, default = 15)
+#  )
+#  return(slider_info)
+#}
+
 #####NOT NEEDED BUT USED FOR TESTING
 #First create a list of the values the app will generate before conversion to JSON
 payload <- list(
@@ -144,6 +183,74 @@ valid_strategies <- strategy_outcomes$strategy_id
 target_compatible_strategies <- strategy_outcomes
 #Blocked parcels is something we need to store once amended via a submit (it is used throughout the app)
 blocked_parcels <- NULL
+
+get_first_strategy <- function(){
+  target_carbon <- defaults$carbon
+  target_visits <- defaults$visits
+  target_area <- defaults$area
+  bio_names <- names(defaults)[ ! names(defaults)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+  targets_bio <- defaults[,  ..bio_names]
+  names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
+  #Convert English to Latin names for FullTable Compatibility
+  for(species in 1:length(targets_bio)){
+    t_name <- names(targets_bio)[species]
+    if(t_name != "All"){
+      specie_num <- which(NAME_CONVERSION$English_specie == t_name)
+      if(length(specie_num)>0){
+        #A species
+        names(targets_bio)[species] <- NAME_CONVERSION$Specie[specie_num]
+        #No need to change if its a group
+      }
+    }
+  }
+  target_compatible_strategies <<- strategy_outcomes[ (target_carbon - carbon)/carbon_sd < (-sqrt(alpha/(1-alpha))) &
+                                                        area < target_area & 
+                                                        (target_visits - visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
+                                                        Reduce(`&`, lapply(SPECIES, function(col) 100 * (targets_bio[[col]] - get(col)) < (-sqrt(alpha/(1-alpha))) )) ]
+  if(nrow(target_compatible_strategies)>0){
+    optimal_strategy_forfrontend <- target_compatible_strategies[which.max(objective)]
+    #Now wrap the optimal strategy into the right format
+    tyears <- as.numeric(as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(Strategies[optimal_strategy_forfrontend$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  }else{#return the null strategy
+    optimal_strategy_forfrontend <- null_outcomes
+    tyears <- as.numeric(as.vector(null_strategy[1,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(null_strategy[1,startsWith(colnames(Strategies),"treespecie")])
+  }
+  blocked_until_year <- rep(0, length(parcel_ids))
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- optimal_strategy_forfrontend[, ..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+get_first_strategy()
+
 submit_button <- function(from_front_end){
   #Read in json
   from_submit_button <- tryCatch(
