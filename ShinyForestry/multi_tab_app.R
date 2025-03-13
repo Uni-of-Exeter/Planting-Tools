@@ -21,8 +21,16 @@ packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
 packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
-# Install packages
-remotes::install_deps(plantingtools_folder, upgrade = "never")
+# Install packages if needed
+install <- FALSE
+for (pkg in packages) {
+  if (isFALSE(require(pkg, character.only = TRUE))) {
+    install <- TRUE
+  }
+}
+if (isTRUE(install)) {
+  remotes::install_deps(plantingtools_folder, upgrade = "never")
+}
 
 # Load packages
 for(i in 1:length(packages)) {
@@ -46,7 +54,7 @@ if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.list(env))) {
+  if (isFALSE(is.environment(env))) {
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
     run_initalization_on_backend <- TRUE
@@ -143,13 +151,13 @@ if (isTRUE(run_initalization_on_backend)) {
 
 # Source module files
 source("global.R")  # Load global settings
-source("config.R")  # Load config 
+source("config.R")  # Load config
 
 source("modules/map_page.R")
-source("modules/preferences_page.R")
-source("modules/alternative_approaches_page.R")
-source("modules/exploration_page.R")
-source("modules/downscaling_page.R")
+# source("modules/preferences_page.R")
+# source("modules/alternative_approaches_page.R")
+# source("modules/exploration_page.R")
+# source("modules/downscaling_page.R")
 
 source("utils/api_functions.R")
 
@@ -193,10 +201,10 @@ ui <- fluidPage(
         ),
         
         tabPanel(title = "Map", map_page_ui("map")),
-        tabPanel(title = "Preferences", preferences_page_ui("prefs")),
-        tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
-        tabPanel(title = "Exploration", exploration_page_ui("explore")),
-        tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
+        # tabPanel(title = "Preferences", preferences_page_ui("prefs")),
+        # tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
+        # tabPanel(title = "Exploration", exploration_page_ui("explore")),
+        # tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
         
         nav_spacer(),
         nav_item(tags$a("AI for Net Zero",
@@ -235,17 +243,17 @@ server <- function(input, output, session) {
   )
     
   map_page_server("map", state)
-  preferences_page_server("prefs", state)
-  alt_page_server("alt", state)
-  exploration_page_server("explore", state)
-  downscaling_page_server("downscale", state)
+  # preferences_page_server("prefs", state)
+  # alt_page_server("alt", state)
+  # exploration_page_server("explore", state)
+  # downscaling_page_server("downscale", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
-    if (!is.null(input$mappageRendered) && input$mappageRendered
-        && !is.null(input$prefpageRendered) && input$prefpageRendered
-        && !is.null(input$altpageRendered) && input$altpageRendered
-        && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
+    if (!is.null(input$mappageRendered) && input$mappageRendered) {
+        # && !is.null(input$prefpageRendered) && input$prefpageRendered
+        # && !is.null(input$altpageRendered) && input$altpageRendered
+        # && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
         
       # Hide the loading screen after both maps are rendered
       Sys.sleep(0.5)  # Small delay for smoother transition

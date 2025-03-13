@@ -3196,3 +3196,47 @@ calories_livestock_arable<- function(shapefile, yield_data, yield_sd,livestock_d
  #FullTable<- calories_livestock_arable(shapefile= sf::st_read("C:/Users/mh1176/University of Exeter/Mancini, Mattia - PCSE-WOFOST/ParcelData/land_parcels.shp"), # change your path
                                                   # yield_data = df_yield,livestock_data=sf::st_read("df_livestock.geojson"),yield_sd=df_yield_sd,
                                                    #FullTable = sf::st_read("FullTableMerged.geojson"))
+
+
+# Function to generate parcel data
+generate_parcel_data <- function(FullTable) {
+  
+  # Function to generate empty parcel data
+  generate_empty_parcel_data <- function(FullTable) {
+    if (!inherits(FullTable, "sf")) {
+      stop("FullTable must be an sf object.")
+    }
+    
+    n <- nrow(FullTable)
+    parcel_ids <- 1:n
+    geometries <- st_geometry(FullTable)
+    
+    empty_parcel_data <- st_sf(
+      parcel_id = parcel_ids,
+      geometry = geometries,
+      crs = st_crs(FullTable)
+    )
+  }
+  
+  empty_parcel_data <- generate_empty_parcel_data(FullTable)
+  
+  n <- nrow(empty_parcel_data)
+  parcel_areas <- FullTable$area
+  planting_years <- sample(2025:2049, n, replace = TRUE)
+  planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
+  planting_years[is.na(planting_types)] <- NA
+  blocked_until <- 0
+  
+  parcel_data <- st_sf(
+    parcel_id = empty_parcel_data$parcel_id,
+    geometry = empty_parcel_data$geometry,
+    parcel_area = parcel_areas,
+    planting_year = planting_years,
+    planting_type = planting_types,
+    blocked_until_year = blocked_until,
+    crs = st_crs(FullTable)
+  )
+  
+  print(parcel_data)
+  return(parcel_data)
+}

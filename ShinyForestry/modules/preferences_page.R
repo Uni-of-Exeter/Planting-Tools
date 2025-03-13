@@ -6,13 +6,6 @@ library(shinyjs)
 source("utils/api_functions.R")
 source("config.R")
 
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
-
-FullTableNotAvailONE <- FullTableNotAvail %>%
-  mutate(id = paste0("ONE_", row_number()))
-FullTableNotAvailTWO <- FullTableNotAvail %>%
-  mutate(id = paste0("TWO_", row_number()))
-
 preferences_page_ui <- function(id) {
   ns <- NS(id)
   

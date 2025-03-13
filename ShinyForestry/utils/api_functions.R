@@ -1,35 +1,3 @@
-# POST to /generate_parcels
-post_generate_parcels <- function(json_payload) {
-  
-  url <- paste0(API_URL, "/generate_parcels")
-  
-  # Make the API POST request with JSON payload
-  response <- httr::POST(
-    url,
-    body = json_payload, 
-    encode = "json",
-    httr::content_type_json()
-  )
-  
-  print("json_payload")
-  print(json_payload)
-  
-  # Check if the response is successful
-  if (httr::status_code(response) == 200) {
-    
-    content_raw <- httr::content(response, "text", encoding = "UTF-8")
-    api_response <- jsonlite::fromJSON(content_raw)
-    
-    geojson <- api_response$geojson
-    geojson_parsed <- st_read(geojson, quiet=TRUE)
-    
-    values <- api_response$values
-    return(list(geojson_parsed, values))
-    
-  } else {
-    stop(paste("Request failed with status:", httr::status_code(response)))
-  }
-}
 
 get_random_strategy <- function() {
   

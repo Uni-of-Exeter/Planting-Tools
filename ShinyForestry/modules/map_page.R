@@ -20,8 +20,6 @@ library(glue)
 source("utils/api_functions.R")
 source("config.R")
 
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
-
 map_page_ui <- function(id) {
   ns <- NS(id)
   
@@ -257,6 +255,8 @@ map_page_server <- function(id, state) {
       new_fetched <- if (!is.null(data)) {
         list(data, NULL)
       } else {
+        # TODO: PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS
+        stop("PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS")
         post_generate_parcels(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
       }
       
@@ -302,25 +302,25 @@ map_page_server <- function(id, state) {
         
         # Render the leaflet map with the updated data
                   
-          legend_html <- paste0(
-            "<b>Outcomes</b> (c.f. Targets)<br><br>",
-            "<table style='width:100%; text-align:left;'>",
-            paste0(
-              lapply(names(new_vals()), function(name) {
-                # Get the display name from SLIDER_NAMES
-                display_name <- SLIDER_NAMES[[name]]$name
-                # Get the unit for each slider
-                unit <- SLIDER_NAMES[[name]]$unit
-                # Get the current value
-                value <- round(new_vals()[[name]], POPUP_SIGFIG)
-                
-                # Format the name, value, and unit into a table row
-                sprintf("<tr><td>%s:</td> <td>%s %s</td></tr>", display_name, value, unit)
-              }),
-              collapse = "\n"
-            ),
-            "</table></div>"
-          )
+          # legend_html <- paste0(
+          #   "<b>Outcomes</b> (c.f. Targets)<br><br>",
+          #   "<table style='width:100%; text-align:left;'>",
+          #   paste0(
+          #     lapply(names(new_vals()), function(name) {
+          #       # Get the display name from SLIDER_NAMES
+          #       display_name <- SLIDER_NAMES[[name]]$name
+          #       # Get the unit for each slider
+          #       unit <- SLIDER_NAMES[[name]]$unit
+          #       # Get the current value
+          #       value <- round(new_vals()[[name]], POPUP_SIGFIG)
+          #       
+          #       # Format the name, value, and unit into a table row
+          #       sprintf("<tr><td>%s:</td> <td>%s %s</td></tr>", display_name, value, unit)
+          #     }),
+          #     collapse = "\n"
+          #   ),
+          #   "</table></div>"
+          # )
         output$map <- renderLeaflet({
           leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
             addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
@@ -373,7 +373,7 @@ map_page_server <- function(id, state) {
               # popup = ~planting_type
             ) %>%
             
-            addControl(html = legend_html, position='topright') %>% 
+            # addControl(html = legend_html, position='topright') %>% 
             
             # Add legend
             addLegend(
