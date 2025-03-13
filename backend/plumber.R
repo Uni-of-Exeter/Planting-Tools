@@ -123,7 +123,7 @@ function(req, res, file_to_upload) {
   # An Elicitor file was changed, Calculated files must be re-computed
   calculated_files_folder <- normalizePath(file.path("CalculatedFiles"))
   files_to_remove <- list.files(path = calculated_files_folder)
-  file.remove(file.path(calculated_files_folder, files_to_remove))
+  file.remove(file.path(calculated_files_folder, files_to_remove)
   
   res$status <- 200
   return("Success")
@@ -1124,9 +1124,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
   notif("Backend initialization ... done")
   
   res$status <- 200
+
   return(new_environment)
 }
-
-
-
 
