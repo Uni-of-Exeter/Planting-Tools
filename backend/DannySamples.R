@@ -173,6 +173,7 @@ null_strategy <- matrix(0, nrow = 1, ncol = n_parcels*3)
 colnames(null_strategy) <- colnames(Strategies)
 null_strategy[1,(2*n_parcels+1):(3*n_parcels)] <- "Conifers"
 null_outcomes <- get_outcome_dt(null_strategy, FullTable_working)
+null_strategy[1,(n_parcels+1):(2*n_parcels)] <- 2050 - STARTYEAR
 
 #Function to return optimal strategy from submit button
 #Function must also keep the target and target compatible strategies for use elsewhere

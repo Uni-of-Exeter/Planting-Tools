@@ -1613,6 +1613,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
                                     SCENARIO_arg = SCENARIO,
                                     MAXYEAR_arg = MAXYEAR,
                                     NAME_CONVERSION_arg = NAME_CONVERSION)
+    null_strategy[1,(n_parcels+1):(2*n_parcels)] <- 2050 - STARTYEAR
     notif(paste(msg, "done"), log_level = "debug")
     
     #Function to return optimal strategy from submit button
