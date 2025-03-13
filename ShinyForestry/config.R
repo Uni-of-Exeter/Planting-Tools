@@ -1,23 +1,12 @@
-LON_DEFAULT <- -1.733029 
-LAT_DEFAULT <- 50.820184
-ZOOM_DEFAULT <- 13
+LON_DEFAULT <- -1.733029 # this will be dynamic
+LAT_DEFAULT <- 50.820184 # this will be dynamic
+ZOOM_DEFAULT <- 13 # this will be dynamic
 
 YEAR_MIN <- 2025
 YEAR_MAX <- 2049
 YEAR_DEFAULT <- 2025
 
-POPUP_SIGFIG <- 2
-
-CARBON_MIN <- 500
-CARBON_MAX <- 1000
-CARBON_DEFAULT <-800
-
-SPECIES_DEFAULT <- 12
-SPECIES_GM_DEFAULT <- 90
-SPECIES_SB_DEFAULT <- 20
-SPECIES_LICHENS_DEFAULT <- 2
-AREA_DEFAULT <- 7
-RECREATION_DEFAULT <- 10
+POPUP_SIGFIG <- 3
 
 CHECKBOX_COL <- 1
 SLIDER_COL <- 11
@@ -39,14 +28,8 @@ API_HOST <- Sys.getenv("API_HOST")
 if (API_HOST == "") {
   API_HOST <- "144.173.60.164"
 }
-API_URL <- paste0("http://", API_HOST, ":", API_PORT)
 
-SLIDER_NAMES <- list(
-  carbon = list(name = "Tree Carbon Stored", unit = HTML("Tonnes of CO<sub>2</sub>")),
-  species = list(name = "Species Richness", unit = ""),
-  species_goat_moth = list(name = "Goat Moth", unit = "%"),
-  species_stag_beetle = list(name = "Stag Beetle", unit = "%"),
-  species_lichens = list(name = "Lichen", unit = "%"),
-  area = list(name = "Area Planted", unit = HTML("km<sup>2</sup>")),
-  recreation = list(name = "Recreation", unit = "Visits/month")
-)
+API_HOST <- "127.0.0.1"
+API_PORT <- 8042
+
+API_URL <- paste0("http://", API_HOST, ":", API_PORT)
