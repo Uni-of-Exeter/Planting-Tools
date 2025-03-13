@@ -96,8 +96,19 @@ map_page_server <- function(id, state) {
     strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
     plot_type <- reactiveVal("cumulative") 
     
-    initial_values <- reactiveVal(list())  # Initialize as an empty list
-
+    # set initial_values
+    initial_values <- reactiveVal(list())
+    observe({
+      req(state$map_tab)
+      default_values <- setNames(
+        lapply(state$map_tab$slider$names, function(slider) {
+          round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)  # Extract default values; rounding to 1 DP because of sliders
+        }),
+        state$map_tab$slider$names
+      )
+      initial_values(default_values)
+    })
+    
     # observe({
     #   # Ensure state$map_tab is properly initialized
     #   if (!is.null(state$map_tab$slider$names)) {
@@ -179,9 +190,13 @@ map_page_server <- function(id, state) {
       list(total = plot_data, cumulative = cumulative_data)
     })
     
+    print("render area plot")
     # Render time-series plot for both Conifer and Deciduous
     output[[ns("areaPlot")]] <- renderPlotly({
       data <- processed_data()  # Get precomputed data
+      
+      print("processed_data")
+      print(processed_data())
       
       # If no data, return NULL
       if (is.null(data)) return(NULL)
@@ -253,7 +268,9 @@ map_page_server <- function(id, state) {
       new_data_fetched <- new_fetched[[1]]
       new_values_fetched <- new_fetched[[2]]
       
+      print("new_data_fetched")
       print(new_data_fetched)
+      
       if (!is.null(new_data_fetched)) {
         # Apply the filter based on the selected year
         new_data(new_data_fetched)
@@ -278,6 +295,8 @@ map_page_server <- function(id, state) {
         current_layers(filtered_data_subset$parcel_id)
         
         # Update conifer and deciduous data based on the fetched data
+        # !TODO -- No planting year, no planting
+        
         area_data <- new_data_fetched %>%
           dplyr::filter(!is.na(planting_year)) %>%
           # dplyr::mutate( # I don't think we need to do this as it's fine as it is.
@@ -307,7 +326,7 @@ map_page_server <- function(id, state) {
               display_name <- state$map_tab$slider$names[idx]
               
               # Get the current value for the slider
-              value <- round(new_vals()[[name]], POPUP_SIGFIG)
+              value <- signif(new_vals()[[name]], POPUP_SIGFIG)
               
               # Format the name and value into a table row (without unit for now)
               sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
@@ -435,16 +454,16 @@ map_page_server <- function(id, state) {
         
         # Convert slider_info into the desired format
         state$map_tab$slider <- list(
-          names = colnames(slider_info),  # Use the column names (slider names)
+          names = colnames(slider_info),  # Use column names as slider names
           values = setNames(
             lapply(1:ncol(slider_info), function(i) {
-              list(
-                min = slider_info[1, ..i],         # Get the min value (first row of each column)
-                max = slider_info[2, ..i],         # Get the max value (second row of each column)
-                default = slider_info[3, ..i]      # Get the default value (third row of each column)
+              list( # making integers for
+                min = round(as.numeric(slider_info[1, ..i][[1]]), 1),         # Extract first row as numeric
+                max = round(as.numeric(slider_info[2, ..i][[1]]), 1),          # Extract second row as numeric
+                default = round(as.numeric(slider_info[3, ..i][[1]]), 1)       # Extract third row as numeric
               )
             }),
-            colnames(slider_info)  # Use the column names for the values
+            colnames(slider_info)  # Use column names as keys
           )
         )
         
@@ -452,7 +471,7 @@ map_page_server <- function(id, state) {
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
               # Directly extract the numeric default value from the list without nesting
-              as.numeric(state$map_tab$slider$values[[slider]]$default)
+              round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
             }),
             state$map_tab$slider$names
           ),
@@ -467,9 +486,9 @@ map_page_server <- function(id, state) {
           tagList(
             lapply(state$map_tab$slider$names, function(slider) {
               # Extract the min, max, and default values and ensure they are numeric
-              min_value <- as.numeric(state$map_tab$slider$values[[slider]]$min)
-              max_value <- as.numeric(state$map_tab$slider$values[[slider]]$max)
-              default_value <- as.numeric(state$map_tab$slider$values[[slider]]$default)
+              min_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$min), 1)
+              max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), 1)
+              default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
               
               # Debugging: Print min, max, default values to check their structure
               print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
@@ -482,7 +501,8 @@ map_page_server <- function(id, state) {
                   label = slider,  # Use the slider name as the label
                   min = min_value,
                   max = max_value,
-                  value = default_value
+                  value = default_value,
+                  step = 0.1,
                 ))
               )
             })
@@ -528,7 +548,7 @@ map_page_server <- function(id, state) {
         initial_values(
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
-              num_value <- as.numeric(input[[slider]])  # Convert to numeric
+              num_value <- round(as.numeric(input[[slider]]), 1) # Convert to numeric
               if (is.na(num_value)) return(NULL)  # Handle cases where conversion fails (optional)
               return(num_value)
             }),
@@ -624,10 +644,17 @@ map_page_server <- function(id, state) {
     })
 
     observe({
+      print("is initialised?")
+      print(state$map_tab$initialized)
+      print(state$initialized)
+      print(state$map_tab)
+      print(state$map_tab$slider$names)
+      print("...")
       # Get the current slider values with namespacing
       current_values_list <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
-          as.numeric(input[[slider]])  # Convert each slider value to numeric
+          num_value <- round(as.numeric(input[[slider]]), 1)
+          return(num_value)
         }),
         state$map_tab$slider$names  # Use slider names as the list names
       )
