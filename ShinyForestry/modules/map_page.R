@@ -20,8 +20,6 @@ library(glue)
 source("utils/api_functions.R")
 source("config.R")
 
-FullTableNotAvail <- st_read(normalizePath(file.path(normalizePath(file.path(normalizePath(getwd()), "ElicitorOutput")), "FullTableNotAvail.geojson")), quiet=TRUE)
-
 map_page_ui <- function(id) {
   ns <- NS(id)
   
@@ -301,26 +299,30 @@ map_page_server <- function(id, state) {
         output_data(area_data)
         
         # Render the leaflet map with the updated data
-                  
-          legend_html <- paste0(
-            "<b>Outcomes</b> (c.f. Targets)<br><br>",
-            "<table style='width:100%; text-align:left;'>",
-            paste0(
-              lapply(names(new_vals()), function(name) {
-                # Get the display name from SLIDER_NAMES
-                display_name <- SLIDER_NAMES[[name]]$name
-                # Get the unit for each slider
-                unit <- SLIDER_NAMES[[name]]$unit
-                # Get the current value
-                value <- round(new_vals()[[name]], POPUP_SIGFIG)
-                
-                # Format the name, value, and unit into a table row
-                sprintf("<tr><td>%s:</td> <td>%s %s</td></tr>", display_name, value, unit)
-              }),
-              collapse = "\n"
-            ),
-            "</table></div>"
-          )
+        print("names of new_vals()")
+        print(names(new_vals()))
+            
+        legend_html <- paste0(
+          "<b>Outcomes</b> (c.f. Targets)<br><br>",
+          "<table style='width:100%; text-align:left;'>",
+          paste0(
+            lapply(names(new_vals()), function(name) {
+              # Get the index of the slider name in state$map_tab$slider$names
+              idx <- which(state$map_tab$slider$names == name)
+              
+              # Get the display name for the slider (from the slider names list)
+              display_name <- state$map_tab$slider$names[idx]
+              
+              # Get the current value for the slider
+              value <- round(new_vals()[[name]], POPUP_SIGFIG)
+              
+              # Format the name and value into a table row (without unit for now)
+              sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
+            }),
+            collapse = "\n"
+          ),
+          "</table></div>"
+        )
         output$map <- renderLeaflet({
           leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
             addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
@@ -394,8 +396,8 @@ map_page_server <- function(id, state) {
     observe({
       if (is.null(state$map_tab$initialized) || !state$map_tab$initialized) {
         # Fetch slider values from API
-        slider_values <- get_slider_values()
-        slider_names <- names(slider_values)
+        # slider_values <- get_slider_values()
+        # slider_names <- names(slider_values)
         # Create the structured list under `$slider`
         # !TODO units?
         #
@@ -417,17 +419,39 @@ map_page_server <- function(id, state) {
         #     │   └── default: 800
         # ⋮   ⋮   
         #
+        # state$map_tab$slider <- list(
+        #   names = slider_names, # Store slider names explicitly
+        #   values = setNames(
+        #     lapply(slider_names, function(slider) {
+        #       list(
+        #         min = as.numeric(slider_values[[slider]]$min[[1]]),
+        #         max = as.numeric(slider_values[[slider]]$max[[1]]),
+        #         default = as.numeric(slider_values[[slider]]$default[[1]])
+        #       )
+        #     }),
+        #     slider_names # Assign correct names to values
+        #   )
+        # )
+        
+        slider_info <- data.table(
+          name = c("carbon", "species", "species_goat_moth", "species_stag_beetle", "species_lichens", "area", "recreation"),
+          min = c(500, 0, 0, 0, 0, 0, 0),
+          max = c(1000, 25, 100, 100, 5, 15, 20),
+          default = c(800, 10, 25, 30, 2, 10, 15)
+        )
+        
+        # Convert slider_info into the desired format
         state$map_tab$slider <- list(
-          names = slider_names, # Store slider names explicitly
+          names = slider_info$name,  # Extract the names of the sliders
           values = setNames(
-            lapply(slider_names, function(slider) {
+            lapply(1:nrow(slider_info), function(i) {
               list(
-                min = as.numeric(slider_values[[slider]]$min[[1]]),
-                max = as.numeric(slider_values[[slider]]$max[[1]]),
-                default = as.numeric(slider_values[[slider]]$default[[1]])
+                min = slider_info$min[i],
+                max = slider_info$max[i],
+                default = slider_info$default[i]
               )
             }),
-            slider_names # Assign correct names to values
+            slider_info$name  # Assign names to the values
           )
         )
         
@@ -464,6 +488,7 @@ map_page_server <- function(id, state) {
         
         default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
         initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+        # initialize_or_update_map(YEAR_MIN, data=)
         state$map_tab$initialized <- TRUE 
       }
     })

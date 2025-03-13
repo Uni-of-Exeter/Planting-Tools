@@ -22,7 +22,7 @@ packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
 # Install packages
-remotes::install_deps(plantingtools_folder, upgrade = "never")
+# remotes::install_deps(plantingtools_folder, upgrade = "never")
 
 # Load packages
 for(i in 1:length(packages)) {
@@ -112,7 +112,7 @@ if (isTRUE(run_initalization_on_backend)) {
   # Initialize the environment
   handle_PUT <- new_handle()
   handle_setopt(handle_PUT, customrequest = "PUT")
-  url <- paste0(API_URL, "/initialize?MAX_LIMIT_LOG_LEVEL=", MAX_LIMIT_LOG_LEVEL)
+  url <-paste0(API_URL, "/initialize?MAX_LIMIT_LOG_LEVEL=", MAX_LIMIT_LOG_LEVEL)
   msg <- paste("initializing the backend", url, "...")
   notif(msg)
   response <- curl_fetch_memory(url = url,
@@ -146,10 +146,10 @@ source("global.R")  # Load global settings
 source("config.R")  # Load config 
 
 source("modules/map_page.R")
-source("modules/preferences_page.R")
-source("modules/alternative_approaches_page.R")
-source("modules/exploration_page.R")
-source("modules/downscaling_page.R")
+# source("modules/preferences_page.R")
+# source("modules/alternative_approaches_page.R")
+# source("modules/exploration_page.R")
+# source("modules/downscaling_page.R")
 
 source("utils/api_functions.R")
 
@@ -235,17 +235,17 @@ server <- function(input, output, session) {
   )
     
   map_page_server("map", state)
-  preferences_page_server("prefs", state)
-  alt_page_server("alt", state)
-  exploration_page_server("explore", state)
-  downscaling_page_server("downscale", state)
+  # preferences_page_server("prefs", state)
+  # alt_page_server("alt", state)
+  # exploration_page_server("explore", state)
+  # downscaling_page_server("downscale", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
-    if (!is.null(input$mappageRendered) && input$mappageRendered
-        && !is.null(input$prefpageRendered) && input$prefpageRendered
-        && !is.null(input$altpageRendered) && input$altpageRendered
-        && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
+    if (!is.null(input$mappageRendered) && input$mappageRendered) {
+        # && !is.null(input$prefpageRendered) && input$prefpageRendered
+        # && !is.null(input$altpageRendered) && input$altpageRendered
+        # && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
         
       # Hide the loading screen after both maps are rendered
       Sys.sleep(0.5)  # Small delay for smoother transition
