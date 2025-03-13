@@ -41,6 +41,7 @@ SESSION_FILE_SUFFIX <- ""
 source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
 source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
+source(normalizePath(file.path(FolderSource, "..", "backend", "DannyFunctions.R")), local = FALSE)
 
 
 # Retrieve packages from DESCRIPTION (in plantingtools_folder)
@@ -641,7 +642,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
     source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
     source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
-    source(normalizePath(file.path(FolderSource, "DannyFunctions.R")), local = FALSE)
+    source(normalizePath(file.path(FolderSource, "..", "backend", "DannyFunctions.R")), local = FALSE)
     
     if (RUN_BO) {
       dgpsi::init_py(verb = FALSE)
@@ -1201,6 +1202,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     FullTable_long <- precompute_biodiversity(FullTable_long, MAXYEAR)
     parcel_id <- unique(FullTable_long$parcel_id)
     group_size <- length(parcel_id)
+    n_parcels <- group_size
     
     precomputed_vals <- precompute_static_values(FullTable, MAXYEAR)
     
@@ -1216,8 +1218,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       pb <- progressor(steps = NSamp, message = paste("Sampling", NSamp, "strategies ..."))
       Strategies <- foreach(
         i = 1:NSamp,
-        .combine = combine_foreach_rbind,
-        .multicombine = TRUE,
+        .combine = rbind,
         .inorder = TRUE,
         .options.future = list(
           seed = TRUE
@@ -1227,10 +1228,12 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
         #Area
         pp <- runif(1)
         rand_samp <- as.integer(runif(n_parcels)< pp)
+        Uniqunits <- unique(FullTable$units)
         
         #This part simply ensures that if we are doing decision units as clusters of parcels
         #the same strategy is assigned to all parcels per unit
         result <- matrix(0, nrow = 1, ncol = n_parcels)
+        
         for (j in 1:n_parcels) {
           result[1, FullTable$units == Uniqunits[j]] <- rand_samp[j]
         }
@@ -1324,12 +1327,14 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       is.na(outcome_sub_type) | outcome_sub_type %in% SPECIES
     ]
     
-    
     #Find the outcomes from strategies
-    stop("LINE 1329")
-    msg <- "Find the outcomes from strategies ..."
+    msg <- "Finding the outcomes from strategies ..."
     notif(msg, log_level = "debug")
-    strategy_outcomes <- rbindlist(lapply(1:NSamp, function(jj) get_outcome_dt(Strategies[jj,], FullTable_working)))
+    strategy_outcomes <- rbindlist(lapply(1:NSamp, function(i) get_outcome_dt(Strategies[i,], FullTable_working,
+                                                                              SPECIES_arg = SPECIES,
+                                                                              SCENARIO_arg = SCENARIO,
+                                                                              MAXYEAR_arg = MAXYEAR,
+                                                                              NAME_CONVERSION_arg = NAME_CONVERSION)))
     strategy_outcomes[, strategy_id := 1:NSamp]
     notif(paste(msg, "done"), log_level = "debug")
     
@@ -1364,19 +1369,32 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       max_values[, (names(max_values)) := lapply(.SD, signif, digits=3)]
       min_max <- rbind(as.list(setNames(rep(0,length(TARGETS)),names(max_values))), max_values)
       defaults_quantile <- runif(1, 0.5,0.75)
-      defaults <<- max_values[1, .SD*defaults_quantile]
+      defaults <- max_values[1, .SD*defaults_quantile]
+      defaults$area <- max_values$area
       defaults[, (names(defaults)) := lapply(.SD, signif,digits=3)]
       min_max_default <- rbind(min_max, defaults)
-      return(min_max_default)
+      return(list(defaults = defaults,
+                  min_max_default = min_max_default))
     }
-    slider_info <- get_slider_info()
+    # Assign defaults to the global environment
+    slider_info_value <- get_slider_info()
+    slider_info <- slider_info_value$min_max_default
+    defaults <- slider_info_value$defaults
+    rm(slider_info_value)
     
     
     #MAKE THE NULL STRATEGY. USE IT TO RETURN STRATEGIES WHEN CLUSTERING CANT BE DONE, WHEN NOTHING IS TARGET COMPATIBLE ETC. 
+    msg <- "Making the null strategy ..."
+    notif(msg, log_level = "debug")
     null_strategy <- matrix(0, nrow = 1, ncol = n_parcels*3)
     colnames(null_strategy) <- colnames(Strategies)
     null_strategy[1,(2*n_parcels+1):(3*n_parcels)] <- "Conifers"
-    null_outcomes <- get_outcome_dt(null_strategy, FullTable_working)
+    null_outcomes <- get_outcome_dt(null_strategy, FullTable_working,
+                                    SPECIES_arg = SPECIES,
+                                    SCENARIO_arg = SCENARIO,
+                                    MAXYEAR_arg = MAXYEAR,
+                                    NAME_CONVERSION_arg = NAME_CONVERSION)
+    notif(paste(msg, "done"), log_level = "debug")
     
     #Function to return optimal strategy from submit button
     #Function must also keep the target and target compatible strategies for use elsewhere
@@ -1388,9 +1406,14 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     #Blocked parcels is something we need to store once amended via a submit (it is used throughout the app)
     blocked_parcels <- NULL
     
+    #alpha for implausibility 
+    alpha <- 0.9
+    
+    msg <- "Making the first strategy ..."
+    notif(msg, log_level = "debug")
     get_first_strategy <- function(){
       target_carbon <- defaults$carbon
-      target_visits <- defaults$visits
+      target_visits <- defaults$recreation
       target_area <- defaults$area
       bio_names <- names(defaults)[ ! names(defaults)%in% c("carbon", "area", "recreation", "blocked_parcels")]
       targets_bio <- defaults[,  ..bio_names]
@@ -1407,6 +1430,8 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
           }
         }
       }
+      
+      
       target_compatible_strategies <- strategy_outcomes[ (target_carbon - carbon)/carbon_sd < (-sqrt(alpha/(1-alpha))) &
                                                             area < target_area & 
                                                             (target_visits - visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
@@ -1453,16 +1478,19 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
         target_compatible_strategies = target_compatible_strategies
       ))
     }
+    notif(paste(msg, "done"), log_level = "debug")
     
     # target_compatible_strategies is needed in the environment, but first_strategy needs only the other variables
+    msg <- "Making the target_compatible_strategies"
+    notif(msg, log_level = "debug")
     first_strategy <- get_first_strategy()
     target_compatible_strategies <- first_strategy$target_compatible_strategies
     first_strategy$target_compatible_strategies <- NULL
+    notif(paste(msg, "done"), log_level = "debug")
     
-    rm(list = c("JulesMean", "JulesSD", "CorrespondenceJules", "seer2km", "jncc100", "speciesprob40", "climatecells"))
   })
   
-  notif(paste(msg, "done"), log_level = "debug")
+  notif("Backend initialization ... done", log_level = "debug")
   plan(sequential)
   
   # Merge the environment into the global environment
@@ -1474,7 +1502,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
               "CalculatedFilesFolder",
               "save_folder",
               "save_folder_elicitoroutput",
-              "plantingtools_folder",
+              # "plantingtools_folder",
               "FolderSource"),
      envir = new_environment)
   

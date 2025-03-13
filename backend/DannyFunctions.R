@@ -167,7 +167,10 @@ get_outcomes_from_strategy <- function(parameter_vector,
                                        FullTable_long_arg,
                                        SPECIES_arg = SPECIES,
                                        SCENARIO_arg = SCENARIO,
-                                       MAXYEAR_arg = MAXYEAR) {
+                                       MAXYEAR_arg = MAXYEAR,
+                                       NAME_CONVERSION_arg = NAME_CONVERSION) {
+  
+  NAME_CONVERSION <- NAME_CONVERSION_arg
   
   # Extract unique parcel_id
   outcomes <- data.table(parcel_id = unique(FullTable_long_arg$parcel_id))
@@ -385,9 +388,21 @@ convert_outcome_to_dt <- function(outcome) {
 }
 
 #combine get_outcomes_from_strategy and return data.table
-get_outcome_dt <- function(one_strategy, FullTable_long_arg){
+get_outcome_dt <- function(one_strategy, FullTable_long_arg,
+                           SPECIES_arg = SPECIES,
+                           SCENARIO_arg = SCENARIO,
+                           MAXYEAR_arg = MAXYEAR,
+                           NAME_CONVERSION_arg = NAME_CONVERSION){
+  SPECIES <- SPECIES_arg
+  SCENARIO <- SCENARIO_arg
+  MAXYEAR <- MAXYEAR_arg
+  NAME_CONVERSION <- NAME_CONVERSION_arg
   outcomes <- get_outcomes_from_strategy(parameter_vector = one_strategy,
-                                         FullTable_long_arg = FullTable_long_arg)
+                                         FullTable_long_arg = FullTable_long_arg,
+                                         SPECIES_arg = SPECIES,
+                                         SCENARIO_arg = SCENARIO,
+                                         MAXYEAR_arg = MAXYEAR,
+                                         NAME_CONVERSION_arg = NAME_CONVERSION)
   return(convert_outcome_to_dt(outcomes))
 }
 
