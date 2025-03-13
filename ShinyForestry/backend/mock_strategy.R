@@ -481,18 +481,31 @@ function() {
 }
 
 #* Obtain four alternative approaches
-#* @GET /exploration_plus_minus
+#* @GET /exploration_plus
 #* @serializer json
 function() {
   # input: 
-  #   movement = "+" or "-"
   #  slider_name
   
-  # runs play_button() if "+" or minus_button() if "-"
+  # runs play_button()
   
   # returns:
   # list(values, geojson) #see submit_strategy
 }
+
+#* Obtain four alternative approaches
+#* @GET /exploration_minus
+#* @serializer json
+function() {
+  # input: 
+  #  slider_name
+  
+  # runs minus_button() if "-"
+  
+  # returns:
+  # list(values, geojson) #see submit_strategy
+}
+
 
 
 
