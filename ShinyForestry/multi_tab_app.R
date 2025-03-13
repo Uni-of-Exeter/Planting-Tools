@@ -23,7 +23,7 @@ packages <- na.omit(packages)  # Remove any NAs
 
 # Install packages if needed
 install <- FALSE
-for (pkg in 1:packages) {
+for (pkg in packages) {
   if (isFALSE(require(pkg, character.only = TRUE))) {
     install <- TRUE
   }
