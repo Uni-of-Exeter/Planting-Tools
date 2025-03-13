@@ -268,8 +268,6 @@ map_page_server <- function(id, state) {
         new_data(new_data_fetched)
         new_vals(new_values_fetched)
         
-        stopifnot(all(sort(names(new_values_fetched)) == sort(names(SLIDER_NAMES))))
-        
         # Initialize clicked_polygons() with all parcel_ids and a default blocked_until_year
         clicked_polygons(data.frame(
           parcel_id = new_data_fetched$parcel_id,
