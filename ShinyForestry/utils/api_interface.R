@@ -3,9 +3,10 @@ library(jsonlite)
 library(glue)
 library(sf)
 
+# T
 put_initialization <- function(info) {
   
-  url <- glue("http://144.173.60.164:40000/initialize")
+  url <- paste0(API_URL, "/initialize")
   
   # Convert 'info' to JSON format
   body <- toJSON(
@@ -45,13 +46,8 @@ put_initialization <- function(info) {
   }
 }
 
-initialization <- put_initialization()
-
-
-frontend_initialisation <- funtion(){
-  
+frontend_initialisation <- funtion() {
   initialization <- put_initialization()
-  
   values <- list(
     targets = convert_targets_to_english(initialization$TARGETS, initialization$NAME_CONVERSION),
     year <- list(
@@ -69,7 +65,6 @@ frontend_initialisation <- funtion(){
     #   recreation = list(min = 0, max = 20, default = 15)
     # )
   )
-  
   return(targets)
 }
 

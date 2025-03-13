@@ -1,7 +1,7 @@
 # POST to /generate_parcels
 post_generate_parcels <- function(json_payload) {
   
-  url <- glue("http://{API_HOST}:{API_PORT}/generate_parcels")
+  url <- paste0(API_URL, "/generate_parcels")
   
   # Make the API POST request with JSON payload
   response <- httr::POST(
@@ -33,7 +33,7 @@ post_generate_parcels <- function(json_payload) {
 
 get_random_strategy <- function() {
   
-  url <- glue("http://{API_HOST}:{API_PORT}/random_strategy")
+  url <- paste0(API_URL, "/random_strategy")
   # Make the API request
   response <- httr::GET(url)
   # Check if the response is successful
@@ -55,7 +55,7 @@ get_random_strategy <- function() {
 
 get_four_random_strategies <- function() {
   
-  url <- glue("http://{API_HOST}:{API_PORT}/four_random_strategies")
+  url <- paste0(API_URL, "/four_random_strategies")
   
   # Make the API request
   response <- httr::GET(url)
@@ -87,15 +87,13 @@ get_four_random_strategies <- function() {
   }
 }
 
-
-
 post_preference_choice <- function(choice) {
   
   choice <- as.integer(choice)
   print(paste("The choice was made:", choice))
   
   # Define the base URL (without query parameters)
-  url <- glue("http://127.0.0.1:8042/preference_choice")
+  url <- paste0(API_URL, "/preference_choice")
   
   # Create the JSON payload with the 'choice' as part of the body
   json_payload <- list(choice = choice)
@@ -134,12 +132,9 @@ post_preference_choice <- function(choice) {
   }
 }
 
-
-
-
 # GET to /slider_values
 get_slider_values <- function() {
-  url <- glue("http://{API_HOST}:{API_PORT}/slider_values")
+  url <- paste0(API_URL, "/slider_values")
   response <- httr::GET(url)
   if (httr::status_code(response) == 200) {
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
