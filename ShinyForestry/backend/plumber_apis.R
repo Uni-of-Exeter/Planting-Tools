@@ -81,51 +81,6 @@ function(req) {
   forward()
 }
 
-# Function to generate parcel data
-generate_parcel_data <- function(FullTable) {
-  
-  # Function to generate empty parcel data
-  generate_empty_parcel_data <- function(FullTable) {
-    if (!inherits(FullTable, "sf")) {
-      stop("FullTable must be an sf object.")
-    }
-    
-    n <- nrow(FullTable)
-    parcel_ids <- 1:n
-    geometries <- st_geometry(FullTable)
-    
-    empty_parcel_data <- st_sf(
-      parcel_id = parcel_ids,
-      geometry = geometries,
-      crs = st_crs(FullTable)
-    )
-  }
-  
-  empty_parcel_data <- generate_empty_parcel_data(FullTable)
-  
-  n <- nrow(empty_parcel_data)
-  parcel_areas <- FullTable$area
-  planting_years <- sample(2025:2049, n, replace = TRUE)
-  planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
-  planting_years[is.na(planting_types)] <- NA
-  blocked_until <- 0
-  
-  parcel_data <- st_sf(
-    parcel_id = empty_parcel_data$parcel_id,
-    geometry = empty_parcel_data$geometry,
-    parcel_area = parcel_areas,
-    planting_year = planting_years,
-    planting_type = planting_types,
-    blocked_until_year = blocked_until,
-    crs = st_crs(FullTable)
-  )
-  
-  print(parcel_data)
-  return(parcel_data)
-}
-
-#* @apiTitle Parcel Data API
-#* @apiDescription Returns parcel data in GeoJSON format.
 
 # #* @get /health
 # #* @serializer json
@@ -207,92 +162,6 @@ function(res) {
 
 
 #* Generate parcel data
-#* @post /generate_parcels
-#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
-#* @serializer json
-function(req) {
-  
-  body <- tryCatch(
-    jsonlite::fromJSON(req$postBody, simplifyVector = TRUE),
-    error = function(e) return(list(error = "Invalid JSON format."))
-  )
-  
-  # Debug: Print the incoming body to inspect its structure
-  print("Incoming body:")
-  print(body)
-  
-  # Validate required fields
-  required_fields <- c("carbon", "species", "species_goat_moth", "species_stag_beetle",
-                       "species_lichens", "area", "recreation", "blocked_parcels")
-  
-  if (!all(required_fields %in% names(body))) {
-    return(list(error = "Missing required fields in request body."))
-  }
-  
-  # Extract blocked parcels
-  blocked_parcels <- body$blocked_parcels
-  
-  # Debug: Check the structure of blocked_parcels
-  print("Blocked parcels:")
-  print(blocked_parcels)
-  str(blocked_parcels)  # Check the structure of blocked_parcels
-  
-  # If blocked_parcels is a data frame, you can check directly for columns
-  if (is.data.frame(blocked_parcels)) {
-    # Validate each row in the data frame
-    for (i in 1:nrow(blocked_parcels)) {
-      parcel <- as.data.frame(blocked_parcels[i, , drop = FALSE])  # Convert to data frame row
-      
-      # Check if required columns exist
-      if (!"parcel_id" %in% colnames(parcel) || !"blocked_until_year" %in% colnames(parcel)) {
-        return(list(error = "Each parcel must have 'parcel_id' and 'blocked_until_year'."))
-      }
-      
-      # Inspect parcel fields
-      print(paste("Inspecting parcel", i))
-      print(parcel)
-      print(paste("Parcel ID: ", parcel$parcel_id))  # Debug: print parcel_id
-    }
-  } else if (is.list(blocked_parcels)) {
-    # If blocked_parcels is an empty list, create an empty data frame
-    if (length(blocked_parcels) == 0) {
-      blocked_parcels <- data.frame(parcel_id = character(0), blocked_until_year = numeric(0))
-    }
-  } else {
-    return(list(error = "`blocked_parcels` must be a data frame or a list."))
-  }
-  
-  # Continue with backend logic
-  parcel_data <- generate_parcel_data(FullTable)
-  
-  # Update blocked parcels in the backend logic
-  for (i in 1:nrow(blocked_parcels)) {
-    parcel <- as.data.frame(blocked_parcels[i, , drop = FALSE])  # Convert to data frame row
-    parcel_data$is_blocked[parcel_data$parcel_id == parcel$parcel_id] <- TRUE
-    parcel_data$blocked_until_year[parcel_data$parcel_id == parcel$parcel_id] <- parcel$blocked_until_year
-  }
-  
-  # Create dummy payload
-  payload <- list(
-    carbon = as.numeric(body$carbon), # 3* runif(1, min = 0.9, max = 1.1)),
-    species = as.numeric(body$species), # * runif(1, min = 0.9, max = 1.1)),
-    species_goat_moth = as.numeric(body$species_goat_moth), # * runif(1, min = 0.9, max = 1.1)),
-    species_stag_beetle = as.numeric(body$species_stag_beetle), # * runif(1, min = 0.9, max = 1.1)),
-    species_lichens = as.numeric(body$species_lichens), # * runif(1, min = 0.9, max = 1.1)),
-    area = as.numeric(body$area), # * runif(1, min = 0.9, max = 1.1)),
-    recreation = as.numeric(body$recreation) # * runif(1, min = 0.9, max = 1.1))
-  )
-  
-  # Convert to GeoJSON
-  geojson <- geojsonsf::sf_geojson(parcel_data)
-  
-  return(list(
-    values = payload,
-    geojson = geojson
-  ))
-}
-
-#* Generate parcel data
 #* @get /random_strategy
 #* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
 #* @serializer json
@@ -321,11 +190,136 @@ function() {
 }
 
 
+#* Initialise Preferences tab
+#* @get /preferences_initialise
+#* @serializer json
+#* @response 200 Success: Preferences were initialized
+function(res) {
+  
+  # runs: preferences_tab_first_click()
+  
+  #What happens on first preference tab launch
+  
+  #Make 2 strategies to compare
+  #strategy i
+  
+  res$status <- 200
+  return(lapply(1:2, function(kk) make_strategy_forfront_preftab(kk)))
+  
+  # returns: (see submit_strategy)
+  # list(
+  #     list(values, geojson),
+  #     list(values, geojson),
+  # )
+}
+
+#* Provide a preference (1 or 2)
+#* @get /preferences
+#* @serializer json
+#* @param which_button Choice of button, 1 or 2
+#* @response 200 Success: Preferences are updates
+#* @response 403 Forbidden: the choice should be 1 for the left button or 2 for the right button
+function(res, which_button) {
+  
+  # Takes in: either 1 or 2
+  if(!which_button %in% c(1,2)) {
+    res$status <- 403
+    notif("the choice should be 1 for the left button or 2 for the right button", log_level = "error")
+    return("the choice should be 1 for the left button or 2 for the right button")
+  }
+  if(which_button == 1)
+    pref_elicitation_object$addPref(c(comparison_index,comparison_index+1))
+  else
+    pref_elicitation_object$addPref(c(comparison_index+1,comparison_index))
+  MCMCflag <- FALSE
+  if(comparison_index %% 5 < 1){
+    #We will do MCMC after returning strategies
+    MCMCflag <- TRUE
+  }
+  comparison_index <<- comparison_index + 2
+  strategies_compared <<- valid_strategies[c(comparison_index,comparison_index+1)] #Note we need some error handling if no strategies left (only for aggressive blocking and someone who wants to do 1000 comparisons)
+  pref_elicitation_object$data <- rbind(pref_elicitation_object$data, strategy_outcomes[strategies_compared,..TARGETS])
+  
+  # MCMC
+  
+  #This next part is important and I think needs wrapping in future because we want to pass the data back before this is done, as it's after the return it wont happen until done properly, but I've tested and it works.
+  
+  
+  
+  if(MCMCflag){
+    msg <- "MCMC starting"
+    notif(msg, log_level = "debug")
+    
+    future_promise(expr = {
+      
+      msg <- "MCMC in a new process starting ..."
+      notif(msg, log_level = "debug")
+      
+      # Changes the global environment:
+      # target_compatible_strategies
+      
+      pref_elicitation_object$update(method="adapt")
+      preference_weights <- pref_elicitation_object$posterior_mean
+      
+      notif(paste(msg, "done"))
+      
+      
+      msg <- "Clustering in the existing new process starting ..."
+      notif(msg, log_level = "debug")
+      
+      target_compatible_strategies <- cluster_samples()
+      
+      notif(paste(msg, "done"))
+      
+      return(list(pref_elicitation_object = pref_elicitation_object,
+                  preference_weights = preference_weights,
+                  target_compatible_strategies = target_compatible_strategies))
+      
+    }, seed = NULL) %...>% {
+      
+      # On success
+      mcmc_results <- .
+      
+      msg <- "MCMC success, merging pref_elicitation_object and preference_weights (and target_compatible_strategies if we clustered) to .GlobalEnv"
+      notif(msg, log_level = "debug")
+      pref_elicitation_object <<- pref_elicitation_object
+      preference_weights <<- preference_weights
+      target_compatible_strategies <<- target_compatible_strategies
+      return(TRUE)
+      
+    } %...!% {
+      
+      # On failure
+      msg <- "MCMC failure"
+      notif(msg, log_level = "error")
+      return(FALSE)
+      
+    }
+  }
+  
+
+  
+  
+  
+  return(lapply(1:2, function(jj) make_strategy_forfront_preftab(jj)))
+  # runs: choose_button()
+  res$status <- 200
+  # returns: (see preferences_initialise)
+  # list(
+  #     list(values, geojson),
+  #     list(values, geojson),
+  # )
+}
+
+
 #* Submit targets to return a strategy
 #* Triggers a clustering in a new process in the background
-#* @POST /submit_targets
+#* @post /submit_targets
 #* @serializer json
-function() {
+#* @parser json
+#* @param from_submit_button JSON data that contains targets
+#* @response 200 Success: Returned strategy
+function(res, from_submit_button) {
   
   # Takes in:
   # {
@@ -364,7 +358,7 @@ function() {
   # 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>         TRUE                  0         NA POLYGON ((-1.760264 50.8301...
   
   
-  from_submit_button <- plumber::parser_json()(value = from_front_end)
+  # from_submit_button <- plumber::parser_json()(value = from_front_end)
   
   #Amend global blocked_parcels
   blocked_parcels <<- from_submit_button$blocked_parcels
@@ -475,7 +469,231 @@ function() {
     return(FALSE)
     
   }
+  res$status <- 200
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+}
+
+
+#* Obtain four alternative approaches
+#* @get /alternative_approaches
+#* @serializer json
+#* @response 200 Success: Returned strategy
+function(res) {
+  # returns:
+  # list(
+  #     list(values, geojson),
+  #     list(values, geojson),
+  #     list(values, geojson),
+  #     list(values, geojson),
+  # )
   
+  res$status <- 200
+  if(all(target_compatible_strategies$cluster==1))
+    return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(1)))
+  else
+    return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(kk)))
+}
+
+#* Obtain four alternative approaches
+#* @get /exploration_initialise
+#* @serializer json
+#* @param which_cluster Which cluster is selected
+#* @response 200 Success: Returned strategy
+#* @response 403 Forbidden: the choice must be between 1 and 4
+function(which_cluster = 1) {
+  # input: a number from 1 - 4 for the cluster picked on the alternative_approaches tab
+  
+  # returns:
+  # list(values, geojson) #see submit_strategy
+  
+  if(!cluster_number %in% c(1,2,3,4)) {
+    res$status <- 403
+    notif("thethe choice must be between 1 and 4", log_level = "error")
+    return("the choice must be between 1 and 4")
+  }
+  
+  
+  #First we need a global variable containing the target compatible samples for a cluster. This will be amended on entering the exploration tab
+  tc_samples_cluster <<- target_compatible_strategies[cluster==1]
+  #We also need a strategy_id to represent the current strategy shown. This will also be amended on entry
+  cluster_strat_id <<- tc_samples_cluster[sample(1:nrow(tc_samples_cluster),1)]$strategy_id
+  #which_cluster must come from the front end (a map is selected on Alternative strategies) When we know this works, we just need to add a catch 
+  #that defaults to cluster 1 (easy, but dont want to add it until the click into this page works)
+  
+  
+  
+  if(all(target_compatible_strategies$cluster==1))
+    which_cluster <- 1
+  #Reassign global variable to the strategies that will populate the page
+  tc_samples_cluster <<- target_compatible_strategies[cluster==which_cluster]
+  #Send back a random strategy so the front end can plot it
+  random_strategy <- tc_samples_cluster[sample(1:nrow(tc_samples_cluster),1)]
+  #update global variable to point to strategy shown for button functions
+  cluster_strat_id <<- random_strategy$strategy_id
+  tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- random_strategy[,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  res$status <- 200
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+  
+}
+
+#* Obtain four alternative approaches, increase one slider
+#* @get /exploration_plus
+#* @serializer json
+#* @param slider_name Name of slider being pushed up by 1 unit
+#* @response 200 Success: Returned strategy
+#* @response 403 Forbidden: Parameter must be a slider name
+function(slider_name) {
+  # input: 
+  #  slider_name
+  
+  # runs plus_button()
+  
+  # returns:
+  # list(values, geojson) #see submit_strategy
+  slider_names <- c(TARGETS, "pc_1", "pc_2")
+  if (isFALSE(slider_name %in% slider_names)) {
+    res$status <- 403
+    notif(paste("Parameter in /exploration_plus must be a slider name:", slider_names), log_level = "error")
+    return(paste("Parameter in /exploration_plus must be a slider name:", slider_names))
+  }
+  
+  setorderv(tc_samples_cluster, slider_name, order = -1) 
+  current_row <- which(tc_samples_cluster$strategy_id == cluster_strat_id)
+  if(current_row > 1){#If we're in row one, we can't increase and will just return the same strategy we had before
+    cluster_strat_id <<- tc_samples_cluster$strategy_id[current_row - 1]
+    current_row <- current_row-1
+  }
+  tyears <- as.numeric(as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- tc_samples_cluster[current_row,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  res$status <- 200
+  return(list(
+    values = payload,
+    geojson = geojson
+  ))
+  
+}
+
+#* Obtain four alternative approaches, decrease one slider
+#* @get /exploration_minus
+#* @serializer json
+#* @param slider_name Name of slider being pushed up by 1 unit
+#* @response 200 Success: Returned strategy
+#* @response 403 Forbidden: Parameter must be a slider name
+function(slider_name) {
+  # input: 
+  #  slider_name
+  
+  # runs minus_button() if "-"
+  
+  # returns:
+  # list(values, geojson) #see submit_strategy
+  
+  
+  slider_names <- c(TARGETS, "pc_1", "pc_2")
+  if (isFALSE(slider_name %in% slider_names)) {
+    res$status <- 403
+    notif(paste("Parameter in /exploration_minus must be a slider name:", slider_names), log_level = "error")
+    return(paste("Parameter in /exploration_minus must be a slider name:", slider_names))
+  }
+  
+  setorderv(tc_samples_cluster, slider_name, order = 1) 
+  current_row <- which(tc_samples_cluster$strategy_id == cluster_strat_id)
+  if(current_row > 1){#If we're in row one, we can't increase and will just return the same strategy we had before
+    cluster_strat_id <<- tc_samples_cluster$strategy_id[current_row - 1]
+    current_row <- current_row-1
+  }
+  tyears <- as.numeric(as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+  tspecies <- as.vector(Strategies[cluster_strat_id,startsWith(colnames(Strategies),"treespecie")])
+  blocked_until_year <- rep(0, length(parcel_ids))
+  blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
+  for_frontend <- st_sf(
+    parcel_id = parcel_ids,
+    geometry = FullTable$geometry,
+    parcel_area = FullTable$area,
+    planting_year = ifelse(tyears<2050,tyears,NA),
+    planting_types = ifelse(tyears<2050, tspecies, NA),
+    blocked_until_year = blocked_until_year,
+    crs = st_crs(FullTable)
+  )
+  #convert to geojson
+  geojson <- geojsonsf::sf_geojson(for_frontend)
+  
+  payload <- tc_samples_cluster[current_row,..TARGETS]
+  names(payload)[which(names(payload)=="All")] <- "biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  bio_names_latin
+  for(species in bio_names_latin){
+    specie_num <- which(NAME_CONVERSION$Specie == species)
+    if(length(specie_num)>0){
+      #A species
+      names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
+      #No need to change if its a group
+    }
+  }
+  
+  res$status <- 200
   return(list(
     values = payload,
     geojson = geojson
@@ -1478,11 +1696,66 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     notif(paste(msg, "done"), log_level = "debug")
     
     # target_compatible_strategies is needed in the environment, but first_strategy needs only the other variables
-    msg <- "Making the target_compatible_strategies"
+    msg <- "Making the target_compatible_strategies ..."
     notif(msg, log_level = "debug")
     first_strategy <- get_first_strategy()
     target_compatible_strategies <- first_strategy$target_compatible_strategies
     first_strategy$target_compatible_strategies <- NULL
+    notif(paste(msg, "done"), log_level = "debug")
+    
+    
+    ## Preference initialisation ----
+    msg <- "Starting preference tab initialisation ..."
+    notif(msg, log_level = "debug")
+    #Preferences tab. Here we should already know the strategies that are currently compared and the ones that are to be compared next. We should already have a set of weights
+    
+    #Set priors
+    prior_list_temp <- list()
+    # Carbon prior
+    # mean = 1 / half(midpoint)
+    # 2 * sd = 1 / half(midpoint)
+    
+    prior_list_temp$carbon <- gamma_prior(2 / max(strategy_outcomes[,carbon]),
+                                          1 / max(strategy_outcomes[,carbon]))
+    
+    # Species priors, similarly-derived values
+    for (i in 1:length(SPECIES)) {
+      specie <- SPECIES[i]
+      add_to_list <- setNames(list(Normal(2 / max(strategy_outcomes[,get(specie)]),
+                                          1 / max(strategy_outcomes[,get(specie)]))),
+                              specie)
+      prior_list_temp <- append(prior_list_temp, add_to_list)
+    }
+    
+    # Area prior
+    prior_list_temp$area <- gamma_prior(- 2 / max(strategy_outcomes[,area]),
+                                        1 / max(strategy_outcomes[,area]))
+    
+    # Visits prior
+    prior_list_temp$visits <- Normal(2 / max(strategy_outcomes[,visits]),
+                                     1 / max(strategy_outcomes[,visits]))
+    
+    # Re-order the list in accordance to TARGETS vector
+    prior_list <- list()
+    for (target in TARGETS) {
+      prior_list[[target]] <- prior_list_temp[[target]]
+    }
+    rm(prior_list_temp)
+    prior_list
+    
+    ## We need to compare valid_strategies as users will have parcels blocked
+    #valid_strategies is a dynamic global variable pointing to the samples we are allowed to compare
+    #Maybe one issue is what happens if blocking changes and we end up comparing two we've had before? Perhaps it is not an issue, but flagged.
+    
+    #Indexes which comparison we are sending to the front end and expecting back following "choose"
+    comparison_index <- 1
+    strategies_compared <- valid_strategies[c(comparison_index,comparison_index+1)]
+    
+    #Establish Preference elicitation object
+    pref_elicitation_object <- prefObject(data = strategy_outcomes[strategies_compared,..TARGETS], priors = prior_list)
+    
+    
+    
     notif(paste(msg, "done"), log_level = "debug")
     
   })

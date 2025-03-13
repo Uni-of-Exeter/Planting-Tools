@@ -21,11 +21,16 @@ packages <- unlist(strsplit(packages, ",\\s*"))  # Split and flatten
 packages <- gsub("\\s*\\(.*\\)", "", packages)  # Remove version constraints
 packages <- na.omit(packages)  # Remove any NAs
 
-# # Install packages
-# for(i in 1:length(packages)) {
-#   require(packages[i], character.only = TRUE)
-# }
-# remotes::install_deps(plantingtools_folder, upgrade = "never")
+# Install packages if needed
+install <- FALSE
+for (pkg in packages) {
+  if (isFALSE(require(pkg, character.only = TRUE))) {
+    install <- TRUE
+  }
+}
+if (isTRUE(install)) {
+  remotes::install_deps(plantingtools_folder, upgrade = "never")
+}
 
 # Load packages
 for(i in 1:length(packages)) {
@@ -49,7 +54,7 @@ if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.list(env))) {
+  if (isFALSE(is.environment(env))) {
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
     run_initalization_on_backend <- TRUE
