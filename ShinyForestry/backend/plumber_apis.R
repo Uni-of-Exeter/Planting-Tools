@@ -853,6 +853,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
     source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
     source(normalizePath(file.path(FolderSource, "..", "backend", "DannyFunctions.R")), local = FALSE)
+    load(normalizePath(file.path(FolderSource, "..", "backend", "merged_calories.RData")))
     
     if (RUN_BO) {
       dgpsi::init_py(verb = FALSE)
