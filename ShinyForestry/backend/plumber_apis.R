@@ -1625,12 +1625,12 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     msg <- "Making the first strategy ..."
     notif(msg, log_level = "debug")
     get_first_strategy <- function(){
-      target_carbon <- defaults$carbon
-      target_visits <- defaults$recreation
-      target_area <- defaults$area
-      bio_names <- names(defaults)[ ! names(defaults)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+      target_carbon <- defaults$Carbon
+      target_visits <- defaults$Food_Produced
+      target_area <- defaults$Area
+      bio_names <- names(defaults)[ ! names(defaults)%in% c("Carbon", "Area", "Food_Produced", "blocked_parcels")]
       targets_bio <- defaults[,  ..bio_names]
-      names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
+      names(targets_bio)[which(names(targets_bio)=="Biodiversity")] <- "All"
       #Convert English to Latin names for FullTable Compatibility
       for(species in 1:length(targets_bio)){
         t_name <- names(targets_bio)[species]
