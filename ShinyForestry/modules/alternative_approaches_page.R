@@ -123,7 +123,10 @@ alt_page_server <- function(id, state) {
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
-      fetched_data <-  get_alternative_approaches()
+      fetched_data <- get_alternative_approaches()
+      print("fetched_data")
+      print(fetched_data)
+      
       new_fetched_one <- fetched_data[[1]]  # Use GET otherwise
       new_fetched_two <- fetched_data[[2]]  # Use GET otherwise
       new_fetched_three <- fetched_data[[3]]  # Use GET otherwise
@@ -160,6 +163,7 @@ alt_page_server <- function(id, state) {
         print("new_data_fetched_one")
         print(new_data_fetched_one)
         print("------------------")
+        
         leafletProxy("map1") %>%
           addPolygons(
             data = new_data_fetched_one,  # Use the full dataset as the base layer
@@ -172,24 +176,6 @@ alt_page_server <- function(id, state) {
             label = ~parcel_id,
             # popup = "No planting"
           ) %>%
-          
-          # Add filtered polygons based on the selected year
-          { 
-            if (nrow(filtered_data_subset_one) > 0) {
-              . %>% addPolygons(
-                data = filtered_data_subset_one,  # Filtered data based on the year
-                weight = 1,
-                color = PARCEL_LINE_COLOUR,
-                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
-                fillOpacity = FILL_OPACITY,
-                layerId = ~parcel_id,
-                label = ~parcel_id
-              )
-            } else {
-              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
-            } 
-          } %>%
-          
           # Add unavailable parcels layer
           addPolygons(
             data = FullTableNotAvailONE,  # Unavailable parcels
@@ -200,19 +186,21 @@ alt_page_server <- function(id, state) {
             group = "unavailablePolygons",
             layerId = ~id,
             # popup = "Unavailable for planting"
-          ) %>%
-          
-          addPolygons(
-            data = filtered_data_subset_one,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
           )
         
+        # Add filtered polygons based on the selected year if any valid data exists
+        if (nrow(filtered_data_subset_one) > 0) {
+          leafletProxy("map1") %>%
+            addPolygons(
+              data = filtered_data_subset_one,  # Add filtered data if it's available
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+              fillOpacity = FILL_OPACITY,
+              layerId = ~parcel_id,
+              label = ~parcel_id
+            )
+        }
       } else {
         print("API fetch failed, no data to update.")
       }
@@ -233,51 +221,36 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "parcelPolygons2",  # Group the polygons
+            group = "parcelPolygons",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
             # popup = "No planting"
           ) %>%
-          
-          # Add filtered polygons based on the selected year
-          { 
-            if (nrow(filtered_data_subset_two) > 0) {
-              . %>% addPolygons(
-                data = filtered_data_subset_two,  # Filtered data based on the year
-                weight = 1,
-                color = PARCEL_LINE_COLOUR,
-                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
-                fillOpacity = FILL_OPACITY,
-                layerId = ~parcel_id,
-                label = ~parcel_id
-              )
-            } else {
-              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
-            }
-          } %>%
-              
           # Add unavailable parcels layer
           addPolygons(
-            data = FullTableNotAvailTWO,  # Unavailable parcels
+            data = FullTableNotAvailONE,  # Unavailable parcels
             weight = 1,
             color = PARCEL_LINE_COLOUR,
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "unavailablePolygonsTwo",
+            group = "unavailablePolygons",
             layerId = ~id,
             # popup = "Unavailable for planting"
-          ) %>%
-          #
-          addPolygons(
-            data = filtered_data_subset_two,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
           )
+        
+        # Add filtered polygons based on the selected year if any valid data exists
+        if (nrow(filtered_data_subset_two) > 0) {
+          leafletProxy("map2") %>%
+            addPolygons(
+              data = filtered_data_subset_two,  # Add filtered data if it's available
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+              fillOpacity = FILL_OPACITY,
+              layerId = ~parcel_id,
+              label = ~parcel_id
+            )
+        }
         
       } else {
         print("API fetch failed, no data to update.")
@@ -299,50 +272,36 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "parcelPolygons2",  # Group the polygons
+            group = "parcelPolygons",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
             # popup = "No planting"
           ) %>%
-          
-          # Add filtered polygons based on the selected year
-          { 
-            if (nrow(filtered_data_subset_three) > 0) {
-              . %>% addPolygons(
-                data = filtered_data_subset_three,  # Filtered data based on the year
-                weight = 1,
-                color = PARCEL_LINE_COLOUR,
-                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
-                fillOpacity = FILL_OPACITY,
-                layerId = ~parcel_id,
-                label = ~parcel_id
-              )
-            } else {
-              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
-            }
-          } %>%
           # Add unavailable parcels layer
           addPolygons(
-            data = FullTableNotAvailTWO,  # Unavailable parcels
+            data = FullTableNotAvailONE,  # Unavailable parcels
             weight = 1,
             color = PARCEL_LINE_COLOUR,
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "unavailablePolygonsTwo",
+            group = "unavailablePolygons",
             layerId = ~id,
             # popup = "Unavailable for planting"
-          ) %>%
-          #
-          addPolygons(
-            data = filtered_data_subset_three,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
           )
+        
+        # Add filtered polygons based on the selected year if any valid data exists
+        if (nrow(new_data_fetched_three) > 0) {
+          leafletProxy("map3") %>%
+            addPolygons(
+              data = new_data_fetched_three,  # Add filtered data if it's available
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+              fillOpacity = FILL_OPACITY,
+              layerId = ~parcel_id,
+              label = ~parcel_id
+            )
+        }
         
       } else {
         print("API fetch failed, no data to update.")
@@ -364,50 +323,36 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "parcelPolygons2",  # Group the polygons
+            group = "parcelPolygons",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
             # popup = "No planting"
           ) %>%
-          
-          # Add filtered polygons based on the selected year
-          { 
-            if (nrow(filtered_data_subset_four) > 0) {
-              . %>% addPolygons(
-                data = filtered_data_subset_four,  # Filtered data based on the year
-                weight = 1,
-                color = PARCEL_LINE_COLOUR,
-                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
-                fillOpacity = FILL_OPACITY,
-                layerId = ~parcel_id,
-                label = ~parcel_id
-              )
-            } else {
-              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
-            }
-          } %>%
           # Add unavailable parcels layer
           addPolygons(
-            data = FullTableNotAvailTWO,  # Unavailable parcels
+            data = FullTableNotAvailONE,  # Unavailable parcels
             weight = 1,
             color = PARCEL_LINE_COLOUR,
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "unavailablePolygonsTwo",
+            group = "unavailablePolygons",
             layerId = ~id,
             # popup = "Unavailable for planting"
-          ) %>%
-          #
-          addPolygons(
-            data = filtered_data_subset_four,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
           )
+        
+        # Add filtered polygons based on the selected year if any valid data exists
+        if (nrow(new_data_fetched_four) > 0) {
+          leafletProxy("map4") %>%
+            addPolygons(
+              data = new_data_fetched_four,  # Add filtered data if it's available
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+              fillOpacity = FILL_OPACITY,
+              layerId = ~parcel_id,
+              label = ~parcel_id
+            )
+        }
         
       } else {
         print("API fetch failed, no data to update.")
@@ -483,7 +428,7 @@ alt_page_server <- function(id, state) {
               data = current_data_one[current_data_one$parcel_id %in% to_add_one, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
@@ -550,7 +495,7 @@ alt_page_server <- function(id, state) {
               data = current_data_two[current_data_two$parcel_id %in% to_add_two, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
@@ -617,7 +562,7 @@ alt_page_server <- function(id, state) {
               data = current_data_three[current_data_three$parcel_id %in% to_add_three, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
@@ -684,7 +629,7 @@ alt_page_server <- function(id, state) {
               data = current_data_four[current_data_four$parcel_id %in% to_add_four, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
