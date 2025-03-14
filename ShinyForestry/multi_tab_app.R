@@ -41,7 +41,7 @@ for(i in 1:length(packages)) {
 source(file.path(FolderSource, "config.R"))
 
 # more --> less: debug / info / warning / error / none
-MAX_LIMIT_LOG_LEVEL <- "info"
+MAX_LIMIT_LOG_LEVEL <- "debug"
 if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"), mustWork = FALSE))) {
   source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
 } else {
