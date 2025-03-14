@@ -123,7 +123,7 @@ alt_page_server <- function(id, state) {
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
-      fetched_data <-  get_four_random_strategies()
+      fetched_data <-  get_alternative_approaches()
       new_fetched_one <- fetched_data[[1]]  # Use GET otherwise
       new_fetched_two <- fetched_data[[2]]  # Use GET otherwise
       new_fetched_three <- fetched_data[[3]]  # Use GET otherwise
