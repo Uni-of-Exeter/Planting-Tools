@@ -280,11 +280,12 @@ function(res, which_button) {
       # On success
       mcmc_results <- .
       
+      
       msg <- "MCMC success, merging pref_elicitation_object and preference_weights (and target_compatible_strategies if we clustered) to .GlobalEnv"
       notif(msg, log_level = "debug")
-      pref_elicitation_object <<- pref_elicitation_object
-      preference_weights <<- preference_weights
-      target_compatible_strategies <<- target_compatible_strategies
+      pref_elicitation_object <<- mcmc_results$pref_elicitation_object
+      preference_weights <<- mcmc_results$preference_weights
+      target_compatible_strategies <<- mcmc_results$target_compatible_strategies
       return(TRUE)
       
     } %...!% {
@@ -300,10 +301,11 @@ function(res, which_button) {
 
   
   
+  res$status <- 200
   
   return(lapply(1:2, function(jj) make_strategy_forfront_preftab(jj)))
   # runs: choose_button()
-  res$status <- 200
+  
   # returns: (see preferences_initialise)
   # list(
   #     list(values, geojson),
