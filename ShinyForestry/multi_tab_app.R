@@ -55,7 +55,7 @@ if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.list(env))) { # if it's is.environment it breaks my frontend
+  if (isFALSE(is.environment(env))) { # if it's is.environment it breaks my frontend
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
     run_initalization_on_backend <- TRUE
@@ -143,11 +143,12 @@ if (isTRUE(run_initalization_on_backend)) {
   # file.remove(temp_file)
   
   env <- plumber::parser_rds()(value = response$content)
-  list2env(as.list(env), envir = .GlobalEnv)
   
   # Save it to elicitor folder
   saveRDS(env, backend_initialization_env_file)
 }
+
+list2env(as.list(env), envir = .GlobalEnv)
 
 # Source module files
 source("global.R")  # Load global settings
