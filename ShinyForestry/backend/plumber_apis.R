@@ -1604,6 +1604,28 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
         }
       }
       max_values[, (names(max_values)) := lapply(.SD, signif, digits=3)]
+      
+      #Set the units
+      units_dummy_vals <-  rep("a_char", length=ncol(max_values))
+      units_table <- as.data.table(setNames(as.list(units_dummy_vals), names(max_values)))
+      unit_maker <- function(colname){
+        if(colname=="Carbon"){
+          return("tCO₂")
+        }
+        if(colname=="Food_Produced"){
+          return("10³Kcal")
+        }
+        if(colname=="Area"){
+          return("km²")
+        }
+        if(!colname %in% c("Carbon", "Area", "Food_Produced")){
+          return("%")
+        }
+      }
+      for (col in names(units_table)) {
+        units_table[, (col) := unit_maker(col)]
+      }
+      
       min_max <- rbind(as.list(setNames(rep(0,length(TARGETS)),names(max_values))), max_values)
       defaults_quantile <- runif(1, 0.5,0.75)
       defaults <- max_values[1, .SD*defaults_quantile]
@@ -1611,11 +1633,11 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       defaults[, (names(defaults)) := lapply(.SD, signif,digits=3)]
       min_max_default <- rbind(min_max, defaults)
       return(list(defaults = defaults,
-                  min_max_default = min_max_default))
+                  min_max_default = min_max_default, units_table=units_table))
     }
     # Assign defaults to the global environment
     slider_info_value <- get_slider_info()
-    slider_info <- slider_info_value$min_max_default
+    slider_info <- list(min_max_default = slider_info_value$min_max_default, units = slider_info_value$units_table)
     defaults <- slider_info_value$defaults
     rm(slider_info_value)
     
