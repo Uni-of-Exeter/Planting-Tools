@@ -1564,9 +1564,11 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     defaults <- NULL
     get_slider_info <- function(){
       max_values <- strategy_outcomes[, lapply(.SD, max, na.rm=TRUE), .SDcols = TARGETS]
-      names(max_values)[which(names(max_values)=="All")] <- "biodiversity"
-      names(max_values)[which(names(max_values)=="visits")] <- "recreation"
-      bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("carbon", "area", "recreation", "biodiversity")]
+      names(max_values)[which(names(max_values)=="All")] <- "Biodiversity"
+      names(max_values)[which(names(max_values)=="visits")] <- "Food_Produced"
+      names(max_values)[which(names(max_values)=="area")] <- "Area"
+      names(max_values)[which(names(max_values)=="carbon")] <- "Carbon"
+      bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
       bio_names_latin
       for(species in bio_names_latin){
         specie_num <- which(NAME_CONVERSION$Specie == species)
