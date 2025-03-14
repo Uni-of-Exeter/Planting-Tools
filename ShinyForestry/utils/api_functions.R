@@ -94,7 +94,7 @@ get_exploration_initialise <- function(cluster) {
     print(api_response$values)
     
     # Return the list containing both sets of values and geojson data
-    list(values = api_response$values, geojson = sf::st_read(api_response$geojson, quiet = TRUE))
+    return(list(values = api_response$values, geojson = sf::st_read(api_response$geojson, quiet = TRUE)))
     
   } else {
     stop(paste("Request failed with status:", httr::status_code(response)))
