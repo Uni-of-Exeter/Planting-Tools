@@ -341,6 +341,10 @@ map_page_server <- function(id, state) {
               # Get the current value for the slider
               value <- signif(new_vals()[[name]], POPUP_SIGFIG)
               
+              sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
+               <td style='text-align:left;'>%s</td></tr>",
+                      display_name, value)
+              
               # Format the name and value into a table row (without unit for now)
               sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
             }),
