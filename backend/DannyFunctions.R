@@ -454,14 +454,13 @@ make_strategy_forfront_preftab <- function(index){
   #convert to geojson
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
-  
-  
-  
   # In the update() function, it is converted to a matrix, so we need the comma to select the entire row
   payload <- pref_elicitation_object$data[comparison_index + (index-1), ]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -511,9 +510,11 @@ make_strategy_forfront_altapproach <- function(index){
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
   payload <- random_strategy[,..TARGETS]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
