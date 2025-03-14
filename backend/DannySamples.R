@@ -164,6 +164,18 @@ payload <- list(
 
 json_payload <- jsonlite::toJSON(payload <- payload, auto_unbox = TRUE, pretty=TRUE)
 
+paul_test <- list(
+  carbon = 3,
+  biodiversity = 0.5,
+  Goat_Moth = 0.5,
+  Stag_Beetle = 3,
+  Lichens = 0.1,
+  area = 19.4,
+  recreation = 0.6,
+  blocked_parcels = list()
+)
+json_paul <- jsonlite::toJSON(payload <- paul_test, auto_unbox = TRUE, pretty=TRUE)
+
 #######END NOT NEEDED USED FOR TESTING
 
 #Info from front end comes in this JSON format. 
@@ -173,6 +185,7 @@ null_strategy <- matrix(0, nrow = 1, ncol = n_parcels*3)
 colnames(null_strategy) <- colnames(Strategies)
 null_strategy[1,(2*n_parcels+1):(3*n_parcels)] <- "Conifers"
 null_outcomes <- get_outcome_dt(null_strategy, FullTable_working)
+null_strategy[1,(n_parcels+1):(2*n_parcels)] <- 2050 - STARTYEAR
 
 #Function to return optimal strategy from submit button
 #Function must also keep the target and target compatible strategies for use elsewhere
@@ -182,7 +195,7 @@ valid_strategies <- strategy_outcomes$strategy_id
 #Second global variable amended is target_compatible_strategies, first assigned to all strategies here
 target_compatible_strategies <- strategy_outcomes
 #Blocked parcels is something we need to store once amended via a submit (it is used throughout the app)
-blocked_parcels <- NULL
+blocked_parcels <- list()
 
 get_first_strategy <- function(){
   target_carbon <- defaults$carbon
@@ -280,7 +293,7 @@ submit_button <- function(from_front_end){
     }
   }
   #Filter strategies for blocked parcels and amend global compatible strategies
-  if(!is.null(from_submit_button$blocked_parcels)){
+  if(length(from_submit_button$blocked_parcels)>0){
     t_ids <- paste("plantingyear","parcel",from_submit_button$blocked_parcels$parcel_id,sep="_")
     sampled_parcels <- Strategies[,t_ids,drop=F]
     block_compatible <- matrix(0, nrow=nrow(sampled_parcels),ncol=ncol(sampled_parcels))
