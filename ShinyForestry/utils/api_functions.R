@@ -160,6 +160,9 @@ post_preference_choice <- function(choice) {
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
     api_response <- jsonlite::fromJSON(content_raw)
     
+    print("api_response$values")
+    print(api_response$values)
+    
     # Return the list containing both sets of values and geojson data
     list(
       list(values = api_response$values[[1]], geojson = sf::st_read(api_response$geojson[[1]], quiet = TRUE)),
