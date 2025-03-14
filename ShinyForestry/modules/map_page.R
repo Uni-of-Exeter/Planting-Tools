@@ -190,68 +190,72 @@ map_page_server <- function(id, state) {
       list(total = plot_data, cumulative = cumulative_data)
     })
     
-    print("render area plot")
-    # Render time-series plot for both Conifer and Deciduous
-    output[[ns("areaPlot")]] <- renderPlotly({
-      data <- processed_data()  # Get precomputed data
-      
-      print("processed_data")
-      print(processed_data())
-      
-      # If no data, return NULL
-      if (is.null(data)) return(NULL)
-      
-      # Determine which dataset to use based on user selection
-      selected_plot <- if (input[[ns("view_toggle")]] == "Cumulative") {
-        data$cumulative %>% rename(y_value = cumulative_area)  # Rename for consistency
-      } else {
-        data$total %>% rename(y_value = total_area)
+    observe({
+      if (state$map_tab$initialized) {
+        print("render area plot")
+        # Render time-series plot for both Conifer and Deciduous
+        output[[ns("areaPlot")]] <- renderPlotly({
+          data <- processed_data()  # Get precomputed data
+          
+          print("processed_data")
+          print(processed_data())
+          
+          # If no data, return NULL
+          if (is.null(data)) return(NULL)
+          
+          # Determine which dataset to use based on user selection
+          selected_plot <- if (input[[ns("view_toggle")]] == "Cumulative") {
+            data$cumulative %>% rename(y_value = cumulative_area)  # Rename for consistency
+          } else {
+            data$total %>% rename(y_value = total_area)
+          }
+          
+          # Create the plot
+          p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_types)) +
+            geom_line(size = 1, alpha = FILL_OPACITY) +
+            geom_point(size = 1.2) +
+            scale_color_manual(values = COLOUR_MAPPING) +
+            labs(title = ifelse(input[[ns("view_toggle")]] == "Cumulative",
+                                " ",
+                                " "),
+                 x = "Year",
+                 y = ifelse(input[[ns("view_toggle")]] == "Cumulative",
+                            "Cumulative Area Planted",
+                            "Total Area Planted"),
+                 color = "Planting Type") +
+            theme_minimal(base_size = 10) +
+            theme(
+              legend.position = "none",
+              panel.background = element_rect(fill = "transparent", color = NA),
+              plot.background = element_rect(fill = "transparent", color = NA),
+              legend.background = element_rect(fill = "transparent"),
+              legend.box.background = element_rect(fill = "transparent")
+            ) 
+          
+          ggplotly(p) %>%
+            layout(
+              paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
+              plot_bgcolor = "rgba(255,255,255,0)"
+            ) %>%
+            config(
+              displayModeBar = TRUE  # Keep the toolbar
+            )
+        })
+        
+        observeEvent(input[[ns("toggle_plot")]], {
+          print("being clicked")
+          shinyjs::toggle(id = ns("time_series_plot"), anim = TRUE)
+          
+          # Change button text dynamically
+          new_label <- if (input[[ns("toggle_plot")]] %% 2 == 1) {
+            "Hide Time-Series"
+          } else {
+            "Show Time-Series"
+          }
+          
+          updateActionButton(session, ns("toggle_plot"), label = new_label)
+        })
       }
-      
-      # Create the plot
-      p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_types)) +
-        geom_line(size = 1, alpha = FILL_OPACITY) +
-        geom_point(size = 1.2) +
-        scale_color_manual(values = COLOUR_MAPPING) +
-        labs(title = ifelse(input[[ns("view_toggle")]] == "Cumulative",
-                            " ",
-                            " "),
-             x = "Year",
-             y = ifelse(input[[ns("view_toggle")]] == "Cumulative",
-                        "Cumulative Area Planted",
-                        "Total Area Planted"),
-             color = "Planting Type") +
-        theme_minimal(base_size = 10) +
-        theme(
-          legend.position = "none",
-          panel.background = element_rect(fill = "transparent", color = NA),
-          plot.background = element_rect(fill = "transparent", color = NA),
-          legend.background = element_rect(fill = "transparent"),
-          legend.box.background = element_rect(fill = "transparent")
-        ) 
-      
-      ggplotly(p) %>%
-        layout(
-          paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
-          plot_bgcolor = "rgba(255,255,255,0)"
-        ) %>%
-        config(
-          displayModeBar = TRUE  # Keep the toolbar
-        )
-    })
-    
-    observeEvent(input[[ns("toggle_plot")]], {
-      print("being clicked")
-      shinyjs::toggle(id = ns("time_series_plot"), anim = TRUE)
-      
-      # Change button text dynamically
-      new_label <- if (input[[ns("toggle_plot")]] %% 2 == 1) {
-        "Hide Time-Series"
-      } else {
-        "Show Time-Series"
-      }
-      
-      updateActionButton(session, ns("toggle_plot"), label = new_label)
     })
     
     # Initialize leaflet map or update it on submit
@@ -262,9 +266,7 @@ map_page_server <- function(id, state) {
       new_fetched <- if (!is.null(data)) {
         data
       } else {
-        # TODO: PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS
-        stop("PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS")
-        post_generate_parcels(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
+        post_submit_targets(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
       }
       
       new_data_fetched <- new_fetched[[1]]
@@ -338,6 +340,10 @@ map_page_server <- function(id, state) {
           "</table></div>"
         )
 
+          
+        print("new_data_fetched")
+        print(new_data_fetched)
+        
         output$map <- renderLeaflet({
           leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
             addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
@@ -390,7 +396,7 @@ map_page_server <- function(id, state) {
               # popup = ~planting_type
             ) %>%
             
-            # addControl(html = legend_html, position='topright') %>% 
+            addControl(html = legend_html, position='topright') %>% 
             
             # Add legend
             addLegend(

@@ -151,12 +151,15 @@ alt_page_server <- function(id, state) {
         new_vals_one(new_values_fetched_one)
         
         filtered_data_subset_one <- new_data_fetched_one[new_data_fetched_one$planting_year <= input_year, ]
+        filtered_data_subset_one <- filtered_data_subset_one[!st_is_empty(filtered_data_subset_one$geometry), ] # ensure it's valid
         filtered_data_one(filtered_data_subset_one)
         
         current_layers_one(filtered_data_subset_one$parcel_id)
         
         # Render the leaflet map with the updated data
-        
+        print("new_data_fetched_one")
+        print(new_data_fetched_one)
+        print("------------------")
         leafletProxy("map1") %>%
           addPolygons(
             data = new_data_fetched_one,  # Use the full dataset as the base layer
@@ -171,16 +174,21 @@ alt_page_server <- function(id, state) {
           ) %>%
           
           # Add filtered polygons based on the selected year
-          addPolygons(
-            data = filtered_data_subset_one,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
-          ) %>%
+          { 
+            if (nrow(filtered_data_subset_one) > 0) {
+              . %>% addPolygons(
+                data = filtered_data_subset_one,  # Filtered data based on the year
+                weight = 1,
+                color = PARCEL_LINE_COLOUR,
+                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+                fillOpacity = FILL_OPACITY,
+                layerId = ~parcel_id,
+                label = ~parcel_id
+              )
+            } else {
+              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
+            } 
+          } %>%
           
           # Add unavailable parcels layer
           addPolygons(
@@ -215,6 +223,7 @@ alt_page_server <- function(id, state) {
         new_vals_two(new_values_fetched_two)
         
         filtered_data_subset_two <- new_data_fetched_two[new_data_fetched_two$planting_year <= input_year, ]
+        filtered_data_subset_two <- filtered_data_subset_two[!st_is_empty(filtered_data_subset_two$geometry), ] # ensure it's valid
         filtered_data_two(filtered_data_subset_two)
         
         leafletProxy("map2") %>%
@@ -231,16 +240,22 @@ alt_page_server <- function(id, state) {
           ) %>%
           
           # Add filtered polygons based on the selected year
-          addPolygons(
-            data = filtered_data_subset_two,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
-          ) %>%
+          { 
+            if (nrow(filtered_data_subset_two) > 0) {
+              . %>% addPolygons(
+                data = filtered_data_subset_two,  # Filtered data based on the year
+                weight = 1,
+                color = PARCEL_LINE_COLOUR,
+                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+                fillOpacity = FILL_OPACITY,
+                layerId = ~parcel_id,
+                label = ~parcel_id
+              )
+            } else {
+              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
+            }
+          } %>%
+              
           # Add unavailable parcels layer
           addPolygons(
             data = FullTableNotAvailTWO,  # Unavailable parcels
@@ -274,6 +289,7 @@ alt_page_server <- function(id, state) {
         new_vals_three(new_values_fetched_three)
         
         filtered_data_subset_three <- new_data_fetched_three[new_data_fetched_three$planting_year <= input_year, ]
+        filtered_data_subset_three <- filtered_data_subset_three[!st_is_empty(filtered_data_subset_three$geometry), ] # ensure it's valid
         filtered_data_three(filtered_data_subset_three)
         
         leafletProxy("map3") %>%
@@ -290,16 +306,21 @@ alt_page_server <- function(id, state) {
           ) %>%
           
           # Add filtered polygons based on the selected year
-          addPolygons(
-            data = filtered_data_subset_three,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
-          ) %>%
+          { 
+            if (nrow(filtered_data_subset_three) > 0) {
+              . %>% addPolygons(
+                data = filtered_data_subset_three,  # Filtered data based on the year
+                weight = 1,
+                color = PARCEL_LINE_COLOUR,
+                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+                fillOpacity = FILL_OPACITY,
+                layerId = ~parcel_id,
+                label = ~parcel_id
+              )
+            } else {
+              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
+            }
+          } %>%
           # Add unavailable parcels layer
           addPolygons(
             data = FullTableNotAvailTWO,  # Unavailable parcels
@@ -333,6 +354,7 @@ alt_page_server <- function(id, state) {
         new_vals_four(new_values_fetched_four)
         
         filtered_data_subset_four <- new_data_fetched_four[new_data_fetched_four$planting_year <= input_year, ]
+        filtered_data_subset_four <- filtered_data_subset_four[!st_is_empty(filtered_data_subset_four$geometry), ] # ensure it's valid
         filtered_data_four(filtered_data_subset_four)
         
         leafletProxy("map4") %>%
@@ -349,16 +371,21 @@ alt_page_server <- function(id, state) {
           ) %>%
           
           # Add filtered polygons based on the selected year
-          addPolygons(
-            data = filtered_data_subset_four,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
-          ) %>%
+          { 
+            if (nrow(filtered_data_subset_four) > 0) {
+              . %>% addPolygons(
+                data = filtered_data_subset_four,  # Filtered data based on the year
+                weight = 1,
+                color = PARCEL_LINE_COLOUR,
+                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+                fillOpacity = FILL_OPACITY,
+                layerId = ~parcel_id,
+                label = ~parcel_id
+              )
+            } else {
+              .  # If filtered_data_subset_one is empty, just return the map without adding filtered polygons
+            }
+          } %>%
           # Add unavailable parcels layer
           addPolygons(
             data = FullTableNotAvailTWO,  # Unavailable parcels
@@ -432,7 +459,7 @@ alt_page_server <- function(id, state) {
         to_remove_one <- setdiff(existing_layers_one, current_ids_one)  # Ensure this is a vector of IDs
         
         # try update polygons back with a new style
-        if (length(to_remove_one) > 0) {
+        if (!is.null(to_remove_one) && !any(is.na(to_remove_one)) && length(to_remove_one) > 0) {
           # Get the data for all parcels that need to be recoloured from FullTable
           updated_data_one <- current_data_one[current_data_one$parcel_id %in% to_remove_one, ]  # Use `to_remove` to filter
           
@@ -450,7 +477,7 @@ alt_page_server <- function(id, state) {
         }
         
         # Add new polygons (those that are in filtered data but not on the map)
-        if (length(to_add_one) > 0) {
+        if (!is.null(to_add_one) && !any(is.na(to_add_one)) && length(to_add_one) > 0) {
           leafletProxy("map1") %>%
             addPolygons(
               data = current_data_one[current_data_one$parcel_id %in% to_add_one, ],  # Filtered data for new polygons
@@ -499,7 +526,7 @@ alt_page_server <- function(id, state) {
         to_add_two <- setdiff(current_ids_two, existing_layers_two)
         to_remove_two <- setdiff(existing_layers_two, current_ids_two)  # Ensure this is a vector of IDs
         
-        if (length(to_remove_two) > 0) {
+        if (!is.null(to_remove_two) && !any(is.na(to_remove_two)) && length(to_remove_two) > 0) {
           # Get the data for all parcels that need to be recoloured from FullTable
           updated_data_two <- current_data_two[current_data_two$parcel_id %in% to_remove_two, ]  # Use `to_remove` to filter
           
@@ -517,7 +544,7 @@ alt_page_server <- function(id, state) {
         }
         
         # Add new polygons (those that are in filtered data but not on the map)
-        if (length(to_add_two) > 0) {
+        if (!is.null(to_add_two) && !any(is.na(to_add_two)) && length(to_add_two) > 0) {
           leafletProxy("map2") %>%
             addPolygons(
               data = current_data_two[current_data_two$parcel_id %in% to_add_two, ],  # Filtered data for new polygons
@@ -566,7 +593,7 @@ alt_page_server <- function(id, state) {
         to_add_three <- setdiff(current_ids_three, existing_layers_three)
         to_remove_three <- setdiff(existing_layers_three, current_ids_three)  # Ensure this is a vector of IDs
         
-        if (length(to_remove_three) > 0) {
+        if (!is.null(to_remove_three) && !any(is.na(to_remove_three)) && length(to_remove_three) > 0) {
           # Get the data for all parcels that need to be recoloured from FullTable
           updated_data_three <- current_data_three[current_data_three$parcel_id %in% to_remove_three, ]  # Use `to_remove` to filter
           
@@ -584,7 +611,7 @@ alt_page_server <- function(id, state) {
         }
         
         # Add new polygons (those that are in filtered data but not on the map)
-        if (length(to_add_three) > 0) {
+        if (!is.null(to_add_three) && !any(is.na(to_add_three)) && length(to_add_three) > 0) {
           leafletProxy("map3") %>%
             addPolygons(
               data = current_data_three[current_data_three$parcel_id %in% to_add_three, ],  # Filtered data for new polygons
@@ -633,7 +660,7 @@ alt_page_server <- function(id, state) {
         to_add_four <- setdiff(current_ids_four, existing_layers_four)
         to_remove_four <- setdiff(existing_layers_four, current_ids_four)  # Ensure this is a vector of IDs
         
-        if (length(to_remove_four) > 0) {
+        if (!is.null(to_remove_four) && !any(is.na(to_remove_four)) && length(to_remove_four) > 0) {
           # Get the data for all parcels that need to be recoloured from FullTable
           updated_data_four <- current_data_four[current_data_four$parcel_id %in% to_remove_four, ]  # Use `to_remove` to filter
           
@@ -651,7 +678,7 @@ alt_page_server <- function(id, state) {
         }
         
         # Add new polygons (those that are in filtered data but not on the map)
-        if (length(to_add_four) > 0) {
+        if (!is.null(to_add_four) && !any(is.na(to_add_four)) && length(to_add_four) > 0) {
           leafletProxy("map4") %>%
             addPolygons(
               data = current_data_four[current_data_four$parcel_id %in% to_add_four, ],  # Filtered data for new polygons
@@ -672,19 +699,27 @@ alt_page_server <- function(id, state) {
     })
     
     output$value_box_one <- renderUI({
-      # Get the current value of the reactive variable
       current_value <- new_vals_one()
       
       # Generate table rows dynamically
       table_rows <- paste0(
         lapply(names(current_value), function(name) {
-          display_name <- SLIDER_NAMES[[name]]$name
-          unit <- SLIDER_NAMES[[name]]$unit
+          # Get the index of the slider name in state$map_tab$slider$names
+          idx <- which(state$map_tab$slider$names == name)
+          
+          # Get the display name for the slider (from the slider names list)
+          display_name <- state$map_tab$slider$names[idx]
+          
+          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
+          # If unit is not available, you can use a default unit like "units"
+          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-                <td style='text-align:left;'>%s %s</td></tr>",
+               <td style='text-align:left;'>%s %s</td></tr>",
                   display_name, value, unit)
         }),
         collapse = "\n"
@@ -694,25 +729,33 @@ alt_page_server <- function(id, state) {
       legend_html <- paste0(
         "<table style='width:100%;'>",  # Ensuring the table takes full width
         table_rows,  # Add dynamically generated rows
-        "</table>"
+        "</table><br>"
       )
       
       HTML(legend_html)  # Return HTML to be rendered
-    })
+    })    
     output$value_box_two <- renderUI({
-      # Get the current value of the reactive variable
       current_value <- new_vals_two()
       
       # Generate table rows dynamically
       table_rows <- paste0(
         lapply(names(current_value), function(name) {
-          display_name <- SLIDER_NAMES[[name]]$name
-          unit <- SLIDER_NAMES[[name]]$unit
+          # Get the index of the slider name in state$map_tab$slider$names
+          idx <- which(state$map_tab$slider$names == name)
+          
+          # Get the display name for the slider (from the slider names list)
+          display_name <- state$map_tab$slider$names[idx]
+          
+          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
+          # If unit is not available, you can use a default unit like "units"
+          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-                <td style='text-align:left;'>%s %s</td></tr>",
+               <td style='text-align:left;'>%s %s</td></tr>",
                   display_name, value, unit)
         }),
         collapse = "\n"
@@ -722,25 +765,33 @@ alt_page_server <- function(id, state) {
       legend_html <- paste0(
         "<table style='width:100%;'>",  # Ensuring the table takes full width
         table_rows,  # Add dynamically generated rows
-        "</table>"
+        "</table><br>"
       )
       
       HTML(legend_html)  # Return HTML to be rendered
-    })
+    })    
     output$value_box_three <- renderUI({
-      # Get the current value of the reactive variable
       current_value <- new_vals_three()
       
       # Generate table rows dynamically
       table_rows <- paste0(
         lapply(names(current_value), function(name) {
-          display_name <- SLIDER_NAMES[[name]]$name
-          unit <- SLIDER_NAMES[[name]]$unit
+          # Get the index of the slider name in state$map_tab$slider$names
+          idx <- which(state$map_tab$slider$names == name)
+          
+          # Get the display name for the slider (from the slider names list)
+          display_name <- state$map_tab$slider$names[idx]
+          
+          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
+          # If unit is not available, you can use a default unit like "units"
+          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-                <td style='text-align:left;'>%s %s</td></tr>",
+               <td style='text-align:left;'>%s %s</td></tr>",
                   display_name, value, unit)
         }),
         collapse = "\n"
@@ -750,25 +801,33 @@ alt_page_server <- function(id, state) {
       legend_html <- paste0(
         "<table style='width:100%;'>",  # Ensuring the table takes full width
         table_rows,  # Add dynamically generated rows
-        "</table>"
+        "</table><br>"
       )
       
       HTML(legend_html)  # Return HTML to be rendered
-    })
+    })    
     output$value_box_four <- renderUI({
-      # Get the current value of the reactive variable
       current_value <- new_vals_four()
       
       # Generate table rows dynamically
       table_rows <- paste0(
         lapply(names(current_value), function(name) {
-          display_name <- SLIDER_NAMES[[name]]$name
-          unit <- SLIDER_NAMES[[name]]$unit
+          # Get the index of the slider name in state$map_tab$slider$names
+          idx <- which(state$map_tab$slider$names == name)
+          
+          # Get the display name for the slider (from the slider names list)
+          display_name <- state$map_tab$slider$names[idx]
+          
+          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
+          # If unit is not available, you can use a default unit like "units"
+          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-                <td style='text-align:left;'>%s %s</td></tr>",
+               <td style='text-align:left;'>%s %s</td></tr>",
                   display_name, value, unit)
         }),
         collapse = "\n"
@@ -778,12 +837,12 @@ alt_page_server <- function(id, state) {
       legend_html <- paste0(
         "<table style='width:100%;'>",  # Ensuring the table takes full width
         table_rows,  # Add dynamically generated rows
-        "</table>"
+        "</table><br>"
       )
       
       HTML(legend_html)  # Return HTML to be rendered
-    })
-
+    })    
+    
     observeEvent(input[[ns("sample")]], {
       print('sample pressed')
       shinyjs::removeClass(ns("sample"), "btn-success")
