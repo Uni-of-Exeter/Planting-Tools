@@ -106,7 +106,7 @@ get_exploration_plus <- function(slider_name) {
   print(paste("+ ", slider_name))
   
   # Define the base URL (without query parameters), append which_button query parameter
-  url <- paste0(API_URL, "/exploration_plus?slider=", slider_name)  # Add choice as query parameter
+  url <- paste0(API_URL, "/exploration_plus?slider_name=", slider_name)  # Add choice as query parameter
   
   # Make the API POST request with no JSON body
   response <- httr::GET(
@@ -135,7 +135,7 @@ get_exploration_minus <- function(slider_name) {
   print(paste("- ", slider_name))
   
   # Define the base URL (without query parameters), append which_button query parameter
-  url <- paste0(API_URL, "/exploration_minus?slider=", slider_name)  # Add choice as query parameter
+  url <- paste0(API_URL, "/exploration_minus?slider_name=", slider_name)  # Add choice as query parameter
   
   # Make the API POST request with no JSON body
   response <- httr::GET(
