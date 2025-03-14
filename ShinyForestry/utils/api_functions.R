@@ -70,29 +70,40 @@ post_submit_targets <- function(json_payload) {
   }
 }
 
-get_random_strategy <- function() {
+get_exploration_initialise <- function(cluster) {
   
-  url <- paste0(API_URL, "/random_strategy")
-  # Make the API request
-  response <- httr::GET(url)
+  cluster <- as.integer(cluster)
+  print(paste("The cluster choice was made:", cluster))
+  
+  # Define the base URL (without query parameters), append which_button query parameter
+  url <- paste0(API_URL, "/preferences?which_cluster=", cluster)  # Add choice as query parameter
+  
+  # Make the API POST request with no JSON body
+  response <- httr::GET(
+    url,
+    httr::content_type_json()  # Set the content-type header to application/json (if needed)
+  )
+  
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
     
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
     api_response <- jsonlite::fromJSON(content_raw)
     
-    geojson <- api_response$geojson
-    geojson_parsed <- st_read(geojson, quiet=TRUE)
+    print("api_response$values")
+    print(api_response$values)
     
-    values <- api_response$values
-    return(list(geojson_parsed, values))
-  } 
-  else {
+    # Return the list containing both sets of values and geojson data
+    list(values = api_response$values, geojson = sf::st_read(api_response$geojson, quiet = TRUE))
+    
+  } else {
     stop(paste("Request failed with status:", httr::status_code(response)))
   }
 }
 
-get_four_random_strategies <- function() {
+
+
+get_alternative_approaches <- function() {
   
   url <- paste0(API_URL, "/alternative_approaches")
   
