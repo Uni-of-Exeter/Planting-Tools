@@ -328,13 +328,13 @@ map_page_server <- function(id, state) {
               # Get the index of the slider name in state$map_tab$slider$names
               idx <- which(state$map_tab$slider$names == name)
               
-              # Get the display name for the slider (from the slider names list)
-              # if (state$map_tab$slider$names[idx] %in% NAME_CONVERSION$English_specie) {
-              #   specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx])
-              # } else {
-              #   specie_to_print <- state$map_tab$slider$names[idx]
-              # }
-              # display_name <- specie_to_print
+              Get the display name for the slider (from the slider names list)
+              if (state$map_tab$slider$names[idx] %in% NAME_CONVERSION$English_specie) {
+                specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx])
+              } else {
+                specie_to_print <- state$map_tab$slider$names[idx]
+              }
+              display_name <- specie_to_print
               
               display_name <- state$map_tab$slider$names[idx]
               
