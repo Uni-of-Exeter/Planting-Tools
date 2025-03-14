@@ -260,8 +260,8 @@ server <- function(input, output, session) {
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
     if (!is.null(input$mappageRendered) && input$mappageRendered
-        && !is.null(input$prefpageRendered) && input$prefpageRendered ){
-        # && !is.null(input$altpageRendered) && input$altpageRendered ){
+        && !is.null(input$prefpageRendered) && input$prefpageRendered
+        && !is.null(input$altpageRendered) && input$altpageRendered) {
         # && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
         
       # Hide the loading screen after both maps are rendered
