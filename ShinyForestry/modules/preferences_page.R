@@ -129,6 +129,8 @@ preferences_page_server <- function(id, state) {
         new_vals_one(new_values_fetched_one)
 
         # Render the leaflet map with the updated data
+        print("new_values_fetched_one")
+        print(new_values_fetched_one)
         print("new_data_fetched_one")
         print(new_data_fetched_one)
         print("~~~~~~~~~~~~~~~~~~~~")
