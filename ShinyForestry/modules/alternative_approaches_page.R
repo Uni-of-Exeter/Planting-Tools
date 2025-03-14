@@ -183,7 +183,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "unavailablePolygons",
+            group = "unavailablePolygons1",
             layerId = ~id,
             # popup = "Unavailable for planting"
           )
@@ -233,7 +233,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "unavailablePolygons",
+            group = "unavailablePolygons2",
             layerId = ~id,
             # popup = "Unavailable for planting"
           )
@@ -284,7 +284,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "unavailablePolygons",
+            group = "unavailablePolygons3",
             layerId = ~id,
             # popup = "Unavailable for planting"
           )
@@ -335,7 +335,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = UNAVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "unavailablePolygons",
+            group = "unavailablePolygons4",
             layerId = ~id,
             # popup = "Unavailable for planting"
           )
@@ -430,7 +430,7 @@ alt_page_server <- function(id, state) {
               color = PARCEL_LINE_COLOUR,
               fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
-              group = "filteredPolygons",  # Group for filtered polygons
+              group = "filteredPolygons1",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
               # popup = ~planting_types
@@ -497,7 +497,7 @@ alt_page_server <- function(id, state) {
               color = PARCEL_LINE_COLOUR,
               fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
-              group = "filteredPolygons",  # Group for filtered polygons
+              group = "filteredPolygons2",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
               # popup = ~planting_types
@@ -564,7 +564,7 @@ alt_page_server <- function(id, state) {
               color = PARCEL_LINE_COLOUR,
               fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
-              group = "filteredPolygons",  # Group for filtered polygons
+              group = "filteredPolygons3",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
               # popup = ~planting_types
@@ -631,7 +631,7 @@ alt_page_server <- function(id, state) {
               color = PARCEL_LINE_COLOUR,
               fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
-              group = "filteredPolygons",  # Group for filtered polygons
+              group = "filteredPolygons4",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
               # popup = ~planting_types
