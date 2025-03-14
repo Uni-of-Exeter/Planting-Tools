@@ -366,8 +366,6 @@ function(res, from_submit_button) {
   )
   from_submit_button <- body
   
-  print(names(body))
-  
   #Amend global blocked_parcels
   blocked_parcels <<- from_submit_button$blocked_parcels
   #Extract targets
