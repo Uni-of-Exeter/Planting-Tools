@@ -55,7 +55,7 @@ if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.environment(env))) { # if it's is.environment it breaks my frontend
+  if (isFALSE(is.list(env))) { # if it's is.environment it breaks my frontend
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
     run_initialization_on_backend <- TRUE
@@ -158,7 +158,7 @@ source("config.R")  # Load config
 source("modules/map_page.R")
 source("modules/preferences_page.R")
 source("modules/alternative_approaches_page.R")
-# source("modules/exploration_page.R")
+source("modules/exploration_page.R")
 # source("modules/downscaling_page.R")
 
 source("utils/api_functions.R")
@@ -205,7 +205,7 @@ ui <- fluidPage(
         tabPanel(title = "Map", map_page_ui("map")),
         tabPanel(title = "Preferences", preferences_page_ui("prefs")),
         tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
-        # tabPanel(title = "Exploration", exploration_page_ui("explore")),
+        tabPanel(title = "Exploration", exploration_page_ui("explore")),
         # tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
         
         nav_spacer(),
@@ -246,8 +246,8 @@ server <- function(input, output, session) {
     
   map_page_server("map", state)
   preferences_page_server("prefs", state)
-  # alt_page_server("alt", state)
-  # exploration_page_server("explore", state)
+  alt_page_server("alt", state)
+  exploration_page_server("explore", state)
   # downscaling_page_server("downscale", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
