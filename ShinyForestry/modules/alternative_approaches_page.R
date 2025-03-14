@@ -148,8 +148,6 @@ alt_page_server <- function(id, state) {
       new_data_fetched_four$parcel_id <- paste0(new_data_fetched_four$parcel_id, "_four")
       new_values_fetched_four <- new_fetched_four$values
       
-      browser()
-      
       if (!is.null(new_data_fetched_one)) {
         # Apply the filter based on the selected year
         new_data_one(new_data_fetched_one)
