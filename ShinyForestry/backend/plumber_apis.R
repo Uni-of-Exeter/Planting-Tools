@@ -61,6 +61,7 @@ ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 CalculatedFilesFolder <- normalizePath(file.path(FolderSource, "CalculatedFiles"))
 
 
+plan(futureplan, workers = min(3, future::availableCores()))
 
 #* Log full request information
 #* @filter log_request
@@ -161,35 +162,6 @@ function(res) {
 # 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>         TRUE                  0         NA POLYGON ((-1.760264 50.8301...
 
 
-#* Generate parcel data
-#* @get /random_strategy
-#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
-#* @serializer json
-function() {
-  # Generate parcel data
-  parcel_data <- generate_parcel_data()
-  geojson <- geojsonsf::sf_geojson(parcel_data)
-  
-  values <- list(
-    carbon = as.numeric(500),
-    species = as.numeric(5), 
-    species_goat_moth = as.numeric(4),
-    species_stag_beetle = as.numeric(9),
-    species_lichens = as.numeric(10),
-    area = as.numeric(15),
-    recreation = as.numeric(10) 
-  )
-  
-  # Add a small random number between -0.5 and 0.5 to each value
-  values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
-  
-  return(list(
-    values = values,
-    geojson = geojson
-  ))
-}
-
-
 #* Initialise Preferences tab
 #* @get /preferences_initialise
 #* @serializer json
@@ -280,11 +252,12 @@ function(res, which_button) {
       # On success
       mcmc_results <- .
       
+      
       msg <- "MCMC success, merging pref_elicitation_object and preference_weights (and target_compatible_strategies if we clustered) to .GlobalEnv"
       notif(msg, log_level = "debug")
-      pref_elicitation_object <<- pref_elicitation_object
-      preference_weights <<- preference_weights
-      target_compatible_strategies <<- target_compatible_strategies
+      pref_elicitation_object <<- mcmc_results$pref_elicitation_object
+      preference_weights <<- mcmc_results$preference_weights
+      target_compatible_strategies <<- mcmc_results$target_compatible_strategies
       return(TRUE)
       
     } %...!% {
@@ -300,10 +273,11 @@ function(res, which_button) {
 
   
   
+  res$status <- 200
   
   return(lapply(1:2, function(jj) make_strategy_forfront_preftab(jj)))
   # runs: choose_button()
-  res$status <- 200
+  
   # returns: (see preferences_initialise)
   # list(
   #     list(values, geojson),
@@ -318,7 +292,7 @@ function(res, which_button) {
 #* @serializer json
 #* @param from_submit_button JSON data that contains targets
 #* @response 200 Success: Returned strategy
-function(res, from_submit_button) {
+function(req, res, from_submit_button) {
   
   # Takes in:
   # {
@@ -480,7 +454,7 @@ function(res, from_submit_button) {
   ))
 }
 
-
+# /alternative_approaches ----
 #* Obtain four alternative approaches
 #* @get /alternative_approaches
 #* @serializer json
@@ -495,30 +469,35 @@ function(res) {
   # )
   
   res$status <- 200
-  if(all(target_compatible_strategies$cluster==1))
+  if(all(target_compatible_strategies$cluster==1)) {
     return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(1)))
-  else
+  } else {
     return(lapply(1:4, function(kk) make_strategy_forfront_altapproach(kk)))
+  }
 }
 
+# /exploration_initialise ----
 #* Obtain four alternative approaches
 #* @get /exploration_initialise
 #* @serializer json
 #* @param which_cluster Which cluster is selected
 #* @response 200 Success: Returned strategy
 #* @response 403 Forbidden: the choice must be between 1 and 4
-function(which_cluster = 1) {
+function(res, which_cluster = 1) {
   # input: a number from 1 - 4 for the cluster picked on the alternative_approaches tab
   
   # returns:
   # list(values, geojson) #see submit_strategy
   
-  if(!cluster_number %in% c(1,2,3,4)) {
+  if(!which_cluster %in% c(1,2,3,4)) {
     res$status <- 403
     notif("thethe choice must be between 1 and 4", log_level = "error")
     return("the choice must be between 1 and 4")
   }
   
+  if (is.null(target_compatible_strategies$cluster)) {
+    target_compatible_strategies$cluster <- 1
+  }
   
   #First we need a global variable containing the target compatible samples for a cluster. This will be amended on entering the exploration tab
   tc_samples_cluster <<- target_compatible_strategies[cluster==1]
@@ -529,8 +508,9 @@ function(which_cluster = 1) {
   
   
   
-  if(all(target_compatible_strategies$cluster==1))
+  if(all(target_compatible_strategies$cluster==1)) {
     which_cluster <- 1
+  }
   #Reassign global variable to the strategies that will populate the page
   tc_samples_cluster <<- target_compatible_strategies[cluster==which_cluster]
   #Send back a random strategy so the front end can plot it
@@ -574,13 +554,14 @@ function(which_cluster = 1) {
   
 }
 
+# /exploration_plus ----
 #* Obtain four alternative approaches, increase one slider
 #* @get /exploration_plus
 #* @serializer json
 #* @param slider_name Name of slider being pushed up by 1 unit
 #* @response 200 Success: Returned strategy
 #* @response 403 Forbidden: Parameter must be a slider name
-function(slider_name) {
+function(res, slider_name) {
   # input: 
   #  slider_name
   
@@ -638,13 +619,14 @@ function(slider_name) {
   
 }
 
+# /exploration_minus ----
 #* Obtain four alternative approaches, decrease one slider
 #* @get /exploration_minus
 #* @serializer json
 #* @param slider_name Name of slider being pushed up by 1 unit
 #* @response 200 Success: Returned strategy
 #* @response 403 Forbidden: Parameter must be a slider name
-function(slider_name) {
+function(res, slider_name) {
   # input: 
   #  slider_name
   
@@ -753,6 +735,7 @@ function(req, res, file_to_upload) {
   return("Success")
 }
 
+# /exists ----
 #* Check if user input file exists and matches the user's file
 #* curl -X GET localhost:<port>/exists?filename=<filename>&md5sum=<md5sum>
 #* @get /exists
@@ -786,6 +769,7 @@ function(res, filename, md5sum) {
   }
 }
 
+# /initialize ----
 #* Code before server block. Returns an environment
 #* curl -X PUT -H "Accept: text/plain" localhost:<port>/initialization
 #* @put /initialize
@@ -797,7 +781,6 @@ function(res, filename, md5sum) {
 function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   
   library(future)
-  plan(futureplan, workers = min(4, future::availableCores()))
   
   formals(notif)$max_limit_log_level <- MAX_LIMIT_LOG_LEVEL
   # plan(sequential)
@@ -1786,6 +1769,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   env$FullTableNotAvail <- FullTableNotAvail
   env$slider_info <- slider_info
   env$first_strategy <- first_strategy
+  env$NAME_CONVERSION <- NAME_CONVERSION
   new_environment <- env
   
   notif("Backend initialization ... done")
@@ -1794,5 +1778,19 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   return(new_environment)
 }
 
+# /check_initialized ----
+#* If FullTable is available in the global environment, the /initialize function was called
+#* @get /check_initialized
+#* @response 200 Success: Was initialized
+#* @response 404 Not found: Was not initialized
+function(res) {
+  if (exists("FullTable", envir = .GlobalEnv)) {
+    res$status <- 200
+    return(TRUE)
+  } else {
+    res$status <- 404
+    return(FALSE)
+  }
+}
 
 # Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`

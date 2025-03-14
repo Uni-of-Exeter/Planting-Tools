@@ -184,7 +184,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   )]
   
   # Efficiently update strategy_year to 25 where strategy_area is 0
-  outcomes[strategy_area == 0, strategy_year := 25]
+  outcomes[strategy_area == 0, strategy_year := (MAXYEAR_arg+1)]
   
   #Merge outcomes into the table
   FullTable_long_arg[
@@ -375,9 +375,9 @@ convert_outcome_to_dt <- function(outcome) {
   
   for (name in names(outcome)) {
     clean_name <- gsub("^sum_", "", name)
-    if (is.numeric(outcome[[name]]) && length(outcome[[name]]) == 1) {
+    if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) < 1) {
       dt[[clean_name]] <- outcome[[name]]
-    } else if (is.numeric(outcome[[name]]) && length(outcome[[name]]) > 1) {
+    } else if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) >= 1) {
       for (subname in names(outcome[[name]])) {
         dt[[subname]] <- outcome[[name]][subname]
       }
@@ -454,7 +454,11 @@ make_strategy_forfront_preftab <- function(index){
   #convert to geojson
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
-  payload <- pref_elicitation_object$data[comparison_index + (index-1)]
+  
+  
+  
+  # In the update() function, it is converted to a matrix, so we need the comma to select the entire row
+  payload <- pref_elicitation_object$data[comparison_index + (index-1), ]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
   names(payload)[which(names(payload)=="visits")] <- "recreation"
   bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
@@ -466,6 +470,9 @@ make_strategy_forfront_preftab <- function(index){
       names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
       #No need to change if its a group
     }
+  }
+  if (isFALSE(data.table::is.data.table(payload))) {
+    payload <- data.table::as.data.table(t(payload))
   }
   return(list(
     values = payload,
@@ -481,6 +488,9 @@ make_strategy_forfront_preftab <- function(index){
 make_strategy_forfront_altapproach <- function(index){
   if(!index %in% c(1,2,3,4)) {
     stop("make_strategy_forfront_altapproach(): Index should be 1, 2, 3 or 4 for alternative approaches")
+  }
+  if (is.null(target_compatible_strategies$cluster)) {
+    target_compatible_strategies$cluster <- index
   }
   samples_in_cluster <- target_compatible_strategies[cluster == index]
   random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]

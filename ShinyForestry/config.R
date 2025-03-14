@@ -17,7 +17,7 @@ BLOCKED_PARCEL_COLOUR <- "#ff2222"
 PARCEL_LINE_COLOUR <- "#000000"
 FILL_OPACITY <- 0.7
 
-COLOUR_MAPPING <- c("Conifer" = "#006400", "Deciduous" = "#008080", "Available" = AVAILABLE_PARCEL_COLOUR, "Unavailable" = UNAVAILABLE_PARCEL_COLOUR, "Blocked" = BLOCKED_PARCEL_COLOUR)
+COLOUR_MAPPING <- c("Conifers" = "#006400", "Deciduous" = "#008080", "Available" = AVAILABLE_PARCEL_COLOUR, "Unavailable" = UNAVAILABLE_PARCEL_COLOUR, "Blocked" = BLOCKED_PARCEL_COLOUR)
 # MOCK_SLEEP_TIME <- 0.8
 
 API_PORT <- Sys.getenv("API_PORT")
@@ -27,6 +27,7 @@ if (API_PORT == "") {
 API_HOST <- Sys.getenv("API_HOST")
 if (API_HOST == "") {
   API_HOST <- "144.173.60.164"
+  # API_HOST <- "localhost"
 }
 
 API_URL <- paste0("http://", API_HOST, ":", API_PORT)

@@ -96,16 +96,19 @@ map_page_server <- function(id, state) {
     strategy_counter <- reactiveVal(1)  # Counter to keep track of strategy keys
     plot_type <- reactiveVal("cumulative") 
     
-    initial_values <- reactiveVal(list())  # Initialize as an empty list
-    initial_values <- reactiveVal(list(
-      carbon = 800,
-      species = 10,
-      species_goat_moth = 25,
-      species_stag_beetle = 30,
-      species_lichens = 2,
-      area = 10,
-      recreation = 15
-    ))
+    # set initial_values
+    initial_values <- reactiveVal(list())
+    observe({
+      req(state$map_tab)
+      default_values <- setNames(
+        lapply(state$map_tab$slider$names, function(slider) {
+          round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)  # Extract default values; rounding to 1 DP because of sliders
+        }),
+        state$map_tab$slider$names
+      )
+      initial_values(default_values)
+    })
+    
     # observe({
     #   # Ensure state$map_tab is properly initialized
     #   if (!is.null(state$map_tab$slider$names)) {
@@ -178,8 +181,8 @@ map_page_server <- function(id, state) {
       
       # Compute cumulative area for each planting type
       cumulative_data <- plot_data %>%
-        arrange(planting_type, planting_year) %>%
-        group_by(planting_type) %>%
+        arrange(planting_types, planting_year) %>%
+        group_by(planting_types) %>%
         mutate(cumulative_area = cumsum(total_area)) %>%
         ungroup()
       
@@ -187,64 +190,72 @@ map_page_server <- function(id, state) {
       list(total = plot_data, cumulative = cumulative_data)
     })
     
-    # Render time-series plot for both Conifer and Deciduous
-    output[[ns("areaPlot")]] <- renderPlotly({
-      data <- processed_data()  # Get precomputed data
-      
-      # If no data, return NULL
-      if (is.null(data)) return(NULL)
-      
-      # Determine which dataset to use based on user selection
-      selected_plot <- if (input[[ns("view_toggle")]] == "Cumulative") {
-        data$cumulative %>% rename(y_value = cumulative_area)  # Rename for consistency
-      } else {
-        data$total %>% rename(y_value = total_area)
+    observe({
+      if (state$map_tab$initialized) {
+        print("render area plot")
+        # Render time-series plot for both Conifer and Deciduous
+        output[[ns("areaPlot")]] <- renderPlotly({
+          data <- processed_data()  # Get precomputed data
+          
+          print("processed_data")
+          print(processed_data())
+          
+          # If no data, return NULL
+          if (is.null(data)) return(NULL)
+          
+          # Determine which dataset to use based on user selection
+          selected_plot <- if (input[[ns("view_toggle")]] == "Cumulative") {
+            data$cumulative %>% rename(y_value = cumulative_area)  # Rename for consistency
+          } else {
+            data$total %>% rename(y_value = total_area)
+          }
+          
+          # Create the plot
+          p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_types)) +
+            geom_line(size = 1, alpha = FILL_OPACITY) +
+            geom_point(size = 1.2) +
+            scale_color_manual(values = COLOUR_MAPPING) +
+            labs(title = ifelse(input[[ns("view_toggle")]] == "Cumulative",
+                                " ",
+                                " "),
+                 x = "Year",
+                 y = ifelse(input[[ns("view_toggle")]] == "Cumulative",
+                            "Cumulative Area Planted",
+                            "Total Area Planted"),
+                 color = "Planting Type") +
+            theme_minimal(base_size = 10) +
+            theme(
+              legend.position = "none",
+              panel.background = element_rect(fill = "transparent", color = NA),
+              plot.background = element_rect(fill = "transparent", color = NA),
+              legend.background = element_rect(fill = "transparent"),
+              legend.box.background = element_rect(fill = "transparent")
+            ) 
+          
+          ggplotly(p) %>%
+            layout(
+              paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
+              plot_bgcolor = "rgba(255,255,255,0)"
+            ) %>%
+            config(
+              displayModeBar = TRUE  # Keep the toolbar
+            )
+        })
+        
+        observeEvent(input[[ns("toggle_plot")]], {
+          print("being clicked")
+          shinyjs::toggle(id = ns("time_series_plot"), anim = TRUE)
+          
+          # Change button text dynamically
+          new_label <- if (input[[ns("toggle_plot")]] %% 2 == 1) {
+            "Hide Time-Series"
+          } else {
+            "Show Time-Series"
+          }
+          
+          updateActionButton(session, ns("toggle_plot"), label = new_label)
+        })
       }
-      
-      # Create the plot
-      p <- ggplot(selected_plot, aes(x = planting_year, y = y_value, color = planting_type)) +
-        geom_line(size = 1, alpha = FILL_OPACITY) +
-        geom_point(size = 1.2) +
-        scale_color_manual(values = COLOUR_MAPPING) +
-        labs(title = ifelse(input[[ns("view_toggle")]] == "Cumulative",
-                            " ",
-                            " "),
-             x = "Year",
-             y = ifelse(input[[ns("view_toggle")]] == "Cumulative",
-                        "Cumulative Area Planted",
-                        "Total Area Planted"),
-             color = "Planting Type") +
-        theme_minimal(base_size = 10) +
-        theme(
-          legend.position = "none",
-          panel.background = element_rect(fill = "transparent", color = NA),
-          plot.background = element_rect(fill = "transparent", color = NA),
-          legend.background = element_rect(fill = "transparent"),
-          legend.box.background = element_rect(fill = "transparent")
-        ) 
-      
-      ggplotly(p) %>%
-        layout(
-          paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
-          plot_bgcolor = "rgba(255,255,255,0)"
-        ) %>%
-        config(
-          displayModeBar = TRUE  # Keep the toolbar
-        )
-    })
-    
-    observeEvent(input[[ns("toggle_plot")]], {
-      print("being clicked")
-      shinyjs::toggle(id = ns("time_series_plot"), anim = TRUE)
-      
-      # Change button text dynamically
-      new_label <- if (input[[ns("toggle_plot")]] %% 2 == 1) {
-        "Hide Time-Series"
-      } else {
-        "Show Time-Series"
-      }
-      
-      updateActionButton(session, ns("toggle_plot"), label = new_label)
     })
     
     # Initialize leaflet map or update it on submit
@@ -253,15 +264,16 @@ map_page_server <- function(id, state) {
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
       new_fetched <- if (!is.null(data)) {
-        list(data, NULL)
+        data
       } else {
-        # TODO: PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS
-        stop("PAUL, I (TIM) DELETED THAT FUNCTION BECAUSE WE DELETED /generate_parcels. YOU NEED TO DELETE THIS")
-        post_generate_parcels(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
+        post_submit_targets(json_payload)  # Use POST if json_payload is provided (this is just a placeholder)
       }
       
       new_data_fetched <- new_fetched[[1]]
       new_values_fetched <- new_fetched[[2]]
+      
+      print("new_data_fetched")
+      print(new_data_fetched)
       
       if (!is.null(new_data_fetched)) {
         # Apply the filter based on the selected year
@@ -282,18 +294,22 @@ map_page_server <- function(id, state) {
         ))
         
         filtered_data_subset <- new_data_fetched[new_data_fetched$planting_year <= input_year, ]
+        filtered_data_subset <- filtered_data_subset[!st_is_empty(filtered_data_subset$geometry), ] # ensure it's valid
+        
         filtered_data(filtered_data_subset)
         
         current_layers(filtered_data_subset$parcel_id)
         
         # Update conifer and deciduous data based on the fetched data
+        # !TODO -- No planting year, no planting
+        
         area_data <- new_data_fetched %>%
           dplyr::filter(!is.na(planting_year)) %>%
           # dplyr::mutate( # I don't think we need to do this as it's fine as it is.
           #   geometry = st_make_valid(geometry),  # Ensure valid geometries
           #   parcel_area = st_area(geometry)      # Calculate area of each polygon
           # ) %>%
-          dplyr::group_by(planting_year, planting_type) %>%
+          dplyr::group_by(planting_year, planting_types) %>%
           dplyr::summarise(total_area = sum(parcel_area, na.rm = TRUE), .groups = 'drop') %>%  # Avoid warning with `.groups`
           dplyr::arrange(planting_year)  # Ensures chronological order
         
@@ -301,26 +317,56 @@ map_page_server <- function(id, state) {
         output_data(area_data)
         
         # Render the leaflet map with the updated data
-                  
-          # legend_html <- paste0(
-          #   "<b>Outcomes</b> (c.f. Targets)<br><br>",
-          #   "<table style='width:100%; text-align:left;'>",
-          #   paste0(
-          #     lapply(names(new_vals()), function(name) {
-          #       # Get the display name from SLIDER_NAMES
-          #       display_name <- SLIDER_NAMES[[name]]$name
-          #       # Get the unit for each slider
-          #       unit <- SLIDER_NAMES[[name]]$unit
-          #       # Get the current value
-          #       value <- round(new_vals()[[name]], POPUP_SIGFIG)
-          #       
-          #       # Format the name, value, and unit into a table row
-          #       sprintf("<tr><td>%s:</td> <td>%s %s</td></tr>", display_name, value, unit)
-          #     }),
-          #     collapse = "\n"
-          #   ),
-          #   "</table></div>"
-          # )
+        print("names of new_vals()")
+        print(names(new_vals()))
+            
+        legend_html <- paste0(
+          "<b>Outcomes</b><br><br>",
+          "<table style='width:100%; text-align:left;'>",
+          paste0(
+            lapply(names(new_vals()), function(name) {
+              # Get the index of the slider name in state$map_tab$slider$names
+              idx <- which(state$map_tab$slider$names == name)
+              
+              
+              get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+                if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
+                idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
+                if (length(idx) == 0) return(ugly_english_specie)
+                result <- NAME_CONVERSION_ARG$English_specie_pretty[idx]
+                return(result)
+              }
+              
+              
+              
+              
+              # Get the display name for the slider (from the slider names list)
+              if (state$map_tab$slider$names[idx] %in% NAME_CONVERSION$English_specie) {
+                specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+              } else {
+                specie_to_print <- state$map_tab$slider$names[idx]
+              }
+              display_name <- specie_to_print
+              
+              # Get the current value for the slider
+              value <- signif(new_vals()[[name]], POPUP_SIGFIG)
+              
+              sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
+               <td style='text-align:left;'>%s</td></tr>",
+                      display_name, value)
+              
+              # Format the name and value into a table row (without unit for now)
+              # sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
+            }),
+            collapse = "\n"
+          ),
+          "</table></div>"
+        )
+
+          
+        print("new_data_fetched")
+        print(new_data_fetched)
+        
         output$map <- renderLeaflet({
           leaflet(options = leafletOptions(doubleClickZoom = FALSE)) %>%
             addProviderTiles(providers$CartoDB.Voyager) %>%  # Base map layer
@@ -339,18 +385,6 @@ map_page_server <- function(id, state) {
               # popup = "No planting"
             ) %>% 
             
-            # Add filtered polygons based on the selected year
-            addPolygons(
-              data = filtered_data_subset,  # Filtered data based on the year
-              weight = 1,
-              color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-              fillOpacity = FILL_OPACITY,
-              layerId = ~parcel_id,
-              label = ~parcel_id,
-              # popup = ~planting_type
-            ) %>%
-            
             # Add unavailable parcels layer
             addPolygons(
               data = FullTableNotAvail,  # Unavailable parcels
@@ -361,19 +395,8 @@ map_page_server <- function(id, state) {
               group = "unavailablePolygons",
               # popup = "Unavailable for planting"
             ) %>%
-            
-            addPolygons(
-              data = filtered_data_subset,  # Filtered data based on the year
-              weight = 1,
-              color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-              fillOpacity = FILL_OPACITY,
-              layerId = ~parcel_id,
-              label = ~parcel_id,
-              # popup = ~planting_type
-            ) %>%
-            
-            # addControl(html = legend_html, position='topright') %>% 
+
+            addControl(html = legend_html, position='topright') %>% 
             
             # Add legend
             addLegend(
@@ -383,8 +406,21 @@ map_page_server <- function(id, state) {
               title = "Planting Type",
               opacity = 1.0
             )
-          
         })
+          
+        if (nrow(filtered_data_subset) > 0) {
+          leafletProxy("map") %>%
+            addPolygons(
+              data = filtered_data_subset,  # Add filtered data if it's available
+              weight = 1,
+              color = PARCEL_LINE_COLOUR,
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+              fillOpacity = FILL_OPACITY,
+              layerId = ~parcel_id,
+              label = ~parcel_id
+            )
+        }
+            
       } else {
         print("API fetch failed, no data to update.")
       }
@@ -394,8 +430,8 @@ map_page_server <- function(id, state) {
     observe({
       if (is.null(state$map_tab$initialized) || !state$map_tab$initialized) {
         # Fetch slider values from API
-        slider_values <- get_slider_values()
-        slider_names <- names(slider_values)
+        # slider_values <- get_slider_values()
+        # slider_names <- names(slider_values)
         # Create the structured list under `$slider`
         # !TODO units?
         #
@@ -417,24 +453,47 @@ map_page_server <- function(id, state) {
         #     │   └── default: 800
         # ⋮   ⋮   
         #
+        # state$map_tab$slider <- list(
+        #   names = slider_names, # Store slider names explicitly
+        #   values = setNames(
+        #     lapply(slider_names, function(slider) {
+        #       list(
+        #         min = as.numeric(slider_values[[slider]]$min[[1]]),
+        #         max = as.numeric(slider_values[[slider]]$max[[1]]),
+        #         default = as.numeric(slider_values[[slider]]$default[[1]])
+        #       )
+        #     }),
+        #     slider_names # Assign correct names to values
+        #   )
+        # )
+        
+        # slider_info <- data.table(
+        #   name = c("carbon", "species", "species_goat_moth", "species_stag_beetle", "species_lichens", "area", "recreation"),
+        #   min = c(500, 0, 0, 0, 0, 0, 0),
+        #   max = c(1000, 25, 100, 100, 5, 15, 20),
+        #   default = c(800, 10, 25, 30, 2, 10, 15)
+        # )
+        
+        # Convert slider_info into the desired format
         state$map_tab$slider <- list(
-          names = slider_names, # Store slider names explicitly
+          names = colnames(slider_info),  # Use column names as slider names
           values = setNames(
-            lapply(slider_names, function(slider) {
-              list(
-                min = as.numeric(slider_values[[slider]]$min[[1]]),
-                max = as.numeric(slider_values[[slider]]$max[[1]]),
-                default = as.numeric(slider_values[[slider]]$default[[1]])
+            lapply(1:ncol(slider_info), function(i) {
+              list( # making integers for
+                min = round(as.numeric(slider_info[1, ..i][[1]]), 1),         # Extract first row as numeric
+                max = round(as.numeric(slider_info[2, ..i][[1]]), 1),          # Extract second row as numeric
+                default = round(as.numeric(slider_info[3, ..i][[1]]), 1)       # Extract third row as numeric
               )
             }),
-            slider_names # Assign correct names to values
+            colnames(slider_info)  # Use column names as keys
           )
         )
         
         default_payload <- c(
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
-              state$map_tab$slider$values[[slider]]$default
+              # Directly extract the numeric default value from the list without nesting
+              round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
             }),
             state$map_tab$slider$names
           ),
@@ -448,22 +507,33 @@ map_page_server <- function(id, state) {
         output$dynamic_sliders <- renderUI({
           tagList(
             lapply(state$map_tab$slider$names, function(slider) {
+              # Extract the min, max, and default values and ensure they are numeric
+              min_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$min), 1)
+              max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), 1)
+              default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
+              
+              # Debugging: Print min, max, default values to check their structure
+              print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
+              
+              # Create a fluidRow with a checkbox and sliderInput for each slider
               fluidRow(
                 column(CHECKBOX_COL, checkboxInput(ns(paste0(slider, "_checkbox")), NULL, value = TRUE)),
                 column(SLIDER_COL, sliderInput(
                   ns(slider), 
                   label = slider,  # Use the slider name as the label
-                  min = state$map_tab$slider$values[[slider]]$min,
-                  max = state$map_tab$slider$values[[slider]]$max,
-                  value = state$map_tab$slider$values[[slider]]$default
+                  min = min_value,
+                  max = max_value,
+                  value = default_value,
+                  step = 0.1,
                 ))
               )
             })
           )
         })
         
-        default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
-        initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+        # default_json_payload <- jsonlite::toJSON(default_payload, auto_unbox = TRUE, pretty = TRUE)
+        # initialize_or_update_map(YEAR_MIN, json_payload = default_json_payload)
+        initialize_or_update_map(YEAR_MIN, data=process_first_strategy(first_strategy))
         state$map_tab$initialized <- TRUE 
       }
     })
@@ -500,7 +570,7 @@ map_page_server <- function(id, state) {
         initial_values(
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
-              num_value <- as.numeric(input[[slider]])  # Convert to numeric
+              num_value <- round(as.numeric(input[[slider]]), 1) # Convert to numeric
               if (is.na(num_value)) return(NULL)  # Handle cases where conversion fails (optional)
               return(num_value)
             }),
@@ -554,6 +624,7 @@ map_page_server <- function(id, state) {
       clicked_parcel_id <- click$id  # Get clicked parcel_id
       selected_year <- input[[ns("year")]]    # Get selected year
 
+      print("clicked_parcel_id")
       print(clicked_parcel_id)
       
       # Ensure clicked_polygons() is not NULL or empty
@@ -595,10 +666,17 @@ map_page_server <- function(id, state) {
     })
 
     observe({
+      print("is initialised?")
+      print(state$map_tab$initialized)
+      print(state$initialized)
+      print(state$map_tab)
+      print(state$map_tab$slider$names)
+      print("...")
       # Get the current slider values with namespacing
       current_values_list <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
-          as.numeric(input[[slider]])  # Convert each slider value to numeric
+          num_value <- round(as.numeric(input[[slider]]), 1)
+          return(num_value)
         }),
         state$map_tab$slider$names  # Use slider names as the list names
       )
@@ -606,7 +684,9 @@ map_page_server <- function(id, state) {
       # Compare current values with initial values
       values_changed <- !identical(current_values_list, initial_values())
       if (values_changed) {
+        print("current_values_list")
         print(current_values_list)
+        print("initial_values()")
         print(initial_values())
       }
 
@@ -686,7 +766,7 @@ map_page_server <- function(id, state) {
         to_remove <- setdiff(existing_layers, current_ids)  # Ensure this is a vector of IDs
 
         # try update polygons back with a new style
-        if (length(to_remove) > 0) {
+        if (!is.null(to_remove) && !any(is.na(to_remove)) && length(to_remove) > 0) {
           # Get the data for all parcels that need to be recoloured from FullTable
           updated_data <- current_data[current_data$parcel_id %in% to_remove, ]  # Use `to_remove` to filter
 
@@ -704,13 +784,13 @@ map_page_server <- function(id, state) {
         }
 
         # Add new polygons (those that are in filtered data but not on the map)
-        if (length(to_add) > 0) {
+        if (!is.null(to_add) && !any(is.na(to_add)) && length(to_add) > 0) {
           leafletProxy("map") %>%
             addPolygons(
               data = current_data[current_data$parcel_id %in% to_add, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
@@ -749,7 +829,7 @@ map_page_server <- function(id, state) {
               data = unclk,  # Data for unblocked parcels
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_types])),  # Grey if not planted yet or NA
               fillOpacity = FILL_OPACITY,
               group = "UnblockedPolygons",
               layerId = unclk$parcel_id,  # Reassign the same layerId for unblocked polygons
@@ -767,7 +847,7 @@ map_page_server <- function(id, state) {
               data = unblk,  # Data for unblocked parcels
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_type])),  # Grey if not planted yet or NA
+              fillColor = ~ifelse(is.na(planting_year) | planting_year >= input_year, AVAILABLE_PARCEL_COLOUR, unname(COLOUR_MAPPING[planting_types])),  # Grey if not planted yet or NA
               fillOpacity = FILL_OPACITY,
               group = "UnblockedPolygons",
               layerId = unblk$parcel_id,  # Reassign the same layerId for unblocked polygons
@@ -873,6 +953,7 @@ map_page_server <- function(id, state) {
     #   saved_strategies(strategies)
     # })
     # 
+    # # WILL NEED TO RENAME first_strategy
     # observe({
     #   strategies <- saved_strategies()  # Reactive dependency
     #   print(paste("Registered strategies:", paste(names(strategies), collapse = ", ")))
