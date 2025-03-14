@@ -61,6 +61,7 @@ ElicitorAppFolder <- normalizePath(file.path(FolderSource, "ElicitorOutput"))
 CalculatedFilesFolder <- normalizePath(file.path(FolderSource, "CalculatedFiles"))
 
 
+plan(futureplan, workers = min(3, future::availableCores()))
 
 #* Log full request information
 #* @filter log_request
@@ -780,7 +781,6 @@ function(res, filename, md5sum) {
 function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   
   library(future)
-  plan(futureplan, workers = min(4, future::availableCores()))
   
   formals(notif)$max_limit_log_level <- MAX_LIMIT_LOG_LEVEL
   # plan(sequential)
