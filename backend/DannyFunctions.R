@@ -489,6 +489,9 @@ make_strategy_forfront_altapproach <- function(index){
   if(!index %in% c(1,2,3,4)) {
     stop("make_strategy_forfront_altapproach(): Index should be 1, 2, 3 or 4 for alternative approaches")
   }
+  if (is.null(target_compatible_strategies$cluster)) {
+    target_compatible_strategies$cluster <- index
+  }
   samples_in_cluster <- target_compatible_strategies[cluster == index]
   random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
   tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR

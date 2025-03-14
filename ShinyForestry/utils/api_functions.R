@@ -41,9 +41,9 @@ post_submit_targets <- function(json_payload) {
     httr::content_type_json()
   )
   
-  print(">>>>>>>>>>>>")
-  print("json_payload")
-  print(json_payload)
+  # print(">>>>>>>>>>>>")
+  # print("json_payload")
+  # print(json_payload)
   
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
@@ -94,7 +94,7 @@ get_exploration_initialise <- function(cluster) {
     print(api_response$values)
     
     # Return the list containing both sets of values and geojson data
-    list(values = api_response$values, geojson = sf::st_read(api_response$geojson, quiet = TRUE))
+    return(list(values = api_response$values, geojson = sf::st_read(api_response$geojson, quiet = TRUE)))
     
   } else {
     stop(paste("Request failed with status:", httr::status_code(response)))
@@ -106,7 +106,7 @@ get_exploration_plus <- function(slider_name) {
   print(paste("+ ", slider_name))
   
   # Define the base URL (without query parameters), append which_button query parameter
-  url <- paste0(API_URL, "/exploration_plus?slider=", slider_name)  # Add choice as query parameter
+  url <- paste0(API_URL, "/exploration_plus?slider_name=", slider_name)  # Add choice as query parameter
   
   # Make the API POST request with no JSON body
   response <- httr::GET(
@@ -135,7 +135,7 @@ get_exploration_minus <- function(slider_name) {
   print(paste("- ", slider_name))
   
   # Define the base URL (without query parameters), append which_button query parameter
-  url <- paste0(API_URL, "/exploration_minus?slider=", slider_name)  # Add choice as query parameter
+  url <- paste0(API_URL, "/exploration_minus?slider_name=", slider_name)  # Add choice as query parameter
   
   # Make the API POST request with no JSON body
   response <- httr::GET(

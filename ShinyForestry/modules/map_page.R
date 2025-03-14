@@ -321,7 +321,7 @@ map_page_server <- function(id, state) {
         print(names(new_vals()))
             
         legend_html <- paste0(
-          "<b>Outcomes</b> (c.f. Targets)<br><br>",
+          "<b>Outcomes</b><br><br>",
           "<table style='width:100%; text-align:left;'>",
           paste0(
             lapply(names(new_vals()), function(name) {
@@ -329,7 +329,12 @@ map_page_server <- function(id, state) {
               idx <- which(state$map_tab$slider$names == name)
               
               # Get the display name for the slider (from the slider names list)
-              display_name <- state$map_tab$slider$names[idx]
+              if (state$map_tab$slider$names[idx] %in% NAME_CONVERSION$English_specie) {
+                specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx])
+              } else {
+                specie_to_print <- state$map_tab$slider$names[idx]
+              }
+              display_name <- specie_to_print
               
               # Get the current value for the slider
               value <- signif(new_vals()[[name]], POPUP_SIGFIG)

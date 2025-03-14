@@ -3,10 +3,10 @@
         "target": "No",
         "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "Pollinators",
+        "sub-category": "All",
         "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2024"
+        "year": "2025"
     },
     "2": {
         "target": "No",
@@ -21,27 +21,18 @@
         "target": "No",
         "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "Goat Moth",
-        "metric": "Prob. of appearance",
+        "sub-category": "Pollinators",
+        "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2026"
+        "year": "2024"
     },
     "4": {
         "target": "No",
         "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "Stag Beetle",
+        "sub-category": "Goat Moth",
         "metric": "Prob. of appearance",
         "time-period": "Set year",
-        "year": "2027"
-    },
-    "5": {
-        "target": "No",
-        "category": "Biodiversity",
-        "scale": "National",
-        "sub-category": "All",
-        "metric": "Species richness",
-        "time-period": "Set year",
-        "year": "2025"
+        "year": "2026"
     }
 }
