@@ -1777,5 +1777,19 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   return(new_environment)
 }
 
+# /check_initialized ----
+#* If FullTable is available in the global environment, the /initialize function was called
+#* @get /check_initialized
+#* @response 200 Success: Was initialized
+#* @response 404 Not found: Was not initialized
+function(res) {
+  if (exists("FullTable", envir = .GlobalEnv)) {
+    res$status <- 200
+    return(TRUE)
+  } else {
+    res$status <- 404
+    return(FALSE)
+  }
+}
 
 # Run this file with plumber: `plumber::plumb("ShinyForestry/backend/mock_strategy.R")$run(port=8010)`
