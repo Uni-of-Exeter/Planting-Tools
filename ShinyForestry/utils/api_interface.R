@@ -3,15 +3,24 @@ library(jsonlite)
 library(glue)
 library(sf)
 
-# T
-put_initialization <- function(info) {
+API_PORT <- Sys.getenv("API_PORT")
+if (API_PORT == "") {
+  API_PORT <- 40000
+}
+API_HOST <- Sys.getenv("API_HOST")
+if (API_HOST == "") {
+  API_HOST <- "144.173.60.164"
+}
+
+API_URL <- paste0("http://", API_HOST, ":", API_PORT)
+
+put_initialization <- function() {
   
   url <- paste0(API_URL, "/initialize")
   
   # Convert 'info' to JSON format
   body <- toJSON(
-    list(MAX_LIMIT_LOG_LEVEL = "info"), 
-    auto_unbox = TRUE
+    list(MAX_LIMIT_LOG_LEVEL = "info")    
     )
   
   # Make the PUT request

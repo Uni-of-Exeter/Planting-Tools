@@ -1,6 +1,6 @@
 library(shiny)
 
-FolderSource <- normalizePath(".")
+FolderSource <- normalizePath("..")
 
 if (dir.exists("ShinyForestry")) {
   elicitor_folder <- normalizePath(file.path("ShinyForestry", "ElicitorOutput"))
@@ -32,6 +32,7 @@ if (isTRUE(install)) {
   remotes::install_deps(plantingtools_folder, upgrade = "never")
 }
 
+
 # Load packages
 for(i in 1:length(packages)) {
   library(packages[i], character.only = TRUE)
@@ -40,7 +41,7 @@ for(i in 1:length(packages)) {
 source(file.path(FolderSource, "config.R"))
 
 # more --> less: debug / info / warning / error / none
-MAX_LIMIT_LOG_LEVEL <- "debug"
+MAX_LIMIT_LOG_LEVEL <- "info"
 if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"), mustWork = FALSE))) {
   source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
 } else {
@@ -54,7 +55,7 @@ if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.environment(env))) {
+  if (isFALSE(is.environment(env))) { # if it's is.environment it breaks my frontend
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
     run_initalization_on_backend <- TRUE
@@ -120,7 +121,7 @@ if (isTRUE(run_initalization_on_backend)) {
   # Initialize the environment
   handle_PUT <- new_handle()
   handle_setopt(handle_PUT, customrequest = "PUT")
-  url <- paste0(API_URL, "/initialize?MAX_LIMIT_LOG_LEVEL=", MAX_LIMIT_LOG_LEVEL)
+  url <-paste0(API_URL, "/initialize?MAX_LIMIT_LOG_LEVEL=", MAX_LIMIT_LOG_LEVEL)
   msg <- paste("initializing the backend", url, "...")
   notif(msg)
   response <- curl_fetch_memory(url = url,
@@ -142,20 +143,20 @@ if (isTRUE(run_initalization_on_backend)) {
   # file.remove(temp_file)
   
   env <- plumber::parser_rds()(value = response$content)
-  list2env(as.list(env), envir = .GlobalEnv)
   
   # Save it to elicitor folder
   saveRDS(env, backend_initialization_env_file)
 }
 
+list2env(as.list(env), envir = .GlobalEnv)
 
 # Source module files
 source("global.R")  # Load global settings
 source("config.R")  # Load config
 
 source("modules/map_page.R")
-# source("modules/preferences_page.R")
-# source("modules/alternative_approaches_page.R")
+source("modules/preferences_page.R")
+source("modules/alternative_approaches_page.R")
 # source("modules/exploration_page.R")
 # source("modules/downscaling_page.R")
 
@@ -201,7 +202,7 @@ ui <- fluidPage(
         ),
         
         tabPanel(title = "Map", map_page_ui("map")),
-        # tabPanel(title = "Preferences", preferences_page_ui("prefs")),
+        tabPanel(title = "Preferences", preferences_page_ui("prefs")),
         # tabPanel(title = "Alternative Approaches", alt_page_ui("alt")),
         # tabPanel(title = "Exploration", exploration_page_ui("explore")),
         # tabPanel(title = "Downscaling", downscaling_page_ui("downscale")),
@@ -243,16 +244,16 @@ server <- function(input, output, session) {
   )
     
   map_page_server("map", state)
-  # preferences_page_server("prefs", state)
+  preferences_page_server("prefs", state)
   # alt_page_server("alt", state)
   # exploration_page_server("explore", state)
   # downscaling_page_server("downscale", state)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
-    if (!is.null(input$mappageRendered) && input$mappageRendered) {
-        # && !is.null(input$prefpageRendered) && input$prefpageRendered
-        # && !is.null(input$altpageRendered) && input$altpageRendered
+    if (!is.null(input$mappageRendered) && input$mappageRendered
+        && !is.null(input$prefpageRendered) && input$prefpageRendered ){
+        # && !is.null(input$altpageRendered) && input$altpageRendered ){
         # && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
         
       # Hide the loading screen after both maps are rendered
