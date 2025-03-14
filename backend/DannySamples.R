@@ -93,6 +93,32 @@ FullTable_working <- FullTable_working[
   is.na(outcome_sub_type) | outcome_sub_type %in% SPECIES
 ]
 
+load("ShinyForestry/Arable_livestock_data/merged_calories.RData")
+
+for (year in 0:25) {
+  
+  # Identify the correct column name
+  calorie_col <- paste0("Calories_Arable_Livestock_", 2025 + year)
+  
+  # Check if the column exists in merged_calories
+  if (calorie_col %in% names(merged_calories)) {
+    
+    # Create a lookup table with row index as parcel_id
+    calorie_mapping <- merged_calories[, .(parcel_id = .I, outcome_value = get(calorie_col))]
+    
+    
+    # Perform the merge using a data.table join
+    FullTable_working[outcome_type == "Visits" & 
+                        statistic_name == "Mean" & 
+                        planting_year == year, 
+                      outcome_value := calorie_mapping[.SD, on = "parcel_id", x.outcome_value]]
+  }
+}
+
+
+# Convert to "kilo calories"
+FullTable_working[outcome_type == "Visits" & statistic_name == "Mean", 
+                  `:=`(outcome_value = outcome_value / 1e3)]
 
 #Find the outcomes from strategies
 strategy_outcomes <- rbindlist(lapply(1:NSamp, function(jj) get_outcome_dt(Strategies[jj,], FullTable_working)))
