@@ -76,7 +76,7 @@ get_exploration_initialise <- function(cluster) {
   print(paste("The cluster choice was made:", cluster))
   
   # Define the base URL (without query parameters), append which_button query parameter
-  url <- paste0(API_URL, "/preferences?which_cluster=", cluster)  # Add choice as query parameter
+  url <- paste0(API_URL, "/exploration_initialise?which_cluster=", cluster)  # Add choice as query parameter
   
   # Make the API POST request with no JSON body
   response <- httr::GET(
