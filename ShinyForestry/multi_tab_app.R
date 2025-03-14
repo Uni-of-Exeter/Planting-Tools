@@ -49,7 +49,7 @@ if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-fun
 }
 
 # If the backend was already initialized, saved to disk, and environment variable is valid, use it
-run_initalization_on_backend <- FALSE
+run_initialization_on_backend <- FALSE
 backend_initialization_env_file <- normalizePath(file.path(elicitor_folder, "backend_env.rds"))
 if (file.exists(backend_initialization_env_file)) {
   
@@ -58,14 +58,14 @@ if (file.exists(backend_initialization_env_file)) {
   if (isFALSE(is.environment(env))) { # if it's is.environment it breaks my frontend
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
-    run_initalization_on_backend <- TRUE
+    run_initialization_on_backend <- TRUE
   }
   
 } else {
-  run_initalization_on_backend <- TRUE
+  run_initialization_on_backend <- TRUE
 }
 
-if (isTRUE(run_initalization_on_backend)) {
+if (isTRUE(run_initialization_on_backend)) {
   
   # If a file does not exist, stop everything
   filenames <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
