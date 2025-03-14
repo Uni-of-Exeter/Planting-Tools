@@ -341,12 +341,12 @@ function(req, res, from_submit_button) {
   #Amend global blocked_parcels
   blocked_parcels <<- from_submit_button$blocked_parcels
   #Extract targets
-  target_carbon <- from_submit_button$carbon
-  target_visits <- from_submit_button$recreation
-  target_area <- from_submit_button$area
-  bio_names <- names(from_submit_button)[ ! names(from_submit_button)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+  target_carbon <- from_submit_button$Carbon
+  target_visits <- from_submit_button$Food_Produced
+  target_area <- from_submit_button$Area
+  bio_names <- names(from_submit_button)[ ! names(from_submit_button)%in% c("Carbon", "Area", "Food_Produced", "blocked_parcels")]
   targets_bio <- from_submit_button[bio_names]
-  names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
+  names(targets_bio)[which(names(targets_bio)=="Biodiversity")] <- "All"
   #Convert English to Latin names for FullTable Compatibility
   for(species in 1:length(targets_bio)){
     t_name <- names(targets_bio)[species]
