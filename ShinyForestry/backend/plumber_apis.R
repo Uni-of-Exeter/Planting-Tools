@@ -161,35 +161,6 @@ function(res) {
 # 10 3d8adce4-14a0-4b35-8595-ef4645aed0db 0.035769157            NA          <NA>         TRUE                  0         NA POLYGON ((-1.760264 50.8301...
 
 
-#* Generate parcel data
-#* @get /random_strategy
-#* @param req The request body must contain `parcel_id` (string) and `blocked_until_year` (integer)
-#* @serializer json
-function() {
-  # Generate parcel data
-  parcel_data <- generate_parcel_data()
-  geojson <- geojsonsf::sf_geojson(parcel_data)
-  
-  values <- list(
-    carbon = as.numeric(500),
-    species = as.numeric(5), 
-    species_goat_moth = as.numeric(4),
-    species_stag_beetle = as.numeric(9),
-    species_lichens = as.numeric(10),
-    area = as.numeric(15),
-    recreation = as.numeric(10) 
-  )
-  
-  # Add a small random number between -0.5 and 0.5 to each value
-  values <- lapply(values, function(x) x + runif(1, -0.5, 0.5))
-  
-  return(list(
-    values = values,
-    geojson = geojson
-  ))
-}
-
-
 #* Initialise Preferences tab
 #* @get /preferences_initialise
 #* @serializer json
@@ -280,11 +251,12 @@ function(res, which_button) {
       # On success
       mcmc_results <- .
       
+      
       msg <- "MCMC success, merging pref_elicitation_object and preference_weights (and target_compatible_strategies if we clustered) to .GlobalEnv"
       notif(msg, log_level = "debug")
-      pref_elicitation_object <<- pref_elicitation_object
-      preference_weights <<- preference_weights
-      target_compatible_strategies <<- target_compatible_strategies
+      pref_elicitation_object <<- mcmc_results$pref_elicitation_object
+      preference_weights <<- mcmc_results$preference_weights
+      target_compatible_strategies <<- mcmc_results$target_compatible_strategies
       return(TRUE)
       
     } %...!% {
@@ -300,10 +272,11 @@ function(res, which_button) {
 
   
   
+  res$status <- 200
   
   return(lapply(1:2, function(jj) make_strategy_forfront_preftab(jj)))
   # runs: choose_button()
-  res$status <- 200
+  
   # returns: (see preferences_initialise)
   # list(
   #     list(values, geojson),
@@ -318,7 +291,7 @@ function(res, which_button) {
 #* @serializer json
 #* @param from_submit_button JSON data that contains targets
 #* @response 200 Success: Returned strategy
-function(res, from_submit_button) {
+function(req, res, from_submit_button) {
   
   # Takes in:
   # {
@@ -363,8 +336,6 @@ function(res, from_submit_button) {
     error = function(e) return(list(error = "Invalid JSON format."))
   )
   from_submit_button <- body
-  
-  print(names(body))
   
   #Amend global blocked_parcels
   blocked_parcels <<- from_submit_button$blocked_parcels
