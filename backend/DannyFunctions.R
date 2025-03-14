@@ -454,7 +454,11 @@ make_strategy_forfront_preftab <- function(index){
   #convert to geojson
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
-  payload <- pref_elicitation_object$data[comparison_index + (index-1)]
+  
+  
+  
+  # In the update() function, it is converted to a matrix, so we need the comma to select the entire row
+  payload <- pref_elicitation_object$data[comparison_index + (index-1), ]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
   names(payload)[which(names(payload)=="visits")] <- "recreation"
   bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
@@ -466,6 +470,9 @@ make_strategy_forfront_preftab <- function(index){
       names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
       #No need to change if its a group
     }
+  }
+  if (isFALSE(data.table::is.data.table(payload))) {
+    payload <- data.table::as.data.table(t(payload))
   }
   return(list(
     values = payload,

@@ -66,7 +66,7 @@ exploration_page_server <- function(id, state) {
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
-      new_fetched_one <- get_random_strategy()  # Use GET otherwise
+      new_fetched_one <- get_exploration_initialise()  # Use GET otherwise
       
       new_data_fetched_one <- new_fetched_one[[1]]
       new_data_fetched_one$parcel_id <- paste0(new_data_fetched_one$parcel_id, "_one")

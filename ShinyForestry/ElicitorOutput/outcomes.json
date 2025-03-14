@@ -1,22 +1,21 @@
 {
     "1": {
         "target": "No",
-        "category": "Carbon",
+        "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "GHG CO2 equivalent",
-        "metric": "Tonnes of CO2e",
-        "time-period": "Multiple year total",
-        "year-start": "2024",
-        "year-end": "2050"
+        "sub-category": "Pollinators",
+        "metric": "Species richness",
+        "time-period": "Set year",
+        "year": "2024"
     },
     "2": {
         "target": "No",
         "category": "Biodiversity",
-        "scale": "Regional (GOR)",
-        "sub-category": "All",
+        "scale": "National",
+        "sub-category": "Birds",
         "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2027"
+        "year": "2024"
     },
     "3": {
         "target": "No",
@@ -34,15 +33,15 @@
         "sub-category": "Stag Beetle",
         "metric": "Prob. of appearance",
         "time-period": "Set year",
-        "year": "2028"
+        "year": "2027"
     },
     "5": {
         "target": "No",
         "category": "Biodiversity",
         "scale": "National",
-        "sub-category": "Lichens",
+        "sub-category": "All",
         "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2043"
+        "year": "2025"
     }
 }

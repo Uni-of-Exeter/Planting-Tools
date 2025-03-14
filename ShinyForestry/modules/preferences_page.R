@@ -244,7 +244,7 @@ preferences_page_server <- function(id, state) {
     }
 
     observe({
-      req(!state$initialized)
+      req(!state$pref_tab$initialized)
       initialize_or_update_map(YEAR_MIN, choice=NULL)
       state$pref_tab$initialized <- TRUE
     })
