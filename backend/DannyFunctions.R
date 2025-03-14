@@ -488,13 +488,19 @@ make_strategy_forfront_altapproach <- function(index){
   if(!index %in% c(1,2,3,4)) {
     stop("make_strategy_forfront_altapproach(): Index should be 1, 2, 3 or 4 for alternative approaches")
   }
-  if (is.null(target_compatible_strategies$cluster)) {
-    target_compatible_strategies$cluster <- index
+  if(nrow(target_compatible_strategies)<0){#return the null strategy
+    random_strategy <- null_outcomes
+    tyears <- as.numeric(as.vector(null_strategy[1,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(null_strategy[1,startsWith(colnames(Strategies),"treespecie")])
+  }else{
+    if (is.null(target_compatible_strategies$cluster)) {
+      target_compatible_strategies$cluster <- index
+    }
+    samples_in_cluster <- target_compatible_strategies[cluster == index]
+    random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
+    tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
   }
-  samples_in_cluster <- target_compatible_strategies[cluster == index]
-  random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
-  tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
-  tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
   blocked_until_year <- rep(0, length(parcel_ids))
   blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
   for_frontend <- st_sf(
