@@ -346,7 +346,7 @@ map_page_server <- function(id, state) {
                       display_name, value)
               
               # Format the name and value into a table row (without unit for now)
-              sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
+              # sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
             }),
             collapse = "\n"
           ),
