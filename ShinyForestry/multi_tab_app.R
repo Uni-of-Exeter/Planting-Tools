@@ -148,6 +148,7 @@ if (isTRUE(run_initalization_on_backend)) {
   saveRDS(env, backend_initialization_env_file)
 }
 
+# Load environment to the .GlobalEnv
 list2env(as.list(env), envir = .GlobalEnv)
 
 # Source module files
