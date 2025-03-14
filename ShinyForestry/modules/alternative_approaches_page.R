@@ -124,8 +124,8 @@ alt_page_server <- function(id, state) {
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
       fetched_data <- get_alternative_approaches()
-      print("fetched_data")
-      print(fetched_data)
+      # print("fetched_data")
+      # print(fetched_data)
       
       new_fetched_one <- fetched_data[[1]]  # Use GET otherwise
       new_fetched_two <- fetched_data[[2]]  # Use GET otherwise
@@ -160,9 +160,9 @@ alt_page_server <- function(id, state) {
         current_layers_one(filtered_data_subset_one$parcel_id)
         
         # Render the leaflet map with the updated data
-        print("new_data_fetched_one")
-        print(new_data_fetched_one)
-        print("------------------")
+        # print("new_data_fetched_one")
+        # print(new_data_fetched_one)
+        # print("------------------")
         
         leafletProxy("map1") %>%
           addPolygons(
@@ -358,11 +358,11 @@ alt_page_server <- function(id, state) {
         print("API fetch failed, no data to update.")
       }
       
-      print(new_vals_one)
-      print(new_vals_two)
-      print(new_vals_three)
-      print(new_vals_four)
-      print('done')
+      # print(new_vals_one)
+      # print(new_vals_two)
+      # print(new_vals_three)
+      # print(new_vals_four)
+      # print('done')
     }
     
     observe({
@@ -433,7 +433,7 @@ alt_page_server <- function(id, state) {
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
-              # popup = ~planting_type
+              # popup = ~planting_types
             )
         }
         
@@ -500,7 +500,7 @@ alt_page_server <- function(id, state) {
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
-              # popup = ~planting_type
+              # popup = ~planting_types
             )
         }
         current_layers_two(current_ids_two)
@@ -567,7 +567,7 @@ alt_page_server <- function(id, state) {
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
-              # popup = ~planting_type
+              # popup = ~planting_types
             )
         }
         current_layers_three(current_ids_three)
@@ -634,7 +634,7 @@ alt_page_server <- function(id, state) {
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
               label = ~parcel_id,
-              # popup = ~planting_type
+              # popup = ~planting_types
             )
         }
         current_layers_four(current_ids_four)

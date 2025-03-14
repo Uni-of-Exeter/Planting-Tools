@@ -41,9 +41,9 @@ post_submit_targets <- function(json_payload) {
     httr::content_type_json()
   )
   
-  print(">>>>>>>>>>>>")
-  print("json_payload")
-  print(json_payload)
+  # print(">>>>>>>>>>>>")
+  # print("json_payload")
+  # print(json_payload)
   
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
