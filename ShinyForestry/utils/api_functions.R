@@ -1,3 +1,74 @@
+library(data.table)
+library(jsonlite)
+
+# Function to process initialization$first_strategy
+process_first_strategy <- function(strategy) {
+  # Extract values and geojson from the first_strategy
+  values <- strategy$values
+  geojson <- strategy$geojson
+  geojson_parsed <- st_read(geojson, quiet=TRUE)
+  
+  # Debug: Check if values is a data.table and if it's not empty
+  if (length(values) == 0 || !inherits(values, "data.table")) {
+    stop("The 'values' data is either missing or not a data.table.")
+  }
+  
+  # Convert the data.table row into a named list (assuming only one row)
+  values_list <- as.list(values[1, ])  # Extract the first row and convert to list
+  
+  # Set the names of the list to match the column names of the data.table
+  names(values_list) <- colnames(values)
+  
+  # Construct the final output as a list containing values and geojson
+  output <- list(
+    geojson = geojson_parsed,  # Geojson object passed as is
+    values = values_list
+  )
+  
+  return(output)
+}
+
+# POST to /generate_parcels
+post_submit_targets <- function(json_payload) {
+  
+  url <- paste0(API_URL, "/submit_targets")
+  
+  # Make the API POST request with JSON payload
+  response <- httr::POST(
+    url,
+    body = json_payload, 
+    encode = "json",
+    httr::content_type_json()
+  )
+  
+  print(">>>>>>>>>>>>")
+  print("json_payload")
+  print(json_payload)
+  
+  # Check if the response is successful
+  if (httr::status_code(response) == 200) {
+    
+    content_raw <- httr::content(response, "text", encoding = "UTF-8")
+    api_response <- jsonlite::fromJSON(content_raw)
+    
+    geojson <- api_response$geojson
+    geojson_parsed <- st_read(geojson, quiet=TRUE)
+    
+    values <- api_response$values
+    
+    print("json_response")
+    print("geojson")
+    print(geojson_parsed)
+    print("values")
+    print(values) 
+    print("<<<<<<<<<<<<<")
+    
+    return(list(geojson_parsed, values))
+    
+  } else {
+    stop(paste("Request failed with status:", httr::status_code(response)))
+  }
+}
 
 get_random_strategy <- function() {
   
@@ -23,33 +94,47 @@ get_random_strategy <- function() {
 
 get_four_random_strategies <- function() {
   
-  url <- paste0(API_URL, "/four_random_strategies")
+  url <- paste0(API_URL, "/alternative_approaches")
   
   # Make the API request
   response <- httr::GET(url)
   
   # Check if the response is successful
   if (httr::status_code(response) == 200) {
-    
+    # Parse the response content
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
     api_response <- jsonlite::fromJSON(content_raw)
     
-    # Extract and parse the geojson and values for each strategy
-    strategies <- lapply(1:4, function(i) {
-      geojson <- api_response[[i]]$geojson
-      geojson_parsed <- tryCatch({
-        sf::st_read(geojson, quiet = TRUE)
-      }, error = function(e) {
-        message(paste("Error parsing GeoJSON for strategy", i, ":", e$message))
-        NULL  # Return NULL if parsing fails
-      })
-      values <- api_response[[i]]$values
-      return(list(values = values, geojson = geojson_parsed))
-    })
+    # Return a list of lists containing values and geojson data for both options
+    list(
+      list(values = api_response$values[[1]], geojson = sf::st_read(api_response$geojson[[1]], quiet = TRUE)),
+      list(values = api_response$values[[2]], geojson = sf::st_read(api_response$geojson[[2]], quiet = TRUE)),
+      list(values = api_response$values[[3]], geojson = sf::st_read(api_response$geojson[[3]], quiet = TRUE)),
+      list(values = api_response$values[[4]], geojson = sf::st_read(api_response$geojson[[4]], quiet = TRUE))
+    )
+  } else {
+    stop(paste("Request failed with status:", httr::status_code(response)))
+  }
+}
+
+get_preferences_initialise <- function(){
+  
+  url <- paste0(API_URL, "/preferences_initialise")
+  
+  # Make the API request
+  response <- httr::GET(url)
+  
+  # Check if the response is successful
+  if (httr::status_code(response) == 200) {
+    # Parse the response content
+    content_raw <- httr::content(response, "text", encoding = "UTF-8")
+    api_response <- jsonlite::fromJSON(content_raw)
     
-    # Return the strategies
-    return(strategies)
-    
+    # Return a list of lists containing values and geojson data for both options
+    list(
+      list(values = api_response$values[[1]], geojson = sf::st_read(api_response$geojson[[1]], quiet = TRUE)),
+      list(values = api_response$values[[2]], geojson = sf::st_read(api_response$geojson[[2]], quiet = TRUE))
+    )
   } else {
     stop(paste("Request failed with status:", httr::status_code(response)))
   }
@@ -60,18 +145,13 @@ post_preference_choice <- function(choice) {
   choice <- as.integer(choice)
   print(paste("The choice was made:", choice))
   
-  # Define the base URL (without query parameters)
-  url <- paste0(API_URL, "/preference_choice")
+  # Define the base URL (without query parameters), append which_button query parameter
+  url <- paste0(API_URL, "/preferences?which_button=", choice)  # Add choice as query parameter
   
-  # Create the JSON payload with the 'choice' as part of the body
-  json_payload <- list(choice = choice)
-  
-  # Make the API POST request with the choice in the body
-  response <- httr::POST(
+  # Make the API POST request with no JSON body
+  response <- httr::GET(
     url,
-    body = jsonlite::toJSON(json_payload, auto_unbox = TRUE),  # Convert choice to JSON
-    encode = "json",  # Specify JSON encoding
-    httr::content_type_json()  # Set the content-type header to application/json
+    httr::content_type_json()  # Set the content-type header to application/json (if needed)
   )
   
   # Check if the response is successful
@@ -80,25 +160,20 @@ post_preference_choice <- function(choice) {
     content_raw <- httr::content(response, "text", encoding = "UTF-8")
     api_response <- jsonlite::fromJSON(content_raw)
     
-    # Parse the GeoJSON and values from the response
-    geojson_1 <- api_response[[1]]$geojson
-    geojson_2 <- api_response[[2]]$geojson
-    geojson_parsed_1 <- sf::st_read(geojson_1, quiet = TRUE)
-    geojson_parsed_2 <- sf::st_read(geojson_2, quiet = TRUE)
-    
-    values_1 <- api_response[[1]]$values
-    values_2 <- api_response[[2]]$values
+    print("api_response$values")
+    print(api_response$values)
     
     # Return the list containing both sets of values and geojson data
-    return(list(
-      list(values = values_1, geojson = geojson_parsed_1),
-      list(values = values_2, geojson = geojson_parsed_2)
-    ))
+    list(
+      list(values = api_response$values[[1]], geojson = sf::st_read(api_response$geojson[[1]], quiet = TRUE)),
+      list(values = api_response$values[[2]], geojson = sf::st_read(api_response$geojson[[2]], quiet = TRUE))
+    )
     
   } else {
     stop(paste("Request failed with status:", httr::status_code(response)))
   }
 }
+
 
 # GET to /slider_values
 get_slider_values <- function() {
