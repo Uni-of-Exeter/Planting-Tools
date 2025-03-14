@@ -55,9 +55,16 @@ if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.list(env))) { # if it's is.environment it breaks my frontend
+  if (isFALSE(is.environment(env))) { # if it's is.environment it breaks my frontend
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
+    run_initialization_on_backend <- TRUE
+  }
+  
+  # Check if backend was initialized
+  url <- paste0(API_URL, "/check_initialized")
+  response <- httr::GET(url)
+  if (httr::status_code(response) == 404) {
     run_initialization_on_backend <- TRUE
   }
   
