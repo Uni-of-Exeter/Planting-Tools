@@ -44,8 +44,10 @@ source(file.path(FolderSource, "config.R"))
 MAX_LIMIT_LOG_LEVEL <- "debug"
 if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"), mustWork = FALSE))) {
   source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 } else {
   source(normalizePath(file.path(FolderSource, "backend", "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 }
 
 # If the backend was already initialized, saved to disk, and environment variable is valid, use it
@@ -157,6 +159,14 @@ if (isTRUE(run_initialization_on_backend)) {
 
 # Load environment to the .GlobalEnv
 list2env(as.list(env), envir = .GlobalEnv)
+
+if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"), mustWork = FALSE))) {
+  source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
+} else {
+  source(normalizePath(file.path(FolderSource, "backend", "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
+}
 
 # Source module files
 source("global.R")  # Load global settings
