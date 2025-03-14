@@ -1769,6 +1769,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
   env$FullTableNotAvail <- FullTableNotAvail
   env$slider_info <- slider_info
   env$first_strategy <- first_strategy
+  env$NAME_CONVERSION <- NAME_CONVERSION
   new_environment <- env
   
   notif("Backend initialization ... done")
