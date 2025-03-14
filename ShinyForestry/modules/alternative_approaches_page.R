@@ -290,10 +290,10 @@ alt_page_server <- function(id, state) {
           )
         
         # Add filtered polygons based on the selected year if any valid data exists
-        if (nrow(new_data_fetched_three) > 0) {
+        if (nrow(filtered_data_subset_three) > 0) {
           leafletProxy("map3") %>%
             addPolygons(
-              data = new_data_fetched_three,  # Add filtered data if it's available
+              data = filtered_data_subset_three,  # Add filtered data if it's available
               weight = 1,
               color = PARCEL_LINE_COLOUR,
               fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
@@ -341,10 +341,10 @@ alt_page_server <- function(id, state) {
           )
         
         # Add filtered polygons based on the selected year if any valid data exists
-        if (nrow(new_data_fetched_four) > 0) {
+        if (nrow(filtered_data_subset_four) > 0) {
           leafletProxy("map4") %>%
             addPolygons(
-              data = new_data_fetched_four,  # Add filtered data if it's available
+              data = filtered_data_subset_four,  # Add filtered data if it's available
               weight = 1,
               color = PARCEL_LINE_COLOUR,
               fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
