@@ -171,7 +171,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "parcelPolygons",  # Group the polygons
+            group = "parcelPolygons1",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
             # popup = "No planting"
@@ -221,7 +221,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "parcelPolygons",  # Group the polygons
+            group = "parcelPolygons2",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
             # popup = "No planting"
@@ -272,7 +272,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "parcelPolygons",  # Group the polygons
+            group = "parcelPolygons3",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
             # popup = "No planting"
@@ -323,7 +323,7 @@ alt_page_server <- function(id, state) {
             color = PARCEL_LINE_COLOUR,
             fillColor = AVAILABLE_PARCEL_COLOUR,
             fillOpacity = FILL_OPACITY,
-            group = "parcelPolygons",  # Group the polygons
+            group = "parcelPolygons4",  # Group the polygons
             layerId = ~parcel_id,  # Set unique IDs for each polygon
             label = ~parcel_id,
             # popup = "No planting"
