@@ -248,7 +248,7 @@ server <- function(input, output, session) {
   preferences_page_server("prefs", state)
   # alt_page_server("alt", state)
   # exploration_page_server("explore", state)
-  # downscaling_page_server("downscale", state)
+  # downscaling_page_server("downscale", DownscalingImagesFolder)
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
