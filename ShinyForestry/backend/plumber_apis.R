@@ -320,7 +320,7 @@ function(res, which_button) {
 #* @serializer json
 #* @param from_submit_button JSON data that contains targets
 #* @response 200 Success: Returned strategy
-function(res, from_submit_button) {
+function(req, res, from_submit_button) {
   
   # Takes in:
   # {
