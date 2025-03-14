@@ -184,7 +184,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   )]
   
   # Efficiently update strategy_year to 25 where strategy_area is 0
-  outcomes[strategy_area == 0, strategy_year := 25]
+  outcomes[strategy_area == 0, strategy_year := (MAXYEAR_arg+1)]
   
   #Merge outcomes into the table
   FullTable_long_arg[
@@ -375,9 +375,9 @@ convert_outcome_to_dt <- function(outcome) {
   
   for (name in names(outcome)) {
     clean_name <- gsub("^sum_", "", name)
-    if (is.numeric(outcome[[name]]) && length(outcome[[name]]) == 1) {
+    if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) < 1) {
       dt[[clean_name]] <- outcome[[name]]
-    } else if (is.numeric(outcome[[name]]) && length(outcome[[name]]) > 1) {
+    } else if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) >= 1) {
       for (subname in names(outcome[[name]])) {
         dt[[subname]] <- outcome[[name]][subname]
       }
