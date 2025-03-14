@@ -101,8 +101,6 @@ get_exploration_initialise <- function(cluster) {
   }
 }
 
-
-
 get_alternative_approaches <- function() {
   
   url <- paste0(API_URL, "/alternative_approaches")
