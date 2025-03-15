@@ -272,9 +272,6 @@ map_page_server <- function(id, state) {
       new_data_fetched <- new_fetched[[1]]
       new_values_fetched <- new_fetched[[2]]
       
-      print("new_data_fetched")
-      print(new_data_fetched)
-      
       if (!is.null(new_data_fetched)) {
         # Apply the filter based on the selected year
         new_data(new_data_fetched)
@@ -315,10 +312,6 @@ map_page_server <- function(id, state) {
         
         # Save the area data for later use in plots
         output_data(area_data)
-        
-        # Render the leaflet map with the updated data
-        print("names of new_vals()")
-        print(names(new_vals()))
             
         legend_html <- paste0(
           "<b>Outcomes</b><br><br>",
@@ -328,7 +321,6 @@ map_page_server <- function(id, state) {
               # Get the index of the slider name in state$map_tab$slider$names
               idx <- which(state$map_tab$slider$names == name)
               
-              
               get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
                 if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
                 idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
@@ -336,9 +328,6 @@ map_page_server <- function(id, state) {
                 result <- NAME_CONVERSION_ARG$English_specie_pretty[idx]
                 return(result)
               }
-              
-              
-              
               
               # Get the display name for the slider (from the slider names list)
               if (state$map_tab$slider$names[idx] %in% NAME_CONVERSION$English_specie) {
@@ -652,7 +641,7 @@ map_page_server <- function(id, state) {
         } else {
           # Otherwise, update it to the selected year
           current_clicked$blocked_until_year[parcel_index] <- selected_year
-          print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
+          # print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
         }
       } else {
         print("Clicked parcel is not in the list.")  # Debugging message
@@ -666,12 +655,12 @@ map_page_server <- function(id, state) {
     })
 
     observe({
-      print("is initialised?")
-      print(state$map_tab$initialized)
-      print(state$initialized)
-      print(state$map_tab)
-      print(state$map_tab$slider$names)
-      print("...")
+      # print("is initialised?")
+      # print(state$map_tab$initialized)
+      # print(state$initialized)
+      # print(state$map_tab)
+      # print(state$map_tab$slider$names)
+      # print("...")
       # Get the current slider values with namespacing
       current_values_list <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
@@ -684,10 +673,10 @@ map_page_server <- function(id, state) {
       # Compare current values with initial values
       values_changed <- !identical(current_values_list, initial_values())
       if (values_changed) {
-        print("current_values_list")
-        print(current_values_list)
-        print("initial_values()")
-        print(initial_values())
+        # print("current_values_list")
+        # print(current_values_list)
+        # print("initial_values()")
+        # print(initial_values())
       }
 
       current_clicked <- clicked_polygons()
@@ -869,8 +858,6 @@ map_page_server <- function(id, state) {
     # Observe the reset of the sliders
     observeEvent(input$reset_main, {
       print("resetting")
-      print(reactiveValuesToList(state))
-      
       # Reset map view using isolate() to avoid reactivity issues
       leafletProxy(ns("map")) %>%
         setView(lat = state$map$lat, 
@@ -889,6 +876,15 @@ map_page_server <- function(id, state) {
         checkbox_id <- paste0(slider, "_checkbox")
         updateCheckboxInput(session, checkbox_id, value = TRUE)
       })
+      
+      clicked_polygons(
+        (data.frame(
+          parcel_id = character(),  # Empty initially
+          blocked_until_year = numeric(),
+          stringsAsFactors = FALSE
+        )
+      ))
+      
     })
     
     
