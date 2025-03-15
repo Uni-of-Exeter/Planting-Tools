@@ -65,13 +65,22 @@ frontend_initialisation <- funtion() {
       default = initialization$STARTYEAR
     ),
     # slider_info <- list(
-    #   carbon = list(min = 500, max = 1000, default = 800),
-    #   species = list(min = 0, max = 25, default = 10),
-    #   species_goat_moth = list(min = 0, max = 100, default = 25),
-    #   species_stag_beetle = list(min = 0, max = 100, default = 30),
-    #   species_lichens = list(min = 0, max = 5, default = 2),
-    #   area = list(min = 0, max = 15, default = 10),
-    #   recreation = list(min = 0, max = 20, default = 15)
+    #   min_max_default = data.table(
+    #     carbon = c(0, 10, 4),
+    #     species = c(0, 10, 4),
+    #     species_goat_moth = c(0, 10, 4),
+    #     species_stag_beetle = c(0, 10, 4),
+    #     species_lichens = c(0, 10, 4),
+    #     area = c(0, 10, 4),
+    #     recreation = c(0, 10, 4)),
+    #   units = data.table(
+    #     carbon = "tCO₂",
+    #     species = "%",
+    #     species_goat_moth = "%",
+    #     species_stag_beetle = "%",
+    #     species_lichens = "%",
+    #     area = "km²",
+    #     recreation = "10³Kcal")
     # )
   )
   return(targets)

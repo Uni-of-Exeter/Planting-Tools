@@ -466,26 +466,38 @@ map_page_server <- function(id, state) {
         #     slider_names # Assign correct names to values
         #   )
         # )
-        
-        # slider_info <- data.table(
-        #   name = c("carbon", "species", "species_goat_moth", "species_stag_beetle", "species_lichens", "area", "recreation"),
-        #   min = c(500, 0, 0, 0, 0, 0, 0),
-        #   max = c(1000, 25, 100, 100, 5, 15, 20),
-        #   default = c(800, 10, 25, 30, 2, 10, 15)
+        #
+        # slider_info <- list(
+        #   min_max_default = data.table(
+        #     carbon = c(0, 10, 4),
+        #     species = c(0, 10, 4),
+        #     species_goat_moth = c(0, 10, 4),
+        #     species_stag_beetle = c(0, 10, 4),
+        #     species_lichens = c(0, 10, 4),
+        #     area = c(0, 10, 4),
+        #     recreation = c(0, 10, 4)),
+        #   units = data.table(
+        #     carbon = "tCO₂",
+        #     species = "%",
+        #     species_goat_moth = "%",
+        #     species_stag_beetle = "%",
+        #     species_lichens = "%",
+        #     area = "km²",
+        #     recreation = "10³Kcal")
         # )
         
         # Convert slider_info into the desired format
         state$map_tab$slider <- list(
-          names = colnames(slider_info),  # Use column names as slider names
+          names = colnames(slider_info$min_max_default),  # Use column names as slider names
           values = setNames(
-            lapply(1:ncol(slider_info), function(i) {
+            lapply(1:ncol(slider_info$min_max_default), function(i) {
               list( # making integers for
-                min = round(as.numeric(slider_info[1, ..i][[1]]), 1),         # Extract first row as numeric
-                max = round(as.numeric(slider_info[2, ..i][[1]]), 1),          # Extract second row as numeric
-                default = round(as.numeric(slider_info[3, ..i][[1]]), 1)       # Extract third row as numeric
+                min = round(as.numeric(slider_info$min_max_default[1, ..i][[1]]), 1),          # Extract first row as numeric
+                max = round(as.numeric(slider_info$min_max_default[2, ..i][[1]]), 1),          # Extract second row as numeric
+                default = round(as.numeric(slider_info$min_max_default[3, ..i][[1]]), 1)       # Extract third row as numeric
               )
             }),
-            colnames(slider_info)  # Use column names as keys
+            colnames(slider_info$min_max_default)  # Use column names as keys
           )
         )
         
@@ -500,10 +512,10 @@ map_page_server <- function(id, state) {
           list(blocked_parcels = list())  # Append blocked_parcels separately
         )
         
-        print("default payload")
-        print(default_payload)
-
-        print("setting sliders")
+        # print("default payload")
+        # print(default_payload)
+        # 
+        # print("setting sliders")
         output$dynamic_sliders <- renderUI({
           tagList(
             lapply(state$map_tab$slider$names, function(slider) {
@@ -512,8 +524,8 @@ map_page_server <- function(id, state) {
               max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), 1)
               default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
               
-              # Debugging: Print min, max, default values to check their structure
-              print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
+              # # Debugging: Print min, max, default values to check their structure
+              # print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
               
               # Create a fluidRow with a checkbox and sliderInput for each slider
               fluidRow(
@@ -554,7 +566,7 @@ map_page_server <- function(id, state) {
 
     # Handle submit event to update the map
     observeEvent(input$submit_main, {
-      print("submit clicked")
+      # print("submit clicked")
       shinyjs::disable("save_main")
       shinyjs::disable("reset_main")
       shinyjs::disable("submit_main")
@@ -578,8 +590,8 @@ map_page_server <- function(id, state) {
           )
         )
       }
-      print("saved initial_values after submit")
-      print(initial_values)
+      # print("saved initial_values after submit")
+      # print(initial_values)
 
       # Extract blocked parcels (if any exist)
       blocked_parcels <- clicked_polygons()
@@ -666,12 +678,12 @@ map_page_server <- function(id, state) {
     })
 
     observe({
-      print("is initialised?")
-      print(state$map_tab$initialized)
-      print(state$initialized)
-      print(state$map_tab)
-      print(state$map_tab$slider$names)
-      print("...")
+      # print("is initialised?")
+      # print(state$map_tab$initialized)
+      # print(state$initialized)
+      # print(state$map_tab)
+      # print(state$map_tab$slider$names)
+      # print("...")
       # Get the current slider values with namespacing
       current_values_list <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
@@ -684,10 +696,10 @@ map_page_server <- function(id, state) {
       # Compare current values with initial values
       values_changed <- !identical(current_values_list, initial_values())
       if (values_changed) {
-        print("current_values_list")
-        print(current_values_list)
-        print("initial_values()")
-        print(initial_values())
+        # print("current_values_list")
+        # print(current_values_list)
+        # print("initial_values()")
+        # print(initial_values())
       }
 
       current_clicked <- clicked_polygons()
