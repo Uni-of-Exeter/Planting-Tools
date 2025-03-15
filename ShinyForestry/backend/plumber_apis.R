@@ -341,12 +341,12 @@ function(req, res, from_submit_button) {
   #Amend global blocked_parcels
   blocked_parcels <<- from_submit_button$blocked_parcels
   #Extract targets
-  target_carbon <- from_submit_button$carbon
-  target_visits <- from_submit_button$recreation
-  target_area <- from_submit_button$area
-  bio_names <- names(from_submit_button)[ ! names(from_submit_button)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+  target_carbon <- from_submit_button$Carbon
+  target_visits <- from_submit_button$Food_Produced
+  target_area <- from_submit_button$Area
+  bio_names <- names(from_submit_button)[ ! names(from_submit_button)%in% c("Carbon", "Area", "Food_Produced", "blocked_parcels")]
   targets_bio <- from_submit_button[bio_names]
-  names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
+  names(targets_bio)[which(names(targets_bio)=="Biodiversity")] <- "All"
   #Convert English to Latin names for FullTable Compatibility
   for(species in 1:length(targets_bio)){
     t_name <- names(targets_bio)[species]
@@ -402,9 +402,11 @@ function(req, res, from_submit_button) {
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
   payload <- optimal_strategy_forfrontend[, ..TARGETS]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -534,9 +536,11 @@ function(res, which_cluster = 1) {
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
   payload <- random_strategy[,..TARGETS]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -599,9 +603,11 @@ function(res, slider_name) {
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
   payload <- tc_samples_cluster[current_row,..TARGETS]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -666,9 +672,11 @@ function(res, slider_name) {
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
   payload <- tc_samples_cluster[current_row,..TARGETS]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -845,6 +853,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
     source(normalizePath(file.path(FolderSource, "preferTrees.R")), local = FALSE)
     source(normalizePath(file.path(FolderSource, "..", "backend", "DannyFunctions.R")), local = FALSE)
+    load(normalizePath(file.path(FolderSource, "..", "backend", "merged_calories.RData")))
     
     if (RUN_BO) {
       dgpsi::init_py(verb = FALSE)
@@ -1528,6 +1537,30 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     FullTable_working <- FullTable_working[
       is.na(outcome_sub_type) | outcome_sub_type %in% SPECIES
     ]
+    #Replace Visits with calories
+    
+    for (year in 0:25) {
+      
+      # Identify the correct column name
+      calorie_col <- paste0("Calories_Arable_Livestock_", 2025 + year)
+      
+      # Check if the column exists in merged_calories
+      if (calorie_col %in% names(merged_calories)) {
+        
+        # Create a lookup table with row index as parcel_id
+        calorie_mapping <- merged_calories[, .(parcel_id = .I, outcome_value = get(calorie_col))]
+        
+        # Perform the merge using a data.table join
+        FullTable_working[outcome_type == "Visits" & 
+                            statistic_name == "Mean" & 
+                            planting_year == year, 
+                          outcome_value := calorie_mapping[.SD, on = "parcel_id", x.outcome_value]]
+      }
+    }
+    
+    # Convert to "kilo calories"
+    FullTable_working[outcome_type == "Visits" & statistic_name == "Mean", 
+                      `:=`(outcome_value = outcome_value / 1e3)]
     
     #Find the outcomes from strategies
     msg <- "Finding the outcomes from strategies ..."
@@ -1556,9 +1589,11 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     defaults <- NULL
     get_slider_info <- function(){
       max_values <- strategy_outcomes[, lapply(.SD, max, na.rm=TRUE), .SDcols = TARGETS]
-      names(max_values)[which(names(max_values)=="All")] <- "biodiversity"
-      names(max_values)[which(names(max_values)=="visits")] <- "recreation"
-      bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("carbon", "area", "recreation", "biodiversity")]
+      names(max_values)[which(names(max_values)=="All")] <- "Biodiversity"
+      names(max_values)[which(names(max_values)=="visits")] <- "Food_Produced"
+      names(max_values)[which(names(max_values)=="area")] <- "Area"
+      names(max_values)[which(names(max_values)=="carbon")] <- "Carbon"
+      bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
       bio_names_latin
       for(species in bio_names_latin){
         specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -1569,6 +1604,28 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
         }
       }
       max_values[, (names(max_values)) := lapply(.SD, signif, digits=3)]
+      
+      #Set the units
+      units_dummy_vals <-  rep("a_char", length=ncol(max_values))
+      units_table <- as.data.table(setNames(as.list(units_dummy_vals), names(max_values)))
+      unit_maker <- function(colname){
+        if(colname=="Carbon"){
+          return("tCO₂")
+        }
+        if(colname=="Food_Produced"){
+          return("10³Kcal")
+        }
+        if(colname=="Area"){
+          return("km²")
+        }
+        if(!colname %in% c("Carbon", "Area", "Food_Produced")){
+          return("%")
+        }
+      }
+      for (col in names(units_table)) {
+        units_table[, (col) := unit_maker(col)]
+      }
+      
       min_max <- rbind(as.list(setNames(rep(0,length(TARGETS)),names(max_values))), max_values)
       defaults_quantile <- runif(1, 0.5,0.75)
       defaults <- max_values[1, .SD*defaults_quantile]
@@ -1576,11 +1633,11 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       defaults[, (names(defaults)) := lapply(.SD, signif,digits=3)]
       min_max_default <- rbind(min_max, defaults)
       return(list(defaults = defaults,
-                  min_max_default = min_max_default))
+                  min_max_default = min_max_default, units_table=units_table))
     }
     # Assign defaults to the global environment
     slider_info_value <- get_slider_info()
-    slider_info <- slider_info_value$min_max_default
+    slider_info <- list(min_max_default = slider_info_value$min_max_default, units = slider_info_value$units_table)
     defaults <- slider_info_value$defaults
     rm(slider_info_value)
     
@@ -1615,12 +1672,12 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     msg <- "Making the first strategy ..."
     notif(msg, log_level = "debug")
     get_first_strategy <- function(){
-      target_carbon <- defaults$carbon
-      target_visits <- defaults$recreation
-      target_area <- defaults$area
-      bio_names <- names(defaults)[ ! names(defaults)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+      target_carbon <- defaults$Carbon
+      target_visits <- defaults$Food_Produced
+      target_area <- defaults$Area
+      bio_names <- names(defaults)[ ! names(defaults)%in% c("Carbon", "Area", "Food_Produced", "blocked_parcels")]
       targets_bio <- defaults[,  ..bio_names]
-      names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
+      names(targets_bio)[which(names(targets_bio)=="Biodiversity")] <- "All"
       #Convert English to Latin names for FullTable Compatibility
       for(species in 1:length(targets_bio)){
         t_name <- names(targets_bio)[species]
@@ -1663,9 +1720,11 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       geojson <- geojsonsf::sf_geojson(for_frontend)
       
       payload <- optimal_strategy_forfrontend[, ..TARGETS]
-      names(payload)[which(names(payload)=="All")] <- "biodiversity"
-      names(payload)[which(names(payload)=="visits")] <- "recreation"
-      bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+      names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+      names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+      names(payload)[which(names(payload)=="area")] <- "Area"
+      names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+      bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
       bio_names_latin
       for(species in bio_names_latin){
         specie_num <- which(NAME_CONVERSION$Specie == species)

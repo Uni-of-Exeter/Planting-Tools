@@ -454,14 +454,13 @@ make_strategy_forfront_preftab <- function(index){
   #convert to geojson
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
-  
-  
-  
   # In the update() function, it is converted to a matrix, so we need the comma to select the entire row
   payload <- pref_elicitation_object$data[comparison_index + (index-1), ]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -489,13 +488,19 @@ make_strategy_forfront_altapproach <- function(index){
   if(!index %in% c(1,2,3,4)) {
     stop("make_strategy_forfront_altapproach(): Index should be 1, 2, 3 or 4 for alternative approaches")
   }
-  if (is.null(target_compatible_strategies$cluster)) {
-    target_compatible_strategies$cluster <- index
+  if(nrow(target_compatible_strategies)<0){#return the null strategy
+    random_strategy <- null_outcomes
+    tyears <- as.numeric(as.vector(null_strategy[1,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(null_strategy[1,startsWith(colnames(Strategies),"treespecie")])
+  }else{
+    if (is.null(target_compatible_strategies$cluster)) {
+      target_compatible_strategies$cluster <- index
+    }
+    samples_in_cluster <- target_compatible_strategies[cluster == index]
+    random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
+    tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
   }
-  samples_in_cluster <- target_compatible_strategies[cluster == index]
-  random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
-  tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
-  tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
   blocked_until_year <- rep(0, length(parcel_ids))
   blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
   for_frontend <- st_sf(
@@ -511,9 +516,11 @@ make_strategy_forfront_altapproach <- function(index){
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
   payload <- random_strategy[,..TARGETS]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="area")] <- "Area"
+  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
