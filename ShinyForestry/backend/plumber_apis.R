@@ -573,6 +573,31 @@ function(res, slider_name) {
   
   # returns:
   # list(values, geojson) #see submit_strategy
+  
+  
+  if (slider_name == "Biodiversity") {
+    slider_name <- "All"
+  }
+  if (slider_name %in% c("Food Produced", "Food_Produced")) {
+    slider_name <- "Visits"
+  }
+  
+  # Goat_Moth -> Cossus_cossus
+  # Other strings are left unmodified
+  slider_name <- get_specie_from_english_specie(slider_name)
+  
+  slider_names <- c(TARGETS, "pc_1", "pc_2")
+  if (isFALSE(slider_name %in% slider_names)) {
+    res$status <- 403
+    notif(paste("Parameter in /exploration_minus must be a slider name among:", toString(slider_names)), log_level = "error")
+    return(paste("Parameter in /exploration_minus must be a slider name among:", toString(slider_names)))
+  }
+  if (slider_name %notin% colnames(tc_samples_cluster)) {
+    res$status <- 403
+    notif("Clustering not done, pc_1 and pc_2 cannot be changed", log_level = "error")
+    return("Clustering not done, pc_1 and pc_2 cannot be changed")
+  }
+  
   slider_names <- c(TARGETS, "pc_1", "pc_2")
   if (isFALSE(slider_name %in% slider_names)) {
     res$status <- 403
@@ -641,12 +666,27 @@ function(res, slider_name) {
   # returns:
   # list(values, geojson) #see submit_strategy
   
+  if (slider_name == "Biodiversity") {
+    slider_name <- "All"
+  }
+  if (slider_name %in% c("Food Produced", "Food_Produced")) {
+    slider_name <- "Visits"
+  }
+  
+  # Goat_Moth -> Cossus_cossus
+  # Other strings are left unmodified
+  slider_name <- get_specie_from_english_specie(slider_name)
   
   slider_names <- c(TARGETS, "pc_1", "pc_2")
   if (isFALSE(slider_name %in% slider_names)) {
     res$status <- 403
-    notif(paste("Parameter in /exploration_minus must be a slider name:", slider_names), log_level = "error")
-    return(paste("Parameter in /exploration_minus must be a slider name:", slider_names))
+    notif(paste("Parameter in /exploration_minus must be a slider name among:", toString(slider_names)), log_level = "error")
+    return(paste("Parameter in /exploration_minus must be a slider name among:", toString(slider_names)))
+  }
+  if (slider_name %notin% colnames(tc_samples_cluster)) {
+    res$status <- 403
+    notif("Clustering not done, pc_1 and pc_2 cannot be changed", log_level = "error")
+    return("Clustering not done, pc_1 and pc_2 cannot be changed")
   }
   
   setorderv(tc_samples_cluster, slider_name, order = 1) 
