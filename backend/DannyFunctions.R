@@ -120,7 +120,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix_dw <- functio
   # Area
   DoE_high_dimension_rowwise_matrix_area_normalized <- DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE]
   
-  # Convert Area to categorical values, uses old continuous_to_multi_categorical as unique area vals on each parcel. Could be faster
+  # Convert Area to categorical values, uses old continuous_to_multi_categorical as unique Area vals on each parcel. Could be faster
   DoE_high_dimension_categorical_area <- continuous_to_multi_categorical_new(
     values_matrix =  DoE_high_dimension_rowwise_matrix_area_normalized,
     legal_values_ordered = area_possible_values_dataframe
@@ -335,7 +335,7 @@ compute_legal_values <- function(year_of_planting_min_threshold_vector,
 precompute_static_values <- function(FullTable, MAXYEAR) {
   
   # Precompute Area values
-  area_possible_non_zero_values <- FullTable$area
+  area_possible_non_zero_values <- FullTable$Area
   area_possible_values_dataframe <- rbind(0, area_possible_non_zero_values)
   max_ncol <- ncol(area_possible_values_dataframe)
   # Precompute Tree Specie Values
@@ -374,7 +374,7 @@ convert_outcome_to_dt <- function(outcome) {
   dt <- data.table::data.table(row_id = 1)  # Create a row to initialize the data.table
   
   for (name in names(outcome)) {
-    clean_name <- gsub("^sum_", "", name)
+    clean_name <- str_to_title(gsub("^sum_", "", name))
     if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) < 1) {
       dt[[clean_name]] <- outcome[[name]]
     } else if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) >= 1) {
@@ -445,7 +445,7 @@ make_strategy_forfront_preftab <- function(index){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -457,9 +457,9 @@ make_strategy_forfront_preftab <- function(index){
   # In the update() function, it is converted to a matrix, so we need the comma to select the entire row
   payload <- pref_elicitation_object$data[comparison_index + (index-1), ]
   names(payload)[which(names(payload)=="All")] <- "Biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
-  names(payload)[which(names(payload)=="area")] <- "Area"
-  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  names(payload)[which(names(payload)=="Visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="Area")] <- "Area"
+  names(payload)[which(names(payload)=="Carbon")] <- "Carbon"
   bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
@@ -506,7 +506,7 @@ make_strategy_forfront_altapproach <- function(index){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -517,9 +517,9 @@ make_strategy_forfront_altapproach <- function(index){
   
   payload <- random_strategy[,..TARGETS]
   names(payload)[which(names(payload)=="All")] <- "Biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "Food_Produced"
-  names(payload)[which(names(payload)=="area")] <- "Area"
-  names(payload)[which(names(payload)=="carbon")] <- "Carbon"
+  names(payload)[which(names(payload)=="Visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="Area")] <- "Area"
+  names(payload)[which(names(payload)=="Carbon")] <- "Carbon"
   bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
