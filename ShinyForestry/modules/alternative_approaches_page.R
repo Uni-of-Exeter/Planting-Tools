@@ -119,7 +119,10 @@ alt_page_server <- function(id, state) {
     filtered_data_four <- reactiveVal(NULL)
     current_layers_four <- reactiveVal(list())
     
+    print("data is null")
+    
     initialize_or_update_map <- function(input_year) {
+      print("inside initialize_or_update_map")
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
@@ -308,6 +311,7 @@ alt_page_server <- function(id, state) {
       }
       
       if (!is.null(new_data_fetched_four)) {
+        print("new_data_fetched_four not null")
         # Apply the filter based on the selected year
         new_data_four(new_data_fetched_four)
         new_vals_four(new_values_fetched_four)
@@ -358,15 +362,16 @@ alt_page_server <- function(id, state) {
         print("API fetch failed, no data to update.")
       }
       
-      # print(new_vals_one)
-      # print(new_vals_two)
-      # print(new_vals_three)
-      # print(new_vals_four)
-      # print('done')
+      print(new_vals_one)
+      print(new_vals_two)
+      print(new_vals_three)
+      print(new_vals_four)
+      print('done')
     }
     
     observe({
-      req(!state$initialized)
+      req(!state$alt_tab$initialized)
+      print("inside initialise")
       initialize_or_update_map(YEAR_MIN)
       state$alt_tab$initialized <- TRUE
     })
@@ -374,6 +379,10 @@ alt_page_server <- function(id, state) {
     # This is duplicated four times; modularise
     observe({
       req(input[[ns("year")]])
+      
+      print("inside observe for one")
+      
+      
       input_year <-  input[[ns("year")]]
       selected_view <-  input[[ns("view_toggle")]]
       
@@ -443,6 +452,7 @@ alt_page_server <- function(id, state) {
     })
     observe({
       req(input[[ns("year")]])
+      print("inside observe for two")
       
       input_year <-  input[[ns("year")]]
       selected_view <-  input[[ns("view_toggle")]]
@@ -510,6 +520,7 @@ alt_page_server <- function(id, state) {
     })
     observe({
       req(input[[ns("year")]])
+      print("inside observe for three")
       
       input_year <-  input[[ns("year")]]
       selected_view <-  input[[ns("view_toggle")]]
@@ -576,7 +587,10 @@ alt_page_server <- function(id, state) {
       }
     })
     observe({
+      print("inside observe for four")
+      
       req(input[[ns("year")]])
+      print("running in observe of year/view_toggle")
       
       input_year <-  input[[ns("year")]]
       selected_view <-  input[[ns("view_toggle")]]
@@ -653,14 +667,16 @@ alt_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
@@ -677,8 +693,22 @@ alt_page_server <- function(id, state) {
         "</table><br>"
       )
       
-      HTML(legend_html)  # Return HTML to be rendered
-    })    
+      # button_ui_one <- actionButton(
+      #   inputId = ns("alt_cluster_button_1"),
+      #   label = "Select",
+      #   style = "width:100%"  # Ensuring the button is large and fits within the box
+      # )
+      button_ui_one <- actionButton(
+        inputId = ns("alt_cluster_button_1"),
+        label = ifelse(is.null(state$alt_cluster_choice) || state$alt_cluster_choice != 1, "Select", "Selected"),
+        class = ifelse(state$alt_cluster_choice == 1, "btn btn-primary", "btn btn-default"),
+        disabled = state$alt_cluster_choice == 1,
+        style = "width:100%"
+      )
+      
+      
+      HTML(paste0(legend_html, button_ui_one))  # Return HTML to be rendered
+    })
     output$value_box_two <- renderUI({
       current_value <- new_vals_two()
       
@@ -689,14 +719,16 @@ alt_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
@@ -713,8 +745,16 @@ alt_page_server <- function(id, state) {
         "</table><br>"
       )
       
-      HTML(legend_html)  # Return HTML to be rendered
-    })    
+      button_ui_two <- actionButton(
+        inputId = ns("alt_cluster_button_2"),
+        label = ifelse(is.null(state$alt_cluster_choice) || state$alt_cluster_choice != 2, "Select", "Selected"),
+        class = ifelse(state$alt_cluster_choice == 2, "btn btn-primary", "btn btn-default"),
+        disabled = state$alt_cluster_choice == 2,
+        style = "width:100%"
+      )
+      
+      HTML(paste0(legend_html, button_ui_two))  # Return HTML to be rendered
+    })
     output$value_box_three <- renderUI({
       current_value <- new_vals_three()
       
@@ -725,14 +765,16 @@ alt_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
@@ -749,8 +791,16 @@ alt_page_server <- function(id, state) {
         "</table><br>"
       )
       
-      HTML(legend_html)  # Return HTML to be rendered
-    })    
+      button_ui_three <- actionButton(
+        inputId = ns("alt_cluster_button_3"),
+        label = ifelse(is.null(state$alt_cluster_choice) || state$alt_cluster_choice != 3, "Select", "Selected"),
+        class = ifelse(state$alt_cluster_choice == 3, "btn btn-primary", "btn btn-default"),
+        disabled = state$alt_cluster_choice == 3,
+        style = "width:100%"
+      )
+      
+      HTML(paste0(legend_html, button_ui_three))  # Return HTML to be rendered
+    })
     output$value_box_four <- renderUI({
       current_value <- new_vals_four()
       
@@ -761,14 +811,16 @@ alt_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
@@ -785,14 +837,108 @@ alt_page_server <- function(id, state) {
         "</table><br>"
       )
       
-      HTML(legend_html)  # Return HTML to be rendered
-    })    
+      button_ui_four <- actionButton(
+        inputId = ns("alt_cluster_button_4"),
+        label = ifelse(is.null(state$alt_cluster_choice) || state$alt_cluster_choice != 4, "Select", "Selected"),
+        class = ifelse(state$alt_cluster_choice == 4, "btn btn-primary", "btn btn-default"),
+        disabled = state$alt_cluster_choice == 4,
+        style = "width:100%"
+      )
+      
+      HTML(paste0(legend_html, button_ui_four))  # Return HTML to be rendered
+    })
+    
+    observeEvent(input$alt_cluster_button_1, {
+      print(ns)  # This prints the function object itself
+      print(ns("alt_cluster_button_1"))  # This prints the function object itself
+      print(ns("value_box_one"))  # This will print the namespaced ID for the value box
+      print("~~~")
+      state$alt_cluster_choice <- 1
+      print(paste("Cluster choice updated to:", state$alt_cluster_choice))
+      print("button one clicked")
+      updateActionButton(session, ns("alt_cluster_button_1"),
+                         label = "Selected",  # Change label to indicate selection
+                         disabled = TRUE  # Disable the button to prevent further clicks
+      )
+
+      # Update other buttons to allow interaction
+      updateActionButton(session, ns("alt_cluster_button_2"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_3"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_4"),
+                         disabled = FALSE)
+    })
+    observeEvent(input$alt_cluster_button_2, {
+      state$alt_cluster_choice <- 2
+      print(paste("Cluster choice updated to:", state$alt_cluster_choice))
+      print("button two clicked")
+      updateActionButton(session, ns("alt_cluster_button_2"),
+                         label = "Selected",  # Change label to indicate selection
+                         disabled = TRUE  # Disable the button to prevent further clicks
+      )
+      
+      # Update other buttons to allow interaction
+      updateActionButton(session, ns("alt_cluster_button_1"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_3"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_4"),
+                         disabled = FALSE)
+    })
+    observeEvent(input$alt_cluster_button_3, {
+      state$alt_cluster_choice <- 3
+      print(paste("Cluster choice updated to:", state$alt_cluster_choice))
+      print("button three clicked")
+      updateActionButton(session, ns("alt_cluster_button_3"),
+                         label = "Selected",  # Change label to indicate selection
+                         disabled = TRUE  # Disable the button to prevent further clicks
+      )
+      
+      # Update other buttons to allow interaction
+      updateActionButton(session, ns("alt_cluster_button_1"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_2"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_4"),
+                         disabled = FALSE)
+    })
+    observeEvent(input$alt_cluster_button_4, {
+      state$alt_cluster_choice <- 4
+      print(paste("Cluster choice updated to:", state$alt_cluster_choice))
+      print("button three clicked")
+      updateActionButton(session, ns("alt_cluster_button_4"),
+                         label = "Selected",  # Change label to indicate selection
+                         disabled = TRUE  # Disable the button to prevent further clicks
+      )
+      
+      # Update other buttons to allow interaction
+      updateActionButton(session, ns("alt_cluster_button_1"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_2"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_3"),
+                         disabled = FALSE)
+    })
     
     observeEvent(input[[ns("sample")]], {
       print('sample pressed')
       shinyjs::removeClass(ns("sample"), "btn-success")
       shinyjs::addClass(ns("sample"), "btn-secondary")
       shinyjs::disable(ns("sample"))
+      
+      state$alt_cluster_choice <- NULL
+      print(paste("Cluster choice updated to:", state$alt_cluster_choice))
+      
+      # Update other buttons to allow interaction
+      updateActionButton(session, ns("alt_cluster_button_1"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_2"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_2"),
+                         disabled = FALSE)
+      updateActionButton(session, ns("alt_cluster_button_4"),
+                         disabled = FALSE)
       
       initialize_or_update_map(current_year())
       

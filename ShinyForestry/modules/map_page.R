@@ -20,6 +20,16 @@ library(glue)
 source("utils/api_functions.R")
 source("config.R")
 
+# Function to get pretty English names for species
+get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (ugly_english_specie == "Food_Produced") return("Food Produced")
+  if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
+  idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
+  if (length(idx) == 0) return(ugly_english_specie)
+  result <- NAME_CONVERSION_ARG$English_specie_pretty[idx]
+  return(result)
+}
+
 map_page_ui <- function(id) {
   ns <- NS(id)
   
@@ -63,7 +73,7 @@ map_page_ui <- function(id) {
       mainPanel(
         class = "main-panel",
         leafletOutput(ns("map"), height = "100%"),
-        map_and_slider_ui(id = ns("map"), 2025, 2049, 2025, panel_width = "50%"),
+        map_and_slider_ui(id = ns("map"), YEAR_MIN, YEAR_MAX, YEAR_MIN, panel_width = "50%"),
       )
     )
   )
@@ -102,7 +112,7 @@ map_page_server <- function(id, state) {
       req(state$map_tab)
       default_values <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
-          round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)  # Extract default values; rounding to 1 DP because of sliders
+          round(as.numeric(state$map_tab$slider$values[[slider]]$default), POPUP_ROUND)  # Extract default values; rounding to 1 DP because of sliders
         }),
         state$map_tab$slider$names
       )
@@ -177,17 +187,36 @@ map_page_server <- function(id, state) {
       if (is.null(plot_data)) return(NULL)
       
       # Convert total_area to km²
-      plot_data$total_area <- set_units(plot_data$total_area, "km^2")
+      plot_data$total_area <- as.numeric(set_units(plot_data$total_area, "km^2"))
+      
+      all_years <- seq(YEAR_MIN, YEAR_MAX)
+      
+      # Create a data frame with all combinations of planting types and years
+      full_years_data <- expand.grid(
+        planting_year = all_years,
+        planting_types = unique(plot_data$planting_types)
+      )
+      
+      # Merge the full year sequence with your existing data
+      plot_data_full <- full_years_data %>%
+        left_join(plot_data, by = c("planting_year", "planting_types")) %>%
+        arrange(planting_types, planting_year)
+      
+      # Fill in missing total_area values with 0 (or NA if you prefer)
+      plot_data_full$total_area[is.na(plot_data_full$total_area)] <- 0
       
       # Compute cumulative area for each planting type
-      cumulative_data <- plot_data %>%
+      cumulative_data <- plot_data_full %>%
         arrange(planting_types, planting_year) %>%
         group_by(planting_types) %>%
-        mutate(cumulative_area = cumsum(total_area)) %>%
+        mutate(
+          cumulative_area = cumsum(total_area),
+          cumulative_area = signif(cumulative_area, 3)  # Round cumulative_area to 2 significant figures
+        ) %>%
         ungroup()
       
       # Return both datasets in a list (ready for instant switching)
-      list(total = plot_data, cumulative = cumulative_data)
+      list(total = plot_data_full, cumulative = cumulative_data)
     })
     
     observe({
@@ -196,10 +225,7 @@ map_page_server <- function(id, state) {
         # Render time-series plot for both Conifer and Deciduous
         output[[ns("areaPlot")]] <- renderPlotly({
           data <- processed_data()  # Get precomputed data
-          
-          print("processed_data")
-          print(processed_data())
-          
+
           # If no data, return NULL
           if (is.null(data)) return(NULL)
           
@@ -232,14 +258,22 @@ map_page_server <- function(id, state) {
               legend.box.background = element_rect(fill = "transparent")
             ) 
           
-          ggplotly(p) %>%
+          p_plot <- ggplotly(p) %>%
             layout(
-              paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
-              plot_bgcolor = "rgba(255,255,255,0)"
-            ) %>%
-            config(
-              displayModeBar = TRUE  # Keep the toolbar
+              paper_bgcolor = "rgba(255,255,255,0)",  # Ensure transparency
+              plot_bgcolor = "rgba(255,255,255,0)",   # Ensure transparency
+              xaxis = list(
+                range = c(2024, 2051),  # Fix the range of the x-axis between 2025 and 2049
+                tickvals = seq(YEAR_MIN, YEAR_MAX+1, by = 5)
+                # tickvals = c(2025, 2030, 2035, 2040, 2045, 2050),  # Explicitly set tick values
+                # ticktext = c("2025", "2030", "2035", "2040", "2045", "2050")  # Optional: Custom text for each
+              ),
+              modebar = list(
+                bgcolor = 'rgba(255,255,255,0)',    # Set background of modebar
+                activecolor = '#003c3c'            # Set color of the active button
+              )
             )
+          
         })
         
         observeEvent(input[[ns("toggle_plot")]], {
@@ -271,9 +305,6 @@ map_page_server <- function(id, state) {
       
       new_data_fetched <- new_fetched[[1]]
       new_values_fetched <- new_fetched[[2]]
-      
-      print("new_data_fetched")
-      print(new_data_fetched)
       
       if (!is.null(new_data_fetched)) {
         # Apply the filter based on the selected year
@@ -315,10 +346,6 @@ map_page_server <- function(id, state) {
         
         # Save the area data for later use in plots
         output_data(area_data)
-        
-        # Render the leaflet map with the updated data
-        print("names of new_vals()")
-        print(names(new_vals()))
             
         legend_html <- paste0(
           "<b>Outcomes</b><br><br>",
@@ -328,20 +355,8 @@ map_page_server <- function(id, state) {
               # Get the index of the slider name in state$map_tab$slider$names
               idx <- which(state$map_tab$slider$names == name)
               
-              
-              get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
-                if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
-                idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
-                if (length(idx) == 0) return(ugly_english_specie)
-                result <- NAME_CONVERSION_ARG$English_specie_pretty[idx]
-                return(result)
-              }
-              
-              
-              
-              
               # Get the display name for the slider (from the slider names list)
-              if (state$map_tab$slider$names[idx] %in% NAME_CONVERSION$English_specie) {
+              if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
                 specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
               } else {
                 specie_to_print <- state$map_tab$slider$names[idx]
@@ -349,14 +364,15 @@ map_page_server <- function(id, state) {
               display_name <- specie_to_print
               
               # Get the current value for the slider
-              value <- signif(new_vals()[[name]], POPUP_SIGFIG)
+              value <- round(new_vals()[[name]], POPUP_ROUND)
               
+              # Get the unit for the slider
+              unit <- state$map_tab$slider$values[[name]]$unit
+              
+              # Format the name, value, and unit into a table row
               sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-               <td style='text-align:left;'>%s</td></tr>",
-                      display_name, value)
-              
-              # Format the name and value into a table row (without unit for now)
-              # sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
+               <td style='text-align:left;'>%s %s</td></tr>",
+                      display_name, value, unit)
             }),
             collapse = "\n"
           ),
@@ -492,9 +508,10 @@ map_page_server <- function(id, state) {
           values = setNames(
             lapply(1:ncol(slider_info$min_max_default), function(i) {
               list( # making integers for
-                min = round(as.numeric(slider_info$min_max_default[1, ..i][[1]]), 1),          # Extract first row as numeric
-                max = round(as.numeric(slider_info$min_max_default[2, ..i][[1]]), 1),          # Extract second row as numeric
-                default = round(as.numeric(slider_info$min_max_default[3, ..i][[1]]), 1)       # Extract third row as numeric
+                min = round(as.numeric(slider_info$min_max_default[[1, i]]), POPUP_ROUND),
+                max = round(as.numeric(slider_info$min_max_default[[2, i]]), POPUP_ROUND),
+                default = round(as.numeric(slider_info$min_max_default[[3, i]]), POPUP_ROUND),
+                unit = slider_info$units[[1, i]]
               )
             }),
             colnames(slider_info$min_max_default)  # Use column names as keys
@@ -505,7 +522,7 @@ map_page_server <- function(id, state) {
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
               # Directly extract the numeric default value from the list without nesting
-              round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
+              round(as.numeric(state$map_tab$slider$values[[slider]]$default), POPUP_ROUND)
             }),
             state$map_tab$slider$names
           ),
@@ -520,19 +537,27 @@ map_page_server <- function(id, state) {
           tagList(
             lapply(state$map_tab$slider$names, function(slider) {
               # Extract the min, max, and default values and ensure they are numeric
-              min_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$min), 1)
-              max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), 1)
-              default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
+              min_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$min), POPUP_ROUND)
+              max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), POPUP_ROUND)
+              default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), POPUP_ROUND)
+              unit <- state$map_tab$slider$values[[slider]]$unit
+              unit_label <- paste0("[", unit, "]")
               
               # # Debugging: Print min, max, default values to check their structure
               # print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
+              
+              if (slider %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+                slider_display_name <- get_pretty_english_specie(slider, NAME_CONVERSION)
+              } else {
+                slider_display_name <- slider
+              }
               
               # Create a fluidRow with a checkbox and sliderInput for each slider
               fluidRow(
                 column(CHECKBOX_COL, checkboxInput(ns(paste0(slider, "_checkbox")), NULL, value = TRUE)),
                 column(SLIDER_COL, sliderInput(
                   ns(slider), 
-                  label = slider,  # Use the slider name as the label
+                  label = paste0(slider_display_name, " ", unit_label),  # Use the slider name as the label
                   min = min_value,
                   max = max_value,
                   value = default_value,
@@ -582,7 +607,7 @@ map_page_server <- function(id, state) {
         initial_values(
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
-              num_value <- round(as.numeric(input[[slider]]), 1) # Convert to numeric
+              num_value <- round(as.numeric(input[[slider]]), POPUP_ROUND) # Convert to numeric
               if (is.na(num_value)) return(NULL)  # Handle cases where conversion fails (optional)
               return(num_value)
             }),
@@ -642,6 +667,9 @@ map_page_server <- function(id, state) {
       # Ensure clicked_polygons() is not NULL or empty
       current_clicked <- clicked_polygons()
 
+      print("current_clicked")
+      print(current_clicked)
+      
       if (is.null(current_clicked) || nrow(current_clicked) == 0 || !"parcel_id" %in% colnames(current_clicked)) {
         print("clicked_polygons() is empty, NULL, or missing parcel_id column.")
         return()  # Exit early to avoid errors
@@ -664,7 +692,7 @@ map_page_server <- function(id, state) {
         } else {
           # Otherwise, update it to the selected year
           current_clicked$blocked_until_year[parcel_index] <- selected_year
-          print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
+          # print(paste("Updated Parcel:", clicked_parcel_id, "Blocked Until:", selected_year))
         }
       } else {
         print("Clicked parcel is not in the list.")  # Debugging message
@@ -687,7 +715,7 @@ map_page_server <- function(id, state) {
       # Get the current slider values with namespacing
       current_values_list <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
-          num_value <- round(as.numeric(input[[slider]]), 1)
+          num_value <- round(as.numeric(input[[slider]]), POPUP_ROUND)
           return(num_value)
         }),
         state$map_tab$slider$names  # Use slider names as the list names
@@ -880,9 +908,7 @@ map_page_server <- function(id, state) {
     
     # Observe the reset of the sliders
     observeEvent(input$reset_main, {
-      print("resetting")
-      print(reactiveValuesToList(state))
-      
+
       # Reset map view using isolate() to avoid reactivity issues
       leafletProxy(ns("map")) %>%
         setView(lat = state$map$lat, 
@@ -901,6 +927,21 @@ map_page_server <- function(id, state) {
         checkbox_id <- paste0(slider, "_checkbox")
         updateCheckboxInput(session, checkbox_id, value = TRUE)
       })
+      
+      clicked_polygons(data.frame(
+        parcel_id = new_data()$parcel_id,
+        blocked_until_year = new_data()$blocked_until_year,
+        stringsAsFactors = FALSE
+      ))
+      
+      clicked_polygons_injest(data.frame(
+        parcel_id = new_data()$parcel_id,
+        blocked_until_year = new_data()$blocked_until_year,
+        stringsAsFactors = FALSE
+      ))
+      
+      print("clicked_polygons")
+      print(head(clicked_polygons()))
     })
     
     

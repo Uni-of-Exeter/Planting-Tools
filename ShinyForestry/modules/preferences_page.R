@@ -27,11 +27,11 @@ preferences_page_ui <- function(id) {
         # Value boxes for map1 and map2
         div(id = "value-box-1", class = "value-box map1", 
             uiOutput(ns("value_box_one")),
-            actionButton(ns("submit_one"), "Choose this strategy", class = "btn btn-secondary") 
+            actionButton(ns("submit_one"), "Choose this strategy", class = "btn btn-secondary", style="width:100%;") 
         ),
         div(id = "value-box-2", class = "value-box map2", 
             uiOutput(ns("value_box_two")), 
-            actionButton(ns("submit_two"), "Choose this strategy", class = "btn btn-secondary")
+            actionButton(ns("submit_two"), "Choose this strategy", class = "btn btn-secondary", style="width:100%;")
         )
     )
   )
@@ -404,14 +404,16 @@ preferences_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
-          
+          unit <- state$map_tab$slider$values[[idx]]$unit
+
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
@@ -441,14 +443,18 @@ preferences_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
           
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
