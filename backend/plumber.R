@@ -123,7 +123,7 @@ function(req, res, file_to_upload) {
   # An Elicitor file was changed, Calculated files must be re-computed
   calculated_files_folder <- normalizePath(file.path("CalculatedFiles"))
   files_to_remove <- list.files(path = calculated_files_folder)
-  file.remove(file.path(calculated_files_folder, files_to_remove))
+  file.remove(file.path(calculated_files_folder, files_to_remove)
   
   res$status <- 200
   return("Success")
@@ -416,7 +416,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
       
       Uni <- unique(AllUnits)
       # units is the list of decision units
-      FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), area = rep(1, length(Uni)),
+      FullTab <- data.frame(extent = "NoExtent", x = rep(0, length(Uni)), y = rep(0, length(Uni)), Area = rep(1, length(Uni)),
                             Carbon_Mean_Scenario26_TreeSpecieConifers = rep(15, length(Uni)),
                             Carbon_SD_Scenario26_TreeSpecieConifers = rep(1, length(Uni)), 
                             Carbon_Mean_Scenario26_TreeSpecieDeciduous = rep(15, length(Uni)),
@@ -517,7 +517,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
       
       
       INTT <- st_intersection(st_make_valid(SELECTEDSquaresconvTab), st_make_valid(FullTableCopy))
-      INTT$area <- st_area(INTT) / 1e6
+      INTT$Area <- st_area(INTT) / 1e6
       
       # Bootstrap means and standard deviations (to avoid assumptions of independence)
       # As we have sum of Gaussians, we 
@@ -525,7 +525,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
       for (i in 1:length(FullTableCopy$geometry)) {
         SELLLines <- INTT$idPoly == i
         SELLSqs <- INTT$idSq[SELLLines]
-        SELLWeights <- INTT$area[SELLLines]
+        SELLWeights <- INTT$Area[SELLLines]
         #    SellWeightsArr <- t(matrix(SELLWeights, length(SELLWeights), NBSIMS))
         SellWeightsArr <- (matrix(SELLWeights, length(SELLWeights), (MAXYEAR+1)))
         
@@ -560,13 +560,13 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
           FullTable[i,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-sqrt(colSums((SelJulesSDsYears85*SellWeightsArr)^2))
           
           
-          FullTable$area[i] <- sum(SELLWeights)
+          FullTable$Area[i] <- sum(SELLWeights)
           
           # } else if (length(SelJulesMeans) == 1) {
           #  SimuArr <- rnorm(NBSIMS, mean = SelJulesMeans, sd = SelJulesSDs)
           # FullTable$JulesMean[i] <- sum(colMeans(SimuArr * SellWeightsArr))
           #  FullTable$JulesSD[i] <- sd(rowSums(SimuArr * SellWeightsArr))
-          #  FullTable$area[i] <- sum(SELLWeights)
+          #  FullTable$Area[i] <- sum(SELLWeights)
         } else {
           FullTable$Carbon_Mean_Scenario26_TreeSpecieConifers[i] <- 0
           FullTable$Carbon_SD_Scenario26_TreeSpecieConifers[i] <- 0
@@ -582,7 +582,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
           FullTable[i,paste0("Carbon_SD_Scenario26_TreeSpecieDeciduous_PlantingYear",0:MAXYEAR)]<-(MAXYEAR+1)
           
           
-          FullTable$area[i] <- sum(SELLWeights)
+          FullTable$Area[i] <- sum(SELLWeights)
         }
       }
       
@@ -839,7 +839,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
       # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
       reverse = FALSE)
     RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
-                                               D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                               D = 3 * nrow(FullTable), # Area + planting_year + tree_specie per parcel
                                                init = list(n = 100), budget = 100,
                                                control = RREMBO_CONTROL,
                                                max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
@@ -929,7 +929,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
     # )
     # Add sliderInput("BioSliderSPECIE", "Average SPECIE % increase:", min = 0, max = 36, value = 25) for each specie
     
-    verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree carbon stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
+    verticalLayout_params <- c(list(sliderInput("SliderMain", "Tree Carbon stored (tonnes of CO2):", min = -1, max = 870, value = -1)),
                                lapply(SPECIES, function(x, fulltable, NAME_CONVERSION_ARG) {
                                  NAME_CONVERSION <- NAME_CONVERSION_ARG
                                  # max_specie <- round(max(fulltable[, paste0("BioMean_", x)]))
@@ -955,7 +955,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
                                                            step = 0.5)))
                                }, fulltable = FullTable, NAME_CONVERSION_ARG = NAME_CONVERSION),
                                list(sliderInput("AreaSlider", HTML("Area planted (km<sup>2</sup>)"), min = 0, max = 25, value = 15,step=1)),
-                               list(sliderInput("VisitsSlider", "Recreation (visits per month):", min = 0, max = 750, value = 400)))
+                               list(sliderInput("VisitsSlider", "Recreation (Visits per month):", min = 0, max = 750, value = 400)))
     #SPECIES<-c("All","Acanthis_cabaret","Birds","Alauda_arvensis")
     SliderNames<- c("SliderMain",
                     paste0("BioSlider", SPECIES),
@@ -1124,9 +1124,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "info") {
   notif("Backend initialization ... done")
   
   res$status <- 200
+
   return(new_environment)
 }
-
-
-
 
