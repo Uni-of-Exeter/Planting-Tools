@@ -179,7 +179,7 @@ map_page_server <- function(id, state) {
       # Convert total_area to km²
       plot_data$total_area <- set_units(plot_data$total_area, "km^2")
       
-      # Compute cumulative area for each planting type
+      # Compute cumulative Area for each planting type
       cumulative_data <- plot_data %>%
         arrange(planting_types, planting_year) %>%
         group_by(planting_types) %>%
@@ -192,7 +192,7 @@ map_page_server <- function(id, state) {
     
     observe({
       if (state$map_tab$initialized) {
-        print("render area plot")
+        print("render Area plot")
         # Render time-series plot for both Conifer and Deciduous
         output[[ns("areaPlot")]] <- renderPlotly({
           data <- processed_data()  # Get precomputed data
@@ -307,13 +307,13 @@ map_page_server <- function(id, state) {
           dplyr::filter(!is.na(planting_year)) %>%
           # dplyr::mutate( # I don't think we need to do this as it's fine as it is.
           #   geometry = st_make_valid(geometry),  # Ensure valid geometries
-          #   parcel_area = st_area(geometry)      # Calculate area of each polygon
+          #   parcel_area = st_area(geometry)      # Calculate Area of each polygon
           # ) %>%
           dplyr::group_by(planting_year, planting_types) %>%
           dplyr::summarise(total_area = sum(parcel_area, na.rm = TRUE), .groups = 'drop') %>%  # Avoid warning with `.groups`
           dplyr::arrange(planting_year)  # Ensures chronological order
         
-        # Save the area data for later use in plots
+        # Save the Area data for later use in plots
         output_data(area_data)
         
         # Render the leaflet map with the updated data
@@ -438,16 +438,16 @@ map_page_server <- function(id, state) {
         # state$map_tab$slider
         # │
         # ├── names  (List of slider names)
-        # │   ├── "carbon"
+        # │   ├── "Carbon"
         # │   ├── "species"
         # │   ├── "species_goat_moth"
         # │   ├── "species_stag_beetle"
         # │   ├── "species_lichens"
-        # │   ├── "area"
-        # │   ├── "recreation"
+        # │   ├── "Area"
+        # │   ├── "Recreation"
         # │
         # └── values  (Named list of slider parameters)
-        #     ├── carbon
+        #     ├── Carbon
         #     │   ├── min: 500
         #     │   ├── max: 1000
         #     │   └── default: 800
@@ -469,21 +469,21 @@ map_page_server <- function(id, state) {
         #
         # slider_info <- list(
         #   min_max_default = data.table(
-        #     carbon = c(0, 10, 4),
+        #     Carbon = c(0, 10, 4),
         #     species = c(0, 10, 4),
         #     species_goat_moth = c(0, 10, 4),
         #     species_stag_beetle = c(0, 10, 4),
         #     species_lichens = c(0, 10, 4),
-        #     area = c(0, 10, 4),
-        #     recreation = c(0, 10, 4)),
+        #     Area = c(0, 10, 4),
+        #     Recreation = c(0, 10, 4)),
         #   units = data.table(
-        #     carbon = "tCO₂",
+        #     Carbon = "tCO₂",
         #     species = "%",
         #     species_goat_moth = "%",
         #     species_stag_beetle = "%",
         #     species_lichens = "%",
-        #     area = "km²",
-        #     recreation = "10³Kcal")
+        #     Area = "km²",
+        #     Recreation = "10³Kcal")
         # )
         
         # Convert slider_info into the desired format
@@ -937,13 +937,13 @@ map_page_server <- function(id, state) {
     #     saved_data = new_data(),
     #     clicked_polygons = clicked_polygons(),
     #     
-    #     carbon = input$carbon,
+    #     Carbon = input$Carbon,
     #     species = input$species,
     #     species_goat_moth = input$species_goat_moth,
     #     species_stag_beetle = input$species_stag_beetle,
     #     species_lichens = input$species_lichens,
-    #     area = input$area,
-    #     recreation = input$recreation,
+    #     Area = input$Area,
+    #     Recreation = input$Recreation,
     #     
     #     year = input$year,
     #     
@@ -981,13 +981,13 @@ map_page_server <- function(id, state) {
     #       new_data(strategy$saved_data)
     #       clicked_polygons(strategy$clicked_polygons)
     #       
-    #       updateSliderInput(session, "carbon", value = strategy$carbon)
+    #       updateSliderInput(session, "Carbon", value = strategy$Carbon)
     #       updateSliderInput(session, "species", value = strategy$species)
     #       updateSliderInput(session, "species_goat_moth", value = strategy$species_goat_moth)
     #       updateSliderInput(session, "species_stag_beetle", value = strategy$species_stag_beetle)
     #       updateSliderInput(session, "species_lichens", value = strategy$species_lichens)
-    #       updateSliderInput(session, "area", value = strategy$area)
-    #       updateSliderInput(session, "recreation", value = strategy$recreation)
+    #       updateSliderInput(session, "Area", value = strategy$Area)
+    #       updateSliderInput(session, "Recreation", value = strategy$Recreation)
     #       
     #       updateCheckboxInput(session, "carbon_checkbox", value = strategy$carbon_checkbox)
     #       updateCheckboxInput(session, "species_checkbox", value = strategy$species_checkbox)

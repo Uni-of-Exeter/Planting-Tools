@@ -66,21 +66,21 @@ frontend_initialisation <- funtion() {
     ),
     # slider_info <- list(
     #   min_max_default = data.table(
-    #     carbon = c(0, 10, 4),
+    #     Carbon = c(0, 10, 4),
     #     species = c(0, 10, 4),
     #     species_goat_moth = c(0, 10, 4),
     #     species_stag_beetle = c(0, 10, 4),
     #     species_lichens = c(0, 10, 4),
-    #     area = c(0, 10, 4),
-    #     recreation = c(0, 10, 4)),
+    #     Area = c(0, 10, 4),
+    #     Recreation = c(0, 10, 4)),
     #   units = data.table(
-    #     carbon = "tCO₂",
+    #     Carbon = "tCO₂",
     #     species = "%",
     #     species_goat_moth = "%",
     #     species_stag_beetle = "%",
     #     species_lichens = "%",
-    #     area = "km²",
-    #     recreation = "10³Kcal")
+    #     Area = "km²",
+    #     Recreation = "10³Kcal")
     # )
   )
   return(targets)
@@ -94,6 +94,6 @@ convert_targets_to_english <- function(targets, name_conversion) {
   converted_targets <- ifelse(targets %in% names(lookup_table), lookup_table[targets], targets)
   return(converted_targets)
 }
-targets <- convert_targets_to_english(initialization$TARGETS, initialization$NAME_CONVERSION)
-
-}
+# targets <- convert_targets_to_english(initialization$TARGETS, initialization$NAME_CONVERSION)
+# 
+# }
