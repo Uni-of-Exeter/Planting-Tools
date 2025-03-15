@@ -512,10 +512,10 @@ map_page_server <- function(id, state) {
           list(blocked_parcels = list())  # Append blocked_parcels separately
         )
         
-        print("default payload")
-        print(default_payload)
-
-        print("setting sliders")
+        # print("default payload")
+        # print(default_payload)
+        # 
+        # print("setting sliders")
         output$dynamic_sliders <- renderUI({
           tagList(
             lapply(state$map_tab$slider$names, function(slider) {
@@ -524,8 +524,8 @@ map_page_server <- function(id, state) {
               max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), 1)
               default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
               
-              # Debugging: Print min, max, default values to check their structure
-              print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
+              # # Debugging: Print min, max, default values to check their structure
+              # print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
               
               # Create a fluidRow with a checkbox and sliderInput for each slider
               fluidRow(
@@ -566,7 +566,7 @@ map_page_server <- function(id, state) {
 
     # Handle submit event to update the map
     observeEvent(input$submit_main, {
-      print("submit clicked")
+      # print("submit clicked")
       shinyjs::disable("save_main")
       shinyjs::disable("reset_main")
       shinyjs::disable("submit_main")
@@ -590,8 +590,8 @@ map_page_server <- function(id, state) {
           )
         )
       }
-      print("saved initial_values after submit")
-      print(initial_values)
+      # print("saved initial_values after submit")
+      # print(initial_values)
 
       # Extract blocked parcels (if any exist)
       blocked_parcels <- clicked_polygons()
