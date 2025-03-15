@@ -1836,6 +1836,26 @@ notif <- function(msg = "",
   # Avoid sending notifications out of order
   Sys.sleep(0.1)
   
+  # Regular Colors
+  NOCOLOR='\033[0m'
+  BLACK <- "\033[0;30m"
+  RED <- "\033[0;31m"
+  GREEN <- "\033[0;32m"
+  YELLOW <- "\033[0;33m"
+  BLUE <- "\033[0;34m"
+  PURPLE <- "\033[0;35m"
+  CYAN <- "\033[0;36m"
+  WHITE <- "\033[0;37m"
+  
+  COLOR <- switch(
+    log_level,
+    "none" = BLACK,
+    "error" = RED,
+    "warning" = YELLOW,
+    "info" = GREEN,
+    "debug" = PURPLE,
+  )
+  
   log_level_msg <- toupper(log_level)
   log_level <- switch(
     log_level,
@@ -1856,14 +1876,12 @@ notif <- function(msg = "",
   
   if (log_level > max_limit_log_level) return()
   
-  options(digits.secs = 5)
   if (isFALSE(rbind)) {
-    msg <- paste0(Sys.time(), " [", log_level_msg, "] ", msg)
+    msg <- paste0(Sys.time(), "\t", "[", COLOR, log_level_msg, NOCOLOR, "] ", msg)
   } else {
-    msg <- rbind(c(paste0(Sys.time(), " [", log_level_msg, "] "), rep(NA, ncol(msg))),
+    msg <- rbind(c(paste0(Sys.time(), "\t", "[", COLOR, log_level_msg, NOCOLOR, "] "), rep(NA, ncol(msg))),
                  msg)
   }
-  options(digits.secs = NULL)
   
   pad_notif_message <- function(msg, pad_character = "_") {
     max_key_width <- max(nchar(rownames(msg)))
