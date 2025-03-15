@@ -70,7 +70,7 @@ intersection <- st_intersection(polygons_bio, polygons_jules)
 df0 <- as.data.frame(matrix(0, ncol = length(all_species_names)))
 colnames(df0) <- paste0("BioSD_", all_species_names)
 
-# Look at the Area difference rowwise for mutate
+# Look at the area difference rowwise for mutate
 compute_difference_area <- function(geom1, geom2) {
   diff_geom <- st_difference(geom1, geom2)
   if (!is_empty(diff_geom)) {
