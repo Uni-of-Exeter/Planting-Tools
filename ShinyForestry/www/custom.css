@@ -1,0 +1,549 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tab-pane.active {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.html-fill-item, .html-fill-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Make the Plotly mode bar fully transparent */
+/* target individual button containers */
+.js-plotly-plot .modebar > div {
+    background: none !important;
+    opacity: 1 !important;
+}
+
+.bslib-gap-spacing {
+  gap: 0 !important;
+}
+
+/* Some Bootstrap padding issue on left/right of screen */
+.container-fluid { 
+  padding: 0;
+}
+
+/* Remove padding from all Bootstrap column classes (col-xs, col-sm, col-md, col-lg) */
+.col-xs-3, .col-sm-3, .col-md-3, .col-lg-3,
+.col-xs-9, .col-sm-9, .col-md-9, .col-lg-9 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.navbar {
+  height: 60px !important;  /* Set navbar height to 60px */
+  padding-left: 32px !important;   /* Counteract changes to bootstrap */
+  padding-right: 16px !important;  /* Counteract changes to bootstrap */
+  margin: 0px !important;   /* Remove any margin */
+  width: 100%;
+}
+
+#map-sidebar {
+  overflow-y: auto;  /* Make sidebar scrollable if content overflows */
+  border-radius: 0px; /* delete for nice curved boxes */
+  height: calc(100vh - 60px);
+}
+
+.sidebar-page-one-container {
+  display: flex;
+  height: 100vh;
+  flex-direction: row;
+  width: 100%;
+}
+
+#map-accordion-panel {
+  max-height: 80vh;  /* Set maximum height for the accordion */
+  overflow-y: auto;  /* Allow scrolling if the content exceeds max-height */
+}
+
+.main-panel {
+  display: flex;
+  flex-grow: 1;
+  height: calc(100vh - 60px);
+  position: relative;  /* Required to position year slider */
+  padding: 0px;
+  background-color: #f0f0f0;
+  overflow: auto;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  position: relative;  /* Required to position year slider */
+}
+
+.leaflet-control {
+  background: rgba(255, 255, 255, 0.9); /* Background colour to zero */
+  box-shadow: none !important; /* Remove box-shadow */
+  border: none !important; /* Remove border */
+}
+
+
+/* Ensure no global CSS overrides */
+#preferences-page {
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+#preferences-page .tab-pane.active {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#preferences-page .html-fill-item, #preferences-page .html-fill-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#preferences-page .bslib-gap-spacing {
+  gap: 0 !important;
+}
+
+/* Some Bootstrap padding issue on left/right of screen */
+#preferences-page .container-fluid { 
+  padding: 0;
+}
+
+/* Remove padding from all Bootstrap column classes (col-xs, col-sm, col-md, col-lg) */
+#preferences-page .col-xs-6, #preferences-page .col-sm-6, #preferences-page .col-md-6, #preferences-page .col-lg-6 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Ensure that row has no margin/padding */
+#preferences-page .row {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#preferences-page .navbar {
+  height: 60px !important;  /* Set navbar height to 60px */
+  padding-left: 32px !important;   /* counteract changes to bootstrap */
+  padding-right: 16px !important;  /* counteract changes to bootstrap */
+  margin: 0px !important;   /* Remove any margin */
+}
+
+#preferences-page .main-panel {
+  height: calc(100vh - 60px);  /* Adjust for navbar height */
+  padding: 0px;
+  background-color: #f0f0f0;
+}
+
+/* Map Containers for Preferences Page */
+#preferences-page .leaflet-container {
+  height: calc(100vh - 60px) !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#preferences-page .leaflet-control {
+  background: rgba(255, 255, 255, 0.9); /* background-color to zero */
+  box-shadow: none !important; /* remove box-shadow */
+  border: none !important; /* remove border */
+}
+
+/* Value box specific to preferences page */
+#preferences-page .value-box {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+  width: 350px; /* Allow dynamic width */
+  /* max-width: 350px; Prevent it from getting too wide */
+  /* min-width: 300px; Prevent it from getting too small */
+  height: auto;
+  position: absolute;
+  white-space: wrap; /* Keeps text from wrapping */
+  line-height: 20px;
+}
+
+/* Positioning for each value box */
+#preferences-page .value-box.map2 {
+   top: 68px; /* 60px navbar + 8px border radius (just a shot in the dark) */
+   left: 75%;
+  transform: translateX(-50%);
+}
+
+#preferences-page .value-box.map1 {
+  top: 68px; /* 60px navbar + 8px border radius (just a shot in the dark) */
+  left: 25%;
+  transform: translateX(-50%);
+}
+
+/* Improve table appearance */
+#preferences-page .value-box table {
+  border-collapse: collapse;
+  width: auto; /* Ensures table takes only necessary space */
+}
+
+/* Slider panel specific to preferences page */
+#preferences-page .slider-panel {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+  width: 33%;
+}
+
+/* Radio buttons container for preferences page */
+#preferences-page .radio-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+#preferences-page .no-padding {
+  padding: 0 !important;
+}
+
+/* Prevent any padding for the first/second maps in preferences page */
+#preferences-page .main-panel .no-padding {
+  padding: 0 !important;
+}
+
+
+#loading {
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%; 
+  background-color: rgba(0, 60, 60, 1.0);  /* Dark background */
+  color: white; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  font-size: 24px; 
+  font-family: 'Outfit', sans-serif; /* Apply Outfit font */
+  z-index: 9999;
+  opacity: 1;  /* Initially fully visible */
+}
+
+#app_content {
+  display: block; /* Initially hidden */
+  height: 100vh;
+}
+
+.spinner {
+  border: 8px solid #00dca5; 
+  border-top: 8px solid #003c3c; 
+  border-radius: 90%;
+  width: 50px;
+  height: 50px;
+  animation: spin 2s linear infinite;
+}
+/* Spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* Alt */
+
+#alt-page body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#alt-page .tab-pane.active {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#alt-page .html-fill-item, .html-fill-container {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#alt-page .bslib-gap-spacing {
+    gap: 0 !important;
+}
+
+/* Fix Bootstrap container padding issue */
+#alt-page .container-fluid { 
+    padding: 0 !important;
+}
+
+/* Remove padding from Bootstrap grid system */
+#alt-page .col-xs-6, .col-sm-6, .col-md-6, .col-lg-6 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Ensure the row has no margin or padding */
+#alt-page .row {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Navbar Styling */
+#alt-page .navbar {
+    height: 60px !important;
+    padding-left: 32px !important;
+    padding-right: 16px !important;
+    margin: 0 !important;
+    background-color: #003c3c;  /* Dark green navbar */
+}
+
+/* Main Panel Adjustments */
+#alt-page .main-panel {
+    height: calc(100vh - 60px); /* Full height minus navbar */
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+/* Leaflet Map Container */
+#alt-page .leaflet-container {
+    /* height: calc(50vh - 30px) !important; Each map takes half of viewport height */
+    height: calc(100vh - 60px) !important; /* Each map takes half of viewport height */
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Leaflet Control Styling */
+#alt-page .leaflet-control {
+    background: rgba(255, 255, 255, 0.9); /* Make background semi-transparent */
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Sidebar Panel */
+#alt-page .sidebarPanel {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* EXPLORATION */
+/* Remove padding from all Bootstrap column classes (col-xs, col-sm, col-md, col-lg) */
+
+#exploration-page {
+    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+}
+
+#exploration-page .leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#exploration-page .container-fluid,
+#exploration-page .row,
+#exploration-page .col-12 {
+    height: 100%;
+}
+
+#exploration-page .tab-pane.active {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#exploration-page .html-fill-item, .html-fill-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#exploration-page .bslib-gap-spacing {
+  gap: 0 !important;
+}
+
+/* Some Bootstrap padding issue on left/right of screen */
+#exploration-page .container-fluid { 
+  padding: 0;
+}
+
+#exploration-page .row {
+  margin: 0 !important;
+}
+
+#exploration-page .col-12, 
+#exploration-page .col-sm-12 {
+  padding: 0 !important;
+}
+
+#downscaling-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Full page height */
+  text-align: center;
+}
+
+/* Ensures the row and columns fill the space */
+#downscaling-page .full-height {
+  height: 60vh; /* Adjust if needed */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gif-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.gif-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px; /* Adjust based on your GIF size */
+}
+
+.gif {
+  max-width: 100%;
+  height: auto;
+}
+
+.image {
+  max-width: 100%;
+  height: auto;
+}
+
+
+
+/* Floating buttons for each map */
+#alt-page .floating-button {
+  position: absolute;
+  z-index: 1000; /* Make sure the buttons appear on top of the maps */
+  bottom: calc(50vh - 38px); /* Adjust for navbar: half of navbar + 8px buffer */
+  left: calc(50vw + 8px); /* Right side of the third map */
+}
+
+/* Value box specific to preferences page */
+#alt-page .value-box {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+  width: 350px; /* Allow dynamic width */
+  /* max-width: 350px; Prevent it from getting too wide */
+  /* min-width: 300px; Prevent it from getting too small */
+  height: auto;
+  position: absolute;
+  white-space: wrap; /* Keeps text from wrapping */
+  line-height: 20px;
+}
+
+/* 2X2 GRID */
+/* #alt-page .value-box.map1 {
+  top: 68px;
+  right: calc(50vw + 8px); }
+
+#alt-page .value-box.map2 {
+  top: 68px;
+  right: 8px; }
+
+#alt-page .value-box.map3 {
+  top: calc(50vh + 38px); 
+  right: calc(50vw + 8px); } 
+
+#alt-page .value-box.map4 {
+  top: calc(50vh + 38px); 
+  right: 8px; } */
+
+#alt-page .value-box.map1 {
+  top: 68px; /* Adjust for navbar */
+  right: calc(75vw + 8px); /* Right side of the first map */
+}
+
+#alt-page .value-box.map2 {
+  top: 68px; /* Same height adjustment as map1 */
+  right: calc(50vw + 8px); /* Adjust right positioning relative to map2 */
+}
+
+#alt-page .value-box.map3 {
+  top: 68px; /* Adjust for navbar: half of navbar + 8px buffer */
+  right: calc(25vw + 8px); /* Right side of the third map */
+}
+
+#alt-page .value-box.map4 {
+  top: 68px; /* Adjust for navbar: half of navbar + 8px buffer */
+  right: 8px; /* Right side of the fourth map */
+}
+
+/* Improve table appearance */
+#alt-page .value-box table {
+  border-collapse: collapse;
+  width: auto; /* Ensures table takes only necessary space */
+}
+
+/* Improve table appearance */
+#alt-page .value-box table {
+  border-collapse: collapse;
+  width: auto; /* Ensures table takes only necessary space */
+}
+
+
+/* Value box specific to preferences page */
+#exploration-page .explore-box {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+  width: 250px; /* Allow dynamic width */
+  /* max-width: 350px; Prevent it from getting too wide */
+  /* min-width: 300px; Prevent it from getting too small */
+  height: auto;
+  position: absolute;
+  white-space: wrap; /* Keeps text from wrapping */
+  line-height: 20px;
+}
+
+#exploration-page .explore-box.map1 {
+  top: 68px; /* Adjust for navbar */
+  right: 10px; /* Right side of the first map */
+}
+
+#exploration-page .explore-box-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Adds spacing between elements */
+}
+
+.small-button {
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* Adds padding to the button container for alignment */
+.button-container {
+  padding: 0 10px;
+}
+
+/* Divider to separate the +/- buttons from the sliders */
+.divider {
+  border-top: 1px solid #00dca5;
+  margin: 10px 0;
+}
+
+/* Container for sliders to ensure proper padding */
+.slider-container {
+  padding: 2px 10px; /* Matches button padding for alignment */
+}

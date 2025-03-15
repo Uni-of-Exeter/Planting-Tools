@@ -1238,7 +1238,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
 #  # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
 #  # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
 #  # SVMMAT: Matrix composed on SavedVec on every line (to do an OR later).
-#  # For the moment, the area does not change with year of planting.
+#  # For the moment, the Area does not change with year of planting.
 #  if (length(SavedVecYearLoc) == 1) {
 #    SelectedSimMat <- as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])
 #    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=(MAXYEAR+1))
@@ -1439,7 +1439,7 @@ outputmap_calculateMatsYearType <- function(input,
   # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
   # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
   # SVMMAT: Matrix composed on SavedVec on every line (to do an OR later).
-  # For the moment, the area does not change with year of planting.
+  # For the moment, the Area does not change with year of planting.
   if (length(SavedVecYearTypeLoc) == 1) {
     SelectedSimMat <- as.matrix(simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)])
     SelectedSimMatBinary<- 1*(as.matrix(simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)])!=(-1))
@@ -2451,16 +2451,16 @@ get_richness_from_fulltable <- function(strategy_vector, FullTable_arg = FullTab
   treespecie_vector <- strategy_vector[indices]
   
   small_fulltable_dt <- FullTable %>%
-    mutate(area = area_vector,
+    mutate(Area = area_vector,
            year = year_vector,
            treespecie = treespecie_vector) %>%
-    dplyr::select(area, year, treespecie, starts_with("Richness")) %>%
+    dplyr::select(Area, year, treespecie, starts_with("Richness")) %>%
     mutate(parcel_id = 1:nrow(FullTable)) |>
     setDT()
   
   # Melt the data table to convert from wide to long format
   melted_dt <- data.table::melt(small_fulltable_dt, 
-                                id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                id.vars = c("Area", "year", "treespecie", "parcel_id"), 
                                 measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
                                 variable.name = "column_name", 
                                 value.name = "richness")
@@ -2474,11 +2474,11 @@ get_richness_from_fulltable <- function(strategy_vector, FullTable_arg = FullTab
   
   # Remove rows where the column_name's tree specie is not the strategy treespecie
   # and where the planting year is not the strategy plantingyear
-  # and where we don't plant (area is 0)
+  # and where we don't plant (Area is 0)
   # and where plantingyear is 25
   melted_dt <- melted_dt[colname_treespecie == treespecie &
                            colname_plantingyear == year &
-                           area != 0 &
+                           Area != 0 &
                            colname_plantingyear != MAXYEAR + 1, ]
   
   # Sum richness by group
@@ -2583,7 +2583,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   intersection <- st_intersection(polygons_bio, polygons_jules)
   notif(paste(msg, "done"), max_limit_log_level = max_limit_log_level)
   
-  # Look at the area difference rowwise for mutate
+  # Look at the Area difference rowwise for mutate
   compute_difference_area <- function(geom1, geom2) {
     diff_geom <- st_difference(geom1, geom2)
     if (!is_empty(diff_geom)) {
@@ -2594,7 +2594,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   }
   
   # Calculate the proportion of areas (intersection / bio)
-  msg <- "Calculate the biodiversity values in shapefile cells, weighted by area ..."
+  msg <- "Calculate the biodiversity values in shapefile cells, weighted by Area ..."
   notif(msg, max_limit_log_level = max_limit_log_level)
   
   # We use progression bars inside and outside of functions, and this causes problems, local({}) solves them
@@ -2605,7 +2605,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
     # nb_of_groups length(unique(intersection$polygon_id_jules)) * nb_BioMean_columns length(intersection %>% dplyr::select(starts_with("Bio_Mean"))) +
     # 5 because of the new columns from mutate()
     # pb <- progressor(steps = 6 + length(unique(intersection$polygon_id_jules)) * length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean"))) + 5, message = msg)
-    nb_groups <- length(unique(intersection$polygon_id_jules))
+    nb_groups <- length(intersection %>% as_tibble() %>% dplyr::select(starts_with("Bio_Mean")))
     group_count_env <- new.env()
     group_count_env$group_count <- 0
     pb <- progressor(steps = 6 + nb_groups + 5, message = msg)
@@ -2655,7 +2655,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
       
       # Group by polygon_id_jules and average over parcels
       {
-        msg <- "Average biodiversities across (carbon, new) parcels"
+        msg <- "Average biodiversities across (Carbon, new) parcels"
         pb(message = msg)
         notif(paste("5/7", msg), max_limit_log_level = max_limit_log_level)
         invisible(.)
@@ -2684,7 +2684,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
       ) %>% 
       
       {
-        msg <- "Compute area differences"
+        msg <- "Compute Area differences"
         pb(message = msg)
         notif(paste("6/7", msg), max_limit_log_level = max_limit_log_level)
         invisible(.)
@@ -3069,4 +3069,174 @@ FormattedText<-function(Carbon,CarbonSD,SPECIES,SPECIES_ENGLISH,BioMeans,BioSDs,
 # Necessary in our case of foreach for parallel programming
 combine_foreach_rbind <- function(...) {
   mapply('rbind', ..., SIMPLIFY = FALSE)
+}
+calories_livestock_arable<- function(shapefile, yield_data, yield_sd,livestock_data, FullTable) {
+   
+   # Load necessary libraries
+   library(dplyr)
+   library(sf)
+   
+  # Ensure valid geometries
+  shapefile <- st_make_valid(shapefile)
+  
+  ### ---- Step 1: Process Arable Crop Calories (Mean & SD) ---- ###
+  
+  # Select parcels where X_agg == 3 (for arable crops)
+  d3 <- subset(shapefile, X_agg == 3)
+  
+  # Define crop rotations
+  rotations <- list(rotation_1 = c("spring_barley", "winter_wheat", "spring_barley", "spring_oats", "winter_wheat"))
+  
+  # Extend rotation to cover 2023-2050 (28 years)
+  rotations2050 <- list(rotation_1 = rep(rotations$rotation_1, length.out = 28))
+  
+  # Define calorie conversion function for crops (for both mean and SD)
+  calculate_calories <- function(yield, crop) {
+    yield_ha <- yield  # Convert yield to total kg
+    
+    if (crop == "winter_wheat") {
+      return ((yield_ha * 0.126 * 359) + (yield_ha * 0.015 * 837) + (yield_ha * 0.712 * 378))
+    } else if (crop == "spring_barley") {
+      return ((yield_ha * 0.125 * 355) + (yield_ha * 0.023 * 837) + (yield_ha * 0.735 * 395))
+    } else if (crop == "spring_oats") {
+      return ((yield_ha * 0.169 * 347) + (yield_ha * 0.069 * 837) + (yield_ha * 0.663 * 407))
+    } else {
+      return(NA)
+    }
+  }
+  
+  # Initialize dataframes for mean calories & SD calories
+  df_calories_mean <- data.frame(matrix(nrow = nrow(yield_data), ncol = ncol(yield_data)))
+  df_calories_sd <- data.frame(matrix(nrow = nrow(yield_sd), ncol = ncol(yield_sd)))
+  
+  colnames(df_calories_mean) <- paste0("Arable_Mean_calories_", 2023:2050)
+  colnames(df_calories_sd) <- paste0("Arable_SD_calories_", 2023:2050)
+  
+  # Compute calories for each crop for both mean & SD
+  for (i in 1:nrow(yield_data)) {
+    for (j in 1:ncol(yield_data)) {
+      crop <- rotations2050$rotation_1[j]  # Get crop type for the year
+      df_calories_mean[i, j] <- calculate_calories(yield_data[i, j], crop)  # Compute mean calories
+      df_calories_sd[i, j] <- calculate_calories(yield_sd[i, j], crop)  # Compute SD calories
+    }
+  }
+  
+  # Add parcel IDs
+  df_calories_mean <- cbind(gid = d3$gid, df_calories_mean)
+  df_calories_sd <- cbind(gid = d3$gid, df_calories_sd)
+  
+  # Ensure 'gid' is character type for merging
+  shapefile <- shapefile %>% mutate(gid = as.character(gid))
+  df_calories_mean <- df_calories_mean %>% mutate(gid = as.character(gid))
+  df_calories_sd <- df_calories_sd %>% mutate(gid = as.character(gid))
+  
+  # Generate column names
+  calories_columns_arable_mean <- paste0("Arable_Mean_calories_", 2023:2050)
+  calories_columns_arable_sd <- paste0("Arable_SD_calories_", 2023:2050)
+  
+  # Create an empty dataset with zeroed-out arable calorie columns for both Mean & SD
+  full_arable_calories <- shapefile %>%
+    select(gid, geometry) %>%
+    bind_cols(as.data.frame(matrix(0, nrow = nrow(shapefile), ncol = length(c(calories_columns_arable_mean, calories_columns_arable_sd)))))
+  
+  # Assign column names
+  colnames(full_arable_calories) <- c("gid", calories_columns_arable_mean, calories_columns_arable_sd, "geometry")
+  
+  # Find indices where `gid` matches and replace values
+  matched_indices_arable <- match(df_calories_mean$gid, full_arable_calories$gid)
+  full_arable_calories[matched_indices_arable, calories_columns_arable_mean] <- df_calories_mean[, calories_columns_arable_mean]
+  full_arable_calories[matched_indices_arable, calories_columns_arable_sd] <- df_calories_sd[, calories_columns_arable_sd]
+  
+  # Remove 'gid' and 'geometry' columns for the final dataset
+  full_arable_calories <- full_arable_calories %>% select(-gid) %>% st_drop_geometry()
+  
+   ### ---- Step 2: Process Livestock Calories ---- ###
+   
+   # Ensure `gid` is a character type for merging
+   df_calories_livestock <- livestock_data %>% mutate(gid = as.character(gid))
+   
+   # Generate column names for Livestock Calories (2023-2050)
+   calories_columns_livestock <- paste0("Livestock_calories_", 2023:2050)
+   
+   # Create an empty dataset for livestock calories
+   full_livestock_calories <- shapefile %>%
+     select(gid, geometry) %>%
+     bind_cols(as.data.frame(matrix(0, nrow = nrow(shapefile), ncol = length(calories_columns_livestock))))
+   
+   # Assign column names
+   colnames(full_livestock_calories) <- c("gid", calories_columns_livestock, "geometry")
+   
+   # Find matching indices for `gid`
+   matched_indices_livestock <- match(df_calories_livestock$gid, full_livestock_calories$gid)
+   
+   # Compute total Livestock Calories (Dairy + Beef + Sheep) for all years (2023-2050)
+   livestock_calories_total <- df_calories_livestock$dairy + df_calories_livestock$beef + df_calories_livestock$sheep
+   
+   # Assign values for all years at once
+   full_livestock_calories[matched_indices_livestock, calories_columns_livestock] <- livestock_calories_total
+   
+   # Remove 'gid' and 'geometry' columns before merging
+   full_livestock_calories_cleaned <- full_livestock_calories %>%
+     select(-gid) %>%
+     st_drop_geometry()
+   
+   
+   ### ---- Step 3: Merge All Data into FullTable ---- ###
+   
+   FullTable <- cbind(FullTable, full_arable_calories, full_livestock_calories_cleaned)
+   
+   # Ensure 'FullTable' is an sf object
+   FullTable <- st_as_sf(FullTable)
+   
+   return(FullTable)
+ }
+ 
+ #yield_data = get(load("df_yield.RData")) # you need to load RData
+ #yield_sd=get(load("df_yield_sd.RData"))
+ #FullTable<- calories_livestock_arable(shapefile= sf::st_read("C:/Users/mh1176/University of Exeter/Mancini, Mattia - PCSE-WOFOST/ParcelData/land_parcels.shp"), # change your path
+                                                  # yield_data = df_yield,livestock_data=sf::st_read("df_livestock.geojson"),yield_sd=df_yield_sd,
+                                                   #FullTable = sf::st_read("FullTableMerged.geojson"))
+
+
+# Function to generate parcel data
+generate_parcel_data <- function(FullTable) {
+  
+  # Function to generate empty parcel data
+  generate_empty_parcel_data <- function(FullTable) {
+    if (!inherits(FullTable, "sf")) {
+      stop("FullTable must be an sf object.")
+    }
+    
+    n <- nrow(FullTable)
+    parcel_ids <- 1:n
+    geometries <- st_geometry(FullTable)
+    
+    empty_parcel_data <- st_sf(
+      parcel_id = parcel_ids,
+      geometry = geometries,
+      crs = st_crs(FullTable)
+    )
+  }
+  
+  empty_parcel_data <- generate_empty_parcel_data(FullTable)
+  
+  n <- nrow(empty_parcel_data)
+  parcel_areas <- FullTable$Area
+  planting_years <- sample(2025:2049, n, replace = TRUE)
+  planting_types <- sample(c("Deciduous", "Conifer", NA), n, replace = TRUE)
+  planting_years[is.na(planting_types)] <- NA
+  blocked_until <- 0
+  
+  parcel_data <- st_sf(
+    parcel_id = empty_parcel_data$parcel_id,
+    geometry = empty_parcel_data$geometry,
+    parcel_area = parcel_areas,
+    planting_year = planting_years,
+    planting_type = planting_types,
+    blocked_until_year = blocked_until,
+    crs = st_crs(FullTable)
+  )
+  
+  print(parcel_data)
+  return(parcel_data)
 }
