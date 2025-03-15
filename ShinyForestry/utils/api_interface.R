@@ -3,15 +3,24 @@ library(jsonlite)
 library(glue)
 library(sf)
 
-# T
-put_initialization <- function(info) {
+API_PORT <- Sys.getenv("API_PORT")
+if (API_PORT == "") {
+  API_PORT <- 40000
+}
+API_HOST <- Sys.getenv("API_HOST")
+if (API_HOST == "") {
+  API_HOST <- "144.173.60.164"
+}
+
+API_URL <- paste0("http://", API_HOST, ":", API_PORT)
+
+put_initialization <- function() {
   
   url <- paste0(API_URL, "/initialize")
   
   # Convert 'info' to JSON format
   body <- toJSON(
-    list(MAX_LIMIT_LOG_LEVEL = "info"), 
-    auto_unbox = TRUE
+    list(MAX_LIMIT_LOG_LEVEL = "info")    
     )
   
   # Make the PUT request
@@ -56,13 +65,22 @@ frontend_initialisation <- funtion() {
       default = initialization$STARTYEAR
     ),
     # slider_info <- list(
-    #   carbon = list(min = 500, max = 1000, default = 800),
-    #   species = list(min = 0, max = 25, default = 10),
-    #   species_goat_moth = list(min = 0, max = 100, default = 25),
-    #   species_stag_beetle = list(min = 0, max = 100, default = 30),
-    #   species_lichens = list(min = 0, max = 5, default = 2),
-    #   area = list(min = 0, max = 15, default = 10),
-    #   recreation = list(min = 0, max = 20, default = 15)
+    #   min_max_default = data.table(
+    #     Carbon = c(0, 10, 4),
+    #     species = c(0, 10, 4),
+    #     species_goat_moth = c(0, 10, 4),
+    #     species_stag_beetle = c(0, 10, 4),
+    #     species_lichens = c(0, 10, 4),
+    #     Area = c(0, 10, 4),
+    #     Recreation = c(0, 10, 4)),
+    #   units = data.table(
+    #     Carbon = "tCO₂",
+    #     species = "%",
+    #     species_goat_moth = "%",
+    #     species_stag_beetle = "%",
+    #     species_lichens = "%",
+    #     Area = "km²",
+    #     Recreation = "10³Kcal")
     # )
   )
   return(targets)
@@ -76,6 +94,6 @@ convert_targets_to_english <- function(targets, name_conversion) {
   converted_targets <- ifelse(targets %in% names(lookup_table), lookup_table[targets], targets)
   return(converted_targets)
 }
-targets <- convert_targets_to_english(initialization$TARGETS, initialization$NAME_CONVERSION)
-
-}
+# targets <- convert_targets_to_english(initialization$TARGETS, initialization$NAME_CONVERSION)
+# 
+# }

@@ -66,11 +66,11 @@ exploration_page_server <- function(id, state) {
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
-      new_fetched_one <- get_random_strategy()  # Use GET otherwise
+      new_fetched_one <- get_exploration_initialise(cluster=1)  # hardcoded
       
-      new_data_fetched_one <- new_fetched_one[[1]]
+      new_data_fetched_one <- new_fetched_one$geojson
       new_data_fetched_one$parcel_id <- paste0(new_data_fetched_one$parcel_id, "_one")
-      new_values_fetched_one <- new_fetched_one[[2]]
+      new_values_fetched_one <- new_fetched_one$values
       
       if (!is.null(new_data_fetched_one)) {
         # Apply the filter based on the selected year
@@ -78,6 +78,7 @@ exploration_page_server <- function(id, state) {
         new_vals_one(new_values_fetched_one)
         
         filtered_data_subset_one <- new_data_fetched_one[new_data_fetched_one$planting_year <= input_year, ]
+        filtered_data_subset_one <- filtered_data_subset_one[!st_is_empty(filtered_data_subset_one$geometry), ] # ensure it's valid
         filtered_data_one(filtered_data_subset_one)
         
         current_layers_one(filtered_data_subset_one$parcel_id)
@@ -96,19 +97,6 @@ exploration_page_server <- function(id, state) {
             label = ~parcel_id,
             # popup = "No planting"
           ) %>%
-          
-          # Add filtered polygons based on the selected year
-          addPolygons(
-            data = filtered_data_subset_one,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
-          ) %>%
-          
           # Add unavailable parcels layer
           addPolygons(
             data = FullTableNotAvailONE,  # Unavailable parcels
@@ -119,18 +107,23 @@ exploration_page_server <- function(id, state) {
             group = "unavailablePolygons",
             layerId = ~id,
             # popup = "Unavailable for planting"
-          ) %>%
-          
-          addPolygons(
-            data = filtered_data_subset_one,  # Filtered data based on the year
-            weight = 1,
-            color = PARCEL_LINE_COLOUR,
-            fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-            fillOpacity = FILL_OPACITY,
-            layerId = ~parcel_id,
-            label = ~parcel_id,
-            # popup = ~planting_type
           )
+          
+          if (nrow(filtered_data_subset_one) > 0) {
+            leafletProxy("map1") %>%
+              # Add filtered polygons based on the selected year
+              addPolygons(
+                data = filtered_data_subset_one,  # Filtered data based on the year
+                weight = 1,
+                color = PARCEL_LINE_COLOUR,
+                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+                fillOpacity = FILL_OPACITY,
+                layerId = ~parcel_id,
+                label = ~parcel_id,
+                # popup = ~planting_type
+              )
+          }
+        
         
       } else {
         print("API fetch failed, no data to update.")
@@ -176,7 +169,7 @@ exploration_page_server <- function(id, state) {
         to_remove_one <- setdiff(existing_layers_one, current_ids_one)  # Ensure this is a vector of IDs
         
         # try update polygons back with a new style
-        if (length(to_remove_one) > 0) {
+        if (!is.null(to_remove_one) && !any(is.na(to_remove_one)) && length(to_remove_one) > 0) {
           # Get the data for all parcels that need to be recoloured from FullTable
           updated_data_one <- current_data_one[current_data_one$parcel_id %in% to_remove_one, ]  # Use `to_remove` to filter
           
@@ -194,13 +187,13 @@ exploration_page_server <- function(id, state) {
         }
         
         # Add new polygons (those that are in filtered data but not on the map)
-        if (length(to_add_one) > 0) {
+        if (!is.null(to_add_one) && !any(is.na(to_add_one)) && length(to_add_one) > 0) {
           leafletProxy("map1") %>%
             addPolygons(
               data = current_data_one[current_data_one$parcel_id %in% to_add_one, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
@@ -225,7 +218,7 @@ exploration_page_server <- function(id, state) {
     })
     
     values_directions <- reactiveValues(
-      names = c("Principal direction", "Secondary direction"),
+      names = c("pc_1", "pc_2"),
       counts = setNames(rep(10, 2), c("Principal direction", "Secondary direction"))
     )
     
@@ -238,11 +231,13 @@ exploration_page_server <- function(id, state) {
         observeEvent(input[[paste0("inc_", name)]], {
           values$counts[[name]] <- values$counts[[name]] + 1
           print(paste("increase", name))
+          get_exploration_plus(name)
         })
         
         observeEvent(input[[paste0("dec_", name)]], {
           values$counts[[name]] <- max(0, values$counts[[name]] - 1)
           print(paste("decrease", name))
+          get_exploration_minus(name)
         })
       })
     })
@@ -254,11 +249,13 @@ exploration_page_server <- function(id, state) {
         observeEvent(input[[paste0("inc_", name)]], {
           values_directions$counts[[name]] <- max(100, values_directions$counts[[name]] + 1)
           print("increase")
+          get_exploration_plus(name)
         })
         
         observeEvent(input[[paste0("dec_", name)]], {
           values_directions$counts[[name]] <- max(0, values_directions$counts[[name]] - 1)
           print("decrease")
+          get_exploration_minus(name)
         })
       })
     })

@@ -137,39 +137,6 @@ if (isTRUE(run_initalization_on_backend)) {
   saveRDS(env, backend_initialization_env_file)
 }
 
-fetch_api_data_post <- function(json_payload) {
-  
-  # url <- "http://127.0.0.1:8000/generate_parcels"
-  url <- paste0(API_URL, "/generate_parcels")
-  
-  # Make the API POST request with JSON payload
-  response <- httr::POST(
-    url,
-    body = json_payload, 
-    encode = "json",
-    httr::content_type_json()
-  )
-  
-  print(response)
-  
-  # Check if the response is successful
-  if (httr::status_code(response) == 200) {
-    
-    content_raw <- httr::content(response, "text", encoding = "UTF-8")
-    api_response <- jsonlite::fromJSON(content_raw)
-    
-    geojson <- api_response$geojson
-    geojson_parsed <- st_read(geojson, quiet=TRUE)
-    
-    Sys.sleep(1)
-    values <- api_response$values
-    return(list(geojson_parsed, values))
-    
-  } else {
-    stop(paste("Request failed with status:", httr::status_code(response)))
-  }
-}
-
 fetch_slider_values <- function() {
   url <- paste0(API_URL, "/slider_values")
   response <- httr::GET(url)
@@ -404,13 +371,13 @@ server <- function(input, output, session) {
   
   # Track the initial slider values when the submit button is clicked
   initial_values <- reactiveVal(list(
-    carbon = NULL,
+    Carbon = NULL,
     species = NULL,
     species_goat_moth = NULL,
     species_stag_beetle = NULL,
     species_lichens = NULL,
-    area = NULL,
-    recreation = NULL
+    Area = NULL,
+    Recreation = NULL
     # year = NULL
     # num_clicked_polygons = 0 # not sure if this is the best way, what about if polygons are blocked online... I guess that's fine.
   ))
@@ -467,7 +434,7 @@ server <- function(input, output, session) {
     # Convert total_area to km²
     plot_data$total_area <- set_units(plot_data$total_area, "km^2")
     
-    # Compute cumulative area for each planting type
+    # Compute cumulative Area for each planting type
     cumulative_data <- plot_data %>%
       arrange(planting_type, planting_year) %>%
       group_by(planting_type) %>%
@@ -510,8 +477,8 @@ server <- function(input, output, session) {
         ),
         showlegend = TRUE,
         # Set transparent background
-        paper_bgcolor = "rgba(255, 255, 255, 0)",  # Transparent background for the entire plot area
-        plot_bgcolor = "rgba(255, 255, 255, 0)"   # Transparent background for the plot area itself
+        paper_bgcolor = "rgba(255, 255, 255, 0)",  # Transparent background for the entire plot Area
+        plot_bgcolor = "rgba(255, 255, 255, 0)"   # Transparent background for the plot Area itself
       )
     
     fig
@@ -639,13 +606,13 @@ server <- function(input, output, session) {
         dplyr::filter(!is.na(planting_year)) %>%
         # dplyr::mutate( # I don't think we need to do this as it's fine as it is.
         #   geometry = st_make_valid(geometry),  # Ensure valid geometries
-        #   parcel_area = st_area(geometry)      # Calculate area of each polygon
+        #   parcel_area = st_area(geometry)      # Calculate Area of each polygon
         # ) %>%
         dplyr::group_by(planting_year, planting_type) %>%
         dplyr::summarise(total_area = sum(parcel_area, na.rm = TRUE), .groups = 'drop') %>%  # Avoid warning with `.groups`
         dplyr::arrange(planting_year)  # Ensures chronological order
       
-      # Save the area data for later use in plots
+      # Save the Area data for later use in plots
       output_data(area_data)
       
       # Render the leaflet map with the updated data
@@ -746,25 +713,25 @@ server <- function(input, output, session) {
   observe({
     default_values <- fetch_slider_values()  # Fetch once at startup
     default_payload <<- list(
-      carbon = default_values$carbon$default,
+      Carbon = default_values$Carbon$default,
       species = default_values$species$default,
       species_goat_moth = default_values$species_goat_moth$default,
       species_stag_beetle = default_values$species_stag_beetle$default,
       species_lichens = default_values$species_lichens$default,
-      area = default_values$area$default,
-      recreation = default_values$recreation$default,
+      Area = default_values$Area$default,
+      Recreation = default_values$Recreation$default,
       blocked_parcels = list()
     )
     
     initial_values(
       list(
-        carbon = default_values$carbon$default,
+        Carbon = default_values$Carbon$default,
         species = default_values$species$default,
         species_goat_moth = default_values$species_goat_moth$default,
         species_stag_beetle = default_values$species_stag_beetle$default,
         species_lichens = default_values$species_lichens$default,
-        area = default_values$area$default,
-        recreation = default_values$recreation$default
+        Area = default_values$Area$default,
+        Recreation = default_values$Recreation$default
       )
     )
     
@@ -774,10 +741,10 @@ server <- function(input, output, session) {
       tagList(
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("carbon_checkbox", NULL, value = TRUE)),
-          column(SLIDER_COL, sliderInput("carbon", HTML(paste0("Tree Carbon Stored (tonnes of CO<sub>2</sub>):")),
-                                         min = default_values$carbon$min, 
-                                         max = default_values$carbon$max, 
-                                         value = default_values$carbon$default
+          column(SLIDER_COL, sliderInput("Carbon", HTML(paste0("Tree Carbon Stored (tonnes of CO<sub>2</sub>):")),
+                                         min = default_values$Carbon$min, 
+                                         max = default_values$Carbon$max, 
+                                         value = default_values$Carbon$default
           ))
         ),
         fluidRow(
@@ -814,18 +781,18 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("area_checkbox", NULL, value = TRUE)),
-          column(SLIDER_COL, sliderInput("area", HTML(paste0("Area Planted (km<sup>2</sup>):")),
-                                         min = default_values$area$min, 
-                                         max = default_values$area$max, 
-                                         value = default_values$area$default
+          column(SLIDER_COL, sliderInput("Area", HTML(paste0("Area Planted (km<sup>2</sup>):")),
+                                         min = default_values$Area$min, 
+                                         max = default_values$Area$max, 
+                                         value = default_values$Area$default
           ))
         ),
         fluidRow(
           column(CHECKBOX_COL, checkboxInput("recreation_checkbox", NULL, value = TRUE)),
-          column(SLIDER_COL, sliderInput("recreation", "Recreation (visits per month):", 
-                                         min = default_values$recreation$min, 
-                                         max = default_values$recreation$max, 
-                                         value = default_values$recreation$default
+          column(SLIDER_COL, sliderInput("Recreation", "Recreation (Visits per month):", 
+                                         min = default_values$Recreation$min, 
+                                         max = default_values$Recreation$max, 
+                                         value = default_values$Recreation$default
           ))
         )
       )
@@ -860,13 +827,13 @@ server <- function(input, output, session) {
     shinyjs::disable("save")
     shinyjs::disable("reset")
     shinyjs::disable("submit")
-    shinyjs::disable("carbon")
+    shinyjs::disable("Carbon")
     shinyjs::disable("species")
     shinyjs::disable("species_goat_moth")
     shinyjs::disable("species_stag_beetle")
     shinyjs::disable("species_lichens")
-    shinyjs::disable("area")
-    shinyjs::disable("recreation")    
+    shinyjs::disable("Area")
+    shinyjs::disable("Recreation")    
     shinyjs::disable("carbon_checkbox")
     shinyjs::disable("species_checkbox")
     shinyjs::disable("species_goat_moth_checkbox")
@@ -877,13 +844,13 @@ server <- function(input, output, session) {
     
     # Save the initial values when the submit button is clicked
     initial_values(list(
-      carbon = input$carbon,
+      Carbon = input$Carbon,
       species = input$species,
       species_goat_moth = input$species_goat_moth,
       species_stag_beetle = input$species_stag_beetle,
       species_lichens = input$species_lichens,
-      area = input$area,
-      recreation = input$recreation
+      Area = input$Area,
+      Recreation = input$Recreation
       # year = input$year
       # num_clicked_polygons = 0
     ))
@@ -894,13 +861,13 @@ server <- function(input, output, session) {
     
     # Create the payload
     payload <- list(
-      carbon = as.numeric(input$carbon),
+      Carbon = as.numeric(input$Carbon),
       species = as.numeric(input$species),
       species_goat_moth = as.numeric(input$species_goat_moth),
       species_stag_beetle = as.numeric(input$species_stag_beetle),
       species_lichens = as.numeric(input$species_lichens),
-      area = as.numeric(input$area),
-      recreation = as.numeric(input$recreation),
+      Area = as.numeric(input$Area),
+      Recreation = as.numeric(input$Recreation),
       blocked_parcels = if (nrow(blocked_parcels_filtered) > 0) {
         # Create a list of blocked parcels
         lapply(1:nrow(blocked_parcels_filtered), function(i) {
@@ -964,13 +931,13 @@ server <- function(input, output, session) {
     #   fig
     # })
     
-    shinyjs::enable("carbon")
+    shinyjs::enable("Carbon")
     shinyjs::enable("species")
     shinyjs::enable("species_goat_moth")
     shinyjs::enable("species_stag_beetle")
     shinyjs::enable("species_lichens")
-    shinyjs::enable("area")
-    shinyjs::enable("recreation")
+    shinyjs::enable("Area")
+    shinyjs::enable("Recreation")
     shinyjs::enable("carbon_checkbox")
     shinyjs::enable("species_checkbox")
     shinyjs::enable("species_goat_moth_checkbox")
@@ -1032,13 +999,13 @@ server <- function(input, output, session) {
   observe({
     # Get the current slider values
     current_values <- list(
-      carbon = input$carbon,
+      Carbon = input$Carbon,
       species = input$species,
       species_goat_moth = input$species_goat_moth,
       species_stag_beetle = input$species_stag_beetle,
       species_lichens = input$species_lichens,
-      area = input$area,
-      recreation = input$recreation
+      Area = input$Area,
+      Recreation = input$Recreation
       # year = input$year
       # num_clicked_polygons = nrow(clicked_polygons()[clicked_polygons()$blocked_until_year != 0, ]) # not sure if this is how to do it 
     )
@@ -1230,13 +1197,13 @@ server <- function(input, output, session) {
   
   # Enable/Disable sliders
   observe({
-    toggleState("carbon", input$carbon_checkbox)
+    toggleState("Carbon", input$carbon_checkbox)
     toggleState("species", input$species_checkbox)
     toggleState("species_goat_moth", input$species_goat_moth_checkbox)
     toggleState("species_stag_beetle", input$species_stag_beetle_checkbox)
     toggleState("species_lichens", input$species_lichens_checkbox)
-    toggleState("area", input$area_checkbox)
-    toggleState("recreation", input$recreation_checkbox)
+    toggleState("Area", input$area_checkbox)
+    toggleState("Recreation", input$recreation_checkbox)
   })
   
   # Render the "Saved Strategies" accordion dynamically
@@ -1273,13 +1240,13 @@ server <- function(input, output, session) {
       saved_data = new_data(),
       clicked_polygons = clicked_polygons(),
       
-      carbon = input$carbon,
+      Carbon = input$Carbon,
       species = input$species,
       species_goat_moth = input$species_goat_moth,
       species_stag_beetle = input$species_stag_beetle,
       species_lichens = input$species_lichens,
-      area = input$area,
-      recreation = input$recreation,
+      Area = input$Area,
+      Recreation = input$Recreation,
       
       year = input$year,  # Save the year as well
       
@@ -1312,13 +1279,13 @@ server <- function(input, output, session) {
         new_data(strategy$saved_data)
         clicked_polygons(strategy$clicked_polygons)
         
-        updateSliderInput(session, "carbon", value = strategy$carbon)
+        updateSliderInput(session, "Carbon", value = strategy$Carbon)
         updateSliderInput(session, "species", value = strategy$species)
         updateSliderInput(session, "species_goat_moth", value = strategy$species_goat_moth)
         updateSliderInput(session, "species_stag_beetle", value = strategy$species_stag_beetle)
         updateSliderInput(session, "species_lichens", value = strategy$species_lichens)
-        updateSliderInput(session, "area", value = strategy$area)
-        updateSliderInput(session, "recreation", value = strategy$recreation)
+        updateSliderInput(session, "Area", value = strategy$Area)
+        updateSliderInput(session, "Recreation", value = strategy$Recreation)
         
         updateCheckboxInput(session, "carbon_checkbox", value = strategy$carbon_checkbox)
         updateCheckboxInput(session, "species_checkbox", value = strategy$species_checkbox)
@@ -1341,13 +1308,13 @@ server <- function(input, output, session) {
       setView(lat = LAT_DEFAULT, lng = LON_DEFAULT, zoom = ZOOM_DEFAULT)
     
     # Reset sliders to default values
-    updateSliderInput(session, "carbon", value = CARBON_DEFAULT)
+    updateSliderInput(session, "Carbon", value = CARBON_DEFAULT)
     updateSliderInput(session, "species", value = SPECIES_DEFAULT)
     updateSliderInput(session, "species_goat_moth", value = SPECIES_GM_DEFAULT)
     updateSliderInput(session, "species_stag_beetle", value = SPECIES_SB_DEFAULT)
     updateSliderInput(session, "species_lichens", value = SPECIES_LICHENS_DEFAULT)
-    updateSliderInput(session, "area", value = AREA_DEFAULT)
-    updateSliderInput(session, "recreation", value = RECREATION_DEFAULT)
+    updateSliderInput(session, "Area", value = AREA_DEFAULT)
+    updateSliderInput(session, "Recreation", value = RECREATION_DEFAULT)
     updateSliderInput(session, "year", value = YEAR_DEFAULT)  # Reset year slider
     
     # Reset checkboxes to default values
