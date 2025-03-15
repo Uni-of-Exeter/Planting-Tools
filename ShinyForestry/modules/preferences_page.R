@@ -27,11 +27,11 @@ preferences_page_ui <- function(id) {
         # Value boxes for map1 and map2
         div(id = "value-box-1", class = "value-box map1", 
             uiOutput(ns("value_box_one")),
-            actionButton(ns("submit_one"), "Choose this strategy", class = "btn btn-secondary") 
+            actionButton(ns("submit_one"), "Choose this strategy", class = "btn btn-secondary", style="width:100%;") 
         ),
         div(id = "value-box-2", class = "value-box map2", 
             uiOutput(ns("value_box_two")), 
-            actionButton(ns("submit_two"), "Choose this strategy", class = "btn btn-secondary")
+            actionButton(ns("submit_two"), "Choose this strategy", class = "btn btn-secondary", style="width:100%;")
         )
     )
   )
