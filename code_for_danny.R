@@ -135,7 +135,7 @@ RREMBO_CONTROL <- list(
   # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
   reverse = FALSE)
 RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
-                                           D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                           D = 3 * nrow(FullTable), # Area + planting_year + tree_specie per parcel
                                            init = list(n = 100), budget = 100,
                                            control = RREMBO_CONTROL,
                                            max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
@@ -306,7 +306,7 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
   if(outcomes$sum_area > area_sum_threshold){
     return((outcomes$sum_area-area_sum_threshold)/0.001)
   }
-  # Pre-fetch thresholds and SDs for carbon and visits
+  # Pre-fetch thresholds and SDs for Carbon and Visits
   thresholds <- outcomes_to_maximize_sum_threshold_vector[c("Carbon", "Visits")]
   sds_carbon_visits <- c(outcomes$sum_carbon_sd, outcomes$sum_visits_sd)
   val_carbon_visits <- c(outcomes$sum_carbon, outcomes$sum_visits)

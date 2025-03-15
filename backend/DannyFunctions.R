@@ -120,7 +120,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix_dw <- functio
   # Area
   DoE_high_dimension_rowwise_matrix_area_normalized <- DoE_high_dimension_rowwise_matrix[, indices, drop = FALSE]
   
-  # Convert Area to categorical values, uses old continuous_to_multi_categorical as unique area vals on each parcel. Could be faster
+  # Convert Area to categorical values, uses old continuous_to_multi_categorical as unique Area vals on each parcel. Could be faster
   DoE_high_dimension_categorical_area <- continuous_to_multi_categorical_new(
     values_matrix =  DoE_high_dimension_rowwise_matrix_area_normalized,
     legal_values_ordered = area_possible_values_dataframe
@@ -184,7 +184,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   )]
   
   # Efficiently update strategy_year to 25 where strategy_area is 0
-  outcomes[strategy_area == 0, strategy_year := 25]
+  outcomes[strategy_area == 0, strategy_year := (MAXYEAR_arg+1)]
   
   #Merge outcomes into the table
   FullTable_long_arg[
@@ -335,7 +335,7 @@ compute_legal_values <- function(year_of_planting_min_threshold_vector,
 precompute_static_values <- function(FullTable, MAXYEAR) {
   
   # Precompute Area values
-  area_possible_non_zero_values <- FullTable$area
+  area_possible_non_zero_values <- FullTable$Area
   area_possible_values_dataframe <- rbind(0, area_possible_non_zero_values)
   max_ncol <- ncol(area_possible_values_dataframe)
   # Precompute Tree Specie Values
@@ -374,10 +374,10 @@ convert_outcome_to_dt <- function(outcome) {
   dt <- data.table::data.table(row_id = 1)  # Create a row to initialize the data.table
   
   for (name in names(outcome)) {
-    clean_name <- gsub("^sum_", "", name)
-    if (is.numeric(outcome[[name]]) && length(outcome[[name]]) == 1) {
+    clean_name <- str_to_title(gsub("^sum_", "", name))
+    if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) < 1) {
       dt[[clean_name]] <- outcome[[name]]
-    } else if (is.numeric(outcome[[name]]) && length(outcome[[name]]) > 1) {
+    } else if (is.numeric(outcome[[name]]) && length(names(outcome[[name]])) >= 1) {
       for (subname in names(outcome[[name]])) {
         dt[[subname]] <- outcome[[name]][subname]
       }
@@ -445,7 +445,7 @@ make_strategy_forfront_preftab <- function(index){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -454,10 +454,13 @@ make_strategy_forfront_preftab <- function(index){
   #convert to geojson
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
-  payload <- pref_elicitation_object$data[comparison_index + (index-1)]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  # In the update() function, it is converted to a matrix, so we need the comma to select the entire row
+  payload <- pref_elicitation_object$data[comparison_index + (index-1), ]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="Visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="Area")] <- "Area"
+  names(payload)[which(names(payload)=="Carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -466,6 +469,9 @@ make_strategy_forfront_preftab <- function(index){
       names(payload)[which(names(payload)==species)] <- NAME_CONVERSION$English_specie[specie_num]
       #No need to change if its a group
     }
+  }
+  if (isFALSE(data.table::is.data.table(payload))) {
+    payload <- data.table::as.data.table(t(payload))
   }
   return(list(
     values = payload,
@@ -482,16 +488,25 @@ make_strategy_forfront_altapproach <- function(index){
   if(!index %in% c(1,2,3,4)) {
     stop("make_strategy_forfront_altapproach(): Index should be 1, 2, 3 or 4 for alternative approaches")
   }
-  samples_in_cluster <- target_compatible_strategies[cluster == index]
-  random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
-  tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
-  tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  if(nrow(target_compatible_strategies)<0){#return the null strategy
+    random_strategy <- null_outcomes
+    tyears <- as.numeric(as.vector(null_strategy[1,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(null_strategy[1,startsWith(colnames(Strategies),"treespecie")])
+  }else{
+    if (is.null(target_compatible_strategies$cluster)) {
+      target_compatible_strategies$cluster <- index
+    }
+    samples_in_cluster <- target_compatible_strategies[cluster == index]
+    random_strategy <- samples_in_cluster[sample(1:nrow(samples_in_cluster),1)]
+    tyears <- as.numeric(as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"plantingyear")]))+STARTYEAR
+    tspecies <- as.vector(Strategies[random_strategy$strategy_id,startsWith(colnames(Strategies),"treespecie")])
+  }
   blocked_until_year <- rep(0, length(parcel_ids))
   blocked_until_year[which(parcel_ids %in% blocked_parcels$parcel_id)] <- blocked_parcels$blocked_until_year
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -501,9 +516,11 @@ make_strategy_forfront_altapproach <- function(index){
   geojson <- geojsonsf::sf_geojson(for_frontend)
   
   payload <- random_strategy[,..TARGETS]
-  names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="All")] <- "Biodiversity"
+  names(payload)[which(names(payload)=="Visits")] <- "Food_Produced"
+  names(payload)[which(names(payload)=="Area")] <- "Area"
+  names(payload)[which(names(payload)=="Carbon")] <- "Carbon"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Food_Produced", "Biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)

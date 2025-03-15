@@ -27,6 +27,7 @@ if (API_PORT == "") {
 API_HOST <- Sys.getenv("API_HOST")
 if (API_HOST == "") {
   API_HOST <- "144.173.60.164"
+  # API_HOST <- "localhost"
 }
 
 API_URL <- paste0("http://", API_HOST, ":", API_PORT)
