@@ -1,5 +1,6 @@
 Planting-Tools.Rproj
 .Rproj.user
+*.Rproj
 .Rhistory
 *.RData
 *.rds

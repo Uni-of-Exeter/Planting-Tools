@@ -155,7 +155,7 @@ generate_legal_unique_samples <- function(n,
         temp <- tail(temp, rows)
         temp_high_dimension <- RRembo_project_low_dimension_to_high_dimension_basic(DoE_low_dimension = temp, A = A)
         
-        # Turn values between 0 and 1 to legal area values by rounding then multiplying
+        # Turn values between 0 and 1 to legal Area values by rounding then multiplying
         temp_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix(DoE_high_dimension_rowwise_matrix = temp_high_dimension,
                                                                                                               RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS,
                                                                                                               FullTable_arg = FullTable,
@@ -200,7 +200,7 @@ generate_legal_unique_samples <- function(n,
       # If we are using maximinLHS, valid_samples is an empty data.frame/tibble
       # if (isFALSE(use_dplyr)) {
       colnames_samples <- colnames(samples)
-      area_cols <- grep("area", colnames_samples)
+      area_cols <- grep("Area", colnames_samples)
       samples_area_numeric <- samples[, area_cols, drop = FALSE]
       # apply works naturally on columns, so either pass 2 or transpose after
       samples_area_numeric <- apply(samples_area_numeric, 2, as.numeric)
@@ -500,7 +500,7 @@ transform_DoE_high_dimension_continuous_to_strategy_rowwise_matrix <- function(
   # Possible values for Area, and Tree Specie (Years later)
   area_possible_non_zero_values <- FullTable %>%
     sf::st_drop_geometry() %>%
-    dplyr::select(area) %>%
+    dplyr::select(Area) %>%
     unlist(use.names = FALSE)
   # Prevent potential miscalculations
   area_possible_non_zero_values[year_of_max_no_planting_threshold_vector == MAXYEAR] <- 0
@@ -752,7 +752,7 @@ get_outcomes_from_strategy <- function(parameter_vector,
   
   # Remove invalid rows 3 ms ----
   FullTable_long <- FullTable_long[
-    # Filter rows where area is non-zero and conditions on tree species match
+    # Filter rows where Area is non-zero and conditions on tree species match
     strategy_area != 0 &
       treespecie == strategy_treespecie,
   ]
@@ -998,7 +998,7 @@ generate_samples_RRembo <- function(d, lower, upper, budget = 100,
   DoE_low_dimension <- map(DoE_low_dimension, A)
   notif(paste(msg, "done"), log_level = "debug", max_limit_log_level = max_limit_log_level)
   
-  # Turn values between 0 and 1 to legal area values by rounding then multiplying
+  # Turn values between 0 and 1 to legal Area values by rounding then multiplying
   msg <- "RREMBO generating data. Generate high dimension data part 2 (map to categorical values) ..."
   notif(msg, log_level = "debug", max_limit_log_level = max_limit_log_level)
   values <- continuous_to_categorical(values = DoE_high_dimension,
@@ -1586,7 +1586,7 @@ batch_selection <- function(acquisition_values, batch_size = 1, max_limit_log_le
   return(order(acquisition_values, decreasing = TRUE)[1:batch_size])
 }
 
-objective_function <- function(inputs, # c(area, year_planting, tree_specie)
+objective_function <- function(inputs, # c(Area, year_planting, tree_specie)
                                area_sum_threshold, # number
                                year_of_max_no_planting_threshold_vector, # vector
                                FullTable_arg,
@@ -1821,7 +1821,7 @@ notif <- function(msg = "",
                   # cURL flags (when using ntfy)
                   curl_flags = NULL,
                   # Notify on ntfy with what priority notifications (https://docs.ntfy.sh/publish/?h=priority#message-priority)
-                  ntfy = TRUE, ntfy_priority = "default",
+                  ntfy = FALSE, ntfy_priority = "default",
                   # Useful to print data.frames correctly on ntfy
                   rbind = FALSE, pad_character = "_",
                   # Log to a unique file per Shiny session (`server(...)` instance)
@@ -1835,6 +1835,26 @@ notif <- function(msg = "",
   
   # Avoid sending notifications out of order
   Sys.sleep(0.1)
+  
+  # Regular Colors
+  NOCOLOR='\033[0m'
+  BLACK <- "\033[0;30m"
+  RED <- "\033[0;31m"
+  GREEN <- "\033[0;32m"
+  YELLOW <- "\033[0;33m"
+  BLUE <- "\033[0;34m"
+  PURPLE <- "\033[0;35m"
+  CYAN <- "\033[0;36m"
+  WHITE <- "\033[0;37m"
+  
+  COLOR <- switch(
+    log_level,
+    "none" = BLACK,
+    "error" = RED,
+    "warning" = YELLOW,
+    "info" = GREEN,
+    "debug" = PURPLE,
+  )
   
   log_level_msg <- toupper(log_level)
   log_level <- switch(
@@ -1856,14 +1876,12 @@ notif <- function(msg = "",
   
   if (log_level > max_limit_log_level) return()
   
-  options(digits.secs = 6)
   if (isFALSE(rbind)) {
-    msg <- paste0(Sys.time(), " [", log_level_msg, "] ", msg)
+    msg <- paste0(Sys.time(), "\t", "[", COLOR, log_level_msg, NOCOLOR, "] ", msg)
   } else {
-    msg <- rbind(c(paste0(Sys.time(), " [", log_level_msg, "] "), rep(NA, ncol(msg))),
+    msg <- rbind(c(paste0(Sys.time(), "\t", "[", COLOR, log_level_msg, NOCOLOR, "] "), rep(NA, ncol(msg))),
                  msg)
   }
-  options(digits.secs = NULL)
   
   pad_notif_message <- function(msg, pad_character = "_") {
     max_key_width <- max(nchar(rownames(msg)))
@@ -2469,10 +2487,10 @@ bayesian_optimization <- function(
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
       "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
-      "Σarea summary" = paste0(round(sum_area, 2), collapse = "; "),
-      "area max" = area_sum_threshold,
-      "Σcarbon summary" = paste0(round(sum_carbon, 2), collapse = "; "),
-      "carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
+      "ΣArea summary" = paste0(round(sum_area, 2), collapse = "; "),
+      "Area max" = area_sum_threshold,
+      "ΣCarbon summary" = paste0(round(sum_carbon, 2), collapse = "; "),
+      "Carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
       # "sum area_invalidness" = sum(diff_area_possible, na.rm = TRUE),
       # "obj_value" = paste0(obj_outputs[legal_output_indices], collapse = "; "),
       # "exploration coefficient" = EXPLORATION_COEFFICIENT,
@@ -2493,7 +2511,7 @@ bayesian_optimization <- function(
     # print(notif_msg)
     notif(notif_msg, rbind  = TRUE, max_limit_log_level = max_limit_log_level)
     
-    # Sum area / Sum carbon
+    # Sum Area / Sum Carbon
     if (isTRUE(PLOT)) {
       
       carbon_vectors <- matrix(carbon_possible_non_zero_values, ncol = RREMBO_HYPER_PARAMETERS$D, nrow = nrow(obj_inputs), byrow = TRUE)
@@ -2534,10 +2552,10 @@ bayesian_optimization <- function(
                  xmin = outcomes_to_maximize_sum_threshold_vector[1], xmax = Inf, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Carbon sums, tab 2",
-             subtitle = "Green is the set of target-compatible carbon sums",
+             subtitle = "Green is the set of target-compatible Carbon sums",
              x = "Carbon sums",
              y = "Obj value")
-      ggsave("tab2-carbon-obj.png")
+      ggsave("tab2-Carbon-obj.png")
       # with animation
       all_rows <- data.frame(sumcarbon = rowSums(obj_inputs), obj = obj_outputs) |>
         unique()
@@ -2562,7 +2580,7 @@ bayesian_optimization <- function(
                  xmin = outcomes_to_maximize_sum_threshold_vector[1], xmax = Inf, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Area sums, tab 2, {closest_state}",
-             subtitle = "Green is the set of target-compatible carbon sums",
+             subtitle = "Green is the set of target-compatible Carbon sums",
              x = "Area sums",
              y = "Obj value")
       gganimate::animate(a,
@@ -2571,7 +2589,7 @@ bayesian_optimization <- function(
                          width = 1920,
                          height = 1080,
                          renderer = gifski_renderer()) |>
-        gganimate::anim_save(filename = "tab2-carbon-obj.gif")
+        gganimate::anim_save(filename = "tab2-Carbon-obj.gif")
       
       
       
@@ -2585,10 +2603,10 @@ bayesian_optimization <- function(
                  xmin = -Inf, xmax = area_sum_threshold, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Area sums, tab 2",
-             subtitle = "Green is the set of target-compatible area sums",
+             subtitle = "Green is the set of target-compatible Area sums",
              x = "Area sums",
              y = "Obj value")
-      ggsave("tab2-area-obj.png")
+      ggsave("tab2-Area-obj.png")
       # with animation
       all_rows <- data.frame(sumarea = rowSums(obj_inputs), obj = obj_outputs) |>
         unique()
@@ -2613,7 +2631,7 @@ bayesian_optimization <- function(
                  xmin = -Inf, xmax = area_sum_threshold, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Area sums, tab 2, {closest_state}",
-             subtitle = "Green is the set of target-compatible carbon sums",
+             subtitle = "Green is the set of target-compatible Carbon sums",
              x = "Area sums",
              y = "Obj value")
       gganimate::animate(a,
@@ -2622,7 +2640,7 @@ bayesian_optimization <- function(
                          width = 1920,
                          height = 1080,
                          renderer = gifski_renderer()) |>
-        gganimate::anim_save(filename = "tab2-area-obj.gif")
+        gganimate::anim_save(filename = "tab2-Area-obj.gif")
       
       # Map
       # Target-compatible obj_inputs
@@ -2707,10 +2725,10 @@ bayesian_optimization <- function(
                  xmin = outcomes_to_maximize_sum_threshold_vector[1], xmax = Inf, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Carbon sums, tab 1",
-             subtitle = "Green is the set of target-compatible carbon sums",
+             subtitle = "Green is the set of target-compatible Carbon sums",
              x = "Carbon sums",
              y = "Obj value")
-      ggsave("tab1-carbon-obj.png")
+      ggsave("tab1-Carbon-obj.png")
       # with animation
       all_rows <- data.frame(sumcarbon = rowSums(carbon_vectors), obj = obj_outputs) |>
         unique()
@@ -2735,7 +2753,7 @@ bayesian_optimization <- function(
                  xmin = outcomes_to_maximize_sum_threshold_vector[1], xmax = Inf, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Carbon sums, tab 1, {closest_state}",
-             subtitle = "Green is the set of target-compatible carbon sums",
+             subtitle = "Green is the set of target-compatible Carbon sums",
              x = "Carbon sums",
              y = "Obj value")
       gganimate::animate(a,
@@ -2744,7 +2762,7 @@ bayesian_optimization <- function(
                          width = 1920,
                          height = 1080,
                          renderer = gifski_renderer()) |>
-        gganimate::anim_save(filename = "tab1-carbon-obj.gif")
+        gganimate::anim_save(filename = "tab1-Carbon-obj.gif")
       
       
       
@@ -2759,10 +2777,10 @@ bayesian_optimization <- function(
                  xmin = -Inf, xmax = area_sum_threshold, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Area sums, tab 1",
-             subtitle = "Green is the set of target-compatible area sums",
+             subtitle = "Green is the set of target-compatible Area sums",
              x = "Area sums",
              y = "Obj value")
-      ggsave("tab1-area-obj.png")
+      ggsave("tab1-Area-obj.png")
       # with animation
       all_rows <- data.frame(sumarea = rowSums(obj_inputs), obj = obj_outputs) |>
         unique()
@@ -2787,7 +2805,7 @@ bayesian_optimization <- function(
                  xmin = -Inf, xmax = area_sum_threshold, ymin = -Inf, ymax = Inf,
                  fill = "green", alpha = 0.2) +
         labs(title = "Obj value / Area sums, tab 1, {closest_state}",
-             subtitle = "Green is the set of target-compatible carbon sums",
+             subtitle = "Green is the set of target-compatible Carbon sums",
              x = "Area sums",
              y = "Obj value")
       gganimate::animate(a,
@@ -2796,20 +2814,20 @@ bayesian_optimization <- function(
                          width = 1920,
                          height = 1080,
                          renderer = gifski_renderer()) |>
-        gganimate::anim_save(filename = "tab1-area-obj.gif")
+        gganimate::anim_save(filename = "tab1-Area-obj.gif")
     }
     
     notif_msg <- rbind(
       "# strategies searched" = n + n * BAYESIAN_OPTIMIZATION_ITERATIONS,
       "# strategies evaluated" = (2 * BAYESIAN_OPTIMIZATION_ITERATIONS) * BAYESIAN_OPTIMIZATION_BATCH_SIZE + 10 * 6,
       "# locations" = number_of_locations,
-      "Σarea" = outcome$sum_area,
-      "area max" = area_sum_threshold,
-      "Σcarbon" = outcome$sum_carbon,
-      "carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
+      "ΣArea" = outcome$sum_area,
+      "Area max" = area_sum_threshold,
+      "ΣCarbon" = outcome$sum_carbon,
+      "Carbon min" = outcomes_to_maximize_sum_threshold_vector["Carbon"],
       # "sum area_invalidness" = sum(diff_area_possible, na.rm = TRUE),
       "obj_value" = min(obj_outputs),
-      "preference weight area" = preference_weight_area,
+      "preference weight Area" = preference_weight_area,
       "preference weight outcomes to maximize" = toString(preference_weights_maximize),
       "# initial design points" = n,
       "smart REMBO" = RREMBO_SMART,
