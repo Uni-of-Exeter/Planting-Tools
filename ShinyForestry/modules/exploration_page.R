@@ -62,11 +62,11 @@ exploration_page_server <- function(id, state) {
     filtered_data_one <- reactiveVal(NULL)
     current_layers_one <- reactiveVal(list())
 
-    initialize_or_update_map <- function(input_year) {
+    initialize_or_update_map <- function(input_year, cluster_choice = 1) {
       # Fetch the data from the API when initializing or submitting
       # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
       
-      new_fetched_one <- get_exploration_initialise(cluster=1)  # hardcoded
+      new_fetched_one <- get_exploration_initialise(cluster=cluster_choice)
       
       new_data_fetched_one <- new_fetched_one$geojson
       new_data_fetched_one$parcel_id <- paste0(new_data_fetched_one$parcel_id, "_one")
@@ -130,9 +130,11 @@ exploration_page_server <- function(id, state) {
       }
     }
     
-    observe({
-      req(!state$initialized)
-      initialize_or_update_map(YEAR_MIN)
+    observeEvent(state$alt_cluster_choice, {
+      req(state$initialized)
+      req(!is.null(state$alt_cluster_choice) && state$alt_cluster_choice != FALSE)  # Ensure state$alt_cluster_choice is NULL or FALSE
+      year <- as.numeric(current_year())
+      initialize_or_update_map(year, cluster_choice = state$alt_cluster_choice)
       state$exp_tab$initialized <- TRUE
     })
     
@@ -294,11 +296,6 @@ exploration_page_server <- function(id, state) {
           ),
       )
     })
-    
-    
-    
-    
-    
     
   })
 }
