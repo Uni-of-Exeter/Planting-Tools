@@ -668,10 +668,7 @@ alt_page_server <- function(id, state) {
           
           # Get the display name for the slider (from the slider names list)
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
@@ -718,10 +715,7 @@ alt_page_server <- function(id, state) {
           
           # Get the display name for the slider (from the slider names list)
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
@@ -762,10 +756,7 @@ alt_page_server <- function(id, state) {
           
           # Get the display name for the slider (from the slider names list)
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)
@@ -806,10 +797,7 @@ alt_page_server <- function(id, state) {
           
           # Get the display name for the slider (from the slider names list)
           display_name <- state$map_tab$slider$names[idx]
-          
-          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
-          # If unit is not available, you can use a default unit like "units"
-          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
           value <- round(current_value[[name]], POPUP_SIGFIG)

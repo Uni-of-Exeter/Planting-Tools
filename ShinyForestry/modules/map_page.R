@@ -505,9 +505,10 @@ map_page_server <- function(id, state) {
           values = setNames(
             lapply(1:ncol(slider_info$min_max_default), function(i) {
               list( # making integers for
-                min = round(as.numeric(slider_info$min_max_default[1, ..i][[1]]), 1),          # Extract first row as numeric
-                max = round(as.numeric(slider_info$min_max_default[2, ..i][[1]]), 1),          # Extract second row as numeric
-                default = round(as.numeric(slider_info$min_max_default[3, ..i][[1]]), 1)       # Extract third row as numeric
+                min = round(as.numeric(slider_info$min_max_default[[1, i]]), 1),
+                max = round(as.numeric(slider_info$min_max_default[[2, i]]), 1),
+                default = round(as.numeric(slider_info$min_max_default[[3, i]]), 1),
+                unit = slider_info$units[[1, i]]
               )
             }),
             colnames(slider_info$min_max_default)  # Use column names as keys
@@ -536,6 +537,8 @@ map_page_server <- function(id, state) {
               min_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$min), 1)
               max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), 1)
               default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
+              unit <- state$map_tab$slider$values[[slider]]$unit
+              unit_label <- paste0("[", unit, "]")
               
               # # Debugging: Print min, max, default values to check their structure
               # print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
@@ -545,7 +548,7 @@ map_page_server <- function(id, state) {
                 column(CHECKBOX_COL, checkboxInput(ns(paste0(slider, "_checkbox")), NULL, value = TRUE)),
                 column(SLIDER_COL, sliderInput(
                   ns(slider), 
-                  label = slider,  # Use the slider name as the label
+                  label = paste0(slider, " ", unit_label),  # Use the slider name as the label
                   min = min_value,
                   max = max_value,
                   value = default_value,
