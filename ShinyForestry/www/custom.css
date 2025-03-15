@@ -519,7 +519,7 @@ body {
 }
 #exploration-page .explore-box.map2 {
   bottom: 50px; /* Adjust for navbar */
-  left: 10px; /* Right side of the first map */
+  right: 10px; /* Right side of the first map */
 }
 
 #exploration-page .explore-box-content {

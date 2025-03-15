@@ -16,8 +16,8 @@ exploration_page_ui <- function(id) {
         )
     ),
     map_and_slider_ui(id = ns("explore"), 2025, 2049, 2025, show_time_series=FALSE),
-    div(id = "value-box-1", class = "explore-box map1", uiOutput(ns("value_boxes"))),
-    div(id = "value-box-2", class = "explore-box map2", uiOutput(ns("value_box_one")))
+    div(id = "value-box-1", class = "explore-box map2", uiOutput(ns("value_boxes"))),
+    # div(id = "value-box-2", class = "explore-box map2", uiOutput(ns("value_box_one")))
   )
 }
 
@@ -29,14 +29,14 @@ exploration_page_server <- function(id, state) {
       leaflet() %>%
         addResetMapButton() %>%
         addProviderTiles(providers$CartoDB.Voyager) %>%  # Use your custom base map layer
-        setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom) %>%
-        addLegend(
-          position = "bottomright",
-          colors = adjustcolor(unname(head(COLOUR_MAPPING, -1)), alpha.f = FILL_OPACITY),
-          labels = names(head(COLOUR_MAPPING, -1)),
-          title = "Planting Type",
-          opacity = 1.0
-        )
+        setView(lng = state$map$lng, lat = state$map$lat, zoom = state$map$zoom)
+        # addLegend(
+        #   position = "topright",
+        #   colors = adjustcolor(unname(head(COLOUR_MAPPING, -1)), alpha.f = FILL_OPACITY),
+        #   labels = names(head(COLOUR_MAPPING, -1)),
+        #   title = "Planting Type",
+        #   opacity = 1.0
+        # )
     })
     
     outputOptions(output, "map1", suspendWhenHidden = FALSE)
@@ -88,6 +88,38 @@ exploration_page_server <- function(id, state) {
         
         # Render the leaflet map with the updated data
         
+        legend_html <- paste0(
+          "<b>Outcomes</b><br><br>",
+          "<table style='width:100%; text-align:left;'>",
+          paste0(
+            lapply(names(new_values_fetched_one), function(name) {
+              # Get the index of the slider name in state$map_tab$slider$names
+              idx <- which(state$map_tab$slider$names == name)
+              
+              # Get the display name for the slider (from the slider names list)
+              if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+                specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+              } else {
+                specie_to_print <- state$map_tab$slider$names[idx]
+              }
+              display_name <- specie_to_print
+              
+              # Get the current value for the slider
+              value <- round(new_values_fetched_one[[name]], POPUP_ROUND)
+              
+              # Get the unit for the slider
+              unit <- state$map_tab$slider$values[[name]]$unit
+              
+              # Format the name, value, and unit into a table row
+              sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
+               <td style='text-align:left;'>%s %s</td></tr>",
+                      display_name, value, unit)
+            }),
+            collapse = "\n"
+          ),
+          "</table></div>"
+        )
+        
         leafletProxy("map1") %>%
           addPolygons(
             data = new_data_fetched_one,  # Use the full dataset as the base layer
@@ -110,7 +142,15 @@ exploration_page_server <- function(id, state) {
             group = "unavailablePolygons",
             layerId = ~id,
             # popup = "Unavailable for planting"
-          )
+          ) %>% 
+          addLegend(
+            position = "topright",
+            colors = adjustcolor(unname(head(COLOUR_MAPPING, -1)), alpha.f = FILL_OPACITY),
+            labels = names(head(COLOUR_MAPPING, -1)),
+            title = "Planting Type",
+            opacity = 1.0,
+            layerId = "legend"
+          ) %>% addControl(html = legend_html, position='topright', layerId = "legend_control")
           
           if (nrow(filtered_data_subset_one) > 0) {
             leafletProxy("map1") %>%
@@ -310,39 +350,39 @@ exploration_page_server <- function(id, state) {
       )
     })
     
-    output$value_box_one <- renderUI({
-      current_value <- new_vals_one()
-      
-      # Generate table rows dynamically
-      table_rows <- paste0(
-        lapply(names(current_value), function(name) {
-          # Get the index of the slider name in state$map_tab$slider$names
-          idx <- which(state$map_tab$slider$names == name)
-          
-          # Get the display name for the slider (from the slider names list)
-          display_name <- state$map_tab$slider$names[idx]
-          unit <- state$map_tab$slider$values[[idx]]$unit
-          
-          # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
-          
-          # Format each row with labels aligned left and values aligned right
-          sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-               <td style='text-align:left;'>%s %s</td></tr>",
-                  display_name, value, unit)
-        }),
-        collapse = "\n"
-      )
-      
-      # Construct the legend-like content with tabbed format
-      legend_html <- paste0(
-        "<table style='width:100%;'>",  # Ensuring the table takes full width
-        table_rows,  # Add dynamically generated rows
-        "</table>"
-      )
-      
-      HTML(legend_html)  # Return HTML to be rendered
-    })
+    # output$value_box_one <- renderUI({
+    #   current_value <- new_vals_one()
+    #   
+    #   # Generate table rows dynamically
+    #   table_rows <- paste0(
+    #     lapply(names(current_value), function(name) {
+    #       # Get the index of the slider name in state$map_tab$slider$names
+    #       idx <- which(state$map_tab$slider$names == name)
+    #       
+    #       # Get the display name for the slider (from the slider names list)
+    #       display_name <- state$map_tab$slider$names[idx]
+    #       unit <- state$map_tab$slider$values[[idx]]$unit
+    #       
+    #       # Get the current value for the slider
+    #       value <- signif(current_value[[name]], POPUP_SIGFIG)
+    #       
+    #       # Format each row with labels aligned left and values aligned right
+    #       sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
+    #            <td style='text-align:left;'>%s %s</td></tr>",
+    #               display_name, value, unit)
+    #     }),
+    #     collapse = "\n"
+    #   )
+    #   
+    #   # Construct the legend-like content with tabbed format
+    #   legend_html <- paste0(
+    #     "<table style='width:100%;'>",  # Ensuring the table takes full width
+    #     table_rows,  # Add dynamically generated rows
+    #     "</table>"
+    #   )
+    #   
+    #   HTML(legend_html)  # Return HTML to be rendered
+    # })
     
     
   })

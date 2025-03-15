@@ -20,6 +20,16 @@ library(glue)
 source("utils/api_functions.R")
 source("config.R")
 
+# Function to get pretty English names for species
+get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
+  if (ugly_english_specie == "Food_Produced") return("Food Produced")
+  if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
+  idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
+  if (length(idx) == 0) return(ugly_english_specie)
+  result <- NAME_CONVERSION_ARG$English_specie_pretty[idx]
+  return(result)
+}
+
 map_page_ui <- function(id) {
   ns <- NS(id)
   
@@ -102,7 +112,7 @@ map_page_server <- function(id, state) {
       req(state$map_tab)
       default_values <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
-          round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)  # Extract default values; rounding to 1 DP because of sliders
+          round(as.numeric(state$map_tab$slider$values[[slider]]$default), POPUP_ROUND)  # Extract default values; rounding to 1 DP because of sliders
         }),
         state$map_tab$slider$names
       )
@@ -345,16 +355,8 @@ map_page_server <- function(id, state) {
               # Get the index of the slider name in state$map_tab$slider$names
               idx <- which(state$map_tab$slider$names == name)
               
-              get_pretty_english_specie <- function(ugly_english_specie, NAME_CONVERSION_ARG = NAME_CONVERSION) {
-                if (ugly_english_specie %in% NAME_CONVERSION_ARG$English_specie_pretty) return(ugly_english_specie)
-                idx <- which(NAME_CONVERSION_ARG$English_specie == ugly_english_specie)
-                if (length(idx) == 0) return(ugly_english_specie)
-                result <- NAME_CONVERSION_ARG$English_specie_pretty[idx]
-                return(result)
-              }
-              
               # Get the display name for the slider (from the slider names list)
-              if (state$map_tab$slider$names[idx] %in% NAME_CONVERSION$English_specie) {
+              if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
                 specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
               } else {
                 specie_to_print <- state$map_tab$slider$names[idx]
@@ -362,14 +364,15 @@ map_page_server <- function(id, state) {
               display_name <- specie_to_print
               
               # Get the current value for the slider
-              value <- signif(new_vals()[[name]], POPUP_SIGFIG)
+              value <- round(new_vals()[[name]], POPUP_ROUND)
               
+              # Get the unit for the slider
+              unit <- state$map_tab$slider$values[[name]]$unit
+              
+              # Format the name, value, and unit into a table row
               sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
-               <td style='text-align:left;'>%s</td></tr>",
-                      display_name, value)
-              
-              # Format the name and value into a table row (without unit for now)
-              # sprintf("<tr><td>%s:</td> <td>%s</td></tr>", display_name, value)
+               <td style='text-align:left;'>%s %s</td></tr>",
+                      display_name, value, unit)
             }),
             collapse = "\n"
           ),
@@ -505,9 +508,9 @@ map_page_server <- function(id, state) {
           values = setNames(
             lapply(1:ncol(slider_info$min_max_default), function(i) {
               list( # making integers for
-                min = round(as.numeric(slider_info$min_max_default[[1, i]]), 1),
-                max = round(as.numeric(slider_info$min_max_default[[2, i]]), 1),
-                default = round(as.numeric(slider_info$min_max_default[[3, i]]), 1),
+                min = round(as.numeric(slider_info$min_max_default[[1, i]]), POPUP_ROUND),
+                max = round(as.numeric(slider_info$min_max_default[[2, i]]), POPUP_ROUND),
+                default = round(as.numeric(slider_info$min_max_default[[3, i]]), POPUP_ROUND),
                 unit = slider_info$units[[1, i]]
               )
             }),
@@ -519,7 +522,7 @@ map_page_server <- function(id, state) {
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
               # Directly extract the numeric default value from the list without nesting
-              round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
+              round(as.numeric(state$map_tab$slider$values[[slider]]$default), POPUP_ROUND)
             }),
             state$map_tab$slider$names
           ),
@@ -534,21 +537,27 @@ map_page_server <- function(id, state) {
           tagList(
             lapply(state$map_tab$slider$names, function(slider) {
               # Extract the min, max, and default values and ensure they are numeric
-              min_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$min), 1)
-              max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), 1)
-              default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), 1)
+              min_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$min), POPUP_ROUND)
+              max_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$max), POPUP_ROUND)
+              default_value <- round(as.numeric(state$map_tab$slider$values[[slider]]$default), POPUP_ROUND)
               unit <- state$map_tab$slider$values[[slider]]$unit
               unit_label <- paste0("[", unit, "]")
               
               # # Debugging: Print min, max, default values to check their structure
               # print(paste0("Slider: ", slider, ", Min: ", min_value, ", Max: ", max_value, ", Default: ", default_value))
               
+              if (slider %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+                slider_display_name <- get_pretty_english_specie(slider, NAME_CONVERSION)
+              } else {
+                slider_display_name <- slider
+              }
+              
               # Create a fluidRow with a checkbox and sliderInput for each slider
               fluidRow(
                 column(CHECKBOX_COL, checkboxInput(ns(paste0(slider, "_checkbox")), NULL, value = TRUE)),
                 column(SLIDER_COL, sliderInput(
                   ns(slider), 
-                  label = paste0(slider, " ", unit_label),  # Use the slider name as the label
+                  label = paste0(slider_display_name, " ", unit_label),  # Use the slider name as the label
                   min = min_value,
                   max = max_value,
                   value = default_value,
@@ -598,7 +607,7 @@ map_page_server <- function(id, state) {
         initial_values(
           setNames(
             lapply(state$map_tab$slider$names, function(slider) {
-              num_value <- round(as.numeric(input[[slider]]), 1) # Convert to numeric
+              num_value <- round(as.numeric(input[[slider]]), POPUP_ROUND) # Convert to numeric
               if (is.na(num_value)) return(NULL)  # Handle cases where conversion fails (optional)
               return(num_value)
             }),
@@ -706,7 +715,7 @@ map_page_server <- function(id, state) {
       # Get the current slider values with namespacing
       current_values_list <- setNames(
         lapply(state$map_tab$slider$names, function(slider) {
-          num_value <- round(as.numeric(input[[slider]]), 1)
+          num_value <- round(as.numeric(input[[slider]]), POPUP_ROUND)
           return(num_value)
         }),
         state$map_tab$slider$names  # Use slider names as the list names

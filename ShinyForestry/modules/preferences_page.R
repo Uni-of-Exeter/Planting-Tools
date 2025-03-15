@@ -404,11 +404,16 @@ preferences_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
           unit <- state$map_tab$slider$values[[idx]]$unit
 
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
@@ -438,11 +443,18 @@ preferences_page_server <- function(id, state) {
           idx <- which(state$map_tab$slider$names == name)
           
           # Get the display name for the slider (from the slider names list)
+          if (state$map_tab$slider$names[idx] %in% c(NAME_CONVERSION$English_specie, "Food_Produced")) {
+            specie_to_print <- get_pretty_english_specie(state$map_tab$slider$names[idx], NAME_CONVERSION)
+          } else {
+            specie_to_print <- state$map_tab$slider$names[idx]
+          }
           display_name <- state$map_tab$slider$names[idx]
+          
+          
           unit <- state$map_tab$slider$values[[idx]]$unit
           
           # Get the current value for the slider
-          value <- round(current_value[[name]], POPUP_SIGFIG)
+          value <- round(current_value[[name]], POPUP_ROUND)
           
           # Format each row with labels aligned left and values aligned right
           sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
