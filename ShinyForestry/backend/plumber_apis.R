@@ -1635,7 +1635,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
       min_max <- rbind(as.list(setNames(rep(0,length(TARGETS)),names(max_values))), max_values)
       defaults_quantile <- runif(1, 0.5,0.75)
       defaults <- max_values[1, .SD*defaults_quantile]
-      defaults$area <- max_values$area
+      defaults$Area <- max_values$Area
       defaults[, (names(defaults)) := lapply(.SD, signif,digits=3)]
       min_max_default <- rbind(min_max, defaults)
       return(list(defaults = defaults,
