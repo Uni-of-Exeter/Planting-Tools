@@ -41,31 +41,40 @@ for(i in 1:length(packages)) {
 source(file.path(FolderSource, "config.R"))
 
 # more --> less: debug / info / warning / error / none
-MAX_LIMIT_LOG_LEVEL <- "info"
+MAX_LIMIT_LOG_LEVEL <- "debug"
 if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"), mustWork = FALSE))) {
   source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 } else {
   source(normalizePath(file.path(FolderSource, "backend", "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
 }
 
 # If the backend was already initialized, saved to disk, and environment variable is valid, use it
-run_initalization_on_backend <- FALSE
+run_initialization_on_backend <- FALSE
 backend_initialization_env_file <- normalizePath(file.path(elicitor_folder, "backend_env.rds"))
 if (file.exists(backend_initialization_env_file)) {
   
   env <- readRDS(backend_initialization_env_file)
   # Ensure file is valid
-  if (isFALSE(is.list(env))) { # if it's is.environment it breaks my frontend
+  if (isFALSE(is.environment(env))) { # if it's is.environment it breaks my frontend
     notif(paste(backend_initialization_env_file, "seems to be corrupted. Deleting it."))
     file.remove(backend_initialization_env_file)
-    run_initalization_on_backend <- TRUE
+    run_initialization_on_backend <- TRUE
+  }
+  
+  # Check if backend was initialized
+  url <- paste0(API_URL, "/check_initialized")
+  response <- httr::GET(url)
+  if (httr::status_code(response) == 404) {
+    run_initialization_on_backend <- TRUE
   }
   
 } else {
-  run_initalization_on_backend <- TRUE
+  run_initialization_on_backend <- TRUE
 }
 
-if (isTRUE(run_initalization_on_backend)) {
+if (isTRUE(run_initialization_on_backend)) {
   
   # If a file does not exist, stop everything
   filenames <- c("land_parcels.shp.zip", "decision_units.json", "outcomes.json")
@@ -150,6 +159,14 @@ if (isTRUE(run_initalization_on_backend)) {
 
 # Load environment to the .GlobalEnv
 list2env(as.list(env), envir = .GlobalEnv)
+
+if (file.exists(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R"), mustWork = FALSE))) {
+  source(normalizePath(file.path(FolderSource, "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
+} else {
+  source(normalizePath(file.path(FolderSource, "backend", "bayesian-optimization-functions.R")), local = TRUE)
+  source(normalizePath(file.path(FolderSource, "functions.R")), local = TRUE)
+}
 
 # Source module files
 source("global.R")  # Load global settings
@@ -253,8 +270,8 @@ server <- function(input, output, session) {
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
     if (!is.null(input$mappageRendered) && input$mappageRendered
-        && !is.null(input$prefpageRendered) && input$prefpageRendered ){
-        # && !is.null(input$altpageRendered) && input$altpageRendered ){
+        && !is.null(input$prefpageRendered) && input$prefpageRendered
+        && !is.null(input$altpageRendered) && input$altpageRendered) {
         # && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
         
       # Hide the loading screen after both maps are rendered

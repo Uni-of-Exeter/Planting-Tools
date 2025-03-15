@@ -65,7 +65,7 @@ Strategies <- foreach(
 #Needed for passing strategies to and from front
 parcel_ids = paste0("id",parcel_id)
 
-#FullTable_working corrects the issue with visits only being available for year 0
+#FullTable_working corrects the issue with Visits only being available for year 0
 FullTable_working <- copy(FullTable_long)
 FullTable_working[, scenario := NULL]
 
@@ -93,18 +93,44 @@ FullTable_working <- FullTable_working[
   is.na(outcome_sub_type) | outcome_sub_type %in% SPECIES
 ]
 
+load("ShinyForestry/Arable_livestock_data/merged_calories.RData")
+
+for (year in 0:25) {
+  
+  # Identify the correct column name
+  calorie_col <- paste0("Calories_Arable_Livestock_", 2025 + year)
+  
+  # Check if the column exists in merged_calories
+  if (calorie_col %in% names(merged_calories)) {
+    
+    # Create a lookup table with row index as parcel_id
+    calorie_mapping <- merged_calories[, .(parcel_id = .I, outcome_value = get(calorie_col))]
+    
+    
+    # Perform the merge using a data.table join
+    FullTable_working[outcome_type == "Visits" & 
+                        statistic_name == "Mean" & 
+                        planting_year == year, 
+                      outcome_value := calorie_mapping[.SD, on = "parcel_id", x.outcome_value]]
+  }
+}
+
+
+# Convert to "kilo calories"
+FullTable_working[outcome_type == "Visits" & statistic_name == "Mean", 
+                  `:=`(outcome_value = outcome_value / 1e3)]
 
 #Find the outcomes from strategies
 strategy_outcomes <- rbindlist(lapply(1:NSamp, function(jj) get_outcome_dt(Strategies[jj,], FullTable_working)))
 strategy_outcomes[, strategy_id := 1:NSamp]
 
-TARGETS <- c("carbon", SPECIES, "area", "visits")
+TARGETS <- c("Carbon", SPECIES, "Area", "Visits")
 
 #establish preference weights
 preference_weights <- c()
 for(target in TARGETS){
   preference_weights[target] <- 1/max(strategy_outcomes[,..target])
-  if(target=="area"){preference_weights[target] <- -preference_weights[target]}
+  if(target=="Area"){preference_weights[target] <- -preference_weights[target]}
 }
 
 #Store objective function as weighted combination of outcomes
@@ -114,8 +140,8 @@ defaults <- NULL
 get_slider_info <- function(){
   max_values <- strategy_outcomes[, lapply(.SD, max, na.rm=TRUE), .SDcols = TARGETS]
   names(max_values)[which(names(max_values)=="All")] <- "biodiversity"
-  names(max_values)[which(names(max_values)=="visits")] <- "recreation"
-  bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(max_values)[which(names(max_values)=="Visits")] <- "Recreation"
+  bio_names_latin <- names(max_values)[ ! names(max_values)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -138,13 +164,13 @@ get_slider_info()
 
 #function() {
 #  slider_info <- list(
-#    carbon = list(min = 500, max = 1000, default = 800),
+#    Carbon = list(min = 500, max = 1000, default = 800),
 #    species = list(min = 0, max = 25, default = 10),
 #    species_goat_moth = list(min = 0, max = 100, default = 25),
 #    species_stag_beetle = list(min = 0, max = 100, default = 30),
 #    species_lichens = list(min = 0, max = 5, default = 2),
-#    area = list(min = 0, max = 15, default = 10),
-#    recreation = list(min = 0, max = 20, default = 15)
+#    Area = list(min = 0, max = 15, default = 10),
+#    Recreation = list(min = 0, max = 20, default = 15)
 #  )
 #  return(slider_info)
 #}
@@ -152,26 +178,26 @@ get_slider_info()
 #####NOT NEEDED BUT USED FOR TESTING
 #First create a list of the values the app will generate before conversion to JSON
 payload <- list(
-  carbon = 100, #This is the value on the slider, i.e. the user target
+  Carbon = 100, #This is the value on the slider, i.e. the user target
   biodiversity = 24, #All species richness
   Goat_Moth = 17,
   Stag_Beetle = 90,
   Lichens = 5,
-  area = 10,
-  recreation = 20,
+  Area = 10,
+  Recreation = 20,
   blocked_parcels = data.frame(parcel_id = c("id12", "id13"), blocked_until_year = c("2030", "2027"))
 )
 
 json_payload <- jsonlite::toJSON(payload <- payload, auto_unbox = TRUE, pretty=TRUE)
 
 paul_test <- list(
-  carbon = 3,
+  Carbon = 3,
   biodiversity = 0.5,
   Goat_Moth = 0.5,
   Stag_Beetle = 3,
   Lichens = 0.1,
-  area = 19.4,
-  recreation = 0.6,
+  Area = 19.4,
+  Recreation = 0.6,
   blocked_parcels = list()
 )
 json_paul <- jsonlite::toJSON(payload <- paul_test, auto_unbox = TRUE, pretty=TRUE)
@@ -198,10 +224,10 @@ target_compatible_strategies <- strategy_outcomes
 blocked_parcels <- list()
 
 get_first_strategy <- function(){
-  target_carbon <- defaults$carbon
-  target_visits <- defaults$visits
-  target_area <- defaults$area
-  bio_names <- names(defaults)[ ! names(defaults)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+  target_carbon <- defaults$Carbon
+  target_visits <- defaults$Visits
+  target_area <- defaults$Area
+  bio_names <- names(defaults)[ ! names(defaults)%in% c("Carbon", "Area", "Recreation", "blocked_parcels")]
   targets_bio <- defaults[,  ..bio_names]
   names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
   #Convert English to Latin names for FullTable Compatibility
@@ -216,9 +242,9 @@ get_first_strategy <- function(){
       }
     }
   }
-  target_compatible_strategies <<- strategy_outcomes[ (target_carbon - carbon)/carbon_sd < (-sqrt(alpha/(1-alpha))) &
-                                                        area < target_area & 
-                                                        (target_visits - visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
+  target_compatible_strategies <<- strategy_outcomes[ (target_carbon - Carbon)/Carbon_sd < (-sqrt(alpha/(1-alpha))) &
+                                                        Area < target_area & 
+                                                        (target_visits - Visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
                                                         Reduce(`&`, lapply(SPECIES, function(col) 100 * (targets_bio[[col]] - get(col)) < (-sqrt(alpha/(1-alpha))) )) ]
   if(nrow(target_compatible_strategies)>0){
     optimal_strategy_forfrontend <- target_compatible_strategies[which.max(objective)]
@@ -234,7 +260,7 @@ get_first_strategy <- function(){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -245,8 +271,8 @@ get_first_strategy <- function(){
   
   payload <- optimal_strategy_forfrontend[, ..TARGETS]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="Visits")] <- "Recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -274,10 +300,10 @@ submit_button <- function(from_front_end){
   #Amend global blocked_parcels
   blocked_parcels <<- from_submit_button$blocked_parcels
   #Extract targets
-  target_carbon = from_submit_button$carbon
-  target_visits = from_submit_button$recreation
-  target_area = from_submit_button$area
-  bio_names <- names(from_submit_button)[ ! names(from_submit_button)%in% c("carbon", "area", "recreation", "blocked_parcels")]
+  target_carbon = from_submit_button$Carbon
+  target_visits = from_submit_button$Recreation
+  target_area = from_submit_button$Area
+  bio_names <- names(from_submit_button)[ ! names(from_submit_button)%in% c("Carbon", "Area", "Recreation", "blocked_parcels")]
   targets_bio <- from_submit_button[bio_names]
   names(targets_bio)[which(names(targets_bio)=="biodiversity")] <- "All"
   #Convert English to Latin names for FullTable Compatibility
@@ -306,9 +332,9 @@ submit_button <- function(from_front_end){
   }
   #Find the target compatible strategies and assign global variable for use in other algorithms
   target_compatible_strategies <<- strategy_outcomes[ strategy_id %in% valid_strategies &
-                                                       (target_carbon - carbon)/carbon_sd < (-sqrt(alpha/(1-alpha))) &
-                                                       area < target_area & 
-                                                       (target_visits - visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
+                                                       (target_carbon - Carbon)/carbon_sd < (-sqrt(alpha/(1-alpha))) &
+                                                       Area < target_area & 
+                                                       (target_visits - Visits)/visits_sd < (-sqrt(alpha/(1-alpha))) &
                                                        Reduce(`&`, lapply(SPECIES, function(col) 100 * (targets_bio[[col]] - get(col)) < (-sqrt(alpha/(1-alpha))) )) ]
   if(nrow(target_compatible_strategies)>0){
     optimal_strategy_forfrontend <- target_compatible_strategies[which.max(objective)]
@@ -325,7 +351,7 @@ submit_button <- function(from_front_end){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -336,8 +362,8 @@ submit_button <- function(from_front_end){
   
   payload <- optimal_strategy_forfrontend[, ..TARGETS]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="Visits")] <- "Recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -367,8 +393,8 @@ prior_list_temp <- list()
 # mean = 1 / half(midpoint)
 # 2 * sd = 1 / half(midpoint)
 
-prior_list_temp$carbon <- gamma_prior(2 / max(strategy_outcomes[,carbon]),
-                                      1 / max(strategy_outcomes[,carbon]))
+prior_list_temp$Carbon <- gamma_prior(2 / max(strategy_outcomes[,Carbon]),
+                                      1 / max(strategy_outcomes[,Carbon]))
 
 # Species priors, similarly-derived values
 for (i in 1:length(SPECIES)) {
@@ -380,12 +406,12 @@ for (i in 1:length(SPECIES)) {
 }
 
 # Area prior
-prior_list_temp$area <- gamma_prior(- 2 / max(strategy_outcomes[,area]),
-                                    1 / max(strategy_outcomes[,area]))
+prior_list_temp$Area <- gamma_prior(- 2 / max(strategy_outcomes[,Area]),
+                                    1 / max(strategy_outcomes[,Area]))
 
 # Visits prior
-prior_list_temp$visits <- Normal(2 / max(strategy_outcomes[,visits]),
-                                 1 / max(strategy_outcomes[,visits]))
+prior_list_temp$Visits <- Normal(2 / max(strategy_outcomes[,Visits]),
+                                 1 / max(strategy_outcomes[,Visits]))
 
 # Re-order the list in accordance to TARGETS vector
 prior_list <- list()
@@ -420,7 +446,7 @@ preferences_tab_first_click <- function(){
     for_frontend <- st_sf(
       parcel_id = parcel_ids,
       geometry = FullTable$geometry,
-      parcel_area = FullTable$area,
+      parcel_area = FullTable$Area,
       planting_year = ifelse(tyears<2050,tyears,NA),
       planting_types = ifelse(tyears<2050, tspecies, NA),
       blocked_until_year = blocked_until_year,
@@ -431,8 +457,8 @@ preferences_tab_first_click <- function(){
     
     payload <- pref_elicitation_object$data[comparison_index + (index-1)]
     names(payload)[which(names(payload)=="All")] <- "biodiversity"
-    names(payload)[which(names(payload)=="visits")] <- "recreation"
-    bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+    names(payload)[which(names(payload)=="Visits")] <- "Recreation"
+    bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
     bio_names_latin
     for(species in bio_names_latin){
       specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -530,7 +556,7 @@ make_strategy_forfront_altapproach <- function(index){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -541,8 +567,8 @@ make_strategy_forfront_altapproach <- function(index){
   
   payload <- random_strategy[,..TARGETS]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="Visits")] <- "Recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -592,7 +618,7 @@ enter_exploration_tab <- function(which_cluster){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -603,8 +629,8 @@ enter_exploration_tab <- function(which_cluster){
   
   payload <- random_strategy[,..TARGETS]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="Visits")] <- "Recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -637,7 +663,7 @@ plus_button <- function(variable){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -648,8 +674,8 @@ plus_button <- function(variable){
   
   payload <- tc_samples_cluster[current_row,..TARGETS]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="Visits")] <- "Recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)
@@ -665,7 +691,7 @@ plus_button <- function(variable){
   ))
 }
 
-#plus_button("carbon")
+#plus_button("Carbon")
 #plus_button("Cossus_cossus")
 #plus_button("pc_1")
 
@@ -684,7 +710,7 @@ minus_button <- function(variable){
   for_frontend <- st_sf(
     parcel_id = parcel_ids,
     geometry = FullTable$geometry,
-    parcel_area = FullTable$area,
+    parcel_area = FullTable$Area,
     planting_year = ifelse(tyears<2050,tyears,NA),
     planting_types = ifelse(tyears<2050, tspecies, NA),
     blocked_until_year = blocked_until_year,
@@ -695,8 +721,8 @@ minus_button <- function(variable){
   
   payload <- tc_samples_cluster[current_row,..TARGETS]
   names(payload)[which(names(payload)=="All")] <- "biodiversity"
-  names(payload)[which(names(payload)=="visits")] <- "recreation"
-  bio_names_latin <- names(payload)[ ! names(payload)%in% c("carbon", "area", "recreation", "biodiversity")]
+  names(payload)[which(names(payload)=="Visits")] <- "Recreation"
+  bio_names_latin <- names(payload)[ ! names(payload)%in% c("Carbon", "Area", "Recreation", "biodiversity")]
   bio_names_latin
   for(species in bio_names_latin){
     specie_num <- which(NAME_CONVERSION$Specie == species)

@@ -68,9 +68,9 @@ exploration_page_server <- function(id, state) {
       
       new_fetched_one <- get_exploration_initialise(cluster=1)  # hardcoded
       
-      new_data_fetched_one <- new_fetched_one[[1]]
+      new_data_fetched_one <- new_fetched_one$geojson
       new_data_fetched_one$parcel_id <- paste0(new_data_fetched_one$parcel_id, "_one")
-      new_values_fetched_one <- new_fetched_one[[2]]
+      new_values_fetched_one <- new_fetched_one$values
       
       if (!is.null(new_data_fetched_one)) {
         # Apply the filter based on the selected year
@@ -110,19 +110,20 @@ exploration_page_server <- function(id, state) {
           )
           
           if (nrow(filtered_data_subset_one) > 0) {
-            # Add filtered polygons based on the selected year
-            addPolygons(
-              data = filtered_data_subset_one,  # Filtered data based on the year
-              weight = 1,
-              color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Use the planting type color
-              fillOpacity = FILL_OPACITY,
-              layerId = ~parcel_id,
-              label = ~parcel_id,
-              # popup = ~planting_type
-            )
+            leafletProxy("map1") %>%
+              # Add filtered polygons based on the selected year
+              addPolygons(
+                data = filtered_data_subset_one,  # Filtered data based on the year
+                weight = 1,
+                color = PARCEL_LINE_COLOUR,
+                fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Use the planting type color
+                fillOpacity = FILL_OPACITY,
+                layerId = ~parcel_id,
+                label = ~parcel_id,
+                # popup = ~planting_type
+              )
           }
-
+        
         
       } else {
         print("API fetch failed, no data to update.")
@@ -192,7 +193,7 @@ exploration_page_server <- function(id, state) {
               data = current_data_one[current_data_one$parcel_id %in% to_add_one, ],  # Filtered data for new polygons
               weight = 1,
               color = PARCEL_LINE_COLOUR,
-              fillColor = ~unname(COLOUR_MAPPING[planting_type]),  # Colour for filtered polygons
+              fillColor = ~unname(COLOUR_MAPPING[planting_types]),  # Colour for filtered polygons
               fillOpacity = FILL_OPACITY,
               group = "filteredPolygons",  # Group for filtered polygons
               layerId = ~parcel_id,  # Use parcel_id as layerId to add new polygons
