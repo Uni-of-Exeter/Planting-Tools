@@ -493,8 +493,8 @@ function(res, which_cluster = 1) {
   
   if(!which_cluster %in% c(1,2,3,4)) {
     res$status <- 403
-    notif("thethe choice must be between 1 and 4", log_level = "error")
-    return("the choice must be between 1 and 4")
+    notif("which_cluster must be between 1 and 4", log_level = "error")
+    return("which_cluster must be between 1 and 4")
   }
   
   if (is.null(target_compatible_strategies$cluster)) {
