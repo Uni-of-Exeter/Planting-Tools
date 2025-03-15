@@ -11,6 +11,35 @@ options(future.globals.maxSize = 3 * 1024^3) # 3 GiB RAM
 RNGversion("4.0.0")
 set.seed(1)
 
+#fixed strategies list contains strategies pre-selected to be shown in the preference elicitation
+FIXED_STRATEGIES_LIST<-list(YEAR=matrix(0,0,1),TYPE=matrix(0,0,1),OUTPUTS=matrix(0,0,1))
+POLYGON_OPACITY<-0.6
+GREY_BACKGROUND_OPACITY<-0.3
+NOTAVAIL_OPACITY<-0.7
+
+BACKEND_HOST_OR_IP <- "localhost"
+
+sysinf <- Sys.info()
+if (!is.null(sysinf)){
+  os <- sysinf['sysname']
+  if (os == 'Darwin')
+    os <- "osx"
+} else { ## mystery machine
+  os <- .Platform$OS.type
+  if (grepl("^darwin", R.version$os))
+    os <- "osx"
+  if (grepl("linux-gnu", R.version$os))
+    os <- "linux"
+}
+os <- tolower(os)
+if (os == "windows" || isTRUE(requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable())) {
+  futureplan <- future::multisession
+  
+} else {
+  futureplan <- future::multicore
+}
+future:::ClusterRegistry("stop")
+
 BACKEND_HOST <- "http://144.173.60.164:40000"
 
 FolderSource <- normalizePath(".")
