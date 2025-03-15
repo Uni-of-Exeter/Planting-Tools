@@ -63,7 +63,7 @@ map_page_ui <- function(id) {
       mainPanel(
         class = "main-panel",
         leafletOutput(ns("map"), height = "100%"),
-        map_and_slider_ui(id = ns("map"), 2025, 2049, 2025, panel_width = "50%"),
+        map_and_slider_ui(id = ns("map"), YEAR_MIN, YEAR_MAX, YEAR_MIN, panel_width = "50%"),
       )
     )
   )
@@ -177,17 +177,36 @@ map_page_server <- function(id, state) {
       if (is.null(plot_data)) return(NULL)
       
       # Convert total_area to km²
-      plot_data$total_area <- set_units(plot_data$total_area, "km^2")
+      plot_data$total_area <- as.numeric(set_units(plot_data$total_area, "km^2"))
+      
+      all_years <- seq(YEAR_MIN, YEAR_MAX)
+      
+      # Create a data frame with all combinations of planting types and years
+      full_years_data <- expand.grid(
+        planting_year = all_years,
+        planting_types = unique(plot_data$planting_types)
+      )
+      
+      # Merge the full year sequence with your existing data
+      plot_data_full <- full_years_data %>%
+        left_join(plot_data, by = c("planting_year", "planting_types")) %>%
+        arrange(planting_types, planting_year)
+      
+      # Fill in missing total_area values with 0 (or NA if you prefer)
+      plot_data_full$total_area[is.na(plot_data_full$total_area)] <- 0
       
       # Compute cumulative area for each planting type
-      cumulative_data <- plot_data %>%
+      cumulative_data <- plot_data_full %>%
         arrange(planting_types, planting_year) %>%
         group_by(planting_types) %>%
-        mutate(cumulative_area = cumsum(total_area)) %>%
+        mutate(
+          cumulative_area = cumsum(total_area),
+          cumulative_area = signif(cumulative_area, 3)  # Round cumulative_area to 2 significant figures
+        ) %>%
         ungroup()
       
       # Return both datasets in a list (ready for instant switching)
-      list(total = plot_data, cumulative = cumulative_data)
+      list(total = plot_data_full, cumulative = cumulative_data)
     })
     
     observe({
@@ -196,10 +215,7 @@ map_page_server <- function(id, state) {
         # Render time-series plot for both Conifer and Deciduous
         output[[ns("areaPlot")]] <- renderPlotly({
           data <- processed_data()  # Get precomputed data
-          
-          print("processed_data")
-          print(processed_data())
-          
+
           # If no data, return NULL
           if (is.null(data)) return(NULL)
           
@@ -232,14 +248,22 @@ map_page_server <- function(id, state) {
               legend.box.background = element_rect(fill = "transparent")
             ) 
           
-          ggplotly(p) %>%
+          p_plot <- ggplotly(p) %>%
             layout(
-              paper_bgcolor = "rgba(255,255,255,0)",  # Ensure full transparency
-              plot_bgcolor = "rgba(255,255,255,0)"
-            ) %>%
-            config(
-              displayModeBar = TRUE  # Keep the toolbar
+              paper_bgcolor = "rgba(255,255,255,0)",  # Ensure transparency
+              plot_bgcolor = "rgba(255,255,255,0)",   # Ensure transparency
+              xaxis = list(
+                range = c(2024, 2051),  # Fix the range of the x-axis between 2025 and 2049
+                tickvals = seq(YEAR_MIN, YEAR_MAX+1, by = 5)
+                # tickvals = c(2025, 2030, 2035, 2040, 2045, 2050),  # Explicitly set tick values
+                # ticktext = c("2025", "2030", "2035", "2040", "2045", "2050")  # Optional: Custom text for each
+              ),
+              modebar = list(
+                bgcolor = 'rgba(255,255,255,0)',    # Set background of modebar
+                activecolor = '#003c3c'            # Set color of the active button
+              )
             )
+          
         })
         
         observeEvent(input[[ns("toggle_plot")]], {
@@ -619,6 +643,9 @@ map_page_server <- function(id, state) {
       # Ensure clicked_polygons() is not NULL or empty
       current_clicked <- clicked_polygons()
 
+      print("current_clicked")
+      print(current_clicked)
+      
       if (is.null(current_clicked) || nrow(current_clicked) == 0 || !"parcel_id" %in% colnames(current_clicked)) {
         print("clicked_polygons() is empty, NULL, or missing parcel_id column.")
         return()  # Exit early to avoid errors
@@ -857,7 +884,7 @@ map_page_server <- function(id, state) {
     
     # Observe the reset of the sliders
     observeEvent(input$reset_main, {
-      print("resetting")
+
       # Reset map view using isolate() to avoid reactivity issues
       leafletProxy(ns("map")) %>%
         setView(lat = state$map$lat, 
@@ -877,14 +904,20 @@ map_page_server <- function(id, state) {
         updateCheckboxInput(session, checkbox_id, value = TRUE)
       })
       
-      clicked_polygons(
-        (data.frame(
-          parcel_id = character(),  # Empty initially
-          blocked_until_year = numeric(),
-          stringsAsFactors = FALSE
-        )
+      clicked_polygons(data.frame(
+        parcel_id = new_data()$parcel_id,
+        blocked_until_year = new_data()$blocked_until_year,
+        stringsAsFactors = FALSE
       ))
       
+      clicked_polygons_injest(data.frame(
+        parcel_id = new_data()$parcel_id,
+        blocked_until_year = new_data()$blocked_until_year,
+        stringsAsFactors = FALSE
+      ))
+      
+      print("clicked_polygons")
+      print(head(clicked_polygons()))
     })
     
     
