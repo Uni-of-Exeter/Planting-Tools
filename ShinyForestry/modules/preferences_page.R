@@ -129,11 +129,11 @@ preferences_page_server <- function(id, state) {
         new_vals_one(new_values_fetched_one)
 
         # Render the leaflet map with the updated data
-        print("new_values_fetched_one")
-        print(new_values_fetched_one)
-        print("new_data_fetched_one")
-        print(new_data_fetched_one)
-        print("~~~~~~~~~~~~~~~~~~~~")
+        # print("new_values_fetched_one")
+        # print(new_values_fetched_one)
+        # print("new_data_fetched_one")
+        # print(new_data_fetched_one)
+        # print("~~~~~~~~~~~~~~~~~~~~")
         
         filtered_data_subset_one <- new_data_fetched_one[new_data_fetched_one$planting_year <= input_year, ]
         filtered_data_subset_one <- filtered_data_subset_one[!st_is_empty(filtered_data_subset_one$geometry), ] # ensure it's valid
@@ -143,12 +143,12 @@ preferences_page_server <- function(id, state) {
         current_layers_one(filtered_data_subset_one$parcel_id)
 
         # Render the leaflet map with the updated data
-        print("filtered_data_subset_one")
-        print(filtered_data_subset_one)
-        print("nrow(filtered_data_subset_one) > 0")
-        print(nrow(filtered_data_subset_one) > 0)
-        print(FullTableNotAvailONE)
-        print("~~~~~~~~~~~~~~~~~~~~~~")
+        # print("filtered_data_subset_one")
+        # print(filtered_data_subset_one)
+        # print("nrow(filtered_data_subset_one) > 0")
+        # print(nrow(filtered_data_subset_one) > 0)
+        # print(FullTableNotAvailONE)
+        # print("~~~~~~~~~~~~~~~~~~~~~~")
         
         # Clear map and add base polygons
         leafletProxy("map1") %>%
@@ -244,7 +244,7 @@ preferences_page_server <- function(id, state) {
     }
 
     observe({
-      req(!state$initialized)
+      req(!state$pref_tab$initialized)
       initialize_or_update_map(YEAR_MIN, choice=NULL)
       state$pref_tab$initialized <- TRUE
     })
