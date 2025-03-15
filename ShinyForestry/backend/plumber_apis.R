@@ -1698,8 +1698,8 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
                                     SPECIES_arg = SPECIES,
                                     SCENARIO_arg = SCENARIO,
                                     MAXYEAR_arg = MAXYEAR,
-                                    NAME_CONVERSION_arg = NAME_CONVERSION)
-    null_strategy[1,(n_parcels+1):(2*n_parcels)] <- 2050 - STARTYEAR
+                                    NAME_CONVERSION_arg = NAME_CONVERSION) # No planting means that planting_year = MAXYEAR+1 (25)
+    null_strategy[1,(n_parcels+1):(2*n_parcels)] <- MAXYEAR + 1
     notif(paste(msg, "done"), log_level = "debug")
     
     #Function to return optimal strategy from submit button
