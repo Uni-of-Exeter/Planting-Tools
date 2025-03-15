@@ -1638,7 +1638,7 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     # Assign defaults to the global environment
     slider_info_value <- get_slider_info()
     slider_info <- list(min_max_default = slider_info_value$min_max_default, units = slider_info_value$units_table)
-    defaults <- slider_info_value$defaults
+    defaults <- slider_info_value$min_max_default
     rm(slider_info_value)
     
     
