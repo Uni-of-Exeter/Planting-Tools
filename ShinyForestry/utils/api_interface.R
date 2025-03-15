@@ -94,6 +94,6 @@ convert_targets_to_english <- function(targets, name_conversion) {
   converted_targets <- ifelse(targets %in% names(lookup_table), lookup_table[targets], targets)
   return(converted_targets)
 }
-targets <- convert_targets_to_english(initialization$TARGETS, initialization$NAME_CONVERSION)
-
-}
+# targets <- convert_targets_to_english(initialization$TARGETS, initialization$NAME_CONVERSION)
+# 
+# }
