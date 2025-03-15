@@ -1238,7 +1238,7 @@ observe_event_function_YearType <- function(choose = 1, # 1 for input$choose1, 2
 #  # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
 #  # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
 #  # SVMMAT: Matrix composed on SavedVec on every line (to do an OR later).
-#  # For the moment, the area does not change with year of planting.
+#  # For the moment, the Area does not change with year of planting.
 #  if (length(SavedVecYearLoc) == 1) {
 #    SelectedSimMat <- as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])
 #    SelectedSimMatBinary<- 1*(as.matrix(simul636YearLoc[, 1:length(SavedVecYearLoc)])!=(MAXYEAR+1))
@@ -1439,7 +1439,7 @@ outputmap_calculateMatsYearType <- function(input,
   # SelectedSimMatBinary: convert SelectedSimMat without year of planting (binary)
   # SelectedSimMatYearOrSavedVec: matrix where the column where SavedVec=1 is replaced by 0 (planting at year 0)
   # SVMMAT: Matrix composed on SavedVec on every line (to do an OR later).
-  # For the moment, the area does not change with year of planting.
+  # For the moment, the Area does not change with year of planting.
   if (length(SavedVecYearTypeLoc) == 1) {
     SelectedSimMat <- as.matrix(simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)])
     SelectedSimMatBinary<- 1*(as.matrix(simul636YearTypeLoc$YEAR[, 1:length(SavedVecYearTypeLoc)])!=(-1))
@@ -2451,16 +2451,16 @@ get_richness_from_fulltable <- function(strategy_vector, FullTable_arg = FullTab
   treespecie_vector <- strategy_vector[indices]
   
   small_fulltable_dt <- FullTable %>%
-    mutate(area = area_vector,
+    mutate(Area = area_vector,
            year = year_vector,
            treespecie = treespecie_vector) %>%
-    dplyr::select(area, year, treespecie, starts_with("Richness")) %>%
+    dplyr::select(Area, year, treespecie, starts_with("Richness")) %>%
     mutate(parcel_id = 1:nrow(FullTable)) |>
     setDT()
   
   # Melt the data table to convert from wide to long format
   melted_dt <- data.table::melt(small_fulltable_dt, 
-                                id.vars = c("area", "year", "treespecie", "parcel_id"), 
+                                id.vars = c("Area", "year", "treespecie", "parcel_id"), 
                                 measure.vars = grep("Richness", colnames(small_fulltable_dt), value = TRUE),
                                 variable.name = "column_name", 
                                 value.name = "richness")
@@ -2474,11 +2474,11 @@ get_richness_from_fulltable <- function(strategy_vector, FullTable_arg = FullTab
   
   # Remove rows where the column_name's tree specie is not the strategy treespecie
   # and where the planting year is not the strategy plantingyear
-  # and where we don't plant (area is 0)
+  # and where we don't plant (Area is 0)
   # and where plantingyear is 25
   melted_dt <- melted_dt[colname_treespecie == treespecie &
                            colname_plantingyear == year &
-                           area != 0 &
+                           Area != 0 &
                            colname_plantingyear != MAXYEAR + 1, ]
   
   # Sum richness by group
@@ -2583,7 +2583,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   intersection <- st_intersection(polygons_bio, polygons_jules)
   notif(paste(msg, "done"), max_limit_log_level = max_limit_log_level)
   
-  # Look at the area difference rowwise for mutate
+  # Look at the Area difference rowwise for mutate
   compute_difference_area <- function(geom1, geom2) {
     diff_geom <- st_difference(geom1, geom2)
     if (!is_empty(diff_geom)) {
@@ -2594,7 +2594,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
   }
   
   # Calculate the proportion of areas (intersection / bio)
-  msg <- "Calculate the biodiversity values in shapefile cells, weighted by area ..."
+  msg <- "Calculate the biodiversity values in shapefile cells, weighted by Area ..."
   notif(msg, max_limit_log_level = max_limit_log_level)
   
   # We use progression bars inside and outside of functions, and this causes problems, local({}) solves them
@@ -2655,7 +2655,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         
         # Group by polygon_id_jules and average over parcels
         {
-          msg <- "Average biodiversities across (carbon, new) parcels"
+          msg <- "Average biodiversities across (Carbon, new) parcels"
           pb(message = msg)
           notif(paste("5/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
@@ -2684,7 +2684,7 @@ convert_bio_to_polygons_from_elicitor_and_merge_into_FullTable <- function(Elici
         ) %>% 
         
         {
-          msg <- "Compute area differences"
+          msg <- "Compute Area differences"
           pb(message = msg)
           notif(paste("6/7", msg), max_limit_log_level = max_limit_log_level)
           invisible(.)
