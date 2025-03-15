@@ -16,7 +16,8 @@ exploration_page_ui <- function(id) {
         )
     ),
     map_and_slider_ui(id = ns("explore"), 2025, 2049, 2025, show_time_series=FALSE),
-    div(class = "explore-box map1", uiOutput(ns("value_boxes")))
+    div(id = "value-box-1", class = "explore-box map1", uiOutput(ns("value_boxes"))),
+    div(id = "value-box-2", class = "explore-box map2", uiOutput(ns("value_box_one")))
   )
 }
 
@@ -62,14 +63,16 @@ exploration_page_server <- function(id, state) {
     filtered_data_one <- reactiveVal(NULL)
     current_layers_one <- reactiveVal(list())
 
-    initialize_or_update_map <- function(input_year, cluster_choice = 1) {
+    initialize_or_update_map <- function(input_year, cluster_choice = 1, data = NULL) {
       # Fetch the data from the API when initializing or submitting
-      # new_data_fetched <- st_read(fetch_api_data())  # Hit the API and get the data
-      
-      new_fetched_one <- get_exploration_initialise(cluster=cluster_choice)
+
+      new_fetched_one <- if (!is.null(data)) {
+        data
+      } else {
+        get_exploration_initialise(cluster=cluster_choice)
+      }
       
       new_data_fetched_one <- new_fetched_one$geojson
-      new_data_fetched_one$parcel_id <- paste0(new_data_fetched_one$parcel_id, "_one")
       new_values_fetched_one <- new_fetched_one$values
       
       if (!is.null(new_data_fetched_one)) {
@@ -123,7 +126,6 @@ exploration_page_server <- function(id, state) {
                 # popup = ~planting_type
               )
           }
-        
         
       } else {
         print("API fetch failed, no data to update.")
@@ -208,72 +210,81 @@ exploration_page_server <- function(id, state) {
         
       }
     })
-    
-    values <- reactiveValues(
-      names = character(0), 
-      counts = list()  
-    )
-    observe({
-      slider_names_copy <- isolate(state$map_tab$slider$names)  
-      values$names <- slider_names_copy
-      values$counts <- setNames(rep(10, length(slider_names_copy)), slider_names_copy)
-    })
-    
-    values_directions <- reactiveValues(
-      names = c("pc_1", "pc_2"),
-      counts = setNames(rep(10, 2), c("Principal direction", "Secondary direction"))
-    )
-    
+
     # observe +/- dynamically
     # min of 0, max of inf?
     observe({
-      req(values$names)  # Ensure values$names exists before looping
+      req(state$map_tab$slider$names)
+      direction_names <- c("pc_1", "pc_2")
+      combined_names <- c(state$map_tab$slider$names, direction_names)
       
-      lapply(values$names, function(name) {
+      lapply(combined_names, function(name) {
         observeEvent(input[[paste0("inc_", name)]], {
-          values$counts[[name]] <- values$counts[[name]] + 1
+          
+          # disable all other buttons
+          lapply(combined_names, function(other) {
+            disable(paste0("inc_", other))
+            disable(paste0("dec_", other))
+          })
+          addClass(paste0("inc_", name), "btn-success")  # Add success class (or use a custom class)
+          
           print(paste("increase", name))
-          get_exploration_plus(name)
+          
+          # backend call
+          d <- get_exploration_plus(name)
+          initialize_or_update_map(current_year(), data = d)
+          
+          # enable other buttons
+          removeClass(paste0("inc_", name), "btn-success")  # Add success class (or use a custom class)
+          lapply(combined_names, function(other) {
+            enable(paste0("inc_", other))
+            enable(paste0("dec_", other))
+          })
         })
         
         observeEvent(input[[paste0("dec_", name)]], {
-          values$counts[[name]] <- max(0, values$counts[[name]] - 1)
+          
+          lapply(combined_names, function(other) {
+            disable(paste0("inc_", other))
+            disable(paste0("dec_", other))
+          })
+          addClass(paste0("dec_", name), "btn-success")  # Add success class (or use a custom class)
+          
           print(paste("decrease", name))
-          get_exploration_minus(name)
-        })
-      })
-    })
-    
-    # observe +/- dynamically
-    # min/max of 0 and 100
-    observe({
-      lapply(values_directions$names, function(name) {
-        observeEvent(input[[paste0("inc_", name)]], {
-          values_directions$counts[[name]] <- max(100, values_directions$counts[[name]] + 1)
-          print("increase")
-          get_exploration_plus(name)
-        })
-        
-        observeEvent(input[[paste0("dec_", name)]], {
-          values_directions$counts[[name]] <- max(0, values_directions$counts[[name]] - 1)
-          print("decrease")
-          get_exploration_minus(name)
+          
+          d <- get_exploration_minus(name)
+          initialize_or_update_map(current_year(), data = d)
+          
+          removeClass(paste0("dec_", name), "btn-success")  # Add success class (or use a custom class)
+          lapply(combined_names, function(other) {
+            enable(paste0("inc_", other))
+            enable(paste0("dec_", other))
+          })
         })
       })
     })
     
     # Create value_boxes dynamically
     output$value_boxes <- renderUI({
+      req(state$map_tab$slider$names)  # Ensure the reactive slider names are available
+      
+      disable_buttons <- is.null(state$alt_cluster_choice) # if this is null please don't allow button press, thanks
+      
+      direction_names <- c("pc_1", "pc_2")
+      combined_names <- c(state$map_tab$slider$names, direction_names)
+      
       div(class = "explore-box-content",
           
           # Section for the +/- buttons
           div(class = "button-container",
-              lapply(values$names, function(name) {
+              lapply(state$map_tab$slider$names, function(name) {
                 tagList(
                   tags$div(style = "display: flex; justify-content: space-between; align-items: center; padding: 4px 10px;", 
-                           actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline-primary small-button"),
+                           actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline small-button",
+                                        disabled = disable_buttons),
                            tags$span(style = "flex-grow: 1; text-align: center;", name),  # Center aligned name
-                           actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline-primary small-button")
+                           actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline small-button",
+                                        disabled = disable_buttons)
                   )
                 )
               })
@@ -284,18 +295,58 @@ exploration_page_server <- function(id, state) {
           
           # Separate section for the sliders
           div(class = "button-container",
-              lapply(values_directions$names, function(name) {
+              lapply(direction_names, function(name) {
                 tagList(
                   tags$div(style = "display: flex; justify-content: space-between; align-items: center; padding: 4px 10px;", 
-                           actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline-primary small-button"),
+                           actionButton(ns(paste0("dec_", name)), "-", class = "btn btn-outline small-button",
+                                        disabled = disable_buttons),
                            tags$span(style = "flex-grow: 1; text-align: center;", name),  # Center aligned name
-                           actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline-primary small-button")
+                           actionButton(ns(paste0("inc_", name)), "+", class = "btn btn-outline small-button",
+                                        disabled = disable_buttons)
                   )
                 )
               })
           ),
       )
     })
+    
+    output$value_box_one <- renderUI({
+      current_value <- new_vals_one()
+      
+      # Generate table rows dynamically
+      table_rows <- paste0(
+        lapply(names(current_value), function(name) {
+          # Get the index of the slider name in state$map_tab$slider$names
+          idx <- which(state$map_tab$slider$names == name)
+          
+          # Get the display name for the slider (from the slider names list)
+          display_name <- state$map_tab$slider$names[idx]
+          
+          # Assuming unit is not explicitly provided, but if it is, you can access it similarly
+          # If unit is not available, you can use a default unit like "units"
+          unit <- "units"  # Replace with real logic if you have units elsewhere in your state
+          
+          # Get the current value for the slider
+          value <- round(current_value[[name]], POPUP_SIGFIG)
+          
+          # Format each row with labels aligned left and values aligned right
+          sprintf("<tr><td style='padding-right: 10px;'><b>%s:</b></td>
+               <td style='text-align:left;'>%s %s</td></tr>",
+                  display_name, value, unit)
+        }),
+        collapse = "\n"
+      )
+      
+      # Construct the legend-like content with tabbed format
+      legend_html <- paste0(
+        "<table style='width:100%;'>",  # Ensuring the table takes full width
+        table_rows,  # Add dynamically generated rows
+        "</table>"
+      )
+      
+      HTML(legend_html)  # Return HTML to be rendered
+    })
+    
     
   })
 }
