@@ -255,6 +255,7 @@ server <- function(input, output, session) {
         zoom = 12
       )
     ),
+    alt_cluster_choice = NULL,
     exp_tab = list(
       initialized = FALSE
     ),
@@ -269,7 +270,7 @@ server <- function(input, output, session) {
   
   # Initialization that is required for the `loadingCompleted` state to be False
   observe({
-    if (!is.null(input$mappageRendered) && input$mappageRendered
+    if (!is.null(input$mappageRendered) && input$mappageRendered 
         && !is.null(input$prefpageRendered) && input$prefpageRendered
         && !is.null(input$altpageRendered) && input$altpageRendered) {
         # && !is.null(input$explrpageRendered) && input$explrpageRendered) { # add other checks for other pages
