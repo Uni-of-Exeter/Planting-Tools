@@ -1577,8 +1577,14 @@ function(res, MAX_LIMIT_LOG_LEVEL = "debug") {
     msg <- "Establish preference weights ..."
     notif(msg, log_level = "debug")
     preference_weights <- c()
+    
     for(target in TARGETS){
-      preference_weights[target] <- 1/max(strategy_outcomes[,..target])
+      # If a biodiversity specie never appears, its max value is 0
+      if (max(strategy_outcomes[,..target]) == 0) {
+        preference_weights[target] <- 1
+      } else {
+        preference_weights[target] <- 1/max(strategy_outcomes[,..target])
+      }
       if(target=="area"){preference_weights[target] <- -preference_weights[target]}
     }
     notif(paste(msg, "done"), log_level = "debug")
