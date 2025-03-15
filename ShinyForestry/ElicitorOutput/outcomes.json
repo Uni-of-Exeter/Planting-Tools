@@ -6,7 +6,7 @@
         "sub-category": "All",
         "metric": "Species richness",
         "time-period": "Set year",
-        "year": "2027"
+        "year": "2025"
     },
     "2": {
         "target": "No",
@@ -16,5 +16,23 @@
         "metric": "Species richness",
         "time-period": "Set year",
         "year": "2024"
+    },
+    "3": {
+        "target": "No",
+        "category": "Biodiversity",
+        "scale": "National",
+        "sub-category": "Pollinators",
+        "metric": "Species richness",
+        "time-period": "Set year",
+        "year": "2024"
+    },
+    "4": {
+        "target": "No",
+        "category": "Biodiversity",
+        "scale": "National",
+        "sub-category": "Goat Moth",
+        "metric": "Prob. of appearance",
+        "time-period": "Set year",
+        "year": "2026"
     }
 }

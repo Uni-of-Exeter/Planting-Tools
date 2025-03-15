@@ -1,7 +1,7 @@
 # ALREADY DONE IN THE APP (begin)
 
 # Load function files
-LOG_LEVEL <- "error"
+MAX_LIMIT_LOG_LEVEL <- "error"
 FolderSource <- normalizePath(getwd())
 if (!grepl("/srv/shiny-server", FolderSource) && !grepl("ShinyForestry", FolderSource)) {
   FolderSource <- normalizePath(file.path(FolderSource, "ShinyForestry"))
@@ -25,12 +25,12 @@ source(normalizePath(file.path(FolderSource, "preferTrees.R")))
 packages <- c(
   # https://github.com/tidyverse/vroom/issues/538
   "progress",
-  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog","leaflet", "sf", "ggplot2",
+  "car", "shinyjs", "shiny", "shinyjqui", "shiny.fluent", "reactlog", "leaflet", "sf", "ggplot2",
   "geosphere", "feather", "readr", "dplyr", "tidyverse", "gsubfn",
   "ggpubr", "htmltools","comprehenr", "Rtsne", "mclust", "seriation", "jsonlite",
-  "viridis", "ggmap", "shinyjqui", "MASS", "mgcv", "shinyWidgets", "truncnorm",
+  "viridis", "ggmap", "MASS", "mgcv", "shinyWidgets", "truncnorm",
   "GGally", "purrr", "sp", "colorspace", "rjson", "arrow", "lwgeom",
-  "mvtnorm", "dplyr", "magrittr",
+  "mvtnorm", "magrittr",
   "rstudioapi",
   "lhs", "sensitivity",
   "progressr", "doFuture", "promises",
@@ -53,19 +53,19 @@ if (Sys.getenv("USERNAME")=="bn267") {
   
   if (!require(dgpsi)) {
     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", quiet = TRUE)
-    install_and_load_packages("pkgload", quiet = TRUE)
-    install_and_load_packages("devtools", quiet = TRUE)
-    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "ask", quiet = TRUE)
+    install_and_load_packages("testthat", verbose = FALSE)
+    install_and_load_packages("pkgload", verbose = FALSE)
+    install_and_load_packages("devtools", verbose = FALSE)
+    devtools::install_github('mingdeyu/dgpsi-R', upgrade = "ask", verbose = FALSE)
     library("dgpsi")
     dgpsi::init_py()
   }
   if (!require(RRembo)) {
     # devtools on Linux requires testthat and pkgload (https://stackoverflow.com/questions/61643552/r-devtools-unable-to-install-ubuntu-20-04-package-or-namespace-load-failed-f)
-    install_and_load_packages("testthat", quiet = TRUE)
-    install_and_load_packages("pkgload", quiet = TRUE)
-    install_and_load_packages("devtools", quiet = TRUE)
-    devtools::install_github('mbinois/RRembo', upgrade = "ask", quiet = TRUE)
+    install_and_load_packages("testthat", verbose = FALSE)
+    install_and_load_packages("pkgload", verbose = FALSE)
+    install_and_load_packages("devtools", verbose = FALSE)
+    devtools::install_github('mbinois/RRembo', upgrade = "ask", verbose = FALSE)
     library("RRembo")
   }
   
@@ -135,10 +135,10 @@ RREMBO_CONTROL <- list(
   # if TRUE, use the new mapping from the zonotope, otherwise the original mapping with convex projection. default TRUE
   reverse = FALSE)
 RREMBO_HYPER_PARAMETERS <- RRembo_defaults(d = 6,
-                                           D = 3 * nrow(FullTable), # area + planting_year + tree_specie per parcel
+                                           D = 3 * nrow(FullTable), # Area + planting_year + tree_specie per parcel
                                            init = list(n = 100), budget = 100,
                                            control = RREMBO_CONTROL,
-                                           limit_log_level = LOG_LEVEL)
+                                           max_limit_log_level = MAX_LIMIT_LOG_LEVEL)
 # ALREADY DONE IN THE APP (end)
 
 DoE_low_dimension <- lhs::randomLHS(10, RREMBO_HYPER_PARAMETERS$d)
@@ -190,7 +190,6 @@ if (isFALSE(exists("outcomes"))) {
 }
 # Decide tree specie and scenario
 SCENARIO <- 26
-TREE_SPECIE <- "Conifers"
 
 # Slider thresholds
 
@@ -219,6 +218,11 @@ DoE_high_dimension_categorical <- transform_DoE_high_dimension_continuous_to_str
                                                                                                      SPECIES_arg = SPECIES,
                                                                                                      # typically ClickedVector()
                                                                                                      year_of_max_no_planting_threshold_vector = year_of_max_no_planting_threshold_vector)
+
+FullTable_long <- transform_FullTable_wide_to_long(FullTable_arg = FullTable,
+                                                   SCENARIO_arg = SCENARIO,
+                                                   MAXYEAR_arg = MAXYEAR,
+                                                   verbose = FALSE)
 # ALREADY DONE IN THE APP (end)
 
 # Look at a single strategy (pick any, 1 is for the example)
@@ -227,26 +231,15 @@ parameter_vector <- inputs <- DoE_high_dimension_categorical[1, ]
 
 # tictoc::tic()
 # a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ],
-#                                 FullTable_arg = FullTable)
+#                                 FullTable_long_arg = FullTable_long)
 # tictoc::toc()
 # 
 # tictoc::tic()
 # a <- apply(DoE_high_dimension_categorical[1:10, ],
 #            1,
 #            get_outcomes_from_strategy,
-#            FullTable_arg = FullTable),
+#            FullTable_long_arg = FullTable_long)
 # tictoc::toc()
-# 
-# microbenchmark::microbenchmark(a <- get_outcomes_from_strategy(DoE_high_dimension_categorical[1, ],
-#                                                                FullTable_arg = FullTable),
-#                                times = 10)
-# 
-# microbenchmark::microbenchmark(a <- apply(DoE_high_dimension_categorical[1:10, ],
-#                                           1,
-#                                           get_outcomes_from_strategy,
-#                                           FullTable_arg = FullTable),
-#                                times = 5)
-
 
 alpha <- 0.99
 group_size <- nrow(A) / 3
@@ -257,12 +250,16 @@ treespecie_names <- paste0("treespecie_parcel_", 1:group_size)
 Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
                            MAXYEAR_arg = MAXYEAR,
                            SPECIES_arg = SPECIES,
+                           SCENARIO_arg = SCENARIO,
+                           FullTable_long_arg = FullTable_long,
                            area_sum_threshold_numeric = area_sum_threshold,
                            year_of_max_no_planting_threshold_vector_arg = year_of_max_no_planting_threshold_vector,
                            RREMBO_HYPER_PARAMETERS_arg = RREMBO_HYPER_PARAMETERS) {
   
+  FullTable_long <- FullTable_long_arg
   MAXYEAR <- MAXYEAR_arg
   SPECIES <- SPECIES_arg
+  SCENARIO <- SCENARIO_arg
   area_sum_threshold <- area_sum_threshold_numeric
   year_of_max_no_planting_threshold_vector <- year_of_max_no_planting_threshold_vector_arg
   RREMBO_HYPER_PARAMETERS <- RREMBO_HYPER_PARAMETERS_arg
@@ -305,11 +302,11 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
     return(sum(diff))
   }
   outcomes <- get_outcomes_from_strategy(parameter_vector=strategy[1,],
-                                         FullTable_arg = FullTable)
+                                         FullTable_long_arg = FullTable_long)
   if(outcomes$sum_area > area_sum_threshold){
     return((outcomes$sum_area-area_sum_threshold)/0.001)
   }
-  # Pre-fetch thresholds and SDs for carbon and visits
+  # Pre-fetch thresholds and SDs for Carbon and Visits
   thresholds <- outcomes_to_maximize_sum_threshold_vector[c("Carbon", "Visits")]
   sds_carbon_visits <- c(outcomes$sum_carbon_sd, outcomes$sum_visits_sd)
   val_carbon_visits <- c(outcomes$sum_carbon, outcomes$sum_visits)
@@ -321,7 +318,7 @@ Implausibility <- function(x, targetLevel = -sqrt(alpha/(1-alpha)),
   #biodiversity
   if(!is.null(outcomes$sum_biodiversity)){
     #handle species names
-    imp_bio <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes_to_maximize_sum_threshold_vector) %in% NAME_CONVERSION$Specie] - outcomes$sum_biodiversity)/(outcomes$sum_biodiversity_sd)
+    imp_bio <- (outcomes_to_maximize_sum_threshold_vector[names(outcomes$sum_biodiversity)] - outcomes$sum_biodiversity)/(outcomes$sum_biodiversity_sd)
     implausibilities <- c(implausibilities, imp_bio)
   }
   return(max(implausibilities))

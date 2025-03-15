@@ -65,7 +65,7 @@ Normal <- function(mu = 0.0, sigma = 1.0){
   return(list(f=f, mean=mu, sd=sigma, s_fun=sample_fun))
 }
 
-#' A function to determine lower bounds on the posterior for use by parallel tempering mcmc only. Function is designed to be conservative with the broad aim to scale an output to [0,1] and for the fitted parameters to roughly be interpretable as weights ([-1,1]) where negative weight indicates a preference for less of a thing (like Area)
+#' A function to determine lower bounds on the posterior for use by parallel tempering mcmc only. Function is designed to be conservative with the broad aim to scale an output to [0,1] and for the fitted parameters to roughly be interpretable as weights ([-1,1]) where negative weight indicates a preference for less of a thing (like area)
 #' @param p an object of class PrefElciitClass
 #' @param index which input (as in which data column) do you want a bound for?
 lbfun <- function(p, index){
